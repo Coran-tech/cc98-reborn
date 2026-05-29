@@ -1,5 +1,5 @@
 const STORAGE_KEY = "cc98ComfortSettings";
-const EXTENSION_VERSION = "0.1.2";
+const EXTENSION_VERSION = "0.1.4";
 const LOGIN_REDIRECT_MARK_KEY = "cc98RebornLoginRedirectStartedAt";
 const LOGOUT_REDIRECT_MARK_KEY = "cc98RebornLogoutRedirectStartedAt";
 const FIRST_PAGE_PREVISIT_PENDING_KEY = "cc98RebornFirstPagePrevisitPending";
@@ -1168,6 +1168,69 @@ function scheduleProxyControlDisplaySync(button, action, delays, clearPendingAft
   proxyControlSyncTimers.set(button, timers);
 }
 
+function isTopicShareAction(action) {
+  return action?.scope === "topic" && cleanupPostText(action.text).includes("\u5206\u4eab\u5e16\u5b50\u94fe\u63a5");
+}
+
+function fallbackCopyTextToClipboard(text) {
+  if (!text || !document.body) {
+    return false;
+  }
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.cssText = "position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none;";
+  document.body.append(textarea);
+  textarea.focus({ preventScroll: true });
+  textarea.select();
+  let copied = false;
+  try {
+    copied = document.execCommand("copy");
+  } catch {
+    copied = false;
+  }
+  textarea.remove();
+  return copied;
+}
+
+async function copyTextToClipboard(text) {
+  if (!text) {
+    return false;
+  }
+  if (navigator.clipboard?.writeText && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      return fallbackCopyTextToClipboard(text);
+    }
+  }
+  return fallbackCopyTextToClipboard(text);
+}
+
+function showRebuiltTransientToast(anchor, text) {
+  if (!document.body) {
+    return;
+  }
+  const toast = createElement("div", "cc98-rebuild-toast", text);
+  document.body.append(toast);
+  const anchorRect = anchor instanceof HTMLElement ? anchor.getBoundingClientRect() : null;
+  const toastRect = toast.getBoundingClientRect();
+  const margin = 12;
+  let top = anchorRect ? anchorRect.top - toastRect.height - 10 : margin;
+  if (top < margin && anchorRect) {
+    top = anchorRect.bottom + 10;
+  }
+  const left = anchorRect
+    ? anchorRect.left + anchorRect.width / 2 - toastRect.width / 2
+    : window.innerWidth / 2 - toastRect.width / 2;
+  toast.style.top = `${Math.max(margin, Math.min(window.innerHeight - toastRect.height - margin, top))}px`;
+  toast.style.left = `${Math.max(margin, Math.min(window.innerWidth - toastRect.width - margin, left))}px`;
+  requestAnimationFrame(() => toast.classList.add("is-visible"));
+  window.setTimeout(() => toast.classList.remove("is-visible"), 1100);
+  window.setTimeout(() => toast.remove(), 1500);
+}
+
 function renderProxyControl(action) {
   if (action.href && action.href !== "#") {
     return createLink("cc98-rebuild-mini-action", action.text, action.href);
@@ -1186,6 +1249,7 @@ function renderProxyControl(action) {
     }
     lastActivatedAt = now;
     const isPostAction = action.scope === "post" || Boolean(action.control?.closest?.(".reply"));
+    const isNativeOverlayAction = isPostAction || action.scope === "topic";
     const oppositeAction = isVoteAction ? getOppositeVoteAction(action) : null;
     if (isVoteAction) {
       const wasActive = isVoteActionVisuallyActive(action);
@@ -1214,8 +1278,13 @@ function renderProxyControl(action) {
     } else {
       applyOptimisticPostActionState(button, action);
       triggerOriginalControl(action.control);
+      if (isTopicShareAction(action)) {
+        copyTextToClipboard(location.href).finally(() => {
+          showRebuiltTransientToast(button, "\u590d\u5236\u6210\u529f");
+        });
+      }
     }
-    if (isPostAction) {
+    if (isNativeOverlayAction) {
       scheduleNativeAntUiStabilize();
     } else {
       scheduleDelayedRebuilds();
@@ -4351,10 +4420,11 @@ function collectPostActions(post) {
     const text = getActionText(control);
     const href = control instanceof HTMLAnchorElement ? makeAbsoluteCc98Url(control.href || control.getAttribute("href") || "") : "";
     const normalized = text.replace(/\s+\d+$/, "");
-    if (!/^(赞|踩|关注|私信|评分|追踪)$/.test(normalized)) {
+    if (!/^(赞|踩|关注|取关|取消关注|私信|评分|追踪)$/.test(normalized)) {
       return;
     }
-    const key = normalized === "私信" ? "私信" : `${normalized}:${href || control.id || actions.length}`;
+    const stableKind = /^(关注|取关|取消关注)$/.test(normalized) ? "关注" : normalized;
+    const key = stableKind === "私信" ? "私信" : `${stableKind}:${href || control.id || actions.length}`;
     if (seen.has(key)) {
       return;
     }
@@ -4470,6 +4540,11 @@ function getPostItems() {
     };
   }).filter((item) => item && (item.text.length > 0 || item.content?.querySelector("img")));
   markOriginalPosterItems(items);
+  const favoriteAction = getTopicToolbarActions().favorite;
+  const favoriteTarget = favoriteAction ? (items.find((item) => !item.isHot) || items[0]) : null;
+  if (favoriteTarget) {
+    favoriteTarget.actions = insertTopicFavoriteAction(favoriteTarget.actions, favoriteAction);
+  }
 
   if (items.length > 0) {
     return items;
@@ -4478,6 +4553,44 @@ function getPostItems() {
   const article = document.querySelector("#root article");
   const text = cleanupPostText(article?.innerText);
   return text ? [{ type: "post", id: "article", index: 1, user: "CC98", uid: "", avatar: "", text, content: sanitizePostContent(article), publishedAt: "", actions: [] }] : [];
+}
+
+function getTopicToolbarActions() {
+  const controls = [...document.querySelectorAll(".topicInfo-info .followTopic, .topicInfo-title .followTopic, .topicInfo-info [class~='followTopic'], .topicInfo-title [class~='followTopic']")]
+    .filter((control) => control instanceof HTMLElement && !control.closest("#cc98-comfort-app"));
+  const makeAction = (control, fallbackText) => {
+    if (!(control instanceof HTMLElement)) {
+      return null;
+    }
+    return {
+      text: cleanupPostText(control.textContent) || fallbackText,
+      href: "",
+      control,
+      scope: "topic"
+    };
+  };
+  const favoriteControl = controls.find((control) => /^(?:收藏|取消收藏|已收藏)$/.test(cleanupPostText(control.textContent)));
+  const shareControl = controls.find((control) => cleanupPostText(control.textContent).includes("分享帖子链接"));
+  return {
+    favorite: makeAction(favoriteControl, "收藏"),
+    share: makeAction(shareControl, "分享帖子链接")
+  };
+}
+
+function insertTopicFavoriteAction(actions, favoriteAction) {
+  if (!favoriteAction || !Array.isArray(actions)) {
+    return actions || [];
+  }
+  if (actions.some((action) => /^(?:收藏|取消收藏|已收藏)$/.test(cleanupPostText(action.text).replace(/\s+\d+$/, "")))) {
+    return actions;
+  }
+  const insertAfter = actions.reduce((last, action, index) => {
+    const label = cleanupPostText(action.text).replace(/\s+\d+$/, "");
+    return /^(?:关注|取关|取消关注|私信)$/.test(label) ? index : last;
+  }, -1);
+  const nextActions = [...actions];
+  nextActions.splice(insertAfter + 1, 0, favoriteAction);
+  return nextActions;
 }
 
 function isHomeAnnouncementDetailText(text) {
@@ -5401,6 +5514,12 @@ function renderPostPager() {
     navigateToRebuiltHref(pageInfo.pages.get(page) || buildTopicPageHref(pageInfo.topicId, page));
   });
   pager.append(form);
+  const shareAction = getTopicToolbarActions().share;
+  if (shareAction) {
+    const shareButton = renderProxyControl(shareAction);
+    shareButton.classList.add("cc98-rebuild-pager-action");
+    pager.append(shareButton);
+  }
 
   return pager;
 }
@@ -6543,6 +6662,40 @@ function stabilizeEditorEmojiImages(editor) {
   stabilizeEmojiRendering(editor);
 }
 
+function isEditorEmojiButtonTarget(target) {
+  if (!(target instanceof Element)) {
+    return false;
+  }
+  const control = target.closest(".ubb-emoji-button, .ubb-button");
+  if (!(control instanceof HTMLElement)) {
+    return false;
+  }
+  const signature = [
+    control.className,
+    control.getAttribute("title"),
+    control.getAttribute("aria-label"),
+    control.dataset.cc98ToolbarLabel,
+    control.textContent
+  ].filter(Boolean).join(" ");
+  return /(?:表情|emoji|emoticon|smile|fa-smile|fa-meh|☺)/i.test(signature);
+}
+
+function setEditorEmojiPanelOpen(editor, open) {
+  if (!(editor instanceof HTMLElement)) {
+    return;
+  }
+  editor.classList.toggle("cc98-rebuild-emoji-panel-open", Boolean(open));
+}
+
+function closeEditorEmojiPanelSoon(editor) {
+  if (!(editor instanceof HTMLElement)) {
+    return;
+  }
+  window.setTimeout(() => {
+    setEditorEmojiPanelOpen(editor, false);
+  }, 90);
+}
+
 function dispatchMouseSequence(target) {
   ["pointerdown", "mousedown", "mouseup", "click"].forEach((type) => {
     const EventClass = type.startsWith("pointer") ? PointerEvent : MouseEvent;
@@ -6784,6 +6937,12 @@ function bindNativeEditorStabilizer(editor) {
   }
   nativeEditorStabilizers.add(editor);
   editor.addEventListener("pointerdown", (event) => {
+    if (isEditorEmojiButtonTarget(event.target)) {
+      return;
+    }
+    if (!event.target?.closest?.(".ubb-emoji")) {
+      setEditorEmojiPanelOpen(editor, false);
+    }
     if (getNativeEditorPassthroughControl(event.target)) {
       return;
     }
@@ -6805,6 +6964,22 @@ function bindNativeEditorStabilizer(editor) {
   editor.addEventListener("click", (event) => {
     if (event.target?.closest?.("#post-topic-button")) {
       schedulePostSubmitPageRefresh();
+    }
+    if (event.target?.closest?.(".ubb-emoji img")) {
+      closeEditorEmojiPanelSoon(editor);
+      return;
+    }
+    if (event.target?.closest?.(".ubb-emoji")) {
+      return;
+    }
+    if (isEditorEmojiButtonTarget(event.target)) {
+      const shouldOpen = !editor.classList.contains("cc98-rebuild-emoji-panel-open");
+      setEditorEmojiPanelOpen(editor, shouldOpen);
+      scheduleNativeEditorStabilize(editor);
+      return;
+    }
+    if (!event.target?.closest?.(".ubb-emoji")) {
+      setEditorEmojiPanelOpen(editor, false);
     }
     if (getNativeEditorPassthroughControl(event.target)) {
       scheduleNativeEditorStabilize(editor);

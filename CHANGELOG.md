@@ -2,6 +2,35 @@
 
 All notable changes to CC98 Reborn are documented here.
 
+## 0.1.4 - 2026-05-29
+
+### Fixed
+
+- Private-message chat headers are now shorter while keeping the conversation title centered.
+- Private-message bubbles no longer show the old border frame or the white side triangles.
+- Editor emoji panels now stay above URL/image/video insert panels.
+- Editor emoji panels now stay hidden until the emoji button is explicitly opened.
+- Editor emoji panel state now resets after choosing an emoji, preventing the next click from inverted close/open behavior.
+
+### Changed
+
+- Version bumped to `0.1.4`.
+- The release package was regenerated as `dist/cc98-reborn-0.1.4.zip`.
+
+## 0.1.3 - 2026-05-29
+
+### Fixed
+
+- Followed-user post actions now keep the refreshed `取关` / `取消关注` controls in the rebuilt action row.
+- Topic favorite controls are exposed in the rebuilt post action row while still triggering the original CC98 favorite dialog.
+- Topic share controls are exposed beside the rebuilt post page-jump form and show a fading `复制成功` confirmation.
+- Favorite-group confirm modal titles and content now inherit night-mode text color more aggressively.
+
+### Changed
+
+- Version bumped to `0.1.3`.
+- The release package was regenerated as `dist/cc98-reborn-0.1.3.zip`.
+
 ## 0.1.2 - 2026-05-29
 
 ### Fixed
