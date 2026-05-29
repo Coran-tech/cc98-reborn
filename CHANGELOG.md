@@ -2,6 +2,18 @@
 
 All notable changes to CC98 Reborn are documented here.
 
+## 0.1.2 - 2026-05-29
+
+### Fixed
+
+- Posting and reply editor insert controls for URL, image, video, Bilibili video, and audio now pass through to the original CC98 handlers.
+- The native UBB insert panel is separated from the textarea layer so inserted forms are visible and interactive.
+
+### Changed
+
+- Version bumped to `0.1.2`.
+- The release package was regenerated as `dist/cc98-reborn-0.1.2.zip`.
+
 ## 0.1.1 - 2026-05-29
 
 ### Fixed

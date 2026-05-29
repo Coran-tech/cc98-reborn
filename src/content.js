@@ -1,5 +1,5 @@
 const STORAGE_KEY = "cc98ComfortSettings";
-const EXTENSION_VERSION = "0.1.1";
+const EXTENSION_VERSION = "0.1.2";
 const LOGIN_REDIRECT_MARK_KEY = "cc98RebornLoginRedirectStartedAt";
 const LOGOUT_REDIRECT_MARK_KEY = "cc98RebornLogoutRedirectStartedAt";
 const FIRST_PAGE_PREVISIT_PENDING_KEY = "cc98RebornFirstPagePrevisitPending";
@@ -5753,6 +5753,30 @@ function hideMarkdownEditorEntrances(editor) {
   });
 }
 
+function getNativeEditorPassthroughControl(target) {
+  if (!(target instanceof Element)) {
+    return null;
+  }
+  const control = target.closest(".cc98-rebuild-native-editor .ubb-buttons .ubb-button, .cc98-rebuild-native-editor .ubb-buttons label[for='ubbFileUpload']");
+  if (!(control instanceof HTMLElement)) {
+    return null;
+  }
+  if (control.closest(".ubb-button-fontSize, .ubb-button-color, .cc98-rebuild-font-size-button, .cc98-rebuild-color-button")) {
+    return null;
+  }
+  const signature = [
+    control.className,
+    control.getAttribute("title"),
+    control.getAttribute("aria-label"),
+    control.getAttribute("for"),
+    control.dataset.cc98ToolbarLabel,
+    control.textContent
+  ].filter(Boolean).join(" ");
+  return /(?:fa-link|fa-picture-o|fa-film|fa-music|fa-file|bilibili|bili|url|image|picture|video|audio|file|upload|ubbFileUpload)/i.test(signature)
+    ? control
+    : null;
+}
+
 function getNativeEditorTextarea(editor) {
   const textareas = [...editor.querySelectorAll("textarea")]
     .filter((textarea) => textarea instanceof HTMLTextAreaElement);
@@ -6443,6 +6467,9 @@ function bindGlobalEditorFontSizeInterceptor() {
     if (!(target instanceof Element)) {
       return;
     }
+    if (getNativeEditorPassthroughControl(target)) {
+      return;
+    }
     if (target.closest(".cc98-rebuild-font-size-popover")) {
       return;
     }
@@ -6563,6 +6590,9 @@ function bindGlobalEditorColorInterceptor() {
   const handleColorEvent = (event) => {
     const target = event.target;
     if (!(target instanceof Element)) {
+      return;
+    }
+    if (getNativeEditorPassthroughControl(target)) {
       return;
     }
     ensureLegacyColorPickerKillStyle();
@@ -6754,6 +6784,9 @@ function bindNativeEditorStabilizer(editor) {
   }
   nativeEditorStabilizers.add(editor);
   editor.addEventListener("pointerdown", (event) => {
+    if (getNativeEditorPassthroughControl(event.target)) {
+      return;
+    }
     const colorButton = getEditorColorTriggerButton(event.target);
     const fontSizeButton = event.target?.closest?.(".ubb-button-fontSize, .cc98-rebuild-font-size-button");
     if (!colorButton && !event.target?.closest?.(".cc98-rebuild-color-popover")) {
@@ -6772,6 +6805,10 @@ function bindNativeEditorStabilizer(editor) {
   editor.addEventListener("click", (event) => {
     if (event.target?.closest?.("#post-topic-button")) {
       schedulePostSubmitPageRefresh();
+    }
+    if (getNativeEditorPassthroughControl(event.target)) {
+      scheduleNativeEditorStabilize(editor);
+      return;
     }
     const colorButton = getEditorColorTriggerButton(event.target);
     if (colorButton && !event.target?.closest?.(".cc98-rebuild-color-popover, .sp-container, .sp-picker-container")) {
