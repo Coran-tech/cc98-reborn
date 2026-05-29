@@ -1,0 +1,20 @@
+# OS/editor noise
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+
+# Build/release artifacts
+dist/
+build/
+*.zip
+*.crx
+
+# Dependencies, if local tooling is added later
+node_modules/

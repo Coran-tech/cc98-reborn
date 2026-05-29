@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CC98 Reborn</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="popup">
+      <header class="header">
+        <div>
+          <h1>CC98 Reborn</h1>
+          <p>舒适阅读设置</p>
+        </div>
+        <label class="switch" title="启用或停用美化">
+          <input id="enabled" type="checkbox">
+          <span></span>
+        </label>
+      </header>
+
+      <section class="group" aria-labelledby="theme-label">
+        <div id="theme-label" class="label">主题</div>
+        <div class="segmented" role="radiogroup" aria-labelledby="theme-label">
+          <label><input type="radio" name="theme" value="soft"><span>暖纸</span></label>
+          <label><input type="radio" name="theme" value="mist"><span>清雾</span></label>
+          <label><input type="radio" name="theme" value="night"><span>夜读</span></label>
+        </div>
+      </section>
+
+      <section class="checks">
+        <label><input id="homeHotOnly" type="checkbox"><span>&#39318;&#39029;&#21482;&#20445;&#30041;&#21313;&#22823;</span></label>
+        <label><input id="previsitFirstPageForTopicImages" type="checkbox"><span>&#39044;&#28909;&#31532;&#19968;&#39029;&#65288;&#26356;&#22909;&#22320;&#35782;&#21035;&#27004;&#20027;&#65289;</span></label>
+      </section>
+
+      <section class="group">
+        <label class="range">
+          <span>字号</span>
+          <output id="fontScaleOutput">100%</output>
+          <input id="fontScale" type="range" min="90" max="120" step="1">
+        </label>
+        <label class="range">
+          <span>表情大小</span>
+          <output id="emojiScaleOutput">100%</output>
+          <input id="emojiScale" type="range" min="70" max="200" step="5">
+        </label>
+        <label class="range">
+          <span>&#22270;&#29255;&#21152;&#36733;&#26102;&#38271;</span>
+          <output id="imageLoadDurationOutput">2.1s</output>
+          <input id="imageLoadDuration" type="range" min="800" max="8000" step="100">
+        </label>
+      </section>
+
+      <section class="group">
+        <label class="textarea">
+          <span>屏蔽版面</span>
+          <textarea id="blockedBoards" rows="3" placeholder="每行一个版面名或版面 ID，例如：似水流年"></textarea>
+        </label>
+      </section>
+
+      <section class="group">
+        <label class="textarea">
+          <span>标题关键词</span>
+          <textarea id="blockedTitleKeywords" rows="3" placeholder="每行一个关键词，例如：测试"></textarea>
+        </label>
+      </section>
+
+      <section class="group">
+        <label class="textarea">
+          <span>UID 黑名单</span>
+          <textarea id="blockedUserIds" rows="3" placeholder="每行一个 UID，例如：795406"></textarea>
+        </label>
+      </section>
+
+      <section class="group">
+        <label class="textarea">
+          <span>占位符文案</span>
+          <input id="placeholderText" type="text" placeholder="已根据你的屏蔽规则折叠一条内容">
+        </label>
+      </section>
+
+      <footer>
+        <button id="reset" type="button">恢复默认</button>
+      </footer>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

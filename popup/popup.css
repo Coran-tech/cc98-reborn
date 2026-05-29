@@ -1,0 +1,270 @@
+:root {
+  color-scheme: light;
+  --bg: #f6f3ed;
+  --panel: #fffdf8;
+  --text: #282520;
+  --muted: #756f65;
+  --border: #ddd4c5;
+  --accent: #3f746d;
+  --accent-soft: #dcebe7;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  width: 360px;
+  max-height: 620px;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  overflow: auto;
+}
+
+.popup {
+  padding: 14px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+h1,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 18px;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+p,
+.label {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.group,
+.checks,
+footer {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-top: 10px;
+  padding: 10px;
+}
+
+.label {
+  margin-bottom: 8px;
+}
+
+.segmented {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.segmented label {
+  cursor: pointer;
+}
+
+.segmented input,
+.switch input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.segmented span {
+  display: flex;
+  min-height: 32px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.segmented input:checked + span {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.switch {
+  position: relative;
+  display: inline-flex;
+  width: 44px;
+  height: 26px;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.switch span {
+  position: absolute;
+  inset: 0;
+  background: #c6bdaf;
+  border-radius: 999px;
+  transition: background 160ms ease;
+}
+
+.switch span::after {
+  content: "";
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  left: 3px;
+  top: 3px;
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+  transition: transform 160ms ease;
+}
+
+.switch input:checked + span {
+  background: var(--accent);
+}
+
+.switch input:checked + span::after {
+  transform: translateX(18px);
+}
+
+.range {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+}
+
+.range + .range {
+  margin-top: 12px;
+}
+
+.range output {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.range input {
+  grid-column: 1 / -1;
+  accent-color: var(--accent);
+}
+
+.checks {
+  display: grid;
+  gap: 10px;
+}
+
+.checks label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 24px;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.checkline {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 24px;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.checks input,
+.checkline input {
+  accent-color: var(--accent);
+}
+
+.textarea {
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.textarea span {
+  color: var(--muted);
+}
+
+.checkline + .textarea,
+.textarea + .textarea {
+  margin-top: 10px;
+}
+
+textarea,
+input[type="text"],
+input[type="password"],
+select {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #ffffff;
+  color: var(--text);
+  font: inherit;
+  line-height: 1.45;
+  outline: none;
+}
+
+textarea {
+  min-height: 72px;
+  padding: 8px;
+  resize: vertical;
+}
+
+input[type="text"] {
+  min-height: 34px;
+  padding: 0 8px;
+}
+
+input[type="password"],
+select {
+  min-height: 34px;
+  padding: 0 8px;
+}
+
+textarea:focus,
+input[type="text"]:focus,
+input[type="password"]:focus,
+select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.hint {
+  margin-top: 8px;
+  line-height: 1.45;
+}
+
+footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+button {
+  min-height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #ffffff;
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  padding: 0 12px;
+}
+
+button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}

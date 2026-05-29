@@ -1,0 +1,50 @@
+{
+  "manifest_version": 3,
+  "name": "CC98 Reborn",
+  "description": "A refreshed reading and browsing interface for CC98.",
+  "version": "0.1.1",
+  "permissions": [
+    "storage",
+    "downloads"
+  ],
+  "host_permissions": [
+    "*://*.cc98.org/*",
+    "*://cc98.org/*",
+    "*://www-cc98-org-s.webvpn.zju.edu.cn/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.cc98.org/*",
+        "*://cc98.org/*",
+        "*://www-cc98-org-s.webvpn.zju.edu.cn/*"
+      ],
+      "js": [
+        "src/content.js"
+      ],
+      "css": [
+        "src/styles.css"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "action": {
+    "default_title": "CC98 Reborn",
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "assets/icon16.png",
+      "32": "assets/icon32.png",
+      "48": "assets/icon48.png",
+      "128": "assets/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "assets/icon16.png",
+    "32": "assets/icon32.png",
+    "48": "assets/icon48.png",
+    "128": "assets/icon128.png"
+  }
+}
