@@ -1,5 +1,5 @@
 const STORAGE_KEY = "cc98ComfortSettings";
-const EXTENSION_VERSION = "0.1.2";
+const EXTENSION_VERSION = "0.1.5";
 const LOGIN_REDIRECT_MARK_KEY = "cc98RebornLoginRedirectStartedAt";
 const LOGOUT_REDIRECT_MARK_KEY = "cc98RebornLogoutRedirectStartedAt";
 const FIRST_PAGE_PREVISIT_PENDING_KEY = "cc98RebornFirstPagePrevisitPending";
@@ -7,6 +7,9 @@ const FIRST_PAGE_PREVISIT_DONE_PREFIX = "cc98RebornFirstPagePrevisitDone:";
 const FIRST_PAGE_PREVISIT_TTL = 5 * 60 * 1000;
 const VOTE_OPTIMISTIC_COUNT_TTL = 2100;
 const VOTE_OPTIMISTIC_STATE_TTL = 2600;
+const HOME_HOT_RANK_CACHE_KEY_PREFIX = "cc98RebornHomeHotRanking:v1:";
+const SEARCH_EMPTY_INITIAL_GRACE_MS = 2600;
+const SEARCH_EMPTY_LOADING_GRACE_MS = 7000;
 const EXTERNAL_AI_SEARCH_REQUIRES_EXPLICIT_CONSENT = true;
 // Disabled until the official CC98 OAuth authorization flow is wired.
 const WATERMARK_FEATURE_ENABLED = false;
@@ -87,7 +90,9 @@ let imageViewerScale = 1;
 let imageViewerOffsetX = 0;
 let imageViewerOffsetY = 0;
 let imageViewerPushedState = false;
-let nativePostSubmitRefreshTimer = null;
+let imageViewerItems = [];
+let imageViewerIndex = -1;
+let nativePostSubmitRefreshTimers = [];
 let editorColorPopoverSequence = 0;
 let editorColorGlobalInterceptorBound = false;
 let editorFontSizePopoverSequence = 0;
@@ -96,6 +101,10 @@ let legacyColorPickerObserver = null;
 let legacyColorPickerInterval = null;
 let loginRedirectWatcherTimer = null;
 let topbarAuthRedirectBound = false;
+let searchPageEmptyRecheckTimer = null;
+let routeFollowupTimers = [];
+let searchPageRouteKey = "";
+let searchPageRouteFirstSeenAt = 0;
 const originalPosterIdentityPrefetches = new Map();
 const neutralizedLinks = new WeakMap();
 const reparentedNativeNodes = new WeakMap();
@@ -104,6 +113,7 @@ const nativeUserCenterStabilizers = new WeakSet();
 const nativeTopbarUserStabilizers = new WeakSet();
 const proxyControlSyncTimers = new WeakMap();
 const searchSuggestionCache = new Map();
+const homeHotRankingStates = new Map();
 let searchSuggestionLastFetchAt = 0;
 let searchSuggestionSequence = 0;
 let aiSearchSuggestionLastFetchAt = 0;
@@ -559,6 +569,40 @@ function getViewerImageSrc(image) {
   return makeAbsoluteCc98Url(getMediaUrl(image) || image.currentSrc || image.src || "");
 }
 
+function isImageViewerCandidate(image) {
+  if (!(image instanceof HTMLImageElement) || image.classList.contains("cc98-rebuild-inline-emoji")) {
+    return false;
+  }
+  if (!image.classList.contains("cc98-rebuild-content-image") && !image.classList.contains("cc98-rebuild-board-image")) {
+    return false;
+  }
+  return Boolean(getViewerImageSrc(image));
+}
+
+function getImageViewerItems(activeImage) {
+  const root = document.querySelector("#cc98-comfort-app") || document;
+  const images = [...root.querySelectorAll("img.cc98-rebuild-content-image, img.cc98-rebuild-board-image")]
+    .filter(isImageViewerCandidate);
+  const items = images.map((node) => ({
+    node,
+    src: getViewerImageSrc(node),
+    alt: node.alt || ""
+  })).filter((item) => item.src);
+  let index = items.findIndex((item) => item.node === activeImage);
+  if (index < 0) {
+    const activeSrc = getViewerImageSrc(activeImage);
+    index = items.findIndex((item) => item.src === activeSrc);
+  }
+  if (index < 0 && activeImage instanceof HTMLImageElement) {
+    const src = getViewerImageSrc(activeImage);
+    if (src) {
+      items.unshift({ node: activeImage, src, alt: activeImage.alt || "" });
+      index = 0;
+    }
+  }
+  return { items, index: Math.max(0, index) };
+}
+
 function updateImageViewerTransform() {
   const image = document.querySelector("#cc98-comfort-image-viewer img");
   if (image) {
@@ -566,9 +610,73 @@ function updateImageViewerTransform() {
   }
 }
 
+function resetImageViewerTransform() {
+  imageViewerScale = 1;
+  imageViewerOffsetX = 0;
+  imageViewerOffsetY = 0;
+  updateImageViewerTransform();
+}
+
+function zoomImageViewerAt(viewerImage, clientX, clientY, nextScale) {
+  if (!(viewerImage instanceof HTMLImageElement)) {
+    return;
+  }
+  const stage = viewerImage.closest(".cc98-image-viewer-stage");
+  const stageRect = stage?.getBoundingClientRect?.();
+  const currentScale = imageViewerScale || 1;
+  const clampedScale = Math.min(6, Math.max(0.35, nextScale));
+  if (!stageRect || Math.abs(clampedScale - currentScale) < 0.001) {
+    imageViewerScale = clampedScale;
+    updateImageViewerTransform();
+    return;
+  }
+  const centerX = stageRect.left + stageRect.width / 2;
+  const centerY = stageRect.top + stageRect.height / 2;
+  const ratio = clampedScale / currentScale;
+  imageViewerOffsetX += (1 - ratio) * (clientX - centerX - imageViewerOffsetX);
+  imageViewerOffsetY += (1 - ratio) * (clientY - centerY - imageViewerOffsetY);
+  imageViewerScale = clampedScale;
+  updateImageViewerTransform();
+}
+
+function updateImageViewerSource(resetTransform = true) {
+  const viewer = document.querySelector("#cc98-comfort-image-viewer");
+  const viewerImage = viewer?.querySelector(".cc98-image-viewer-stage img");
+  const item = imageViewerItems[imageViewerIndex];
+  if (!(viewer instanceof HTMLElement) || !(viewerImage instanceof HTMLImageElement) || !item) {
+    return;
+  }
+  viewerImage.src = item.src;
+  viewerImage.alt = item.alt || "";
+  const counter = viewer.querySelector(".cc98-image-viewer-counter");
+  if (counter) {
+    counter.textContent = `${imageViewerIndex + 1} / ${imageViewerItems.length}`;
+  }
+  viewer.querySelectorAll(".cc98-image-viewer-nav").forEach((button) => {
+    button.disabled = imageViewerItems.length <= 1;
+  });
+  const saveButton = viewer.querySelector(".cc98-image-viewer-save");
+  if (saveButton) {
+    saveButton.dataset.href = item.src;
+  }
+  if (resetTransform) {
+    resetImageViewerTransform();
+  }
+}
+
+function switchImageViewer(delta) {
+  if (imageViewerItems.length <= 1) {
+    return;
+  }
+  imageViewerIndex = (imageViewerIndex + delta + imageViewerItems.length) % imageViewerItems.length;
+  updateImageViewerSource(true);
+}
+
 function removeImageViewer() {
   document.querySelector("#cc98-comfort-image-viewer")?.remove();
   imageViewerPushedState = false;
+  imageViewerItems = [];
+  imageViewerIndex = -1;
   imageViewerScale = 1;
   imageViewerOffsetX = 0;
   imageViewerOffsetY = 0;
@@ -587,11 +695,11 @@ function openImageViewer(image) {
   if (!src) {
     return;
   }
+  const viewerData = getImageViewerItems(image);
 
   removeImageViewer();
-  imageViewerScale = 1;
-  imageViewerOffsetX = 0;
-  imageViewerOffsetY = 0;
+  imageViewerItems = viewerData.items.length ? viewerData.items : [{ node: image, src, alt: image.alt || "" }];
+  imageViewerIndex = Math.min(Math.max(0, viewerData.index), imageViewerItems.length - 1);
   const viewer = createElement("div", "cc98-image-viewer");
   viewer.id = "cc98-comfort-image-viewer";
   viewer.innerHTML = `
@@ -603,7 +711,39 @@ function openImageViewer(image) {
   const viewerImage = viewer.querySelector("img");
   viewerImage.src = src;
   viewerImage.alt = image.alt || "";
+  const closeButton = viewer.querySelector(".cc98-image-viewer-close");
+  if (closeButton) {
+    closeButton.textContent = "x";
+  }
+  const stage = viewer.querySelector(".cc98-image-viewer-stage");
+  const counter = createElement("div", "cc98-image-viewer-counter");
+  const saveButton = createButton("cc98-image-viewer-save", "\u4fdd\u5b58", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const href = saveButton.dataset.href || imageViewerItems[imageViewerIndex]?.src || "";
+    requestBrowserDownload(href, href);
+  });
+  const toolbar = createElement("div", "cc98-image-viewer-toolbar");
+  toolbar.append(counter, saveButton);
+  const prevButton = createButton("cc98-image-viewer-nav cc98-image-viewer-prev", "<", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    switchImageViewer(-1);
+  });
+  prevButton.setAttribute("aria-label", "Previous image");
+  const nextButton = createButton("cc98-image-viewer-nav cc98-image-viewer-next", ">", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    switchImageViewer(1);
+  });
+  nextButton.setAttribute("aria-label", "Next image");
+  if (stage) {
+    viewer.insertBefore(toolbar, stage);
+    viewer.insertBefore(prevButton, stage);
+    viewer.append(nextButton);
+  }
   document.body.append(viewer);
+  updateImageViewerSource(true);
 
   history.pushState({ cc98ComfortImageViewer: true }, "", location.href);
   imageViewerPushedState = true;
@@ -621,8 +761,7 @@ function openImageViewer(image) {
   viewer.addEventListener("wheel", (event) => {
     event.preventDefault();
     const factor = event.deltaY < 0 ? 1.12 : 0.9;
-    imageViewerScale = Math.min(6, Math.max(0.35, imageViewerScale * factor));
-    updateImageViewerTransform();
+    zoomImageViewerAt(viewerImage, event.clientX, event.clientY, imageViewerScale * factor);
   }, { passive: false });
 
   let isDragging = false;
@@ -672,10 +811,20 @@ function openImageViewer(image) {
       document.removeEventListener("keydown", onKeydown, true);
     }
     if (event.key === "0") {
-      imageViewerScale = 1;
-      imageViewerOffsetX = 0;
-      imageViewerOffsetY = 0;
-      updateImageViewerTransform();
+      resetImageViewerTransform();
+    }
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      switchImageViewer(-1);
+    }
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      switchImageViewer(1);
+    }
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
+      event.preventDefault();
+      const href = imageViewerItems[imageViewerIndex]?.src || "";
+      requestBrowserDownload(href, href);
     }
   };
   document.addEventListener("keydown", onKeydown, true);
@@ -684,10 +833,7 @@ function openImageViewer(image) {
 function bindImageViewer(app) {
   app.addEventListener("click", (event) => {
     const image = event.target?.closest?.("img");
-    if (!(image instanceof HTMLImageElement) || image.classList.contains("cc98-rebuild-inline-emoji")) {
-      return;
-    }
-    if (!image.classList.contains("cc98-rebuild-content-image") && !image.classList.contains("cc98-rebuild-board-image")) {
+    if (!isImageViewerCandidate(image)) {
       return;
     }
     event.preventDefault();
@@ -774,6 +920,9 @@ function getActionKindFromText(text) {
   }
   if (value.includes("\u8e29")) {
     return "dislike";
+  }
+  if (value.includes("\u8bc4\u5206")) {
+    return "score";
   }
   return "";
 }
@@ -1105,7 +1254,7 @@ function enforceVoteGroupMutualExclusion(action) {
 }
 
 function syncProxyControlDisplay(proxy, action) {
-  const nativeText = getActionText(action.control) || action.text;
+  const nativeText = action.displayText || getActionText(action.control) || action.text;
   const text = getVoteActionSyncedText(action, nativeText);
   proxy.textContent = text;
   const normalized = text.replace(/\s+\d+$/, "");
@@ -1168,6 +1317,69 @@ function scheduleProxyControlDisplaySync(button, action, delays, clearPendingAft
   proxyControlSyncTimers.set(button, timers);
 }
 
+function isTopicShareAction(action) {
+  return action?.scope === "topic" && cleanupPostText(action.text).includes("\u5206\u4eab\u5e16\u5b50\u94fe\u63a5");
+}
+
+function fallbackCopyTextToClipboard(text) {
+  if (!text || !document.body) {
+    return false;
+  }
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.cssText = "position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none;";
+  document.body.append(textarea);
+  textarea.focus({ preventScroll: true });
+  textarea.select();
+  let copied = false;
+  try {
+    copied = document.execCommand("copy");
+  } catch {
+    copied = false;
+  }
+  textarea.remove();
+  return copied;
+}
+
+async function copyTextToClipboard(text) {
+  if (!text) {
+    return false;
+  }
+  if (navigator.clipboard?.writeText && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      return fallbackCopyTextToClipboard(text);
+    }
+  }
+  return fallbackCopyTextToClipboard(text);
+}
+
+function showRebuiltTransientToast(anchor, text) {
+  if (!document.body) {
+    return;
+  }
+  const toast = createElement("div", "cc98-rebuild-toast", text);
+  document.body.append(toast);
+  const anchorRect = anchor instanceof HTMLElement ? anchor.getBoundingClientRect() : null;
+  const toastRect = toast.getBoundingClientRect();
+  const margin = 12;
+  let top = anchorRect ? anchorRect.top - toastRect.height - 10 : margin;
+  if (top < margin && anchorRect) {
+    top = anchorRect.bottom + 10;
+  }
+  const left = anchorRect
+    ? anchorRect.left + anchorRect.width / 2 - toastRect.width / 2
+    : window.innerWidth / 2 - toastRect.width / 2;
+  toast.style.top = `${Math.max(margin, Math.min(window.innerHeight - toastRect.height - margin, top))}px`;
+  toast.style.left = `${Math.max(margin, Math.min(window.innerWidth - toastRect.width - margin, left))}px`;
+  requestAnimationFrame(() => toast.classList.add("is-visible"));
+  window.setTimeout(() => toast.classList.remove("is-visible"), 1100);
+  window.setTimeout(() => toast.remove(), 1500);
+}
+
 function renderProxyControl(action) {
   if (action.href && action.href !== "#") {
     return createLink("cc98-rebuild-mini-action", action.text, action.href);
@@ -1186,6 +1398,7 @@ function renderProxyControl(action) {
     }
     lastActivatedAt = now;
     const isPostAction = action.scope === "post" || Boolean(action.control?.closest?.(".reply"));
+    const isNativeOverlayAction = isPostAction || action.scope === "topic";
     const oppositeAction = isVoteAction ? getOppositeVoteAction(action) : null;
     if (isVoteAction) {
       const wasActive = isVoteActionVisuallyActive(action);
@@ -1214,8 +1427,13 @@ function renderProxyControl(action) {
     } else {
       applyOptimisticPostActionState(button, action);
       triggerOriginalControl(action.control);
+      if (isTopicShareAction(action)) {
+        copyTextToClipboard(location.href).finally(() => {
+          showRebuiltTransientToast(button, "\u590d\u5236\u6210\u529f");
+        });
+      }
     }
-    if (isPostAction) {
+    if (isNativeOverlayAction) {
       scheduleNativeAntUiStabilize();
     } else {
       scheduleDelayedRebuilds();
@@ -1306,6 +1524,29 @@ function navigateToRebuiltHref(href) {
   }
 
   location.assign(target);
+}
+
+function scheduleRouteFollowup(targetHref, startedRouteKey = getRoutePageKey()) {
+  routeFollowupTimers.forEach((timer) => window.clearTimeout(timer));
+  routeFollowupTimers = [];
+  const targetRouteKey = getRoutePageKey(targetHref);
+  if (!targetRouteKey) {
+    return;
+  }
+  routeFollowupTimers = [80, 180, 360, 700, 1200, 1900, 3000, 4600].map((delay, index, delays) => (
+    window.setTimeout(() => {
+      const currentRouteKey = getRoutePageKey();
+      if (currentRouteKey === targetRouteKey || currentRouteKey !== startedRouteKey) {
+        searchPageRouteKey = "";
+        scheduleFiltering();
+        scheduleRebuild();
+        scheduleSync();
+      }
+      if (index === delays.length - 1) {
+        routeFollowupTimers = [];
+      }
+    }, delay)
+  ));
 }
 
 function getTopicRouteInfo(url = location.href) {
@@ -1665,7 +1906,7 @@ function collectSnapshotMedia(root) {
   const media = [];
   const seen = new Set();
   root?.querySelectorAll("img").forEach((image) => {
-    const src = makeAbsoluteCc98Url(getMediaUrl(image) || image.currentSrc || image.src || "");
+    const src = getNonDecorativeImageSrc(image);
     if (!src || isEmojiImageUrl(src) || isDownloadFileUrl(src)) {
       return;
     }
@@ -2720,6 +2961,55 @@ function isDownloadFileUrl(url) {
     || (/\/v4-upload\/d\//i.test(value) && !isAudioUrl(value) && !isImageUrl(value));
 }
 
+function isDecorativeFrameImageUrl(url) {
+  const raw = String(url ?? "").replace(/\\/g, "/");
+  if (!raw) {
+    return false;
+  }
+  if (/\/static\/images\/(?:%E7%9B%B8%E6%A1%86|\u76f8\u6846)\//i.test(raw)) {
+    return true;
+  }
+  let pathname = raw;
+  try {
+    pathname = decodeURIComponent(new URL(raw, location.origin).pathname).replace(/\\/g, "/");
+  } catch {
+    try {
+      pathname = decodeURIComponent(raw).replace(/\\/g, "/");
+    } catch {
+      pathname = raw;
+    }
+  }
+  return /\/static\/images\/\u76f8\u6846\//i.test(pathname);
+}
+
+function getNonDecorativeImageSrc(image) {
+  if (!(image instanceof HTMLImageElement)) {
+    return "";
+  }
+  const src = makeAbsoluteCc98Url(getMediaUrl(image) || image.currentSrc || image.src || "");
+  return src && !isDecorativeFrameImageUrl(src) ? src : "";
+}
+
+function removeDecorativeFrameImages(root = document) {
+  const images = [
+    ...(root instanceof HTMLImageElement ? [root] : []),
+    ...(root.querySelectorAll?.("img") ?? [])
+  ];
+  images.forEach((image) => {
+    if (!(image instanceof HTMLImageElement)) {
+      return;
+    }
+    const rawSrc = image.getAttribute("src")
+      || image.getAttribute("data-src")
+      || image.currentSrc
+      || image.src
+      || getOwnMediaUrl(image);
+    if (isDecorativeFrameImageUrl(rawSrc)) {
+      image.remove();
+    }
+  });
+}
+
 function isProbablyPostImageUrl(url) {
   const value = String(url ?? "");
   if (isDownloadFileUrl(value)) {
@@ -3085,6 +3375,9 @@ function isSkippablePostElement(node) {
     '[role="button"]',
     '[class*="signature"]',
     '[class*="Signature"]',
+    ".awardInfo",
+    '[class*="awardInfo"]',
+    '[class*="AwardInfo"]',
     '[class*="score"]',
     '[class*="Score"]',
     '[class*="rate"]',
@@ -3127,7 +3420,7 @@ function isQuoteElement(node) {
 
 function normalizeRichContentNode(root, options = {}) {
   const clone = root.cloneNode(true);
-  clone.querySelectorAll("script, style, button, input, textarea, select, [role='button']").forEach((node) => node.remove());
+  clone.querySelectorAll("script, style, button, input, textarea, select, [role='button'], .awardInfo, [class*='awardInfo'], [class*='AwardInfo']").forEach((node) => node.remove());
   if (!options.keepSignatureChildren) {
     clone.querySelectorAll('[class*="signature"], [class*="Signature"]').forEach((node) => node.remove());
   }
@@ -3141,7 +3434,11 @@ function normalizeRichContentNode(root, options = {}) {
   });
   rewriteOriginalPostQuoteLinks(clone);
   clone.querySelectorAll("img").forEach((image) => {
-    const src = getMediaUrl(image);
+    const src = getNonDecorativeImageSrc(image);
+    if (!src) {
+      image.remove();
+      return;
+    }
     if (src) {
       image.src = makeAbsoluteCc98Url(src);
     }
@@ -3353,6 +3650,9 @@ function buildReadablePostContent(contentNode) {
     if (!src) {
       return;
     }
+    if (isDecorativeFrameImageUrl(src)) {
+      return;
+    }
     const image = createContentImageFromUrl(src, alt);
     if (isEmojiImageUrl(src)) {
       markRebuiltEmojiImage(image, src);
@@ -3465,7 +3765,7 @@ function collectPostMediaSources(root) {
       return;
     }
     const src = getMediaUrl(node);
-    if (!src || isEmojiImageUrl(src) || isDownloadFileUrl(src) || (!isProbablyPostImageUrl(src) && !isImageCarrierNode(node))) {
+    if (!src || isDecorativeFrameImageUrl(src) || isEmojiImageUrl(src) || isDownloadFileUrl(src) || (!isProbablyPostImageUrl(src) && !isImageCarrierNode(node))) {
       return;
     }
     const key = normalizeMediaKey(src);
@@ -3495,6 +3795,10 @@ function materializePostMedia(clone) {
       return;
     }
     const src = getMediaUrl(image);
+    if (isDecorativeFrameImageUrl(src)) {
+      image.remove();
+      return;
+    }
     if (src) {
       image.src = src;
     }
@@ -3506,6 +3810,10 @@ function materializePostMedia(clone) {
       return;
     }
     const href = link.href || link.getAttribute("href") || "";
+    if (isDecorativeFrameImageUrl(href)) {
+      link.remove();
+      return;
+    }
     if ((!isProbablyPostImageUrl(href) && !isImageCarrierNode(link)) || link.querySelector("img")) {
       return;
     }
@@ -3526,7 +3834,7 @@ function materializePostMedia(clone) {
     }
     const src = getOwnMediaUrl(node);
     const hasBackgroundImage = /url\(/i.test(node.getAttribute("style") || "");
-    if (!src || (!isProbablyPostImageUrl(src) && !isImageCarrierNode(node) && !hasBackgroundImage)) {
+    if (!src || isDecorativeFrameImageUrl(src) || (!isProbablyPostImageUrl(src) && !isImageCarrierNode(node) && !hasBackgroundImage)) {
       return;
     }
     const image = createContentImageFromUrl(src, cleanupPostText(node.textContent));
@@ -3545,6 +3853,10 @@ function classifyPostImages(clone) {
       return;
     }
     const src = getMediaUrl(image);
+    if (isDecorativeFrameImageUrl(src)) {
+      image.remove();
+      return;
+    }
     if (isDownloadFileUrl(src)) {
       removeDownloadImageFrame(image);
       return;
@@ -3566,7 +3878,7 @@ function ensurePostMediaCoverage(clone, originalSources) {
     .map((image) => normalizeMediaKey(getMediaUrl(image) || image.src))
     .filter(Boolean));
   const missing = originalSources.filter((item) => !present.has(normalizeMediaKey(item.src)));
-  const imageMissing = missing.filter((item) => !isDownloadFileUrl(item.src) && isProbablyPostImageUrl(item.src));
+  const imageMissing = missing.filter((item) => !isDecorativeFrameImageUrl(item.src) && !isDownloadFileUrl(item.src) && isProbablyPostImageUrl(item.src));
   if (!imageMissing.length) {
     return;
   }
@@ -3612,6 +3924,9 @@ function removePostChromeNodes(clone) {
     '[role="button"]',
     '[class*="signature"]',
     '[class*="Signature"]',
+    ".awardInfo",
+    '[class*="awardInfo"]',
+    '[class*="AwardInfo"]',
     '[class*="score"]',
     '[class*="Score"]',
     '[class*="rate"]',
@@ -3837,6 +4152,7 @@ function isMeaningfulPostContent(root) {
 
 function sanitizeClonedPostContent(contentNode) {
   const clone = contentNode.cloneNode(true);
+  removeDecorativeFrameImages(clone);
   removePostChromeNodes(clone);
   rewriteLegacyQuoteInlineStyles(clone);
   materializeAudioPlayers(clone);
@@ -3860,6 +4176,7 @@ function getMarkdownPreviewContentNode(root) {
 }
 
 function sanitizePostContent(contentNode) {
+  removeDecorativeFrameImages(contentNode);
   const originalMediaSources = collectPostMediaSources(contentNode);
   const markdownPreview = getMarkdownPreviewContentNode(contentNode);
 
@@ -4052,9 +4369,18 @@ function isLightDefaultAvatarUrl(src) {
 }
 
 function getPostAvatar(post, userHref = "") {
-  const avatar = post.querySelector(".userPortrait, img[class*='portrait'], img[class*='avatar']");
-  if (avatar?.src) {
-    return avatar.src;
+  const findImageSrc = (selector) => {
+    for (const image of post.querySelectorAll(selector)) {
+      const src = getNonDecorativeImageSrc(image);
+      if (src) {
+        return src;
+      }
+    }
+    return "";
+  };
+  const avatar = findImageSrc(".userPortrait, img[class*='portrait'], img[class*='avatar']");
+  if (avatar) {
+    return avatar;
   }
   let userPath = "";
   try {
@@ -4062,11 +4388,11 @@ function getPostAvatar(post, userHref = "") {
   } catch {
     userPath = "";
   }
-  const linkedAvatar = userPath ? post.querySelector(`a[href*="${userPath}"] img`) : null;
-  if (linkedAvatar?.src) {
-    return linkedAvatar.src;
+  const linkedAvatar = userPath ? findImageSrc(`a[href*="${userPath}"] img`) : "";
+  if (linkedAvatar) {
+    return linkedAvatar;
   }
-  return post.querySelector("img")?.src ?? "";
+  return findImageSrc("img");
 }
 
 function getAnonymousPostCode(post) {
@@ -4351,10 +4677,11 @@ function collectPostActions(post) {
     const text = getActionText(control);
     const href = control instanceof HTMLAnchorElement ? makeAbsoluteCc98Url(control.href || control.getAttribute("href") || "") : "";
     const normalized = text.replace(/\s+\d+$/, "");
-    if (!/^(赞|踩|关注|私信|评分|追踪)$/.test(normalized)) {
+    if (!/^(赞|踩|关注|取关|取消关注|私信|评分|追踪)$/.test(normalized)) {
       return;
     }
-    const key = normalized === "私信" ? "私信" : `${normalized}:${href || control.id || actions.length}`;
+    const stableKind = /^(关注|取关|取消关注)$/.test(normalized) ? "关注" : normalized;
+    const key = stableKind === "私信" ? "私信" : `${stableKind}:${href || control.id || actions.length}`;
     if (seen.has(key)) {
       return;
     }
@@ -4401,6 +4728,81 @@ function getPostSignatureContent(post) {
   return signature;
 }
 
+function getPostAwardRows(post) {
+  const awardInfo = post.querySelector(".awardInfo, [class*='awardInfo'], [class*='AwardInfo']");
+  if (!(awardInfo instanceof Element)) {
+    return [];
+  }
+  const rows = [...awardInfo.querySelectorAll(".tagSize")];
+  const rowNodes = rows.length
+    ? rows
+    : [...awardInfo.children].filter((node) => node.matches?.(".good, .bad"));
+  return rowNodes.map((row) => {
+    const user = cleanupPostText(row.querySelector?.(".userName")?.textContent);
+    const operation = cleanupPostText(row.querySelector?.(".grades")?.textContent);
+    const reason = cleanupPostText(row.querySelector?.(".credit")?.textContent);
+    return { user, operation, reason };
+  }).filter((row) => row.user || row.operation || row.reason);
+}
+
+function renderPostAwardTable(rows) {
+  if (!rows?.length) {
+    return null;
+  }
+  const section = createElement("section", "cc98-rebuild-awards");
+  section.append(createElement("div", "cc98-rebuild-awards-title", "\u8bc4\u5206\u8bb0\u5f55"));
+  const table = document.createElement("table");
+  table.className = "cc98-rebuild-awards-table";
+  const thead = document.createElement("thead");
+  const header = document.createElement("tr");
+  ["\u7528\u6237", "\u64cd\u4f5c", "\u7406\u7531"].forEach((label) => {
+    header.append(createElement("th", "", label));
+  });
+  thead.append(header);
+  const tbody = document.createElement("tbody");
+  rows.forEach((row) => {
+    const tr = document.createElement("tr");
+    const operationClass = /-\s*\d/.test(row.operation) ? "cc98-rebuild-award-negative" : (/\+\s*\d/.test(row.operation) ? "cc98-rebuild-award-positive" : "");
+    tr.append(createElement("td", "", row.user || "-"));
+    tr.append(createElement("td", operationClass, row.operation || "-"));
+    tr.append(createElement("td", "", row.reason || "-"));
+    tbody.append(tr);
+  });
+  table.append(thead, tbody);
+  section.append(table);
+  return section;
+}
+
+function getAwardReputationDelta(rows) {
+  return (rows || []).reduce((total, row) => {
+    const operation = cleanupPostText(row.operation);
+    if (!operation.includes("\u98ce\u8bc4\u503c")) {
+      return total;
+    }
+    const match = operation.match(/([+-]?\d+)/);
+    return total + (Number(match?.[1]) || 0);
+  }, 0);
+}
+
+function formatAwardDelta(delta) {
+  const number = Number(delta) || 0;
+  return number > 0 ? `+${number}` : String(number);
+}
+
+function applyAwardDeltaToActions(actions, rows) {
+  if (!Array.isArray(actions) || !rows?.length) {
+    return actions;
+  }
+  const delta = getAwardReputationDelta(rows);
+  actions.forEach((action) => {
+    const label = cleanupPostText(action.text).replace(/\s+[+-]?\d+\s*$/, "");
+    if (label === "\u8bc4\u5206" || label.includes("\u8bc4\u5206")) {
+      action.displayText = `\u8bc4\u5206 ${formatAwardDelta(delta)}`;
+    }
+  });
+  return actions;
+}
+
 function getPostItems() {
   const directReplies = [...document.querySelectorAll(".reply")]
     .filter((node) => !node.closest("#cc98-comfort-app"))
@@ -4445,9 +4847,11 @@ function getPostItems() {
     const avatar = getPostAvatar(post, userHref);
     const content = sanitizePostContent(contentNode);
     const signature = getPostSignatureContent(post);
+    const awards = getPostAwardRows(post);
     const text = cleanupPostText(content.innerText);
     const publishedAt = cleanupPostText(post.innerText).match(/发表于\s+([0-9:-]+\s+[0-9:]+)/)?.[1] ?? "";
     const actions = collectPostActions(post);
+    applyAwardDeltaToActions(actions, awards);
     const isHot = isHotPostNode(post);
     const floorNumber = getPostFloorNumber(post, index);
     const id = post.id || post.getAttribute("data-id") || `floor-${floorNumber}-${text.slice(0, 24)}`;
@@ -4464,12 +4868,18 @@ function getPostItems() {
       text,
       content,
       signature,
+      awards,
       publishedAt,
       actions,
       isHot
     };
   }).filter((item) => item && (item.text.length > 0 || item.content?.querySelector("img")));
   markOriginalPosterItems(items);
+  const favoriteAction = getTopicToolbarActions().favorite;
+  const favoriteTarget = favoriteAction ? (items.find((item) => !item.isHot) || items[0]) : null;
+  if (favoriteTarget) {
+    favoriteTarget.actions = insertTopicFavoriteAction(favoriteTarget.actions, favoriteAction);
+  }
 
   if (items.length > 0) {
     return items;
@@ -4477,7 +4887,45 @@ function getPostItems() {
 
   const article = document.querySelector("#root article");
   const text = cleanupPostText(article?.innerText);
-  return text ? [{ type: "post", id: "article", index: 1, user: "CC98", uid: "", avatar: "", text, content: sanitizePostContent(article), publishedAt: "", actions: [] }] : [];
+  return text ? [{ type: "post", id: "article", index: 1, user: "CC98", uid: "", avatar: "", text, content: sanitizePostContent(article), signature: null, awards: [], publishedAt: "", actions: [] }] : [];
+}
+
+function getTopicToolbarActions() {
+  const controls = [...document.querySelectorAll(".topicInfo-info .followTopic, .topicInfo-title .followTopic, .topicInfo-info [class~='followTopic'], .topicInfo-title [class~='followTopic']")]
+    .filter((control) => control instanceof HTMLElement && !control.closest("#cc98-comfort-app"));
+  const makeAction = (control, fallbackText) => {
+    if (!(control instanceof HTMLElement)) {
+      return null;
+    }
+    return {
+      text: cleanupPostText(control.textContent) || fallbackText,
+      href: "",
+      control,
+      scope: "topic"
+    };
+  };
+  const favoriteControl = controls.find((control) => /^(?:收藏|取消收藏|已收藏)$/.test(cleanupPostText(control.textContent)));
+  const shareControl = controls.find((control) => cleanupPostText(control.textContent).includes("分享帖子链接"));
+  return {
+    favorite: makeAction(favoriteControl, "收藏"),
+    share: makeAction(shareControl, "分享帖子链接")
+  };
+}
+
+function insertTopicFavoriteAction(actions, favoriteAction) {
+  if (!favoriteAction || !Array.isArray(actions)) {
+    return actions || [];
+  }
+  if (actions.some((action) => /^(?:收藏|取消收藏|已收藏)$/.test(cleanupPostText(action.text).replace(/\s+\d+$/, "")))) {
+    return actions;
+  }
+  const insertAfter = actions.reduce((last, action, index) => {
+    const label = cleanupPostText(action.text).replace(/\s+\d+$/, "");
+    return /^(?:关注|取关|取消关注|私信)$/.test(label) ? index : last;
+  }, -1);
+  const nextActions = [...actions];
+  nextActions.splice(insertAfter + 1, 0, favoriteAction);
+  return nextActions;
 }
 
 function isHomeAnnouncementDetailText(text) {
@@ -4606,6 +5054,103 @@ function isHotHomeSection(section) {
   const title = normalizeText(section?.title || "");
   return title.includes(normalizeText("\u70ed\u95e8\u8bdd\u9898"))
     || title.includes(normalizeText("\u70ed\u95e8"));
+}
+
+function getHomeHotRankCacheKey(section) {
+  return `${HOME_HOT_RANK_CACHE_KEY_PREFIX}${normalizeText(section?.title || "hot") || "hot"}`;
+}
+
+function getHomeHotRankItemKey(item) {
+  if (item?.href) {
+    try {
+      const url = new URL(item.href, location.origin);
+      return `${url.origin}${url.pathname}`.toLowerCase();
+    } catch {
+      return String(item.href).split(/[?#]/)[0].toLowerCase();
+    }
+  }
+  return `title:${normalizeText(item?.title || "")}`;
+}
+
+function makeHomeHotRankEntries(items) {
+  return (items || []).slice(0, 10).map((item, index) => ({
+    key: getHomeHotRankItemKey(item),
+    title: item.title || "",
+    href: item.href || "",
+    rank: index + 1
+  })).filter((entry) => entry.key && entry.key !== "title:");
+}
+
+function readHomeHotRankCache(section) {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(getHomeHotRankCacheKey(section)) || "{}");
+    const entries = Array.isArray(parsed.entries) ? parsed.entries : [];
+    return entries.filter((entry) => entry?.key && Number(entry.rank) > 0);
+  } catch {
+    return [];
+  }
+}
+
+function writeHomeHotRankCache(section, entries) {
+  try {
+    localStorage.setItem(getHomeHotRankCacheKey(section), JSON.stringify({
+      savedAt: Date.now(),
+      entries
+    }));
+  } catch {
+    // Ranking movement is cosmetic; ignore storage failures.
+  }
+}
+
+function getHomeHotRankSignature(entries) {
+  return entries.map((entry) => `${entry.key}:${entry.rank}`).join("|");
+}
+
+function getHomeHotItemsWithRankMovement(section) {
+  const entries = makeHomeHotRankEntries(section.items);
+  const signature = getHomeHotRankSignature(entries);
+  const cacheKey = getHomeHotRankCacheKey(section);
+  const state = homeHotRankingStates.get(cacheKey);
+  if (state?.signature === signature) {
+    return (section.items || []).map((item) => {
+      const movement = state.movements.get(getHomeHotRankItemKey(item));
+      return {
+        ...item,
+        rankMovement: movement?.type || "",
+        rankDelta: movement?.delta || 0,
+        rankMovementAnimated: false
+      };
+    });
+  }
+
+  const previous = readHomeHotRankCache(section);
+  const previousByKey = new Map(previous.map((entry) => [entry.key, entry]));
+  const movements = new Map();
+  if (previous.length > 0) {
+    entries.forEach((entry) => {
+      const oldRank = Number(previousByKey.get(entry.key)?.rank || 0);
+      if (!oldRank) {
+        movements.set(entry.key, { type: "new", delta: 0 });
+        return;
+      }
+      if (oldRank > entry.rank) {
+        movements.set(entry.key, { type: "up", delta: oldRank - entry.rank });
+      } else if (oldRank < entry.rank) {
+        movements.set(entry.key, { type: "down", delta: entry.rank - oldRank });
+      }
+    });
+  }
+  writeHomeHotRankCache(section, entries);
+  homeHotRankingStates.set(cacheKey, { signature, movements, consumed: true });
+  return (section.items || []).map((item) => {
+    const movement = movements.get(getHomeHotRankItemKey(item));
+    return {
+      ...item,
+      rankMovement: movement?.type || "",
+      rankDelta: movement?.delta || 0,
+      rankMovementAnimated: Boolean(movement)
+    };
+  });
 }
 
 function getBoardSections() {
@@ -5175,6 +5720,23 @@ function renderTopicCard(item) {
     const rank = createElement("span", "cc98-rebuild-rank", String(item.rank));
     rank.style.setProperty("--cc98-rank-hue", String(((Number(item.rank) - 1) * 32) % 360));
     card.append(rank);
+    if (item.rankMovement) {
+      card.classList.add(`cc98-rebuild-rank-${item.rankMovement}`);
+      const motionText = item.rankMovement === "new"
+        ? "\u65b0"
+        : `${item.rankMovement === "up" ? "\u2191" : "\u2193"}${item.rankDelta || ""}`;
+      const motionClass = [
+        "cc98-rebuild-rank-motion",
+        `cc98-rebuild-rank-motion-${item.rankMovement}`,
+        item.rankMovementAnimated ? "is-animated" : ""
+      ].filter(Boolean).join(" ");
+      const motion = createElement("span", motionClass, motionText);
+      const motionLabel = item.rankMovement === "up"
+        ? `\u6392\u540d\u4e0a\u5347 ${item.rankDelta || 0}`
+        : (item.rankMovement === "down" ? `\u6392\u540d\u4e0b\u964d ${item.rankDelta || 0}` : "\u65b0\u589e\u70ed\u95e8");
+      motion.setAttribute("aria-label", motionLabel);
+      card.append(motion);
+    }
   }
   return card;
 }
@@ -5309,6 +5871,11 @@ function renderPostCard(item) {
   });
   card.append(body);
 
+  const awardTable = renderPostAwardTable(item.awards);
+  if (awardTable) {
+    card.append(awardTable);
+  }
+
   if (item.signature) {
     const signatureWrap = createElement("section", "cc98-rebuild-signature");
     signatureWrap.append(item.signature);
@@ -5401,6 +5968,12 @@ function renderPostPager() {
     navigateToRebuiltHref(pageInfo.pages.get(page) || buildTopicPageHref(pageInfo.topicId, page));
   });
   pager.append(form);
+  const shareAction = getTopicToolbarActions().share;
+  if (shareAction) {
+    const shareButton = renderProxyControl(shareAction);
+    shareButton.classList.add("cc98-rebuild-pager-action");
+    pager.append(shareButton);
+  }
 
   return pager;
 }
@@ -6543,6 +7116,40 @@ function stabilizeEditorEmojiImages(editor) {
   stabilizeEmojiRendering(editor);
 }
 
+function isEditorEmojiButtonTarget(target) {
+  if (!(target instanceof Element)) {
+    return false;
+  }
+  const control = target.closest(".ubb-emoji-button, .ubb-button");
+  if (!(control instanceof HTMLElement)) {
+    return false;
+  }
+  const signature = [
+    control.className,
+    control.getAttribute("title"),
+    control.getAttribute("aria-label"),
+    control.dataset.cc98ToolbarLabel,
+    control.textContent
+  ].filter(Boolean).join(" ");
+  return /(?:表情|emoji|emoticon|smile|fa-smile|fa-meh|☺)/i.test(signature);
+}
+
+function setEditorEmojiPanelOpen(editor, open) {
+  if (!(editor instanceof HTMLElement)) {
+    return;
+  }
+  editor.classList.toggle("cc98-rebuild-emoji-panel-open", Boolean(open));
+}
+
+function closeEditorEmojiPanelSoon(editor) {
+  if (!(editor instanceof HTMLElement)) {
+    return;
+  }
+  window.setTimeout(() => {
+    setEditorEmojiPanelOpen(editor, false);
+  }, 90);
+}
+
 function dispatchMouseSequence(target) {
   ["pointerdown", "mousedown", "mouseup", "click"].forEach((type) => {
     const EventClass = type.startsWith("pointer") ? PointerEvent : MouseEvent;
@@ -6768,10 +7375,12 @@ function scheduleNativeEditorStabilize(editor) {
 }
 
 function schedulePostSubmitPageRefresh() {
-  window.clearTimeout(nativePostSubmitRefreshTimer);
-  nativePostSubmitRefreshTimer = window.setTimeout(() => {
-    location.reload();
-  }, 2200);
+  nativePostSubmitRefreshTimers.forEach((timer) => window.clearTimeout(timer));
+  nativePostSubmitRefreshTimers = [3200, 5200, 8200].map((delay) => {
+    return window.setTimeout(() => {
+      location.reload();
+    }, delay);
+  });
 }
 
 function bindNativeEditorStabilizer(editor) {
@@ -6784,6 +7393,12 @@ function bindNativeEditorStabilizer(editor) {
   }
   nativeEditorStabilizers.add(editor);
   editor.addEventListener("pointerdown", (event) => {
+    if (isEditorEmojiButtonTarget(event.target)) {
+      return;
+    }
+    if (!event.target?.closest?.(".ubb-emoji")) {
+      setEditorEmojiPanelOpen(editor, false);
+    }
     if (getNativeEditorPassthroughControl(event.target)) {
       return;
     }
@@ -6805,6 +7420,22 @@ function bindNativeEditorStabilizer(editor) {
   editor.addEventListener("click", (event) => {
     if (event.target?.closest?.("#post-topic-button")) {
       schedulePostSubmitPageRefresh();
+    }
+    if (event.target?.closest?.(".ubb-emoji img")) {
+      closeEditorEmojiPanelSoon(editor);
+      return;
+    }
+    if (event.target?.closest?.(".ubb-emoji")) {
+      return;
+    }
+    if (isEditorEmojiButtonTarget(event.target)) {
+      const shouldOpen = !editor.classList.contains("cc98-rebuild-emoji-panel-open");
+      setEditorEmojiPanelOpen(editor, shouldOpen);
+      scheduleNativeEditorStabilize(editor);
+      return;
+    }
+    if (!event.target?.closest?.(".ubb-emoji")) {
+      setEditorEmojiPanelOpen(editor, false);
     }
     if (getNativeEditorPassthroughControl(event.target)) {
       scheduleNativeEditorStabilize(editor);
@@ -6941,6 +7572,46 @@ function syncMessageReadAllProxy(source, heroTop) {
   proxy.disabled = Boolean(originalControl.matches?.(":disabled, [disabled], [aria-disabled='true']"));
 }
 
+function stabilizeNativeMessageSurfaces(source) {
+  if (!(source instanceof HTMLElement)) {
+    return;
+  }
+  const cleanSelectors = [
+    ".message",
+    ".message-content",
+    ".message-right",
+    ".message-response",
+    ".message-system",
+    ".message-setting",
+    ".message-message",
+    ".message-message-people",
+    ".message-message-window",
+    ".message-message-pList",
+    ".message-response-box-middle",
+    ".message-response-box-middle1",
+    ".message-response-box-middle-title",
+    ".message-response-box-middle-content",
+    ".message-box-content",
+    ".message-system-box-content",
+    ".message-message-pInfo",
+    ".message-message-pMessage",
+    ".message-message-wContent",
+    ".message-message-wcContent"
+  ].join(",");
+  source.querySelectorAll(cleanSelectors).forEach((node) => {
+    if (!(node instanceof HTMLElement)) {
+      return;
+    }
+    node.classList.add("cc98-rebuild-message-surface-clean");
+    const styleText = node.getAttribute("style") || "";
+    if (/background(?:-color)?\s*:\s*(?:white|#fff(?:fff)?|rgb\(\s*255\s*,\s*255\s*,\s*255\s*\))/i.test(styleText)) {
+      node.style.setProperty("background", "transparent", "important");
+      node.style.setProperty("background-color", "transparent", "important");
+      node.style.setProperty("background-image", "none", "important");
+    }
+  });
+}
+
 function bindMessageTitleSync(source, heroTitle, heroTop) {
   messageTitleObserver?.disconnect();
   messageTitleObserver = null;
@@ -6961,6 +7632,7 @@ function bindMessageTitleSync(source, heroTitle, heroTop) {
     titleSyncTimer = window.setTimeout(() => {
       syncTitle();
       syncMessageReadAllProxy(source, heroTop);
+      stabilizeNativeMessageSurfaces(source);
     }, delay);
   };
 
@@ -6981,6 +7653,7 @@ function bindMessageTitleSync(source, heroTitle, heroTop) {
   messageTitleObserver.observe(source, { childList: true, subtree: true, characterData: true });
   syncTitle();
   syncMessageReadAllProxy(source, heroTop);
+  stabilizeNativeMessageSurfaces(source);
 }
 
 function renderSignInPage(app) {
@@ -7242,6 +7915,57 @@ function stabilizeUserCenterSearchButtons(router) {
   });
 }
 
+function stabilizeUserProfileBadges(router, avatar) {
+  const badge = router.querySelector(".user-badge");
+  if (!(badge instanceof HTMLElement)) {
+    return;
+  }
+
+  badge.classList.add("cc98-rebuild-profile-badge-panel");
+  badge.setAttribute("aria-label", "\u7528\u6237\u5934\u8854");
+  [...badge.children].forEach((item) => {
+    if (!(item instanceof HTMLElement)) {
+      return;
+    }
+    item.classList.add("cc98-rebuild-profile-badge-item");
+    const ownColor = item.style.color;
+    if (ownColor) {
+      item.style.setProperty("color", ownColor, "important");
+      item.classList.add("cc98-rebuild-profile-badge-item-colored");
+    }
+    item.querySelectorAll("[style]").forEach((node) => {
+      if (!(node instanceof HTMLElement)) {
+        return;
+      }
+      const color = node.style.color;
+      if (color) {
+        node.style.setProperty("color", color, "important");
+        item.classList.add("cc98-rebuild-profile-badge-item-colored");
+      }
+    });
+  });
+
+  if (avatar instanceof HTMLElement) {
+    const messageAction = avatar.querySelector(".cc98-rebuild-profile-message-action");
+    if (badge.parentElement !== avatar) {
+      avatar.insertBefore(badge, messageAction?.parentElement === avatar ? messageAction : null);
+    }
+    const avatarImage = avatar.querySelector(".user-avatar-img, img");
+    const syncBadgeHeight = () => {
+      const rect = avatarImage instanceof HTMLElement ? avatarImage.getBoundingClientRect() : null;
+      if (rect && rect.height >= 96) {
+        badge.style.setProperty("--cc98-profile-avatar-height", `${Math.round(rect.height)}px`);
+      }
+    };
+    syncBadgeHeight();
+    requestAnimationFrame(syncBadgeHeight);
+    if (avatarImage instanceof HTMLImageElement && badge.dataset.cc98BadgeImageBound !== "true") {
+      badge.dataset.cc98BadgeImageBound = "true";
+      avatarImage.addEventListener("load", syncBadgeHeight);
+    }
+  }
+}
+
 function stabilizeUserProfileStats(router) {
   const stabilizeProfileHeader = () => {
     const profile = router.querySelector(".user-profile");
@@ -7257,14 +7981,14 @@ function stabilizeUserProfileStats(router) {
 
     const messageLink = [...userId.querySelectorAll("a")]
       .find((link) => cleanupPostText(link.textContent) === "\u79c1\u4fe1");
-    if (!(messageLink instanceof HTMLElement)) {
-      return;
+    if (messageLink instanceof HTMLElement) {
+      messageLink.classList.add("cc98-rebuild-profile-message-action");
+      messageLink.querySelector("button")?.classList.add("cc98-rebuild-profile-message-button");
+      if (messageLink.parentElement !== avatar) {
+        avatar.append(messageLink);
+      }
     }
-    messageLink.classList.add("cc98-rebuild-profile-message-action");
-    messageLink.querySelector("button")?.classList.add("cc98-rebuild-profile-message-button");
-    if (messageLink.parentElement !== avatar) {
-      avatar.append(messageLink);
-    }
+    stabilizeUserProfileBadges(router, avatar);
   };
 
   stabilizeProfileHeader();
@@ -7696,15 +8420,19 @@ function renderHome(app) {
   }
   visibleSections.forEach((section) => {
     const block = createElement("section", "cc98-rebuild-section");
+    const hotSection = isHotHomeSection(section);
     if (!hotOnly) {
-      block.append(createElement("h2", "", section.title));
+      const header = createElement("div", "cc98-rebuild-section-heading");
+      header.append(createElement("h2", "", section.title));
+      block.append(header);
     }
-    if (hotOnly && isHotHomeSection(section)) {
+    if (hotOnly && hotSection) {
       block.classList.add("cc98-rebuild-home-hot-section");
     }
     const list = createElement("div", "cc98-rebuild-list");
-    const hotSection = isHotHomeSection(section);
-    section.items.slice(0, 12).forEach((item, index) => {
+    const rankedItems = hotSection ? getHomeHotItemsWithRankMovement(section) : section.items;
+    const visibleItemLimit = hotOnly && hotSection ? 10 : 12;
+    rankedItems.slice(0, visibleItemLimit).forEach((item, index) => {
       list.append(renderTopicCard({
         ...item,
         rank: hotSection && index < 10 ? index + 1 : 0
@@ -7714,6 +8442,58 @@ function renderHome(app) {
     grid.append(block);
   });
   app.append(grid);
+}
+
+function getSearchRouteAge() {
+  const routeKey = getRoutePageKey();
+  if (searchPageRouteKey !== routeKey) {
+    searchPageRouteKey = routeKey;
+    searchPageRouteFirstSeenAt = Date.now();
+  }
+  return Date.now() - searchPageRouteFirstSeenAt;
+}
+
+function hasNativeSearchLoadingSignal() {
+  return Boolean(document.querySelector([
+    ".ant-spin-spinning",
+    ".ant-spin-nested-loading .ant-spin",
+    ".ant-spin-blur",
+    "[class*='loading']",
+    "[class*='Loading']",
+    "[class*='loadMore']",
+    "[id*='loading']",
+    "[id*='Loading']"
+  ].join(",")));
+}
+
+function shouldDeferSearchEmptyState() {
+  if (getPageKind() !== "search") {
+    return false;
+  }
+  const age = getSearchRouteAge();
+  if (document.readyState === "loading") {
+    return true;
+  }
+  if (age < SEARCH_EMPTY_INITIAL_GRACE_MS) {
+    return true;
+  }
+  return hasNativeSearchLoadingSignal() && age < SEARCH_EMPTY_LOADING_GRACE_MS;
+}
+
+function scheduleSearchEmptyRecheck() {
+  window.clearTimeout(searchPageEmptyRecheckTimer);
+  const age = getSearchRouteAge();
+  const nextDelay = Math.max(260, Math.min(900, SEARCH_EMPTY_INITIAL_GRACE_MS - age + 80));
+  searchPageEmptyRecheckTimer = window.setTimeout(scheduleRebuild, nextDelay);
+}
+
+function renderSearchPendingState(app) {
+  scheduleSearchEmptyRecheck();
+  const section = createElement("section", "cc98-rebuild-empty-state cc98-rebuild-search-pending");
+  section.append(createElement("div", "cc98-rebuild-search-pending-spinner"));
+  section.append(createElement("h2", "", "\u6b63\u5728\u7b49\u5f85\u641c\u7d22\u7ed3\u679c"));
+  section.append(createElement("p", "", "\u539f\u9875\u9762\u8fd8\u5728\u52a0\u8f7d\uff0c\u7a0d\u540e\u4f1a\u81ea\u52a8\u5237\u65b0\u7ed3\u679c\u533a\u3002"));
+  app.append(section);
 }
 
 function renderTopics(app) {
@@ -7726,6 +8506,10 @@ function renderTopics(app) {
     || (lastSettings?.aiSearchSuggestEnabled && normalizeSuggestionText(searchKeyword).length >= 4)
   ));
   if (!topics.length && getPageKind() === "search") {
+    if (shouldDeferSearchEmptyState()) {
+      renderSearchPendingState(app);
+      return;
+    }
     if (useAdvancedFuzzy) {
       const feed = createElement("section", "cc98-rebuild-feed");
       feed.dataset.feedKind = "search-fuzzy";
@@ -7851,6 +8635,10 @@ function renderUserCenter(app) {
 
 function encodeSearchKeyword(keyword) {
   return encodeURIComponent(normalizeSuggestionText(keyword)).replace(/%20/g, "%2520");
+}
+
+function encodeNativeSearchKeyword(keyword) {
+  return encodeURI(encodeURI(normalizeSuggestionText(keyword)));
 }
 
 function decodeSearchKeywordParam(value) {
@@ -7987,18 +8775,151 @@ function getCurrentSearchKeyword() {
   return decodeSearchKeywordParam(new URLSearchParams(location.search).get("keyword"));
 }
 
+function getNativeSearchRoot() {
+  return [...document.querySelectorAll("#search")]
+    .find((node) => node instanceof HTMLElement && !node.closest("#cc98-comfort-app")) || null;
+}
+
+function getNativeSearchState() {
+  const root = getNativeSearchRoot();
+  const selected = cleanupPostText(root?.querySelector?.(".searchBoxSelect")?.textContent) || "\u4e3b\u9898";
+  const options = root
+    ? [...root.querySelectorAll(".searchBoxSub li")]
+        .filter((item) => item instanceof HTMLElement)
+        .filter((item) => getComputedStyle(item).display !== "none")
+        .map((item) => cleanupPostText(item.textContent))
+        .filter(Boolean)
+    : [];
+  const uniqueOptions = [...new Set(options.length ? options : [selected, "\u7528\u6237", "\u7248\u9762"].filter(Boolean))];
+  return {
+    root,
+    selected,
+    options: uniqueOptions.includes(selected) ? uniqueOptions : [selected, ...uniqueOptions]
+  };
+}
+
+function canShowSearchSuggestionsForType(type) {
+  const normalized = cleanupPostText(type);
+  return /^(?:\u4e3b\u9898|\u5168\u7ad9)$/.test(normalized);
+}
+
+function setNativeSearchInputValue(input, value) {
+  if (!(input instanceof HTMLInputElement)) {
+    return;
+  }
+  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+  if (setter) {
+    setter.call(input, value);
+  } else {
+    input.value = value;
+  }
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
+function selectNativeSearchType(root, type) {
+  if (!(root instanceof HTMLElement) || !type) {
+    return false;
+  }
+  const current = cleanupPostText(root.querySelector(".searchBoxSelect")?.textContent);
+  if (current === type) {
+    return true;
+  }
+  const option = [...root.querySelectorAll(".searchBoxSub li")]
+    .find((item) => item instanceof HTMLElement
+      && getComputedStyle(item).display !== "none"
+      && cleanupPostText(item.textContent) === type);
+  if (!(option instanceof HTMLElement)) {
+    return false;
+  }
+  dispatchMouseSequence(root.querySelector(".searchBoxSelect") || root.querySelector(".caret-down") || option);
+  dispatchMouseSequence(option);
+  return true;
+}
+
+function getCurrentSearchBoardId() {
+  const boardMatch = location.pathname.match(/\/board\/(\d+)/i);
+  if (boardMatch) {
+    return Math.max(0, Number(boardMatch[1]) || 0);
+  }
+  const searchBoardId = Number(new URLSearchParams(location.search).get("boardId"));
+  if (Number.isFinite(searchBoardId) && searchBoardId > 0) {
+    return searchBoardId;
+  }
+  const boardLink = [...document.querySelectorAll('a[href*="/board/"]')]
+    .map((link) => link instanceof HTMLAnchorElement ? (link.href || link.getAttribute("href") || "") : "")
+    .map((href) => href.match(/\/board\/(\d+)/i)?.[1])
+    .find(Boolean);
+  return Math.max(0, Number(boardLink) || 0);
+}
+
 function getSearchUrl(keyword) {
   const url = new URL("/search", location.origin);
   url.search = `?boardId=0&keyword=${encodeSearchKeyword(keyword)}`;
   return url;
 }
 
-function submitRebuiltSearch(keyword) {
+function getRebuiltSearchTargetHref(keyword, type) {
+  const normalized = normalizeSuggestionText(keyword);
+  const normalizedType = cleanupPostText(type);
+  if (!normalized) {
+    return "";
+  }
+  if (normalizedType === "\u7528\u6237") {
+    return `${location.origin}/user/name/${encodeURIComponent(normalized)}`;
+  }
+  if (normalizedType === "\u7248\u9762") {
+    return `${location.origin}/searchBoard?keyword=${encodeNativeSearchKeyword(normalized)}`;
+  }
+  const boardId = normalizedType === "\u7248\u5185" ? getCurrentSearchBoardId() : 0;
+  return `${location.origin}/search?boardId=${boardId}&keyword=${encodeNativeSearchKeyword(normalized)}`;
+}
+
+function submitNativeSearch(keyword, type) {
+  const root = getNativeSearchRoot();
+  const input = root?.querySelector?.("#searchText");
+  const submit = root?.querySelector?.(".searchIco");
+  if (!(root instanceof HTMLElement) || !(input instanceof HTMLInputElement) || !(submit instanceof HTMLElement)) {
+    return false;
+  }
+  selectNativeSearchType(root, type);
+  setNativeSearchInputValue(input, keyword);
+  window.setTimeout(() => {
+    dispatchMouseSequence(submit);
+  }, 20);
+  return true;
+}
+
+function submitRebuiltSearch(keyword, type = getNativeSearchState().selected) {
   const normalized = String(keyword ?? "").trim();
   if (!normalized) {
     return false;
   }
-  location.href = getSearchUrl(normalized).href;
+  const targetHref = getRebuiltSearchTargetHref(normalized, type);
+  const startedAt = getRoutePageKey();
+  scheduleRouteFollowup(targetHref, startedAt);
+  if (submitNativeSearch(normalized, type)) {
+    const forceNavigation = (replace = false) => {
+      if (getRoutePageKey() !== startedAt || !targetHref) {
+        scheduleRouteFollowup(targetHref, startedAt);
+        return;
+      }
+      if (replace) {
+        location.replace(targetHref);
+        scheduleRouteFollowup(targetHref, startedAt);
+        return;
+      }
+      location.assign(targetHref);
+      scheduleRouteFollowup(targetHref, startedAt);
+    };
+    const baseDelay = cleanupPostText(type) === "\u7528\u6237" ? 520 : 120;
+    [baseDelay, baseDelay + 240, baseDelay + 820, baseDelay + 1500].forEach((delay, index) => {
+      window.setTimeout(() => forceNavigation(index > 1), delay);
+    });
+    return true;
+  }
+  location.assign(targetHref || getSearchUrl(normalized).href);
+  scheduleRouteFollowup(targetHref || getSearchUrl(normalized).href, startedAt);
   return true;
 }
 
@@ -8838,7 +9759,7 @@ function createAdvancedFuzzySearchPanel(query, terms, feed, initialItems) {
   return section;
 }
 
-function renderSearchSuggestions(box, input, suggestions, state = "ready") {
+function renderSearchSuggestions(box, input, suggestions, state = "ready", onSubmit = submitRebuiltSearch) {
   box.textContent = "";
   box.dataset.state = state;
   if (state === "idle") {
@@ -8862,7 +9783,7 @@ function renderSearchSuggestions(box, input, suggestions, state = "ready") {
     });
     option.addEventListener("click", () => {
       input.value = suggestion;
-      submitRebuiltSearch(suggestion);
+      onSubmit(suggestion);
     });
     box.append(option);
   });
@@ -9186,7 +10107,33 @@ async function fetchSearchSuggestions(keyword) {
 }
 
 function createSearchForm() {
+  const nativeSearchState = getNativeSearchState();
+  let selectedSearchType = nativeSearchState.selected;
   const form = createElement("form", "cc98-rebuild-search");
+  form.dataset.searchType = selectedSearchType;
+  const typeWrap = createElement("div", "cc98-rebuild-search-type-wrap");
+  const typeButton = createElement("button", "cc98-rebuild-search-type", selectedSearchType);
+  typeButton.type = "button";
+  typeButton.setAttribute("aria-haspopup", "listbox");
+  typeButton.setAttribute("aria-expanded", "false");
+  const typeMenu = createElement("div", "cc98-rebuild-search-type-menu");
+  typeMenu.hidden = true;
+  typeMenu.setAttribute("role", "listbox");
+  const closeTypeMenu = () => {
+    typeMenu.hidden = true;
+    typeButton.setAttribute("aria-expanded", "false");
+  };
+  const setSearchType = (type) => {
+    selectedSearchType = type;
+    form.dataset.searchType = type;
+    typeButton.textContent = type;
+    closeTypeMenu();
+    selectNativeSearchType(getNativeSearchRoot(), type);
+    if (!canShowSearchSuggestionsForType(type)) {
+      window.clearTimeout(suggestTimer);
+      renderSearchSuggestions(suggestionBox, input, [], "idle");
+    }
+  };
   const input = createElement("input", "");
   input.type = "search";
   input.placeholder = "搜索主题";
@@ -9244,6 +10191,134 @@ function createSearchForm() {
       return;
     }
     submitRebuiltSearch(keyword);
+  });
+  return form;
+}
+
+function createRebuiltSearchForm() {
+  const nativeSearchState = getNativeSearchState();
+  let selectedSearchType = nativeSearchState.selected;
+  let suggestTimer = 0;
+  const form = createElement("form", "cc98-rebuild-search");
+  form.dataset.searchType = selectedSearchType;
+
+  const typeWrap = createElement("div", "cc98-rebuild-search-type-wrap");
+  const typeButton = createElement("button", "cc98-rebuild-search-type", selectedSearchType);
+  typeButton.type = "button";
+  typeButton.setAttribute("aria-haspopup", "listbox");
+  typeButton.setAttribute("aria-expanded", "false");
+  const typeMenu = createElement("div", "cc98-rebuild-search-type-menu");
+  typeMenu.hidden = true;
+  typeMenu.setAttribute("role", "listbox");
+
+  const input = createElement("input", "");
+  input.type = "search";
+  input.placeholder = "\u8bf7\u8f93\u5165\u641c\u7d22\u5185\u5bb9";
+  input.value = getCurrentSearchKeyword();
+  input.autocomplete = "off";
+  const inputWrap = createElement("div", "cc98-rebuild-search-field");
+  const suggestionBox = createElement("div", "cc98-rebuild-search-suggestions");
+  suggestionBox.hidden = true;
+  inputWrap.append(input, suggestionBox);
+
+  const closeTypeMenu = () => {
+    typeMenu.hidden = true;
+    typeButton.setAttribute("aria-expanded", "false");
+  };
+  const submitCurrentSearch = (value) => submitRebuiltSearch(value, selectedSearchType);
+  const setSearchType = (type) => {
+    selectedSearchType = type;
+    form.dataset.searchType = type;
+    typeButton.textContent = type;
+    closeTypeMenu();
+    selectNativeSearchType(getNativeSearchRoot(), type);
+    if (!canShowSearchSuggestionsForType(type)) {
+      window.clearTimeout(suggestTimer);
+      renderSearchSuggestions(suggestionBox, input, [], "idle", submitCurrentSearch);
+    }
+  };
+
+  nativeSearchState.options.forEach((type) => {
+    const option = createElement("button", "cc98-rebuild-search-type-option", type);
+    option.type = "button";
+    option.setAttribute("role", "option");
+    option.setAttribute("aria-selected", String(type === selectedSearchType));
+    option.addEventListener("mousedown", (event) => event.preventDefault());
+    option.addEventListener("click", () => {
+      typeMenu.querySelectorAll(".cc98-rebuild-search-type-option").forEach((node) => {
+        node.setAttribute("aria-selected", String(node === option));
+      });
+      setSearchType(type);
+      input.focus({ preventScroll: true });
+    });
+    typeMenu.append(option);
+  });
+  typeButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const nextOpen = typeMenu.hidden;
+    typeMenu.hidden = !nextOpen;
+    typeButton.setAttribute("aria-expanded", String(nextOpen));
+  });
+  typeWrap.addEventListener("focusout", () => {
+    window.setTimeout(() => {
+      if (!typeWrap.contains(document.activeElement)) {
+        closeTypeMenu();
+      }
+    }, 0);
+  });
+  typeWrap.append(typeButton, typeMenu);
+
+  const submitButton = createElement("button", "cc98-rebuild-search-submit", "\u641c\u7d22");
+  submitButton.type = "submit";
+  form.append(typeWrap, inputWrap, submitButton);
+
+  const scheduleSuggestions = () => {
+    window.clearTimeout(suggestTimer);
+    const keyword = input.value.trim();
+    if (keyword.length < 2 || !canShowSearchSuggestionsForType(selectedSearchType)) {
+      renderSearchSuggestions(suggestionBox, input, [], "idle", submitCurrentSearch);
+      return;
+    }
+    const cached = searchSuggestionCache.get(normalizeSuggestionText(keyword));
+    if (cached && cached.suggestions.length) {
+      renderSearchSuggestions(suggestionBox, input, cached.suggestions, "ready", submitCurrentSearch);
+    }
+    suggestTimer = window.setTimeout(async () => {
+      const sequence = ++searchSuggestionSequence;
+      const typeAtRequest = selectedSearchType;
+      renderSearchSuggestions(suggestionBox, input, cached?.suggestions ?? [], cached ? "ready" : "loading", submitCurrentSearch);
+      try {
+        const suggestions = await fetchSearchSuggestions(keyword);
+        if (sequence === searchSuggestionSequence && input.value.trim() === keyword && selectedSearchType === typeAtRequest) {
+          renderSearchSuggestions(suggestionBox, input, suggestions, "ready", submitCurrentSearch);
+        }
+      } catch {
+        if (sequence === searchSuggestionSequence) {
+          renderSearchSuggestions(suggestionBox, input, cached?.suggestions ?? [], "ready", submitCurrentSearch);
+        }
+      }
+    }, 900);
+  };
+
+  input.addEventListener("input", scheduleSuggestions);
+  input.addEventListener("focus", () => {
+    closeTypeMenu();
+    scheduleSuggestions();
+  });
+  input.addEventListener("blur", () => {
+    window.setTimeout(() => {
+      suggestionBox.hidden = true;
+    }, 140);
+  });
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const keyword = input.value.trim();
+    if (!keyword) {
+      input.focus();
+      return;
+    }
+    submitCurrentSearch(keyword);
   });
   return form;
 }
@@ -9336,6 +10411,7 @@ function renderRebuiltUi() {
   }
 
   try {
+    removeDecorativeFrameImages(document);
     const app = createElement("div", "cc98-rebuild-shell");
     app.id = "cc98-comfort-app";
     app.dataset.cc98ComfortVersion = EXTENSION_VERSION;
@@ -9364,7 +10440,7 @@ function renderRebuiltUi() {
       ["精选", "https://www.cc98.org/recommendedTopics"]
     ].forEach(([label, href]) => navLinks.append(createLink("", label, href)));
     nav.append(navLinks);
-    nav.append(createSearchForm());
+    nav.append(createRebuiltSearchForm());
     const actions = createElement("div", "cc98-rebuild-actions");
     actions.append(createButton("cc98-rebuild-icon-button", "刷新", () => location.reload()));
     actions.append(renderTopbarUserEntry());
@@ -9699,6 +10775,7 @@ function syncRebuiltContent() {
     return;
   }
 
+  removeDecorativeFrameImages(document);
   const app = document.querySelector("#cc98-comfort-app");
   stabilizeTopbarUserEntry(app);
   const feed = app?.querySelector("[data-feed-kind]");

@@ -674,10 +674,75 @@
 
 :root.cc98-comfort .cc98-rebuild-search {
   display: grid;
-  grid-template-columns: minmax(120px, 1fr) auto;
+  grid-template-columns: auto minmax(120px, 1fr) auto;
   align-items: center;
   gap: 8px;
   min-width: 0;
+}
+
+:root.cc98-comfort .cc98-rebuild-search-type-wrap {
+  position: relative;
+  min-width: 74px;
+}
+
+:root.cc98-comfort .cc98-rebuild-search-type {
+  width: 100%;
+  min-width: 74px;
+  min-height: 36px !important;
+  justify-content: space-between !important;
+  border-radius: 10px !important;
+  background: var(--cc98-comfort-surface-2) !important;
+  color: var(--cc98-comfort-text) !important;
+  border-color: var(--cc98-comfort-border) !important;
+  padding: 0 10px !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-search-type::after {
+  content: "";
+  width: 0;
+  height: 0;
+  margin-left: 8px;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid currentColor;
+  opacity: 0.72;
+}
+
+:root.cc98-comfort .cc98-rebuild-search-type-menu {
+  position: absolute;
+  top: calc(100% + 7px);
+  left: 0;
+  z-index: 44;
+  min-width: 100%;
+  display: grid;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid var(--cc98-comfort-border);
+  border-radius: 12px;
+  background: var(--cc98-comfort-surface);
+  box-shadow: var(--cc98-comfort-shadow);
+}
+
+:root.cc98-comfort .cc98-rebuild-search-type-menu[hidden] {
+  display: none !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-search-type-option {
+  min-width: 72px;
+  min-height: 30px !important;
+  justify-content: flex-start !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  color: var(--cc98-comfort-text) !important;
+  padding: 0 10px !important;
+  white-space: nowrap;
+}
+
+:root.cc98-comfort .cc98-rebuild-search-type-option:is(:hover, :focus-visible),
+:root.cc98-comfort .cc98-rebuild-search-type-option[aria-selected="true"] {
+  background: var(--cc98-comfort-accent-2) !important;
+  color: var(--cc98-comfort-accent) !important;
 }
 
 :root.cc98-comfort .cc98-rebuild-search-field {
@@ -779,6 +844,26 @@
   background: var(--cc98-comfort-text) !important;
   color: var(--cc98-comfort-surface) !important;
   border-color: var(--cc98-comfort-text) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-search .cc98-rebuild-search-type {
+  background: var(--cc98-comfort-surface-2) !important;
+  color: var(--cc98-comfort-text) !important;
+  border-color: var(--cc98-comfort-border) !important;
+  border-radius: 10px !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-search .cc98-rebuild-search-type-option {
+  background: transparent !important;
+  color: var(--cc98-comfort-text) !important;
+  border-color: transparent !important;
+  border-radius: 8px !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-search .cc98-rebuild-search-type-option:is(:hover, :focus-visible),
+:root.cc98-comfort .cc98-rebuild-search .cc98-rebuild-search-type-option[aria-selected="true"] {
+  background: var(--cc98-comfort-accent-2) !important;
+  color: var(--cc98-comfort-accent) !important;
 }
 
 :root.cc98-comfort .cc98-rebuild-actions {
@@ -1083,6 +1168,12 @@
 
 :root.cc98-comfort .cc98-rebuild-home-hot-section .cc98-rebuild-list {
   width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(5, minmax(0, auto));
+  grid-auto-flow: column;
+  align-items: stretch;
+  gap: 12px 14px;
 }
 
 :root.cc98-comfort .cc98-rebuild-section,
@@ -1100,6 +1191,18 @@
   font-size: 1.05rem !important;
   line-height: 1.35 !important;
   font-weight: 760 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+:root.cc98-comfort .cc98-rebuild-section-heading h2 {
+  margin: 0;
 }
 
 :root.cc98-comfort .cc98-rebuild-list,
@@ -1132,6 +1235,25 @@
 :root.cc98-comfort .cc98-rebuild-empty-state p {
   margin: 0;
   color: var(--cc98-comfort-muted) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-search-pending {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+}
+
+:root.cc98-comfort .cc98-rebuild-search-pending-spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid color-mix(in srgb, var(--cc98-comfort-accent) 18%, var(--cc98-comfort-border));
+  border-top-color: var(--cc98-comfort-accent);
+  border-radius: 50%;
+  animation: cc98-search-pending-spin 860ms linear infinite;
+}
+
+@keyframes cc98-search-pending-spin {
+  to { transform: rotate(360deg); }
 }
 
 :root.cc98-comfort .cc98-rebuild-error-page {
@@ -1381,7 +1503,7 @@
 }
 
 :root.cc98-comfort .cc98-rebuild-card.has-rank {
-  padding-right: 64px;
+  padding-right: 146px;
 }
 
 :root.cc98-comfort .cc98-rebuild-hover-meta {
@@ -1410,18 +1532,92 @@
   position: absolute;
   top: 14px;
   right: 14px;
-  min-width: 32px;
-  height: 32px;
+  min-width: 56px;
+  height: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  padding: 0 12px;
   border: 1px solid hsl(var(--cc98-rank-hue, 180) 70% 48% / 0.34);
-  border-radius: 999px;
-  background: hsl(var(--cc98-rank-hue, 180) 78% 54% / 0.14);
+  border-radius: 14px;
+  background:
+    linear-gradient(135deg, hsl(var(--cc98-rank-hue, 180) 78% 54% / 0.18), transparent 64%),
+    hsl(var(--cc98-rank-hue, 180) 78% 54% / 0.1);
   color: hsl(var(--cc98-rank-hue, 180) 74% 34%) !important;
-  font-size: 0.78rem !important;
-  font-weight: 780;
+  font-size: 1.14rem !important;
+  font-weight: 860;
+  line-height: 1 !important;
   font-variant-numeric: tabular-nums;
+  letter-spacing: 0 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-rank-motion {
+  position: absolute;
+  top: 16px;
+  right: 82px;
+  min-width: 46px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--cc98-comfort-surface) 88%, transparent);
+  font-size: 1rem !important;
+  font-weight: 840 !important;
+  line-height: 1 !important;
+  pointer-events: none;
+  user-select: none;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--cc98-comfort-shadow) 46%, transparent);
+}
+
+:root.cc98-comfort .cc98-rebuild-rank-motion-up {
+  color: #cf2f28 !important;
+  border: 1px solid rgba(207, 47, 40, 0.26);
+  background: color-mix(in srgb, #cf2f28 10%, var(--cc98-comfort-surface));
+}
+
+:root.cc98-comfort .cc98-rebuild-rank-motion-down {
+  color: #2d6cdf !important;
+  border: 1px solid rgba(45, 108, 223, 0.28);
+  background: color-mix(in srgb, #2d6cdf 10%, var(--cc98-comfort-surface));
+}
+
+:root.cc98-comfort .cc98-rebuild-rank-motion-new {
+  color: #168a45 !important;
+  border: 1px solid rgba(22, 138, 69, 0.28);
+  background: color-mix(in srgb, #168a45 10%, var(--cc98-comfort-surface));
+}
+
+:root.cc98-comfort .cc98-rebuild-rank-motion-up.is-animated {
+  animation: cc98-rank-rise 920ms cubic-bezier(0.2, 0.8, 0.2, 1) 1 both;
+}
+
+:root.cc98-comfort .cc98-rebuild-rank-motion-down.is-animated {
+  animation: cc98-rank-sink 920ms cubic-bezier(0.2, 0.8, 0.2, 1) 1 both;
+}
+
+:root.cc98-comfort .cc98-rebuild-rank-motion-new.is-animated {
+  animation: cc98-rank-new 980ms cubic-bezier(0.2, 0.8, 0.2, 1) 1 both;
+}
+
+@keyframes cc98-rank-rise {
+  0% { opacity: 0.55; transform: translateY(7px) scale(0.92); }
+  45% { opacity: 1; transform: translateY(-4px) scale(1.08); }
+  100% { opacity: 0.9; transform: translateY(0) scale(1); }
+}
+
+@keyframes cc98-rank-sink {
+  0% { opacity: 0.55; transform: translateY(-7px) scale(0.92); }
+  45% { opacity: 1; transform: translateY(4px) scale(1.08); }
+  100% { opacity: 0.9; transform: translateY(0) scale(1); }
+}
+
+@keyframes cc98-rank-new {
+  0% { opacity: 0.4; transform: scale(0.74); }
+  45% { opacity: 1; transform: scale(1.12); }
+  100% { opacity: 0.95; transform: scale(1); }
 }
 
 :root.cc98-comfort[data-cc98-comfort-theme="night"] .cc98-rebuild-rank {
@@ -1466,6 +1662,20 @@
   border-radius: 50%;
   object-fit: cover;
   background: var(--cc98-comfort-surface-2);
+}
+
+:root.cc98-comfort img[src*="/static/images/%E7%9B%B8%E6%A1%86/" i],
+:root.cc98-comfort img[src*="/static/images/\76F8\6846/"],
+:root.cc98-comfort img[data-src*="/static/images/%E7%9B%B8%E6%A1%86/" i],
+:root.cc98-comfort img[data-src*="/static/images/\76F8\6846/"] {
+  display: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 :root.cc98-comfort:not([data-cc98-comfort-theme="night"]) .cc98-rebuild-avatar-light-default,
@@ -1941,17 +2151,99 @@
   transition: none;
 }
 
+.cc98-image-viewer-toolbar {
+  position: fixed !important;
+  top: 18px !important;
+  right: 68px !important;
+  z-index: 2 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  cursor: default !important;
+}
+
+.cc98-image-viewer-counter,
+.cc98-image-viewer-save,
+.cc98-image-viewer-nav,
+.cc98-image-viewer-close {
+  border: 1px solid rgba(255, 255, 255, 0.26) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22) !important;
+  backdrop-filter: blur(12px);
+}
+
+.cc98-image-viewer-counter {
+  min-width: 58px !important;
+  min-height: 34px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 10px !important;
+  border-radius: 999px !important;
+  font-size: 0.82rem !important;
+  font-weight: 760 !important;
+  line-height: 1 !important;
+}
+
+.cc98-image-viewer-save {
+  min-width: 64px !important;
+  min-height: 34px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 12px !important;
+  border-radius: 999px !important;
+  font-size: 0.86rem !important;
+  font-weight: 760 !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+}
+
+.cc98-image-viewer-nav {
+  position: fixed !important;
+  top: 50% !important;
+  z-index: 2 !important;
+  width: 46px !important;
+  height: 74px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 16px !important;
+  font-size: 2rem !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  transform: translateY(-50%);
+}
+
+.cc98-image-viewer-prev {
+  left: 22px !important;
+}
+
+.cc98-image-viewer-next {
+  right: 22px !important;
+}
+
+.cc98-image-viewer-nav:disabled {
+  opacity: 0.28 !important;
+  cursor: default !important;
+}
+
+.cc98-image-viewer-save:hover,
+.cc98-image-viewer-nav:not(:disabled):hover,
+.cc98-image-viewer-close:hover {
+  border-color: rgba(255, 255, 255, 0.42) !important;
+  background: rgba(255, 255, 255, 0.18) !important;
+}
+
 .cc98-image-viewer-close {
   position: fixed !important;
   top: 18px !important;
   right: 20px !important;
-  z-index: 1 !important;
+  z-index: 3 !important;
   width: 38px !important;
   height: 38px !important;
-  border: 1px solid rgba(255, 255, 255, 0.26) !important;
   border-radius: 999px !important;
-  background: rgba(255, 255, 255, 0.12) !important;
-  color: #ffffff !important;
   font-size: 24px !important;
   line-height: 1 !important;
   cursor: pointer !important;
@@ -2107,6 +2399,77 @@
   color: var(--cc98-comfort-link) !important;
 }
 
+:root.cc98-comfort .cc98-rebuild-awards {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--cc98-comfort-border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--cc98-comfort-surface-2) 78%, transparent);
+  color: var(--cc98-comfort-muted) !important;
+  font-size: 0.78rem !important;
+  line-height: 1.45 !important;
+  overflow-x: auto;
+}
+
+:root.cc98-comfort .cc98-rebuild-awards-title {
+  margin-bottom: 7px;
+  color: var(--cc98-comfort-subtle) !important;
+  font-size: 0.78rem !important;
+  font-weight: 760;
+}
+
+:root.cc98-comfort .cc98-rebuild-awards-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: auto;
+  border: 1px solid var(--cc98-comfort-border);
+  border-radius: 8px;
+  color: inherit !important;
+  font-size: 0.78rem !important;
+  overflow: hidden;
+}
+
+:root.cc98-comfort .cc98-rebuild-awards-table th,
+:root.cc98-comfort .cc98-rebuild-awards-table td {
+  padding: 6px 8px;
+  border-top: 1px solid var(--cc98-comfort-border);
+  border-left: 1px solid var(--cc98-comfort-border);
+  text-align: left;
+  vertical-align: top;
+  color: inherit !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-awards-table tr:first-child th {
+  border-top: 0;
+}
+
+:root.cc98-comfort .cc98-rebuild-awards-table th:first-child,
+:root.cc98-comfort .cc98-rebuild-awards-table td:first-child {
+  border-left: 0;
+}
+
+:root.cc98-comfort .cc98-rebuild-awards-table th {
+  color: var(--cc98-comfort-subtle) !important;
+  font-weight: 760;
+  white-space: nowrap;
+}
+
+:root.cc98-comfort .cc98-rebuild-awards-table td:nth-child(1),
+:root.cc98-comfort .cc98-rebuild-awards-table td:nth-child(2) {
+  white-space: nowrap;
+}
+
+:root.cc98-comfort .cc98-rebuild-award-positive {
+  color: var(--cc98-comfort-success, #579b6b) !important;
+  font-weight: 720;
+}
+
+:root.cc98-comfort .cc98-rebuild-award-negative {
+  color: var(--cc98-comfort-danger, #d26b6b) !important;
+  font-weight: 720;
+}
+
 :root.cc98-comfort .cc98-rebuild-signature {
   margin-top: 14px;
   padding: 10px 12px;
@@ -2192,7 +2555,8 @@
 
 :root.cc98-comfort .cc98-rebuild-page-link,
 :root.cc98-comfort .cc98-rebuild-page-gap,
-:root.cc98-comfort .cc98-rebuild-page-jump button {
+:root.cc98-comfort .cc98-rebuild-page-jump button,
+:root.cc98-comfort .cc98-rebuild-pager-action {
   min-height: 30px;
   display: inline-flex;
   align-items: center;
@@ -2214,7 +2578,8 @@
 
 :root.cc98-comfort .cc98-rebuild-page-link:hover,
 :root.cc98-comfort .cc98-rebuild-page-link.is-current,
-:root.cc98-comfort .cc98-rebuild-page-jump button:hover {
+:root.cc98-comfort .cc98-rebuild-page-jump button:hover,
+:root.cc98-comfort .cc98-rebuild-pager-action:hover {
   border-color: var(--cc98-comfort-accent);
   background: var(--cc98-comfort-accent-2);
   color: var(--cc98-comfort-accent) !important;
@@ -2238,6 +2603,35 @@
   font-size: 0.82rem !important;
 }
 
+:root.cc98-comfort .cc98-rebuild-pager-action {
+  width: auto !important;
+  min-width: 92px !important;
+  margin-left: 0 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-toast {
+  position: fixed;
+  z-index: 2147483647;
+  pointer-events: none;
+  padding: 7px 12px;
+  border: 1px solid color-mix(in srgb, var(--cc98-comfort-accent) 46%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--cc98-comfort-surface) 86%, var(--cc98-comfort-accent-2));
+  color: var(--cc98-comfort-text);
+  box-shadow: 0 12px 30px color-mix(in srgb, var(--cc98-comfort-shadow) 66%, transparent);
+  font-size: 0.82rem;
+  font-weight: 750;
+  line-height: 1;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+:root.cc98-comfort .cc98-rebuild-toast.is-visible {
+  opacity: 0.95;
+  transform: translateY(0);
+}
+
 :root.cc98-comfort .cc98-rebuild-post-footer {
   display: flex;
   align-items: center;
@@ -2254,6 +2648,8 @@
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+  justify-content: flex-end;
+  margin-left: auto;
 }
 
 :root.cc98-comfort .cc98-rebuild-mini-action {
@@ -2330,6 +2726,14 @@
   background: color-mix(in srgb, var(--cc98-comfort-danger) 16%, var(--cc98-comfort-surface)) !important;
   color: var(--cc98-comfort-danger) !important;
   box-shadow: none !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-post-actions .cc98-rebuild-mini-action[data-action-kind="score"] {
+  flex-basis: auto;
+  width: auto !important;
+  min-width: 72px !important;
+  max-width: none !important;
+  padding: 0 10px !important;
 }
 
 :root.cc98-comfort .cc98-rebuild-mini-action:hover,
@@ -2702,6 +3106,36 @@
 
 :root.cc98-comfort .cc98-rebuild-native-editor .ubb-editor > :is(.ubb-emoji, .ubb-extend, .ubb-editor-info) {
   grid-column: 1 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-editor:not(.cc98-rebuild-emoji-panel-open) .ubb-editor > .ubb-emoji {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-editor.cc98-rebuild-emoji-panel-open .ubb-editor > .ubb-emoji:not(:empty) {
+  display: block !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  grid-row: 2 / 4 !important;
+  grid-column: 1 !important;
+  align-self: start !important;
+  justify-self: stretch !important;
+  position: relative !important;
+  z-index: 60 !important;
+  max-height: min(360px, 52vh) !important;
+  overflow: auto !important;
+  padding: 0 0 12px !important;
+  margin: 0 !important;
+  border-bottom: 1px solid var(--cc98-comfort-border) !important;
+  background: var(--cc98-comfort-surface) !important;
+  box-shadow: 0 18px 36px color-mix(in srgb, var(--cc98-comfort-shadow) 72%, transparent) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-editor.cc98-rebuild-emoji-panel-open .ubb-editor > .ubb-emoji:not(:empty) * {
+  position: relative;
+  z-index: 61;
 }
 
 :root.cc98-comfort .cc98-rebuild-native-editor .ubb-editor > :is(.ubb-emoji, .ubb-extend):empty,
@@ -4705,8 +5139,10 @@
 
 :root.cc98-comfort .cc98-rebuild-native-user-router .user-avatar.cc98-rebuild-profile-hero {
   display: inline-grid !important;
-  grid-template-columns: minmax(0, max-content) max-content !important;
-  align-items: end !important;
+  grid-auto-flow: column !important;
+  grid-auto-columns: max-content !important;
+  grid-template-columns: none !important;
+  align-items: stretch !important;
   justify-content: start !important;
   gap: 18px !important;
   width: max-content !important;
@@ -4716,6 +5152,71 @@
 
 :root.cc98-comfort .cc98-rebuild-native-user-router .user-avatar.cc98-rebuild-profile-hero .user-avatar-img {
   display: block !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-badge-panel {
+  box-sizing: border-box !important;
+  align-self: stretch !important;
+  width: min(360px, 34vw) !important;
+  min-width: 220px !important;
+  height: var(--cc98-profile-avatar-height, min(360px, 42vh)) !important;
+  min-height: 148px !important;
+  max-height: var(--cc98-profile-avatar-height, min(360px, 42vh)) !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-content: flex-start !important;
+  align-items: flex-start !important;
+  gap: 8px !important;
+  margin: 0 !important;
+  padding: 12px !important;
+  border: 1px solid var(--cc98-comfort-border) !important;
+  border-radius: 16px !important;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--cc98-comfort-accent) 9%, transparent), transparent 58%),
+    var(--cc98-comfort-surface-2) !important;
+  color: var(--cc98-comfort-text) !important;
+  box-shadow: 0 12px 28px rgba(20, 42, 68, 0.08) !important;
+  overflow: auto !important;
+  scrollbar-gutter: stable;
+}
+
+:root.cc98-comfort[data-cc98-comfort-theme="night"] .cc98-rebuild-native-user-router .cc98-rebuild-profile-badge-panel {
+  box-shadow: none !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-badge-panel .cc98-rebuild-profile-badge-item {
+  min-height: 28px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  margin: 0 !important;
+  padding: 0 9px !important;
+  border: 1px solid color-mix(in srgb, var(--cc98-comfort-border) 86%, transparent) !important;
+  border-radius: 999px !important;
+  background: color-mix(in srgb, var(--cc98-comfort-surface) 88%, transparent) !important;
+  color: var(--cc98-comfort-text);
+  font-size: 0.82rem !important;
+  line-height: 1.2 !important;
+  font-weight: 740 !important;
+  white-space: nowrap !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-badge-panel .cc98-rebuild-profile-badge-item-colored {
+  border-color: color-mix(in srgb, currentColor 28%, var(--cc98-comfort-border)) !important;
+  background: color-mix(in srgb, currentColor 8%, var(--cc98-comfort-surface)) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-badge-panel :is(a, span) {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin: 0 !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-badge-panel a {
+  color: var(--cc98-comfort-link) !important;
+  font-weight: 780 !important;
 }
 
 :root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-message-action {
@@ -4781,9 +5282,18 @@
 
 @media (max-width: 760px) {
   :root.cc98-comfort .cc98-rebuild-native-user-router .user-avatar.cc98-rebuild-profile-hero {
+    grid-auto-flow: row !important;
+    grid-auto-columns: auto !important;
     grid-template-columns: 1fr !important;
     gap: 12px !important;
     width: 100% !important;
+  }
+
+  :root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-badge-panel {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    max-height: none !important;
   }
 
   :root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-message-action {
@@ -5123,6 +5633,13 @@
   color: var(--cc98-comfort-text) !important;
 }
 
+:root.cc98-comfort :is(.ant-modal-confirm-title, .ant-modal-confirm-content, .ant-modal-confirm-body .ant-modal-confirm-title),
+:root.cc98-comfort :is(.ant-modal-confirm-title, .ant-modal-confirm-content, .ant-modal-confirm-body .ant-modal-confirm-title) * {
+  color: var(--cc98-comfort-text) !important;
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
 :root.cc98-comfort .ant-modal-content :is(.ant-input, input[type="text"], .ant-select-selection) {
   border-color: var(--cc98-comfort-border) !important;
   background: var(--cc98-comfort-surface-2) !important;
@@ -5143,6 +5660,11 @@
 }
 
 :root.cc98-comfort[data-cc98-comfort-theme="night"] .ant-modal-content :is(.ant-modal-confirm-title, .ant-form-item-children, .ant-form-item-children span, .ant-modal-confirm-content, .ant-modal-confirm-content span, .ant-modal-confirm-content div, .ant-select-selection-selected-value) {
+  color: #e8edf0 !important;
+}
+
+:root.cc98-comfort[data-cc98-comfort-theme="night"] :is(.ant-modal-confirm-title, .ant-modal-confirm-content, .ant-modal-confirm-body .ant-modal-confirm-title),
+:root.cc98-comfort[data-cc98-comfort-theme="night"] :is(.ant-modal-confirm-title, .ant-modal-confirm-content, .ant-modal-confirm-body .ant-modal-confirm-title) * {
   color: #e8edf0 !important;
 }
 
@@ -6164,6 +6686,151 @@
   box-shadow: var(--cc98-comfort-shadow) !important;
 }
 
+:root.cc98-comfort #cc98-comfort-app .cc98-rebuild-native-message .message-message-wHeader {
+  min-height: 56px !important;
+  height: auto !important;
+  display: grid !important;
+  grid-template-columns: minmax(48px, 1fr) auto minmax(48px, 1fr) !important;
+  align-items: center !important;
+  justify-items: center !important;
+  gap: 8px !important;
+  padding: 8px 14px !important;
+}
+
+:root.cc98-comfort #cc98-comfort-app .cc98-rebuild-native-message .message-message-wHeader .message-message-wReport {
+  justify-self: start !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+}
+
+:root.cc98-comfort #cc98-comfort-app .cc98-rebuild-native-message .message-message-wHeader .message-message-wReport:last-child {
+  justify-self: end !important;
+}
+
+:root.cc98-comfort #cc98-comfort-app .cc98-rebuild-native-message .message-message-wTitle {
+  grid-column: 2 !important;
+  min-height: 38px !important;
+  height: auto !important;
+  max-width: min(100%, 520px) !important;
+  padding: 0 !important;
+  align-self: center !important;
+  justify-self: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  font-size: 1.06rem !important;
+  line-height: 1.25 !important;
+}
+
+:root.cc98-comfort #cc98-comfort-app .cc98-rebuild-native-message .message-message-wcContent {
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+:root.cc98-comfort #cc98-comfort-app .cc98-rebuild-native-message .message-message-wcText {
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+
+:root.cc98-comfort #cc98-comfort-app .cc98-rebuild-native-message :is(
+  .message-message-wcContent,
+  .message-message-wcText,
+  .message-message-wcSender,
+  .message-message-wcReceiver
+)::before,
+:root.cc98-comfort #cc98-comfort-app .cc98-rebuild-native-message :is(
+  .message-message-wcContent,
+  .message-message-wcText,
+  .message-message-wcSender,
+  .message-message-wcReceiver
+)::after {
+  content: none !important;
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+:root.cc98-comfort #cc98-comfort-app .cc98-rebuild-native-message :is(
+  .message,
+  .message-content,
+  .message-right,
+  .message-response,
+  .message-system,
+  .message-setting,
+  .message-message,
+  .message-message-people,
+  .message-message-window,
+  .message-message-pList,
+  .message-message-wContent,
+  .message-message-wcContent,
+  .message-response-box-middle,
+  .message-response-box-middle1,
+  .message-response-box-middle-title,
+  .message-response-box-middle-content,
+  .message-box-content,
+  .message-system-box-content,
+  .message-message-pInfo,
+  .message-message-pMessage,
+  .cc98-rebuild-message-surface-clean
+) {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+:root.cc98-comfort #cc98-comfort-app .cc98-rebuild-native-message :is(
+  .message-content,
+  .message-right,
+  .message-response,
+  .message-system,
+  .message-setting,
+  .message-message,
+  .message-message-people,
+  .message-message-window,
+  .message-message-pList
+) > :is(div, article, p, span, a, section),
+:root.cc98-comfort #cc98-comfort-app .cc98-rebuild-native-message :is(
+  [style*="background: white"],
+  [style*="background:white"],
+  [style*="background-color: white"],
+  [style*="background-color:white"],
+  [style*="background: #fff"],
+  [style*="background:#fff"],
+  [style*="background-color: #fff"],
+  [style*="background-color:#fff"],
+  [style*="background: rgb(255"],
+  [style*="background-color: rgb(255"]
+) {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+:root.cc98-comfort #cc98-comfort-app .cc98-rebuild-native-message :is(
+  .message-nav,
+  .message-response-box,
+  .message-system-box,
+  .message-box,
+  .message-settingbox,
+  .message-message-person,
+  .message-message-wHeader,
+  .message-message-wPost,
+  .message-message-wcText
+) {
+  border-color: var(--cc98-comfort-border) !important;
+  background: var(--cc98-comfort-surface-2) !important;
+  background-color: var(--cc98-comfort-surface-2) !important;
+  background-image: none !important;
+  color: var(--cc98-comfort-text) !important;
+}
+
 :root.cc98-comfort .cc98-rebuild-signin-hero,
 :root.cc98-comfort .cc98-rebuild-native-signin {
   width: min(1060px, 100%);
@@ -6667,6 +7334,12 @@
 
   :root.cc98-comfort .cc98-rebuild-shell[data-page-kind="home"][data-home-hot-only="true"] {
     width: 80vw;
+  }
+
+  :root.cc98-comfort .cc98-rebuild-home-hot-section .cc98-rebuild-list {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-auto-flow: row;
   }
 
   :root.cc98-comfort .cc98-rebuild-topbar,
