@@ -1,5 +1,8 @@
 const STORAGE_KEY = "cc98ComfortSettings";
-const EXTENSION_VERSION = "0.1.2";
+const PINNED_BOARDS_STORAGE_KEY = "cc98RebornPinnedBoards:v1";
+const READ_LATER_STORAGE_KEY = "cc98RebornReadLater:v1";
+const READ_LATER_ROUTE_HASH = "#cc98-reborn-read-later";
+const EXTENSION_VERSION = "0.1.7";
 const LOGIN_REDIRECT_MARK_KEY = "cc98RebornLoginRedirectStartedAt";
 const LOGOUT_REDIRECT_MARK_KEY = "cc98RebornLogoutRedirectStartedAt";
 const FIRST_PAGE_PREVISIT_PENDING_KEY = "cc98RebornFirstPagePrevisitPending";
@@ -7,6 +10,14 @@ const FIRST_PAGE_PREVISIT_DONE_PREFIX = "cc98RebornFirstPagePrevisitDone:";
 const FIRST_PAGE_PREVISIT_TTL = 5 * 60 * 1000;
 const VOTE_OPTIMISTIC_COUNT_TTL = 2100;
 const VOTE_OPTIMISTIC_STATE_TTL = 2600;
+const HOME_HOT_RANK_CACHE_KEY_PREFIX = "cc98RebornHomeHotRanking:v1:";
+const SEARCH_EMPTY_INITIAL_GRACE_MS = 2600;
+const SEARCH_EMPTY_LOADING_GRACE_MS = 7000;
+const EDITOR_SUBMIT_INTENT_KEY = "cc98RebornEditorSubmitIntentAt";
+const EDITOR_TOPIC_RELOAD_KEY_PREFIX = "cc98RebornEditorTopicReload:";
+const EDITOR_TOPIC_RELOAD_TTL = 15000;
+const EDITOR_TOPIC_SUBMIT_RELOAD_KEY_PREFIX = "cc98RebornEditorTopicSubmitReload:";
+const EDITOR_TOPIC_SUBMIT_RELOAD_TTL = 30000;
 const EXTERNAL_AI_SEARCH_REQUIRES_EXPLICIT_CONSENT = true;
 // Disabled until the official CC98 OAuth authorization flow is wired.
 const WATERMARK_FEATURE_ENABLED = false;
@@ -87,7 +98,9 @@ let imageViewerScale = 1;
 let imageViewerOffsetX = 0;
 let imageViewerOffsetY = 0;
 let imageViewerPushedState = false;
-let nativePostSubmitRefreshTimer = null;
+let imageViewerItems = [];
+let imageViewerIndex = -1;
+let nativePostSubmitRefreshTimers = [];
 let editorColorPopoverSequence = 0;
 let editorColorGlobalInterceptorBound = false;
 let editorFontSizePopoverSequence = 0;
@@ -96,6 +109,12 @@ let legacyColorPickerObserver = null;
 let legacyColorPickerInterval = null;
 let loginRedirectWatcherTimer = null;
 let topbarAuthRedirectBound = false;
+let searchPageEmptyRecheckTimer = null;
+let routeFollowupTimers = [];
+let searchPageRouteKey = "";
+let searchPageRouteFirstSeenAt = 0;
+let readLaterSearchQuery = "";
+let readLaterPage = 1;
 const originalPosterIdentityPrefetches = new Map();
 const neutralizedLinks = new WeakMap();
 const reparentedNativeNodes = new WeakMap();
@@ -104,6 +123,7 @@ const nativeUserCenterStabilizers = new WeakSet();
 const nativeTopbarUserStabilizers = new WeakSet();
 const proxyControlSyncTimers = new WeakMap();
 const searchSuggestionCache = new Map();
+const homeHotRankingStates = new Map();
 let searchSuggestionLastFetchAt = 0;
 let searchSuggestionSequence = 0;
 let aiSearchSuggestionLastFetchAt = 0;
@@ -244,6 +264,7 @@ function applySettings(settings) {
   scheduleNativeAntUiStabilize();
   patchHistoryNavigation();
   handleTopicFirstPagePrevisitNavigation();
+  markCurrentTopicReadLaterRead();
 }
 
 function loadSettings() {
@@ -559,6 +580,40 @@ function getViewerImageSrc(image) {
   return makeAbsoluteCc98Url(getMediaUrl(image) || image.currentSrc || image.src || "");
 }
 
+function isImageViewerCandidate(image) {
+  if (!(image instanceof HTMLImageElement) || image.classList.contains("cc98-rebuild-inline-emoji")) {
+    return false;
+  }
+  if (!image.classList.contains("cc98-rebuild-content-image") && !image.classList.contains("cc98-rebuild-board-image")) {
+    return false;
+  }
+  return Boolean(getViewerImageSrc(image));
+}
+
+function getImageViewerItems(activeImage) {
+  const root = document.querySelector("#cc98-comfort-app") || document;
+  const images = [...root.querySelectorAll("img.cc98-rebuild-content-image, img.cc98-rebuild-board-image")]
+    .filter(isImageViewerCandidate);
+  const items = images.map((node) => ({
+    node,
+    src: getViewerImageSrc(node),
+    alt: node.alt || ""
+  })).filter((item) => item.src);
+  let index = items.findIndex((item) => item.node === activeImage);
+  if (index < 0) {
+    const activeSrc = getViewerImageSrc(activeImage);
+    index = items.findIndex((item) => item.src === activeSrc);
+  }
+  if (index < 0 && activeImage instanceof HTMLImageElement) {
+    const src = getViewerImageSrc(activeImage);
+    if (src) {
+      items.unshift({ node: activeImage, src, alt: activeImage.alt || "" });
+      index = 0;
+    }
+  }
+  return { items, index: Math.max(0, index) };
+}
+
 function updateImageViewerTransform() {
   const image = document.querySelector("#cc98-comfort-image-viewer img");
   if (image) {
@@ -566,9 +621,73 @@ function updateImageViewerTransform() {
   }
 }
 
+function resetImageViewerTransform() {
+  imageViewerScale = 1;
+  imageViewerOffsetX = 0;
+  imageViewerOffsetY = 0;
+  updateImageViewerTransform();
+}
+
+function zoomImageViewerAt(viewerImage, clientX, clientY, nextScale) {
+  if (!(viewerImage instanceof HTMLImageElement)) {
+    return;
+  }
+  const stage = viewerImage.closest(".cc98-image-viewer-stage");
+  const stageRect = stage?.getBoundingClientRect?.();
+  const currentScale = imageViewerScale || 1;
+  const clampedScale = Math.min(6, Math.max(0.35, nextScale));
+  if (!stageRect || Math.abs(clampedScale - currentScale) < 0.001) {
+    imageViewerScale = clampedScale;
+    updateImageViewerTransform();
+    return;
+  }
+  const centerX = stageRect.left + stageRect.width / 2;
+  const centerY = stageRect.top + stageRect.height / 2;
+  const ratio = clampedScale / currentScale;
+  imageViewerOffsetX += (1 - ratio) * (clientX - centerX - imageViewerOffsetX);
+  imageViewerOffsetY += (1 - ratio) * (clientY - centerY - imageViewerOffsetY);
+  imageViewerScale = clampedScale;
+  updateImageViewerTransform();
+}
+
+function updateImageViewerSource(resetTransform = true) {
+  const viewer = document.querySelector("#cc98-comfort-image-viewer");
+  const viewerImage = viewer?.querySelector(".cc98-image-viewer-stage img");
+  const item = imageViewerItems[imageViewerIndex];
+  if (!(viewer instanceof HTMLElement) || !(viewerImage instanceof HTMLImageElement) || !item) {
+    return;
+  }
+  viewerImage.src = item.src;
+  viewerImage.alt = item.alt || "";
+  const counter = viewer.querySelector(".cc98-image-viewer-counter");
+  if (counter) {
+    counter.textContent = `${imageViewerIndex + 1} / ${imageViewerItems.length}`;
+  }
+  viewer.querySelectorAll(".cc98-image-viewer-nav").forEach((button) => {
+    button.disabled = imageViewerItems.length <= 1;
+  });
+  const saveButton = viewer.querySelector(".cc98-image-viewer-save");
+  if (saveButton) {
+    saveButton.dataset.href = item.src;
+  }
+  if (resetTransform) {
+    resetImageViewerTransform();
+  }
+}
+
+function switchImageViewer(delta) {
+  if (imageViewerItems.length <= 1) {
+    return;
+  }
+  imageViewerIndex = (imageViewerIndex + delta + imageViewerItems.length) % imageViewerItems.length;
+  updateImageViewerSource(true);
+}
+
 function removeImageViewer() {
   document.querySelector("#cc98-comfort-image-viewer")?.remove();
   imageViewerPushedState = false;
+  imageViewerItems = [];
+  imageViewerIndex = -1;
   imageViewerScale = 1;
   imageViewerOffsetX = 0;
   imageViewerOffsetY = 0;
@@ -587,11 +706,11 @@ function openImageViewer(image) {
   if (!src) {
     return;
   }
+  const viewerData = getImageViewerItems(image);
 
   removeImageViewer();
-  imageViewerScale = 1;
-  imageViewerOffsetX = 0;
-  imageViewerOffsetY = 0;
+  imageViewerItems = viewerData.items.length ? viewerData.items : [{ node: image, src, alt: image.alt || "" }];
+  imageViewerIndex = Math.min(Math.max(0, viewerData.index), imageViewerItems.length - 1);
   const viewer = createElement("div", "cc98-image-viewer");
   viewer.id = "cc98-comfort-image-viewer";
   viewer.innerHTML = `
@@ -603,7 +722,39 @@ function openImageViewer(image) {
   const viewerImage = viewer.querySelector("img");
   viewerImage.src = src;
   viewerImage.alt = image.alt || "";
+  const closeButton = viewer.querySelector(".cc98-image-viewer-close");
+  if (closeButton) {
+    closeButton.textContent = "x";
+  }
+  const stage = viewer.querySelector(".cc98-image-viewer-stage");
+  const counter = createElement("div", "cc98-image-viewer-counter");
+  const saveButton = createButton("cc98-image-viewer-save", "\u4fdd\u5b58", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const href = saveButton.dataset.href || imageViewerItems[imageViewerIndex]?.src || "";
+    requestBrowserDownload(href, href);
+  });
+  const toolbar = createElement("div", "cc98-image-viewer-toolbar");
+  toolbar.append(counter, saveButton);
+  const prevButton = createButton("cc98-image-viewer-nav cc98-image-viewer-prev", "<", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    switchImageViewer(-1);
+  });
+  prevButton.setAttribute("aria-label", "Previous image");
+  const nextButton = createButton("cc98-image-viewer-nav cc98-image-viewer-next", ">", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    switchImageViewer(1);
+  });
+  nextButton.setAttribute("aria-label", "Next image");
+  if (stage) {
+    viewer.insertBefore(toolbar, stage);
+    viewer.insertBefore(prevButton, stage);
+    viewer.append(nextButton);
+  }
   document.body.append(viewer);
+  updateImageViewerSource(true);
 
   history.pushState({ cc98ComfortImageViewer: true }, "", location.href);
   imageViewerPushedState = true;
@@ -621,8 +772,7 @@ function openImageViewer(image) {
   viewer.addEventListener("wheel", (event) => {
     event.preventDefault();
     const factor = event.deltaY < 0 ? 1.12 : 0.9;
-    imageViewerScale = Math.min(6, Math.max(0.35, imageViewerScale * factor));
-    updateImageViewerTransform();
+    zoomImageViewerAt(viewerImage, event.clientX, event.clientY, imageViewerScale * factor);
   }, { passive: false });
 
   let isDragging = false;
@@ -672,10 +822,20 @@ function openImageViewer(image) {
       document.removeEventListener("keydown", onKeydown, true);
     }
     if (event.key === "0") {
-      imageViewerScale = 1;
-      imageViewerOffsetX = 0;
-      imageViewerOffsetY = 0;
-      updateImageViewerTransform();
+      resetImageViewerTransform();
+    }
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      switchImageViewer(-1);
+    }
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      switchImageViewer(1);
+    }
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
+      event.preventDefault();
+      const href = imageViewerItems[imageViewerIndex]?.src || "";
+      requestBrowserDownload(href, href);
     }
   };
   document.addEventListener("keydown", onKeydown, true);
@@ -684,10 +844,7 @@ function openImageViewer(image) {
 function bindImageViewer(app) {
   app.addEventListener("click", (event) => {
     const image = event.target?.closest?.("img");
-    if (!(image instanceof HTMLImageElement) || image.classList.contains("cc98-rebuild-inline-emoji")) {
-      return;
-    }
-    if (!image.classList.contains("cc98-rebuild-content-image") && !image.classList.contains("cc98-rebuild-board-image")) {
+    if (!isImageViewerCandidate(image)) {
       return;
     }
     event.preventDefault();
@@ -774,6 +931,9 @@ function getActionKindFromText(text) {
   }
   if (value.includes("\u8e29")) {
     return "dislike";
+  }
+  if (value.includes("\u8bc4\u5206")) {
+    return "score";
   }
   return "";
 }
@@ -1105,7 +1265,7 @@ function enforceVoteGroupMutualExclusion(action) {
 }
 
 function syncProxyControlDisplay(proxy, action) {
-  const nativeText = getActionText(action.control) || action.text;
+  const nativeText = action.displayText || getActionText(action.control) || action.text;
   const text = getVoteActionSyncedText(action, nativeText);
   proxy.textContent = text;
   const normalized = text.replace(/\s+\d+$/, "");
@@ -1168,6 +1328,69 @@ function scheduleProxyControlDisplaySync(button, action, delays, clearPendingAft
   proxyControlSyncTimers.set(button, timers);
 }
 
+function isTopicShareAction(action) {
+  return action?.scope === "topic" && cleanupPostText(action.text).includes("\u5206\u4eab\u5e16\u5b50\u94fe\u63a5");
+}
+
+function fallbackCopyTextToClipboard(text) {
+  if (!text || !document.body) {
+    return false;
+  }
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.cssText = "position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none;";
+  document.body.append(textarea);
+  textarea.focus({ preventScroll: true });
+  textarea.select();
+  let copied = false;
+  try {
+    copied = document.execCommand("copy");
+  } catch {
+    copied = false;
+  }
+  textarea.remove();
+  return copied;
+}
+
+async function copyTextToClipboard(text) {
+  if (!text) {
+    return false;
+  }
+  if (navigator.clipboard?.writeText && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      return fallbackCopyTextToClipboard(text);
+    }
+  }
+  return fallbackCopyTextToClipboard(text);
+}
+
+function showRebuiltTransientToast(anchor, text) {
+  if (!document.body) {
+    return;
+  }
+  const toast = createElement("div", "cc98-rebuild-toast", text);
+  document.body.append(toast);
+  const anchorRect = anchor instanceof HTMLElement ? anchor.getBoundingClientRect() : null;
+  const toastRect = toast.getBoundingClientRect();
+  const margin = 12;
+  let top = anchorRect ? anchorRect.top - toastRect.height - 10 : margin;
+  if (top < margin && anchorRect) {
+    top = anchorRect.bottom + 10;
+  }
+  const left = anchorRect
+    ? anchorRect.left + anchorRect.width / 2 - toastRect.width / 2
+    : window.innerWidth / 2 - toastRect.width / 2;
+  toast.style.top = `${Math.max(margin, Math.min(window.innerHeight - toastRect.height - margin, top))}px`;
+  toast.style.left = `${Math.max(margin, Math.min(window.innerWidth - toastRect.width - margin, left))}px`;
+  requestAnimationFrame(() => toast.classList.add("is-visible"));
+  window.setTimeout(() => toast.classList.remove("is-visible"), 1100);
+  window.setTimeout(() => toast.remove(), 1500);
+}
+
 function renderProxyControl(action) {
   if (action.href && action.href !== "#") {
     return createLink("cc98-rebuild-mini-action", action.text, action.href);
@@ -1186,6 +1409,7 @@ function renderProxyControl(action) {
     }
     lastActivatedAt = now;
     const isPostAction = action.scope === "post" || Boolean(action.control?.closest?.(".reply"));
+    const isNativeOverlayAction = isPostAction || action.scope === "topic";
     const oppositeAction = isVoteAction ? getOppositeVoteAction(action) : null;
     if (isVoteAction) {
       const wasActive = isVoteActionVisuallyActive(action);
@@ -1214,8 +1438,13 @@ function renderProxyControl(action) {
     } else {
       applyOptimisticPostActionState(button, action);
       triggerOriginalControl(action.control);
+      if (isTopicShareAction(action)) {
+        copyTextToClipboard(location.href).finally(() => {
+          showRebuiltTransientToast(button, "\u590d\u5236\u6210\u529f");
+        });
+      }
     }
-    if (isPostAction) {
+    if (isNativeOverlayAction) {
       scheduleNativeAntUiStabilize();
     } else {
       scheduleDelayedRebuilds();
@@ -1263,6 +1492,18 @@ function getLazyPrewarmPageKey() {
   return `${location.pathname}${location.search}`;
 }
 
+function isReadLaterRoute(url = location.href) {
+  try {
+    return new URL(url, location.href).hash === READ_LATER_ROUTE_HASH;
+  } catch {
+    return location.hash === READ_LATER_ROUTE_HASH;
+  }
+}
+
+function getReadLaterPageHref() {
+  return `${location.origin}/${READ_LATER_ROUTE_HASH}`;
+}
+
 function getRoutePageKey(url = location.href) {
   try {
     const parsed = new URL(url, location.href);
@@ -1308,6 +1549,29 @@ function navigateToRebuiltHref(href) {
   location.assign(target);
 }
 
+function scheduleRouteFollowup(targetHref, startedRouteKey = getRoutePageKey()) {
+  routeFollowupTimers.forEach((timer) => window.clearTimeout(timer));
+  routeFollowupTimers = [];
+  const targetRouteKey = getRoutePageKey(targetHref);
+  if (!targetRouteKey) {
+    return;
+  }
+  routeFollowupTimers = [80, 180, 360, 700, 1200, 1900, 3000, 4600].map((delay, index, delays) => (
+    window.setTimeout(() => {
+      const currentRouteKey = getRoutePageKey();
+      if (currentRouteKey === targetRouteKey || currentRouteKey !== startedRouteKey) {
+        searchPageRouteKey = "";
+        scheduleFiltering();
+        scheduleRebuild();
+        scheduleSync();
+      }
+      if (index === delays.length - 1) {
+        routeFollowupTimers = [];
+      }
+    }, delay)
+  ));
+}
+
 function getTopicRouteInfo(url = location.href) {
   try {
     const parsed = new URL(url, location.href);
@@ -1329,6 +1593,256 @@ function getTopicRouteInfo(url = location.href) {
   } catch {
     return null;
   }
+}
+
+function getReadLaterKeyFromHref(href) {
+  try {
+    const parsed = new URL(href, location.href);
+    const match = parsed.pathname.match(/\/topic\/(\d+)/i);
+    if (match) {
+      return `topic:${match[1]}`;
+    }
+    parsed.hash = "";
+    return `url:${parsed.href.replace(/\/$/, "")}`;
+  } catch {
+    const value = String(href ?? "").replace(/#.*/, "").replace(/\/$/, "").trim();
+    return value ? `url:${value}` : "";
+  }
+}
+
+function readReadLaterItems() {
+  try {
+    const value = JSON.parse(localStorage.getItem(READ_LATER_STORAGE_KEY) || "[]");
+    const rawItems = Array.isArray(value) ? value : (Array.isArray(value?.items) ? value.items : []);
+    return rawItems
+      .map((item) => ({
+        key: String(item?.key || getReadLaterKeyFromHref(item?.href) || ""),
+        href: normalizeHref(item?.href || "#"),
+        title: String(item?.title || item?.href || "未命名帖子").trim(),
+        board: String(item?.board || "").trim(),
+        boardHref: item?.boardHref ? normalizeHref(item.boardHref) : "",
+        user: String(item?.user || "").trim(),
+        uid: String(item?.uid || "").trim(),
+        meta: String(item?.meta || "").trim(),
+        addedAt: Number(item?.addedAt) || Date.now(),
+        readAt: Number(item?.readAt) || 0
+      }))
+      .filter((item) => item.key && item.href && item.title);
+  } catch {
+    return [];
+  }
+}
+
+function writeReadLaterItems(items) {
+  const normalized = [];
+  const seen = new Set();
+  (items || []).forEach((item) => {
+    const key = String(item?.key || getReadLaterKeyFromHref(item?.href) || "");
+    if (!key || seen.has(key)) {
+      return;
+    }
+    seen.add(key);
+    normalized.push({
+      key,
+      href: normalizeHref(item.href || "#"),
+      title: String(item.title || item.href || "未命名帖子").trim(),
+      board: String(item.board || "").trim(),
+      boardHref: item.boardHref ? normalizeHref(item.boardHref) : "",
+      user: String(item.user || "").trim(),
+      uid: String(item.uid || "").trim(),
+      meta: String(item.meta || "").trim(),
+      addedAt: Number(item.addedAt) || Date.now(),
+      readAt: Number(item.readAt) || 0
+    });
+  });
+  try {
+    localStorage.setItem(READ_LATER_STORAGE_KEY, JSON.stringify(normalized));
+  } catch {
+    // Read-later is local-only; ignore storage failures.
+  }
+}
+
+function getReadLaterItemFromTopicItem(item) {
+  const href = normalizeHref(item?.href || "");
+  const key = getReadLaterKeyFromHref(href);
+  if (!href || !key || !key.startsWith("topic:")) {
+    return null;
+  }
+  return {
+    key,
+    href,
+    title: String(item.title || href).trim(),
+    board: String(item.board || "").trim(),
+    boardHref: item.boardHref ? normalizeHref(item.boardHref) : "",
+    user: String(item.user || "").trim(),
+    uid: String(item.uid || "").trim(),
+    meta: String(item.meta || item.hoverMeta || "").trim(),
+    addedAt: Date.now(),
+    readAt: 0
+  };
+}
+
+function isReadLaterSaved(itemOrHref) {
+  const key = typeof itemOrHref === "string"
+    ? getReadLaterKeyFromHref(itemOrHref)
+    : getReadLaterItemFromTopicItem(itemOrHref)?.key;
+  if (!key) {
+    return false;
+  }
+  return readReadLaterItems().some((item) => item.key === key);
+}
+
+function upsertReadLaterItem(item) {
+  const next = item?.key ? item : getReadLaterItemFromTopicItem(item);
+  if (!next?.key) {
+    return false;
+  }
+  const items = readReadLaterItems();
+  const index = items.findIndex((saved) => saved.key === next.key);
+  if (index >= 0) {
+    items[index] = {
+      ...items[index],
+      ...next,
+      addedAt: items[index].addedAt || next.addedAt || Date.now(),
+      readAt: items[index].readAt || 0
+    };
+  } else {
+    items.unshift(next);
+  }
+  writeReadLaterItems(items);
+  return true;
+}
+
+function removeReadLaterItem(key) {
+  if (!key) {
+    return;
+  }
+  writeReadLaterItems(readReadLaterItems().filter((item) => item.key !== key));
+}
+
+function markReadLaterItemRead(key, read = true) {
+  if (!key) {
+    return false;
+  }
+  let changed = false;
+  const items = readReadLaterItems().map((item) => {
+    if (item.key !== key) {
+      return item;
+    }
+    changed = true;
+    return { ...item, readAt: read ? Date.now() : 0 };
+  });
+  if (changed) {
+    writeReadLaterItems(items);
+  }
+  return changed;
+}
+
+function markCurrentTopicReadLaterRead() {
+  const routeInfo = getTopicRouteInfo();
+  if (!routeInfo) {
+    return;
+  }
+  markReadLaterItemRead(`topic:${routeInfo.topicId}`, true);
+}
+
+function getEditorStaleTopicReloadKey(routeInfo = getTopicRouteInfo()) {
+  return routeInfo
+    ? `${EDITOR_TOPIC_RELOAD_KEY_PREFIX}${routeInfo.topicId}:${routeInfo.current}:${encodeURIComponent(routeInfo.routeKey)}`
+    : "";
+}
+
+function markEditorSubmitIntent() {
+  try {
+    sessionStorage.setItem(EDITOR_SUBMIT_INTENT_KEY, String(Date.now()));
+  } catch {
+    // Ignore session storage failures.
+  }
+}
+
+function hasRecentEditorSubmitIntent(ttl = 45000) {
+  try {
+    const markedAt = Number.parseInt(sessionStorage.getItem(EDITOR_SUBMIT_INTENT_KEY) || "", 10);
+    return Number.isFinite(markedAt) && Date.now() - markedAt <= ttl;
+  } catch {
+    return false;
+  }
+}
+
+function pageHasNativeTopicContent() {
+  return Boolean(document.querySelector([
+    ".reply:not(.cc98-rebuild-card)",
+    "#sendTopicInfo",
+    ".topicInfo",
+    ".reply-content",
+    ".substance",
+    ".cc98-rebuild-post-feed"
+  ].join(",")));
+}
+
+function pageHasStaleEditorOnTopicRoute() {
+  const routeInfo = getTopicRouteInfo();
+  if (!routeInfo) {
+    return false;
+  }
+  if (pageHasNativeTopicContent()) {
+    return false;
+  }
+  const hasEditor = Boolean(document.querySelector(".createTopic, .cc98-rebuild-native-editor, #cc98-comfort-app[data-page-kind='editor']"));
+  const hasCrashTemplate = Boolean(document.querySelector("#error-text, #stack-text, #source-text"))
+    || /CC98\s*\u8bba\u575b\s*-\s*\u9519\u8bef/.test(document.title);
+  return hasEditor || (hasCrashTemplate && hasRecentEditorSubmitIntent());
+}
+
+function repairStaleEditorTopicRoute() {
+  if (!pageHasStaleEditorOnTopicRoute()) {
+    return false;
+  }
+  const key = getEditorStaleTopicReloadKey();
+  if (!key) {
+    return false;
+  }
+  try {
+    const lastReloadAt = Number.parseInt(sessionStorage.getItem(key) || "", 10);
+    if (Number.isFinite(lastReloadAt) && Date.now() - lastReloadAt <= EDITOR_TOPIC_RELOAD_TTL) {
+      return false;
+    }
+    sessionStorage.setItem(key, String(Date.now()));
+  } catch {
+    // Continue with the reload; the guard is best-effort only.
+  }
+  showLoadingOverlay("\u63d0\u4ea4\u5df2\u6210\u529f\uff0c\u6b63\u5728\u91cd\u65b0\u52a0\u8f7d\u5e16\u5b50\u9875\u9762...");
+  location.replace(location.href);
+  return true;
+}
+
+function getSubmittedTopicRouteReloadKey(routeInfo = getTopicRouteInfo()) {
+  return routeInfo
+    ? `${EDITOR_TOPIC_SUBMIT_RELOAD_KEY_PREFIX}${routeInfo.topicId}:${routeInfo.current}:${encodeURIComponent(routeInfo.routeKey)}`
+    : "";
+}
+
+function refreshSubmittedTopicRoute() {
+  const routeInfo = getTopicRouteInfo();
+  if (!routeInfo || !hasRecentEditorSubmitIntent(60000)) {
+    return false;
+  }
+  const key = getSubmittedTopicRouteReloadKey(routeInfo);
+  if (!key) {
+    return false;
+  }
+  try {
+    const lastReloadAt = Number.parseInt(sessionStorage.getItem(key) || "", 10);
+    if (Number.isFinite(lastReloadAt) && Date.now() - lastReloadAt <= EDITOR_TOPIC_SUBMIT_RELOAD_TTL) {
+      return false;
+    }
+    sessionStorage.setItem(key, String(Date.now()));
+  } catch {
+    // Continue with the reload; the guard is best-effort only.
+  }
+  showLoadingOverlay("\u63d0\u4ea4\u5df2\u6210\u529f\uff0c\u6b63\u5728\u5237\u65b0\u5e16\u5b50\u9875\u9762...");
+  location.replace(routeInfo.href);
+  return true;
 }
 
 function readSessionJson(key) {
@@ -1665,7 +2179,7 @@ function collectSnapshotMedia(root) {
   const media = [];
   const seen = new Set();
   root?.querySelectorAll("img").forEach((image) => {
-    const src = makeAbsoluteCc98Url(getMediaUrl(image) || image.currentSrc || image.src || "");
+    const src = getNonDecorativeImageSrc(image);
     if (!src || isEmojiImageUrl(src) || isDownloadFileUrl(src)) {
       return;
     }
@@ -2352,16 +2866,22 @@ function startPostLazyFallbackPrewarm() {
 }
 
 function getPageKind() {
+  if (isReadLaterRoute()) {
+    return "readLater";
+  }
   if (document.querySelector(".errorState")) {
     return "error";
   }
   if (/\/topic\/\d+/i.test(location.pathname)) {
     return "post";
   }
+  if (isBoardSearchPage()) {
+    return "boardSearch";
+  }
   if (location.pathname.includes("search")) {
     return "search";
   }
-  if (/\/editor\/postTopic\/\d+/i.test(location.pathname) || document.querySelector(".createTopic")) {
+  if (/\/editor\/(?:postTopic|edit)\/\d+/i.test(location.pathname) || document.querySelector(".createTopic")) {
     return "editor";
   }
   if (/\/logOn/i.test(location.pathname) || document.querySelector(".login")) {
@@ -2391,6 +2911,10 @@ function getPageKind() {
   return "generic";
 }
 
+function isBoardSearchPage() {
+  return /\/searchBoard(?:\/|$)/i.test(location.pathname);
+}
+
 function getPageTitle() {
   const kind = getPageKind();
   const topicTitle = (() => {
@@ -2406,13 +2930,15 @@ function getPageTitle() {
     home: "首页",
     boardList: "版面列表",
     board: getFirstText(document, ".board-head-name") || document.title.replace(" - CC98论坛", "") || "版面",
-    editor: "发表主题",
+    editor: /\/editor\/edit\/\d+/i.test(location.pathname) ? "编辑帖子" : "发表主题",
     login: "登录",
     signin: "签到",
     error: getFirstText(document, ".errorText") || document.title.replace(" - CC98论坛", "") || "出错了",
     message: "消息",
+    readLater: "\u7a0d\u540e\u518d\u770b",
     topics: topicTitle,
     search: "搜索结果",
+    boardSearch: "版面搜索结果",
     post: document.title.replace(" - CC98论坛", "") || "帖子",
     userCenter: "个人中心",
     generic: document.title.replace(" - CC98论坛", "") || "CC98"
@@ -2628,6 +3154,33 @@ function getTopicItems(root = document) {
   return items;
 }
 
+function getBoardSearchItems(root = document) {
+  const items = [];
+  const seen = new Set();
+  root.querySelectorAll(".focus-board-area a[href*='/board/']").forEach((link) => {
+    if (!(link instanceof HTMLAnchorElement)) {
+      return;
+    }
+    const href = makeAbsoluteCc98Url(link.getAttribute("href") || link.href || "");
+    const title = cleanupPostText(link.querySelector(".focus-board")?.textContent || link.textContent);
+    if (!href || !title || seen.has(href)) {
+      return;
+    }
+    seen.add(href);
+    const boardId = href.match(/\/board\/(\d+)/i)?.[1] || "";
+    items.push({
+      type: "board",
+      title,
+      href,
+      board: "版面",
+      boardHref: `${location.origin}/boardList`,
+      meta: boardId ? `版面 ID: ${boardId}` : "版面搜索结果",
+      hoverMeta: "点击进入版面"
+    });
+  });
+  return items;
+}
+
 function getPostTitle() {
   const selectors = [
     ".topic-title",
@@ -2718,6 +3271,55 @@ function isDownloadFileUrl(url) {
   const value = String(url ?? "");
   return /\.(?:pdf|docx?|xlsx?|pptx?|zip|rar|7z|txt|csv|tsv|md)(?:[?#].*)?$/i.test(value)
     || (/\/v4-upload\/d\//i.test(value) && !isAudioUrl(value) && !isImageUrl(value));
+}
+
+function isDecorativeFrameImageUrl(url) {
+  const raw = String(url ?? "").replace(/\\/g, "/");
+  if (!raw) {
+    return false;
+  }
+  if (/\/static\/images\/(?:%E7%9B%B8%E6%A1%86|\u76f8\u6846)\//i.test(raw)) {
+    return true;
+  }
+  let pathname = raw;
+  try {
+    pathname = decodeURIComponent(new URL(raw, location.origin).pathname).replace(/\\/g, "/");
+  } catch {
+    try {
+      pathname = decodeURIComponent(raw).replace(/\\/g, "/");
+    } catch {
+      pathname = raw;
+    }
+  }
+  return /\/static\/images\/\u76f8\u6846\//i.test(pathname);
+}
+
+function getNonDecorativeImageSrc(image) {
+  if (!(image instanceof HTMLImageElement)) {
+    return "";
+  }
+  const src = makeAbsoluteCc98Url(getMediaUrl(image) || image.currentSrc || image.src || "");
+  return src && !isDecorativeFrameImageUrl(src) ? src : "";
+}
+
+function removeDecorativeFrameImages(root = document) {
+  const images = [
+    ...(root instanceof HTMLImageElement ? [root] : []),
+    ...(root.querySelectorAll?.("img") ?? [])
+  ];
+  images.forEach((image) => {
+    if (!(image instanceof HTMLImageElement)) {
+      return;
+    }
+    const rawSrc = image.getAttribute("src")
+      || image.getAttribute("data-src")
+      || image.currentSrc
+      || image.src
+      || getOwnMediaUrl(image);
+    if (isDecorativeFrameImageUrl(rawSrc)) {
+      image.remove();
+    }
+  });
 }
 
 function isProbablyPostImageUrl(url) {
@@ -3085,6 +3687,9 @@ function isSkippablePostElement(node) {
     '[role="button"]',
     '[class*="signature"]',
     '[class*="Signature"]',
+    ".awardInfo",
+    '[class*="awardInfo"]',
+    '[class*="AwardInfo"]',
     '[class*="score"]',
     '[class*="Score"]',
     '[class*="rate"]',
@@ -3127,7 +3732,7 @@ function isQuoteElement(node) {
 
 function normalizeRichContentNode(root, options = {}) {
   const clone = root.cloneNode(true);
-  clone.querySelectorAll("script, style, button, input, textarea, select, [role='button']").forEach((node) => node.remove());
+  clone.querySelectorAll("script, style, button, input, textarea, select, [role='button'], .awardInfo, [class*='awardInfo'], [class*='AwardInfo']").forEach((node) => node.remove());
   if (!options.keepSignatureChildren) {
     clone.querySelectorAll('[class*="signature"], [class*="Signature"]').forEach((node) => node.remove());
   }
@@ -3141,7 +3746,11 @@ function normalizeRichContentNode(root, options = {}) {
   });
   rewriteOriginalPostQuoteLinks(clone);
   clone.querySelectorAll("img").forEach((image) => {
-    const src = getMediaUrl(image);
+    const src = getNonDecorativeImageSrc(image);
+    if (!src) {
+      image.remove();
+      return;
+    }
     if (src) {
       image.src = makeAbsoluteCc98Url(src);
     }
@@ -3353,6 +3962,9 @@ function buildReadablePostContent(contentNode) {
     if (!src) {
       return;
     }
+    if (isDecorativeFrameImageUrl(src)) {
+      return;
+    }
     const image = createContentImageFromUrl(src, alt);
     if (isEmojiImageUrl(src)) {
       markRebuiltEmojiImage(image, src);
@@ -3465,7 +4077,7 @@ function collectPostMediaSources(root) {
       return;
     }
     const src = getMediaUrl(node);
-    if (!src || isEmojiImageUrl(src) || isDownloadFileUrl(src) || (!isProbablyPostImageUrl(src) && !isImageCarrierNode(node))) {
+    if (!src || isDecorativeFrameImageUrl(src) || isEmojiImageUrl(src) || isDownloadFileUrl(src) || (!isProbablyPostImageUrl(src) && !isImageCarrierNode(node))) {
       return;
     }
     const key = normalizeMediaKey(src);
@@ -3495,6 +4107,10 @@ function materializePostMedia(clone) {
       return;
     }
     const src = getMediaUrl(image);
+    if (isDecorativeFrameImageUrl(src)) {
+      image.remove();
+      return;
+    }
     if (src) {
       image.src = src;
     }
@@ -3506,6 +4122,10 @@ function materializePostMedia(clone) {
       return;
     }
     const href = link.href || link.getAttribute("href") || "";
+    if (isDecorativeFrameImageUrl(href)) {
+      link.remove();
+      return;
+    }
     if ((!isProbablyPostImageUrl(href) && !isImageCarrierNode(link)) || link.querySelector("img")) {
       return;
     }
@@ -3526,7 +4146,7 @@ function materializePostMedia(clone) {
     }
     const src = getOwnMediaUrl(node);
     const hasBackgroundImage = /url\(/i.test(node.getAttribute("style") || "");
-    if (!src || (!isProbablyPostImageUrl(src) && !isImageCarrierNode(node) && !hasBackgroundImage)) {
+    if (!src || isDecorativeFrameImageUrl(src) || (!isProbablyPostImageUrl(src) && !isImageCarrierNode(node) && !hasBackgroundImage)) {
       return;
     }
     const image = createContentImageFromUrl(src, cleanupPostText(node.textContent));
@@ -3545,6 +4165,10 @@ function classifyPostImages(clone) {
       return;
     }
     const src = getMediaUrl(image);
+    if (isDecorativeFrameImageUrl(src)) {
+      image.remove();
+      return;
+    }
     if (isDownloadFileUrl(src)) {
       removeDownloadImageFrame(image);
       return;
@@ -3566,7 +4190,7 @@ function ensurePostMediaCoverage(clone, originalSources) {
     .map((image) => normalizeMediaKey(getMediaUrl(image) || image.src))
     .filter(Boolean));
   const missing = originalSources.filter((item) => !present.has(normalizeMediaKey(item.src)));
-  const imageMissing = missing.filter((item) => !isDownloadFileUrl(item.src) && isProbablyPostImageUrl(item.src));
+  const imageMissing = missing.filter((item) => !isDecorativeFrameImageUrl(item.src) && !isDownloadFileUrl(item.src) && isProbablyPostImageUrl(item.src));
   if (!imageMissing.length) {
     return;
   }
@@ -3612,6 +4236,9 @@ function removePostChromeNodes(clone) {
     '[role="button"]',
     '[class*="signature"]',
     '[class*="Signature"]',
+    ".awardInfo",
+    '[class*="awardInfo"]',
+    '[class*="AwardInfo"]',
     '[class*="score"]',
     '[class*="Score"]',
     '[class*="rate"]',
@@ -3837,6 +4464,7 @@ function isMeaningfulPostContent(root) {
 
 function sanitizeClonedPostContent(contentNode) {
   const clone = contentNode.cloneNode(true);
+  removeDecorativeFrameImages(clone);
   removePostChromeNodes(clone);
   rewriteLegacyQuoteInlineStyles(clone);
   materializeAudioPlayers(clone);
@@ -3860,6 +4488,7 @@ function getMarkdownPreviewContentNode(root) {
 }
 
 function sanitizePostContent(contentNode) {
+  removeDecorativeFrameImages(contentNode);
   const originalMediaSources = collectPostMediaSources(contentNode);
   const markdownPreview = getMarkdownPreviewContentNode(contentNode);
 
@@ -4052,9 +4681,18 @@ function isLightDefaultAvatarUrl(src) {
 }
 
 function getPostAvatar(post, userHref = "") {
-  const avatar = post.querySelector(".userPortrait, img[class*='portrait'], img[class*='avatar']");
-  if (avatar?.src) {
-    return avatar.src;
+  const findImageSrc = (selector) => {
+    for (const image of post.querySelectorAll(selector)) {
+      const src = getNonDecorativeImageSrc(image);
+      if (src) {
+        return src;
+      }
+    }
+    return "";
+  };
+  const avatar = findImageSrc(".userPortrait, img[class*='portrait'], img[class*='avatar']");
+  if (avatar) {
+    return avatar;
   }
   let userPath = "";
   try {
@@ -4062,11 +4700,11 @@ function getPostAvatar(post, userHref = "") {
   } catch {
     userPath = "";
   }
-  const linkedAvatar = userPath ? post.querySelector(`a[href*="${userPath}"] img`) : null;
-  if (linkedAvatar?.src) {
-    return linkedAvatar.src;
+  const linkedAvatar = userPath ? findImageSrc(`a[href*="${userPath}"] img`) : "";
+  if (linkedAvatar) {
+    return linkedAvatar;
   }
-  return post.querySelector("img")?.src ?? "";
+  return findImageSrc("img");
 }
 
 function getAnonymousPostCode(post) {
@@ -4336,7 +4974,7 @@ function collectPostActions(post) {
     if (!(control instanceof HTMLElement) || control.closest(".signature")) {
       return false;
     }
-    if (control.tagName === "BUTTON" && control.closest("a")) {
+    if (control.tagName !== "A" && control.closest("a[href]")) {
       return false;
     }
     if (control.classList.contains("operation1") && control.querySelector("a[href]")) {
@@ -4351,10 +4989,11 @@ function collectPostActions(post) {
     const text = getActionText(control);
     const href = control instanceof HTMLAnchorElement ? makeAbsoluteCc98Url(control.href || control.getAttribute("href") || "") : "";
     const normalized = text.replace(/\s+\d+$/, "");
-    if (!/^(赞|踩|关注|私信|评分|追踪)$/.test(normalized)) {
+    if (!/^(赞|踩|关注|取关|取消关注|私信|评分|追踪|编辑)$/.test(normalized)) {
       return;
     }
-    const key = normalized === "私信" ? "私信" : `${normalized}:${href || control.id || actions.length}`;
+    const stableKind = /^(关注|取关|取消关注)$/.test(normalized) ? "关注" : normalized;
+    const key = stableKind === "私信" ? "私信" : `${stableKind}:${href || control.id || actions.length}`;
     if (seen.has(key)) {
       return;
     }
@@ -4401,6 +5040,81 @@ function getPostSignatureContent(post) {
   return signature;
 }
 
+function getPostAwardRows(post) {
+  const awardInfo = post.querySelector(".awardInfo, [class*='awardInfo'], [class*='AwardInfo']");
+  if (!(awardInfo instanceof Element)) {
+    return [];
+  }
+  const rows = [...awardInfo.querySelectorAll(".tagSize")];
+  const rowNodes = rows.length
+    ? rows
+    : [...awardInfo.children].filter((node) => node.matches?.(".good, .bad"));
+  return rowNodes.map((row) => {
+    const user = cleanupPostText(row.querySelector?.(".userName")?.textContent);
+    const operation = cleanupPostText(row.querySelector?.(".grades")?.textContent);
+    const reason = cleanupPostText(row.querySelector?.(".credit")?.textContent);
+    return { user, operation, reason };
+  }).filter((row) => row.user || row.operation || row.reason);
+}
+
+function renderPostAwardTable(rows) {
+  if (!rows?.length) {
+    return null;
+  }
+  const section = createElement("section", "cc98-rebuild-awards");
+  section.append(createElement("div", "cc98-rebuild-awards-title", "\u8bc4\u5206\u8bb0\u5f55"));
+  const table = document.createElement("table");
+  table.className = "cc98-rebuild-awards-table";
+  const thead = document.createElement("thead");
+  const header = document.createElement("tr");
+  ["\u7528\u6237", "\u64cd\u4f5c", "\u7406\u7531"].forEach((label) => {
+    header.append(createElement("th", "", label));
+  });
+  thead.append(header);
+  const tbody = document.createElement("tbody");
+  rows.forEach((row) => {
+    const tr = document.createElement("tr");
+    const operationClass = /-\s*\d/.test(row.operation) ? "cc98-rebuild-award-negative" : (/\+\s*\d/.test(row.operation) ? "cc98-rebuild-award-positive" : "");
+    tr.append(createElement("td", "", row.user || "-"));
+    tr.append(createElement("td", operationClass, row.operation || "-"));
+    tr.append(createElement("td", "", row.reason || "-"));
+    tbody.append(tr);
+  });
+  table.append(thead, tbody);
+  section.append(table);
+  return section;
+}
+
+function getAwardReputationDelta(rows) {
+  return (rows || []).reduce((total, row) => {
+    const operation = cleanupPostText(row.operation);
+    if (!operation.includes("\u98ce\u8bc4\u503c")) {
+      return total;
+    }
+    const match = operation.match(/([+-]?\d+)/);
+    return total + (Number(match?.[1]) || 0);
+  }, 0);
+}
+
+function formatAwardDelta(delta) {
+  const number = Number(delta) || 0;
+  return number > 0 ? `+${number}` : String(number);
+}
+
+function applyAwardDeltaToActions(actions, rows) {
+  if (!Array.isArray(actions) || !rows?.length) {
+    return actions;
+  }
+  const delta = getAwardReputationDelta(rows);
+  actions.forEach((action) => {
+    const label = cleanupPostText(action.text).replace(/\s+[+-]?\d+\s*$/, "");
+    if (label === "\u8bc4\u5206" || label.includes("\u8bc4\u5206")) {
+      action.displayText = `\u8bc4\u5206 ${formatAwardDelta(delta)}`;
+    }
+  });
+  return actions;
+}
+
 function getPostItems() {
   const directReplies = [...document.querySelectorAll(".reply")]
     .filter((node) => !node.closest("#cc98-comfort-app"))
@@ -4445,9 +5159,11 @@ function getPostItems() {
     const avatar = getPostAvatar(post, userHref);
     const content = sanitizePostContent(contentNode);
     const signature = getPostSignatureContent(post);
+    const awards = getPostAwardRows(post);
     const text = cleanupPostText(content.innerText);
     const publishedAt = cleanupPostText(post.innerText).match(/发表于\s+([0-9:-]+\s+[0-9:]+)/)?.[1] ?? "";
     const actions = collectPostActions(post);
+    applyAwardDeltaToActions(actions, awards);
     const isHot = isHotPostNode(post);
     const floorNumber = getPostFloorNumber(post, index);
     const id = post.id || post.getAttribute("data-id") || `floor-${floorNumber}-${text.slice(0, 24)}`;
@@ -4464,12 +5180,18 @@ function getPostItems() {
       text,
       content,
       signature,
+      awards,
       publishedAt,
       actions,
       isHot
     };
   }).filter((item) => item && (item.text.length > 0 || item.content?.querySelector("img")));
   markOriginalPosterItems(items);
+  const favoriteAction = getTopicToolbarActions().favorite;
+  const favoriteTarget = favoriteAction ? (items.find((item) => !item.isHot) || items[0]) : null;
+  if (favoriteTarget) {
+    favoriteTarget.actions = insertTopicFavoriteAction(favoriteTarget.actions, favoriteAction);
+  }
 
   if (items.length > 0) {
     return items;
@@ -4477,7 +5199,45 @@ function getPostItems() {
 
   const article = document.querySelector("#root article");
   const text = cleanupPostText(article?.innerText);
-  return text ? [{ type: "post", id: "article", index: 1, user: "CC98", uid: "", avatar: "", text, content: sanitizePostContent(article), publishedAt: "", actions: [] }] : [];
+  return text ? [{ type: "post", id: "article", index: 1, user: "CC98", uid: "", avatar: "", text, content: sanitizePostContent(article), signature: null, awards: [], publishedAt: "", actions: [] }] : [];
+}
+
+function getTopicToolbarActions() {
+  const controls = [...document.querySelectorAll(".topicInfo-info .followTopic, .topicInfo-title .followTopic, .topicInfo-info [class~='followTopic'], .topicInfo-title [class~='followTopic']")]
+    .filter((control) => control instanceof HTMLElement && !control.closest("#cc98-comfort-app"));
+  const makeAction = (control, fallbackText) => {
+    if (!(control instanceof HTMLElement)) {
+      return null;
+    }
+    return {
+      text: cleanupPostText(control.textContent) || fallbackText,
+      href: "",
+      control,
+      scope: "topic"
+    };
+  };
+  const favoriteControl = controls.find((control) => /^(?:收藏|取消收藏|已收藏)$/.test(cleanupPostText(control.textContent)));
+  const shareControl = controls.find((control) => cleanupPostText(control.textContent).includes("分享帖子链接"));
+  return {
+    favorite: makeAction(favoriteControl, "收藏"),
+    share: makeAction(shareControl, "分享帖子链接")
+  };
+}
+
+function insertTopicFavoriteAction(actions, favoriteAction) {
+  if (!favoriteAction || !Array.isArray(actions)) {
+    return actions || [];
+  }
+  if (actions.some((action) => /^(?:收藏|取消收藏|已收藏)$/.test(cleanupPostText(action.text).replace(/\s+\d+$/, "")))) {
+    return actions;
+  }
+  const insertAfter = actions.reduce((last, action, index) => {
+    const label = cleanupPostText(action.text).replace(/\s+\d+$/, "");
+    return /^(?:关注|取关|取消关注|私信)$/.test(label) ? index : last;
+  }, -1);
+  const nextActions = [...actions];
+  nextActions.splice(insertAfter + 1, 0, favoriteAction);
+  return nextActions;
 }
 
 function isHomeAnnouncementDetailText(text) {
@@ -4608,6 +5368,103 @@ function isHotHomeSection(section) {
     || title.includes(normalizeText("\u70ed\u95e8"));
 }
 
+function getHomeHotRankCacheKey(section) {
+  return `${HOME_HOT_RANK_CACHE_KEY_PREFIX}${normalizeText(section?.title || "hot") || "hot"}`;
+}
+
+function getHomeHotRankItemKey(item) {
+  if (item?.href) {
+    try {
+      const url = new URL(item.href, location.origin);
+      return `${url.origin}${url.pathname}`.toLowerCase();
+    } catch {
+      return String(item.href).split(/[?#]/)[0].toLowerCase();
+    }
+  }
+  return `title:${normalizeText(item?.title || "")}`;
+}
+
+function makeHomeHotRankEntries(items) {
+  return (items || []).slice(0, 10).map((item, index) => ({
+    key: getHomeHotRankItemKey(item),
+    title: item.title || "",
+    href: item.href || "",
+    rank: index + 1
+  })).filter((entry) => entry.key && entry.key !== "title:");
+}
+
+function readHomeHotRankCache(section) {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(getHomeHotRankCacheKey(section)) || "{}");
+    const entries = Array.isArray(parsed.entries) ? parsed.entries : [];
+    return entries.filter((entry) => entry?.key && Number(entry.rank) > 0);
+  } catch {
+    return [];
+  }
+}
+
+function writeHomeHotRankCache(section, entries) {
+  try {
+    localStorage.setItem(getHomeHotRankCacheKey(section), JSON.stringify({
+      savedAt: Date.now(),
+      entries
+    }));
+  } catch {
+    // Ranking movement is cosmetic; ignore storage failures.
+  }
+}
+
+function getHomeHotRankSignature(entries) {
+  return entries.map((entry) => `${entry.key}:${entry.rank}`).join("|");
+}
+
+function getHomeHotItemsWithRankMovement(section) {
+  const entries = makeHomeHotRankEntries(section.items);
+  const signature = getHomeHotRankSignature(entries);
+  const cacheKey = getHomeHotRankCacheKey(section);
+  const state = homeHotRankingStates.get(cacheKey);
+  if (state?.signature === signature) {
+    return (section.items || []).map((item) => {
+      const movement = state.movements.get(getHomeHotRankItemKey(item));
+      return {
+        ...item,
+        rankMovement: movement?.type || "",
+        rankDelta: movement?.delta || 0,
+        rankMovementAnimated: false
+      };
+    });
+  }
+
+  const previous = readHomeHotRankCache(section);
+  const previousByKey = new Map(previous.map((entry) => [entry.key, entry]));
+  const movements = new Map();
+  if (previous.length > 0) {
+    entries.forEach((entry) => {
+      const oldRank = Number(previousByKey.get(entry.key)?.rank || 0);
+      if (!oldRank) {
+        movements.set(entry.key, { type: "new", delta: 0 });
+        return;
+      }
+      if (oldRank > entry.rank) {
+        movements.set(entry.key, { type: "up", delta: oldRank - entry.rank });
+      } else if (oldRank < entry.rank) {
+        movements.set(entry.key, { type: "down", delta: entry.rank - oldRank });
+      }
+    });
+  }
+  writeHomeHotRankCache(section, entries);
+  homeHotRankingStates.set(cacheKey, { signature, movements, consumed: true });
+  return (section.items || []).map((item) => {
+    const movement = movements.get(getHomeHotRankItemKey(item));
+    return {
+      ...item,
+      rankMovement: movement?.type || "",
+      rankDelta: movement?.delta || 0,
+      rankMovementAnimated: Boolean(movement)
+    };
+  });
+}
+
 function getBoardSections() {
   return [...document.querySelectorAll(".anArea")].map((area) => {
     const title = area.id || getFirstText(area, ".areaName") || "版面";
@@ -4624,6 +5481,51 @@ function getBoardSections() {
     }).filter((board) => board.title);
     return { title, boards };
   }).filter((section) => section.boards.length > 0);
+}
+
+function normalizePinnedBoardHref(href) {
+  const value = String(href ?? "").trim();
+  if (!value) {
+    return "";
+  }
+  try {
+    return new URL(value, location.origin).href.replace(/\/$/, "");
+  } catch {
+    return value.replace(/\/$/, "");
+  }
+}
+
+function readPinnedBoardHrefs() {
+  try {
+    const value = JSON.parse(localStorage.getItem(PINNED_BOARDS_STORAGE_KEY) || "[]");
+    return Array.isArray(value)
+      ? [...new Set(value.map(normalizePinnedBoardHref).filter(Boolean))]
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function writePinnedBoardHrefs(hrefs) {
+  try {
+    localStorage.setItem(PINNED_BOARDS_STORAGE_KEY, JSON.stringify([...new Set(hrefs.map(normalizePinnedBoardHref).filter(Boolean))]));
+  } catch {
+    // Board pins are a local convenience; ignore storage failures.
+  }
+}
+
+function togglePinnedBoard(board) {
+  const href = normalizePinnedBoardHref(board?.href);
+  if (!href) {
+    return;
+  }
+  const pinned = readPinnedBoardHrefs();
+  if (pinned.includes(href)) {
+    writePinnedBoardHrefs(pinned.filter((item) => item !== href));
+  } else {
+    writePinnedBoardHrefs([href, ...pinned]);
+  }
+  scheduleRebuild();
 }
 
 function getBoardPageStats(head) {
@@ -5138,6 +6040,42 @@ function renderBlockedPlaceholder(reason) {
   return placeholder;
 }
 
+function createCardMetaElement(text) {
+  const meta = createElement("p", "cc98-rebuild-card-meta");
+  const value = String(text ?? "").trim();
+  const boardCountMatch = value.match(/^(\u4eca\u65e5\s*\d+)\s+(\u603b\u6570\s*\d+)$/);
+  if (boardCountMatch) {
+    meta.append(boardCountMatch[1], document.createElement("br"), boardCountMatch[2]);
+    return meta;
+  }
+  meta.textContent = value;
+  return meta;
+}
+
+function createReadLaterCardButton(item) {
+  const readLaterItem = getReadLaterItemFromTopicItem(item);
+  if (!readLaterItem) {
+    return null;
+  }
+  const saved = isReadLaterSaved(readLaterItem.href);
+  const button = createButton(`cc98-rebuild-read-later-button${saved ? " is-saved" : ""}`, "\ud83d\udd57", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (isReadLaterSaved(readLaterItem.href)) {
+      removeReadLaterItem(readLaterItem.key);
+      showRebuiltTransientToast(button, "\u5df2\u79fb\u51fa\u7a0d\u540e\u518d\u770b");
+    } else {
+      upsertReadLaterItem(readLaterItem);
+      showRebuiltTransientToast(button, "\u5df2\u52a0\u5165\u7a0d\u540e\u518d\u770b");
+    }
+    scheduleRebuild();
+  });
+  button.type = "button";
+  button.title = saved ? "\u79fb\u51fa\u7a0d\u540e\u518d\u770b" : "\u52a0\u5165\u7a0d\u540e\u518d\u770b";
+  button.setAttribute("aria-label", `${button.title}: ${readLaterItem.title}`);
+  return button;
+}
+
 function renderTopicCard(item) {
   const reason = shouldBlockRebuiltItem(item);
   if (reason) {
@@ -5145,6 +6083,11 @@ function renderTopicCard(item) {
   }
 
   const card = createElement("article", "cc98-rebuild-card");
+  const readLaterButton = createReadLaterCardButton(item);
+  if (readLaterButton) {
+    card.classList.add("has-read-later");
+    card.append(readLaterButton);
+  }
   const top = createElement("div", "cc98-rebuild-card-top");
   if (item.board) {
     top.append(createLink("cc98-rebuild-chip", item.board, item.boardHref));
@@ -5156,7 +6099,7 @@ function renderTopicCard(item) {
   card.append(top);
   card.append(createLink("cc98-rebuild-card-title", item.title, item.href));
   if (item.meta) {
-    card.append(createElement("p", "cc98-rebuild-card-meta", item.meta));
+    card.append(createCardMetaElement(item.meta));
   }
   if (item.hoverMeta || item.user || item.replyCount) {
     const hoverMeta = createElement("div", "cc98-rebuild-hover-meta");
@@ -5175,6 +6118,23 @@ function renderTopicCard(item) {
     const rank = createElement("span", "cc98-rebuild-rank", String(item.rank));
     rank.style.setProperty("--cc98-rank-hue", String(((Number(item.rank) - 1) * 32) % 360));
     card.append(rank);
+    if (item.rankMovement) {
+      card.classList.add(`cc98-rebuild-rank-${item.rankMovement}`);
+      const motionText = item.rankMovement === "new"
+        ? "\u65b0"
+        : `${item.rankMovement === "up" ? "\u2191" : "\u2193"}${item.rankDelta || ""}`;
+      const motionClass = [
+        "cc98-rebuild-rank-motion",
+        `cc98-rebuild-rank-motion-${item.rankMovement}`,
+        item.rankMovementAnimated ? "is-animated" : ""
+      ].filter(Boolean).join(" ");
+      const motion = createElement("span", motionClass, motionText);
+      const motionLabel = item.rankMovement === "up"
+        ? `\u6392\u540d\u4e0a\u5347 ${item.rankDelta || 0}`
+        : (item.rankMovement === "down" ? `\u6392\u540d\u4e0b\u964d ${item.rankDelta || 0}` : "\u65b0\u589e\u70ed\u95e8");
+      motion.setAttribute("aria-label", motionLabel);
+      card.append(motion);
+    }
   }
   return card;
 }
@@ -5309,6 +6269,11 @@ function renderPostCard(item) {
   });
   card.append(body);
 
+  const awardTable = renderPostAwardTable(item.awards);
+  if (awardTable) {
+    card.append(awardTable);
+  }
+
   if (item.signature) {
     const signatureWrap = createElement("section", "cc98-rebuild-signature");
     signatureWrap.append(item.signature);
@@ -5401,6 +6366,12 @@ function renderPostPager() {
     navigateToRebuiltHref(pageInfo.pages.get(page) || buildTopicPageHref(pageInfo.topicId, page));
   });
   pager.append(form);
+  const shareAction = getTopicToolbarActions().share;
+  if (shareAction) {
+    const shareButton = renderProxyControl(shareAction);
+    shareButton.classList.add("cc98-rebuild-pager-action");
+    pager.append(shareButton);
+  }
 
   return pager;
 }
@@ -5647,16 +6618,106 @@ function restoreReparentedNativeNodes(app) {
     .forEach((node) => restoreNativeNode(node));
 }
 
+function isLikelyEditorSubmitControl(target) {
+  const control = target?.closest?.("#post-topic-button, button, input[type='button'], input[type='submit'], .button, .ant-btn, [role='button']");
+  if (!(control instanceof HTMLElement)) {
+    return false;
+  }
+  if (control.closest(".cc98-rebuild-color-popover, .cc98-rebuild-font-size-popover, .ubb-emoji, .ubb-extend")) {
+    return false;
+  }
+  const signature = [
+    control.id,
+    control.className,
+    control.getAttribute("type"),
+    control.getAttribute("title"),
+    control.getAttribute("aria-label"),
+    control.textContent
+  ].filter(Boolean).join(" ");
+  return /post-topic-button|submit|\u53d1\u8868|\u53d1\u5e16|\u56de\u590d|\u63d0\u4ea4|\u7f16\u8f91|\u4fdd\u5b58|\u66f4\u65b0|\u53d1\u5e03|\u786e\u5b9a/i.test(signature);
+}
+
+function releaseNativeEditorForSubmit(editor) {
+  if (!(editor instanceof HTMLElement)) {
+    return false;
+  }
+  markEditorSubmitIntent();
+  if (editor.dataset.cc98NativeSubmitReleased === "true") {
+    return false;
+  }
+  editor.dataset.cc98NativeSubmitReleased = "true";
+  closeEditorColorPopovers();
+  closeEditorFontSizePopovers();
+  setEditorEmojiPanelOpen(editor, false);
+
+  const app = editor.closest("#cc98-comfort-app") || document.querySelector("#cc98-comfort-app");
+  restoreNativeNode(editor);
+  if (app) {
+    legacyQuoteGuardObserver?.disconnect();
+    legacyQuoteGuardObserver = null;
+    restoreReparentedNativeNodes(app);
+    app.remove();
+  }
+  document.documentElement.classList.remove("cc98-comfort-rebuild-active");
+  document.documentElement.dataset.cc98ComfortRebuildReady = "false";
+
+  window.setTimeout(() => {
+    if (!getTopicRouteInfo()) {
+      delete editor.dataset.cc98NativeSubmitReleased;
+      scheduleRebuild();
+    }
+  }, 2600);
+  return true;
+}
+
+function replayNativeEditorSubmitClick(editor, control) {
+  if (!(editor instanceof HTMLElement) || !(control instanceof HTMLElement)) {
+    return false;
+  }
+  if (control.dataset.cc98SubmitReplayQueued === "true") {
+    return true;
+  }
+  const startedRouteKey = getRoutePageKey();
+  const startedOnTopic = Boolean(getTopicRouteInfo());
+  control.dataset.cc98SubmitReplayQueued = "true";
+  releaseNativeEditorForSubmit(editor);
+  schedulePostSubmitPageRefresh({ startedRouteKey, startedOnTopic });
+  window.setTimeout(() => {
+    editor.dataset.cc98NativeSubmitReplaying = "true";
+    try {
+      triggerOriginalControl(control);
+    } finally {
+      window.setTimeout(() => {
+        delete editor.dataset.cc98NativeSubmitReplaying;
+        delete control.dataset.cc98SubmitReplayQueued;
+      }, 220);
+    }
+  }, 40);
+  return true;
+}
+
 function getEditorPageData() {
   const editor = document.querySelector(".createTopic");
+  const isEdit = /\/editor\/edit\/\d+/i.test(location.pathname)
+    || Boolean(editor && /编辑/.test(cleanupPostText(editor.textContent)));
   const breadcrumbLinks = [...(editor?.querySelectorAll(".row:first-child a[href]") ?? [])]
     .map((link) => ({ text: link.textContent?.trim() ?? "", href: link.href }))
     .filter((item) => item.text);
   const board = [...breadcrumbLinks].reverse().find((item) => /\/board\/\d+/i.test(item.href));
+  const titleInput = editor?.querySelector(".createTopicTitle input");
+  const editorHeading = [...(editor?.querySelectorAll(".row:first-child div") ?? [])]
+    .map((node) => cleanupPostText(node.textContent))
+    .reverse()
+    .find((text) => /编辑|发表|回复/.test(text));
+  const submitLabel = cleanupPostText(editor?.querySelector("#post-topic-button, .button.blue")?.textContent);
   return {
     editor,
     board,
-    titlePlaceholder: editor?.querySelector(".createTopicTitle input")?.getAttribute("placeholder") ?? "请输入标题"
+    isEdit,
+    pageTitle: isEdit ? (editorHeading || "编辑帖子") : "发表主题",
+    modeLabel: isEdit ? "Edit" : "Compose",
+    titlePlaceholder: titleInput?.getAttribute("placeholder") || titleInput?.value || (isEdit ? "正在编辑已有内容" : "请输入标题"),
+    submitLabel
   };
 }
 
@@ -6543,6 +7604,40 @@ function stabilizeEditorEmojiImages(editor) {
   stabilizeEmojiRendering(editor);
 }
 
+function isEditorEmojiButtonTarget(target) {
+  if (!(target instanceof Element)) {
+    return false;
+  }
+  const control = target.closest(".ubb-emoji-button, .ubb-button");
+  if (!(control instanceof HTMLElement)) {
+    return false;
+  }
+  const signature = [
+    control.className,
+    control.getAttribute("title"),
+    control.getAttribute("aria-label"),
+    control.dataset.cc98ToolbarLabel,
+    control.textContent
+  ].filter(Boolean).join(" ");
+  return /(?:表情|emoji|emoticon|smile|fa-smile|fa-meh|☺)/i.test(signature);
+}
+
+function setEditorEmojiPanelOpen(editor, open) {
+  if (!(editor instanceof HTMLElement)) {
+    return;
+  }
+  editor.classList.toggle("cc98-rebuild-emoji-panel-open", Boolean(open));
+}
+
+function closeEditorEmojiPanelSoon(editor) {
+  if (!(editor instanceof HTMLElement)) {
+    return;
+  }
+  window.setTimeout(() => {
+    setEditorEmojiPanelOpen(editor, false);
+  }, 90);
+}
+
 function dispatchMouseSequence(target) {
   ["pointerdown", "mousedown", "mouseup", "click"].forEach((type) => {
     const EventClass = type.startsWith("pointer") ? PointerEvent : MouseEvent;
@@ -6767,11 +7862,31 @@ function scheduleNativeEditorStabilize(editor) {
   });
 }
 
-function schedulePostSubmitPageRefresh() {
-  window.clearTimeout(nativePostSubmitRefreshTimer);
-  nativePostSubmitRefreshTimer = window.setTimeout(() => {
-    location.reload();
-  }, 2200);
+function schedulePostSubmitPageRefresh(options = {}) {
+  const startedRouteKey = options.startedRouteKey || getRoutePageKey();
+  const startedOnTopic = Boolean(options.startedOnTopic);
+  markEditorSubmitIntent();
+  nativePostSubmitRefreshTimers.forEach((timer) => window.clearTimeout(timer));
+  nativePostSubmitRefreshTimers = [420, 900, 1600, 2600, 4200, 6500, 9000].map((delay, index, delays) => {
+    return window.setTimeout(() => {
+      if (repairStaleEditorTopicRoute()) {
+        return;
+      }
+      if (getTopicRouteInfo()) {
+        const routeChangedToTopic = !startedOnTopic && getRoutePageKey() !== startedRouteKey;
+        const safeExistingTopicRefresh = startedOnTopic && delay >= 3200;
+        if ((routeChangedToTopic || safeExistingTopicRefresh) && refreshSubmittedTopicRoute()) {
+          return;
+        }
+        scheduleFiltering();
+        scheduleRebuild();
+        scheduleSync();
+      }
+      if (index === delays.length - 1) {
+        nativePostSubmitRefreshTimers = [];
+      }
+    }, delay);
+  });
 }
 
 function bindNativeEditorStabilizer(editor) {
@@ -6784,6 +7899,12 @@ function bindNativeEditorStabilizer(editor) {
   }
   nativeEditorStabilizers.add(editor);
   editor.addEventListener("pointerdown", (event) => {
+    if (isEditorEmojiButtonTarget(event.target)) {
+      return;
+    }
+    if (!event.target?.closest?.(".ubb-emoji")) {
+      setEditorEmojiPanelOpen(editor, false);
+    }
     if (getNativeEditorPassthroughControl(event.target)) {
       return;
     }
@@ -6803,8 +7924,31 @@ function bindNativeEditorStabilizer(editor) {
     openEditorColorPicker(colorButton, editor);
   }, true);
   editor.addEventListener("click", (event) => {
-    if (event.target?.closest?.("#post-topic-button")) {
-      schedulePostSubmitPageRefresh();
+    const submitControl = event.target?.closest?.("#post-topic-button, button, input[type='button'], input[type='submit'], .button, .ant-btn, [role='button']");
+    if (isLikelyEditorSubmitControl(event.target)) {
+      if (editor.dataset.cc98NativeSubmitReplaying === "true") {
+        return;
+      }
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      replayNativeEditorSubmitClick(editor, submitControl);
+      return;
+    }
+    if (event.target?.closest?.(".ubb-emoji img")) {
+      closeEditorEmojiPanelSoon(editor);
+      return;
+    }
+    if (event.target?.closest?.(".ubb-emoji")) {
+      return;
+    }
+    if (isEditorEmojiButtonTarget(event.target)) {
+      const shouldOpen = !editor.classList.contains("cc98-rebuild-emoji-panel-open");
+      setEditorEmojiPanelOpen(editor, shouldOpen);
+      scheduleNativeEditorStabilize(editor);
+      return;
+    }
+    if (!event.target?.closest?.(".ubb-emoji")) {
+      setEditorEmojiPanelOpen(editor, false);
     }
     if (getNativeEditorPassthroughControl(event.target)) {
       scheduleNativeEditorStabilize(editor);
@@ -6825,7 +7969,10 @@ function bindNativeEditorStabilizer(editor) {
     }
   }, true);
   editor.addEventListener("submit", () => {
-    schedulePostSubmitPageRefresh();
+    const startedRouteKey = getRoutePageKey();
+    const startedOnTopic = Boolean(getTopicRouteInfo());
+    releaseNativeEditorForSubmit(editor);
+    schedulePostSubmitPageRefresh({ startedRouteKey, startedOnTopic });
   }, true);
   const editorObserver = new MutationObserver(() => scheduleNativeEditorStabilize(editor));
   editorObserver.observe(editor, {
@@ -6837,13 +7984,18 @@ function bindNativeEditorStabilizer(editor) {
 function renderEditorPage(app) {
   const data = getEditorPageData();
   const hero = createElement("section", "cc98-rebuild-editor-hero");
-  hero.append(createElement("p", "cc98-rebuild-kicker", "Compose"));
-  hero.append(createElement("h1", "", "发表主题"));
+  hero.append(createElement("p", "cc98-rebuild-kicker", data.modeLabel));
+  hero.append(createElement("h1", "", data.pageTitle));
   const meta = createElement("div", "cc98-rebuild-editor-meta");
   if (data.board?.href) {
     meta.append(createLink("cc98-rebuild-chip", data.board.text, data.board.href));
   }
-  meta.append(createElement("span", "cc98-rebuild-muted", data.titlePlaceholder));
+  if (data.titlePlaceholder) {
+    meta.append(createElement("span", "cc98-rebuild-muted", data.titlePlaceholder));
+  }
+  if (data.submitLabel) {
+    meta.append(createElement("span", "cc98-rebuild-chip cc98-rebuild-editor-submit-chip", data.submitLabel));
+  }
   hero.append(meta);
   hero.querySelector("h1")?.remove();
   app.append(hero);
@@ -6941,6 +8093,46 @@ function syncMessageReadAllProxy(source, heroTop) {
   proxy.disabled = Boolean(originalControl.matches?.(":disabled, [disabled], [aria-disabled='true']"));
 }
 
+function stabilizeNativeMessageSurfaces(source) {
+  if (!(source instanceof HTMLElement)) {
+    return;
+  }
+  const cleanSelectors = [
+    ".message",
+    ".message-content",
+    ".message-right",
+    ".message-response",
+    ".message-system",
+    ".message-setting",
+    ".message-message",
+    ".message-message-people",
+    ".message-message-window",
+    ".message-message-pList",
+    ".message-response-box-middle",
+    ".message-response-box-middle1",
+    ".message-response-box-middle-title",
+    ".message-response-box-middle-content",
+    ".message-box-content",
+    ".message-system-box-content",
+    ".message-message-pInfo",
+    ".message-message-pMessage",
+    ".message-message-wContent",
+    ".message-message-wcContent"
+  ].join(",");
+  source.querySelectorAll(cleanSelectors).forEach((node) => {
+    if (!(node instanceof HTMLElement)) {
+      return;
+    }
+    node.classList.add("cc98-rebuild-message-surface-clean");
+    const styleText = node.getAttribute("style") || "";
+    if (/background(?:-color)?\s*:\s*(?:white|#fff(?:fff)?|rgb\(\s*255\s*,\s*255\s*,\s*255\s*\))/i.test(styleText)) {
+      node.style.setProperty("background", "transparent", "important");
+      node.style.setProperty("background-color", "transparent", "important");
+      node.style.setProperty("background-image", "none", "important");
+    }
+  });
+}
+
 function bindMessageTitleSync(source, heroTitle, heroTop) {
   messageTitleObserver?.disconnect();
   messageTitleObserver = null;
@@ -6961,6 +8153,7 @@ function bindMessageTitleSync(source, heroTitle, heroTop) {
     titleSyncTimer = window.setTimeout(() => {
       syncTitle();
       syncMessageReadAllProxy(source, heroTop);
+      stabilizeNativeMessageSurfaces(source);
     }, delay);
   };
 
@@ -6981,6 +8174,7 @@ function bindMessageTitleSync(source, heroTitle, heroTop) {
   messageTitleObserver.observe(source, { childList: true, subtree: true, characterData: true });
   syncTitle();
   syncMessageReadAllProxy(source, heroTop);
+  stabilizeNativeMessageSurfaces(source);
 }
 
 function renderSignInPage(app) {
@@ -7242,6 +8436,84 @@ function stabilizeUserCenterSearchButtons(router) {
   });
 }
 
+function stabilizeUserProfileBadges(router, avatar) {
+  const badge = router.querySelector(".user-badge");
+  if (!(badge instanceof HTMLElement)) {
+    return;
+  }
+
+  const hasBadgeContent = Boolean(cleanupPostText(badge.textContent));
+  if (!hasBadgeContent && badge.parentElement?.classList.contains("user-avatar")) {
+    badge.classList.remove("cc98-rebuild-profile-badge-panel");
+    badge.classList.add("cc98-rebuild-profile-badge-empty");
+    badge.toggleAttribute("hidden", true);
+    badge.setAttribute("aria-hidden", "true");
+    badge.style.setProperty("display", "none", "important");
+    badge.style.setProperty("width", "0", "important");
+    badge.style.setProperty("height", "0", "important");
+    badge.style.setProperty("min-width", "0", "important");
+    badge.style.setProperty("min-height", "0", "important");
+    badge.style.setProperty("padding", "0", "important");
+    badge.style.setProperty("margin", "0", "important");
+    badge.style.setProperty("border", "0", "important");
+    return;
+  }
+
+  badge.classList.add("cc98-rebuild-profile-badge-panel");
+  badge.classList.toggle("cc98-rebuild-profile-badge-empty", !hasBadgeContent);
+  badge.toggleAttribute("hidden", !hasBadgeContent);
+  badge.setAttribute("aria-hidden", hasBadgeContent ? "false" : "true");
+  if (!hasBadgeContent) {
+    badge.style.setProperty("display", "none", "important");
+    return;
+  }
+
+  badge.removeAttribute("hidden");
+  badge.style.removeProperty("display");
+  badge.setAttribute("aria-label", "\u7528\u6237\u5934\u8854");
+  [...badge.children].forEach((item) => {
+    if (!(item instanceof HTMLElement)) {
+      return;
+    }
+    item.classList.add("cc98-rebuild-profile-badge-item");
+    const ownColor = item.style.color;
+    if (ownColor) {
+      item.style.setProperty("color", ownColor, "important");
+      item.classList.add("cc98-rebuild-profile-badge-item-colored");
+    }
+    item.querySelectorAll("[style]").forEach((node) => {
+      if (!(node instanceof HTMLElement)) {
+        return;
+      }
+      const color = node.style.color;
+      if (color) {
+        node.style.setProperty("color", color, "important");
+        item.classList.add("cc98-rebuild-profile-badge-item-colored");
+      }
+    });
+  });
+
+  if (avatar instanceof HTMLElement) {
+    const messageAction = avatar.querySelector(".cc98-rebuild-profile-message-action");
+    if (badge.parentElement !== avatar) {
+      avatar.insertBefore(badge, messageAction?.parentElement === avatar ? messageAction : null);
+    }
+    const avatarImage = avatar.querySelector(".user-avatar-img, img");
+    const syncBadgeHeight = () => {
+      const rect = avatarImage instanceof HTMLElement ? avatarImage.getBoundingClientRect() : null;
+      if (rect && rect.height >= 96) {
+        badge.style.setProperty("--cc98-profile-avatar-height", `${Math.round(rect.height)}px`);
+      }
+    };
+    syncBadgeHeight();
+    requestAnimationFrame(syncBadgeHeight);
+    if (avatarImage instanceof HTMLImageElement && badge.dataset.cc98BadgeImageBound !== "true") {
+      badge.dataset.cc98BadgeImageBound = "true";
+      avatarImage.addEventListener("load", syncBadgeHeight);
+    }
+  }
+}
+
 function stabilizeUserProfileStats(router) {
   const stabilizeProfileHeader = () => {
     const profile = router.querySelector(".user-profile");
@@ -7255,16 +8527,39 @@ function stabilizeUserProfileStats(router) {
     profile.classList.add("cc98-rebuild-profile-info");
     userId.classList.add("cc98-rebuild-profile-user-id");
 
+    const nameLine = userId.querySelector(":scope > p:first-child");
+    [...userId.querySelectorAll("a, button")].forEach((control) => {
+      if (!(control instanceof HTMLElement)) {
+        return;
+      }
+      if (control.tagName === "BUTTON" && control.closest("a")) {
+        return;
+      }
+      const label = cleanupPostText(control.textContent);
+      if (!/^(?:\u5173\u6ce8|\u53d6\u5173|\u53d6\u6d88\u5173\u6ce8)$/.test(label)) {
+        return;
+      }
+      control.classList.add("cc98-rebuild-profile-inline-action", "cc98-rebuild-profile-follow-action");
+      if (control instanceof HTMLButtonElement) {
+        control.classList.add("cc98-rebuild-profile-action-button", "cc98-rebuild-profile-follow-button");
+      } else {
+        control.querySelector("button")?.classList.add("cc98-rebuild-profile-action-button", "cc98-rebuild-profile-follow-button");
+      }
+      if (nameLine instanceof HTMLElement && control.parentElement !== nameLine) {
+        nameLine.append(control);
+      }
+    });
+
     const messageLink = [...userId.querySelectorAll("a")]
       .find((link) => cleanupPostText(link.textContent) === "\u79c1\u4fe1");
-    if (!(messageLink instanceof HTMLElement)) {
-      return;
+    if (messageLink instanceof HTMLElement) {
+      messageLink.classList.add("cc98-rebuild-profile-inline-action", "cc98-rebuild-profile-message-action");
+      messageLink.querySelector("button")?.classList.add("cc98-rebuild-profile-action-button", "cc98-rebuild-profile-message-button");
+      if (nameLine instanceof HTMLElement && messageLink.parentElement !== nameLine) {
+        nameLine.append(messageLink);
+      }
     }
-    messageLink.classList.add("cc98-rebuild-profile-message-action");
-    messageLink.querySelector("button")?.classList.add("cc98-rebuild-profile-message-button");
-    if (messageLink.parentElement !== avatar) {
-      avatar.append(messageLink);
-    }
+    stabilizeUserProfileBadges(router, avatar);
   };
 
   stabilizeProfileHeader();
@@ -7696,15 +8991,19 @@ function renderHome(app) {
   }
   visibleSections.forEach((section) => {
     const block = createElement("section", "cc98-rebuild-section");
+    const hotSection = isHotHomeSection(section);
     if (!hotOnly) {
-      block.append(createElement("h2", "", section.title));
+      const header = createElement("div", "cc98-rebuild-section-heading");
+      header.append(createElement("h2", "", section.title));
+      block.append(header);
     }
-    if (hotOnly && isHotHomeSection(section)) {
+    if (hotOnly && hotSection) {
       block.classList.add("cc98-rebuild-home-hot-section");
     }
     const list = createElement("div", "cc98-rebuild-list");
-    const hotSection = isHotHomeSection(section);
-    section.items.slice(0, 12).forEach((item, index) => {
+    const rankedItems = hotSection ? getHomeHotItemsWithRankMovement(section) : section.items;
+    const visibleItemLimit = hotOnly && hotSection ? 10 : 12;
+    rankedItems.slice(0, visibleItemLimit).forEach((item, index) => {
       list.append(renderTopicCard({
         ...item,
         rank: hotSection && index < 10 ? index + 1 : 0
@@ -7714,6 +9013,64 @@ function renderHome(app) {
     grid.append(block);
   });
   app.append(grid);
+}
+
+function getSearchRouteAge() {
+  const routeKey = getRoutePageKey();
+  if (searchPageRouteKey !== routeKey) {
+    searchPageRouteKey = routeKey;
+    searchPageRouteFirstSeenAt = Date.now();
+  }
+  return Date.now() - searchPageRouteFirstSeenAt;
+}
+
+function hasNativeSearchLoadingSignal() {
+  return Boolean(document.querySelector([
+    ".ant-spin-spinning",
+    ".ant-spin-nested-loading .ant-spin",
+    ".ant-spin-blur",
+    "[class*='loading']",
+    "[class*='Loading']",
+    "[class*='loadMore']",
+    "[id*='loading']",
+    "[id*='Loading']"
+  ].join(",")));
+}
+
+function shouldDeferSearchEmptyState() {
+  const kind = getPageKind();
+  if (kind !== "search" && kind !== "boardSearch") {
+    return false;
+  }
+  const age = getSearchRouteAge();
+  if (document.readyState === "loading") {
+    return true;
+  }
+  if (age < SEARCH_EMPTY_INITIAL_GRACE_MS) {
+    return true;
+  }
+  return hasNativeSearchLoadingSignal() && age < SEARCH_EMPTY_LOADING_GRACE_MS;
+}
+
+function scheduleSearchEmptyRecheck() {
+  window.clearTimeout(searchPageEmptyRecheckTimer);
+  const age = getSearchRouteAge();
+  const initialRemaining = SEARCH_EMPTY_INITIAL_GRACE_MS - age;
+  const nextDelay = initialRemaining > 0
+    ? Math.max(360, Math.min(900, initialRemaining + 80))
+    : 900;
+  searchPageEmptyRecheckTimer = window.setTimeout(scheduleRebuild, nextDelay);
+}
+
+function renderSearchPendingState(app) {
+  scheduleSearchEmptyRecheck();
+  const section = createElement("section", "cc98-rebuild-empty-state cc98-rebuild-search-pending");
+  const spinner = createElement("div", "cc98-rebuild-search-pending-spinner");
+  spinner.style.setProperty("--cc98-search-pending-spin-offset", `${-(Math.round(performance.now()) % 860)}ms`);
+  section.append(spinner);
+  section.append(createElement("h2", "", "\u6b63\u5728\u7b49\u5f85\u641c\u7d22\u7ed3\u679c"));
+  section.append(createElement("p", "", "\u539f\u9875\u9762\u8fd8\u5728\u52a0\u8f7d\uff0c\u7a0d\u540e\u4f1a\u81ea\u52a8\u5237\u65b0\u7ed3\u679c\u533a\u3002"));
+  app.append(section);
 }
 
 function renderTopics(app) {
@@ -7726,6 +9083,10 @@ function renderTopics(app) {
     || (lastSettings?.aiSearchSuggestEnabled && normalizeSuggestionText(searchKeyword).length >= 4)
   ));
   if (!topics.length && getPageKind() === "search") {
+    if (shouldDeferSearchEmptyState()) {
+      renderSearchPendingState(app);
+      return;
+    }
     if (useAdvancedFuzzy) {
       const feed = createElement("section", "cc98-rebuild-feed");
       feed.dataset.feedKind = "search-fuzzy";
@@ -7757,6 +9118,32 @@ function renderTopics(app) {
   app.append(feed);
 }
 
+function renderBoardSearch(app) {
+  const items = getBoardSearchItems();
+  if (!items.length) {
+    if (shouldDeferSearchEmptyState()) {
+      renderSearchPendingState(app);
+      return;
+    }
+    const message = cleanupPostText(document.querySelector("#noResultBoard .noResultText, .noResultText")?.textContent)
+      || "抱歉呢前辈，没有找到你想要的版面哦~";
+    const section = createElement("section", "cc98-rebuild-empty-state");
+    section.append(createElement("h2", "", "没有找到版面"));
+    section.append(createElement("p", "", message.replace(/^-+|-+$/g, "").trim() || "抱歉呢前辈，没有找到你想要的版面哦~"));
+    app.append(section);
+    return;
+  }
+
+  const feed = createElement("section", "cc98-rebuild-feed cc98-rebuild-board-search-feed");
+  feed.dataset.feedKind = "boardSearch";
+  items.forEach((item) => {
+    const card = renderTopicCard(item);
+    card.dataset.itemKey = `board-search:${item.href}`;
+    feed.append(card);
+  });
+  app.append(feed);
+}
+
 function renderPost(app) {
   const topPager = renderPostPager();
   if (topPager) {
@@ -7777,26 +9164,61 @@ function renderPost(app) {
   renderPostReplyEditor(app);
 }
 
+function renderBoardCard(board, pinned = false) {
+  const card = createElement("article", `cc98-rebuild-board${pinned ? " is-pinned" : ""}`);
+  const pinButton = createButton("cc98-rebuild-board-pin", pinned ? "\u2212" : "+", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    togglePinnedBoard(board);
+  });
+  pinButton.type = "button";
+  pinButton.title = pinned ? `\u53d6\u6d88\u7f6e\u9876 ${board.title}` : `\u7f6e\u9876 ${board.title}`;
+  pinButton.setAttribute("aria-label", pinButton.title);
+  card.append(pinButton);
+  if (board.image) {
+    const image = createElement("img", "cc98-rebuild-board-image");
+    image.src = board.image;
+    image.alt = "";
+    card.append(image);
+  }
+  card.append(createLink("cc98-rebuild-card-title", board.title, board.href));
+  if (board.meta) {
+    card.append(createCardMetaElement(board.meta));
+  }
+  return card;
+}
+
 function renderBoards(app) {
   const sections = getBoardSections();
+  const pinnedHrefs = readPinnedBoardHrefs();
+  const pinnedSet = new Set(pinnedHrefs);
+  const boardsByHref = new Map();
   sections.forEach((section) => {
+    section.boards.forEach((board) => {
+      const href = normalizePinnedBoardHref(board.href);
+      if (href) {
+        boardsByHref.set(href, board);
+      }
+    });
+  });
+  const pinnedBoards = pinnedHrefs.map((href) => boardsByHref.get(href)).filter(Boolean);
+  if (pinnedBoards.length) {
+    const block = createElement("section", "cc98-rebuild-section cc98-rebuild-pinned-board-section");
+    block.append(createElement("h2", "", "\u7f6e\u9876\u7248\u9762"));
+    const grid = createElement("div", "cc98-rebuild-board-grid cc98-rebuild-pinned-board-grid");
+    pinnedBoards.forEach((board) => grid.append(renderBoardCard(board, true)));
+    block.append(grid);
+    app.append(block);
+  }
+  sections.forEach((section) => {
+    const visibleBoards = section.boards.filter((board) => !pinnedSet.has(normalizePinnedBoardHref(board.href)));
+    if (!visibleBoards.length) {
+      return;
+    }
     const block = createElement("section", "cc98-rebuild-section");
     block.append(createElement("h2", "", section.title));
     const grid = createElement("div", "cc98-rebuild-board-grid");
-    section.boards.forEach((board) => {
-      const card = createElement("article", "cc98-rebuild-board");
-      if (board.image) {
-        const image = createElement("img", "cc98-rebuild-board-image");
-        image.src = board.image;
-        image.alt = "";
-        card.append(image);
-      }
-      card.append(createLink("cc98-rebuild-card-title", board.title, board.href));
-      if (board.meta) {
-        card.append(createElement("p", "cc98-rebuild-card-meta", board.meta));
-      }
-      grid.append(card);
-    });
+    visibleBoards.forEach((board) => grid.append(renderBoardCard(board, false)));
     block.append(grid);
     app.append(block);
   });
@@ -7851,6 +9273,10 @@ function renderUserCenter(app) {
 
 function encodeSearchKeyword(keyword) {
   return encodeURIComponent(normalizeSuggestionText(keyword)).replace(/%20/g, "%2520");
+}
+
+function encodeNativeSearchKeyword(keyword) {
+  return encodeURI(encodeURI(normalizeSuggestionText(keyword)));
 }
 
 function decodeSearchKeywordParam(value) {
@@ -7987,18 +9413,151 @@ function getCurrentSearchKeyword() {
   return decodeSearchKeywordParam(new URLSearchParams(location.search).get("keyword"));
 }
 
+function getNativeSearchRoot() {
+  return [...document.querySelectorAll("#search")]
+    .find((node) => node instanceof HTMLElement && !node.closest("#cc98-comfort-app")) || null;
+}
+
+function getNativeSearchState() {
+  const root = getNativeSearchRoot();
+  const selected = cleanupPostText(root?.querySelector?.(".searchBoxSelect")?.textContent) || "\u4e3b\u9898";
+  const options = root
+    ? [...root.querySelectorAll(".searchBoxSub li")]
+        .filter((item) => item instanceof HTMLElement)
+        .filter((item) => getComputedStyle(item).display !== "none")
+        .map((item) => cleanupPostText(item.textContent))
+        .filter(Boolean)
+    : [];
+  const uniqueOptions = [...new Set(options.length ? options : [selected, "\u7528\u6237", "\u7248\u9762"].filter(Boolean))];
+  return {
+    root,
+    selected,
+    options: uniqueOptions.includes(selected) ? uniqueOptions : [selected, ...uniqueOptions]
+  };
+}
+
+function canShowSearchSuggestionsForType(type) {
+  const normalized = cleanupPostText(type);
+  return /^(?:\u4e3b\u9898|\u5168\u7ad9)$/.test(normalized);
+}
+
+function setNativeSearchInputValue(input, value) {
+  if (!(input instanceof HTMLInputElement)) {
+    return;
+  }
+  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+  if (setter) {
+    setter.call(input, value);
+  } else {
+    input.value = value;
+  }
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
+function selectNativeSearchType(root, type) {
+  if (!(root instanceof HTMLElement) || !type) {
+    return false;
+  }
+  const current = cleanupPostText(root.querySelector(".searchBoxSelect")?.textContent);
+  if (current === type) {
+    return true;
+  }
+  const option = [...root.querySelectorAll(".searchBoxSub li")]
+    .find((item) => item instanceof HTMLElement
+      && getComputedStyle(item).display !== "none"
+      && cleanupPostText(item.textContent) === type);
+  if (!(option instanceof HTMLElement)) {
+    return false;
+  }
+  dispatchMouseSequence(root.querySelector(".searchBoxSelect") || root.querySelector(".caret-down") || option);
+  dispatchMouseSequence(option);
+  return true;
+}
+
+function getCurrentSearchBoardId() {
+  const boardMatch = location.pathname.match(/\/board\/(\d+)/i);
+  if (boardMatch) {
+    return Math.max(0, Number(boardMatch[1]) || 0);
+  }
+  const searchBoardId = Number(new URLSearchParams(location.search).get("boardId"));
+  if (Number.isFinite(searchBoardId) && searchBoardId > 0) {
+    return searchBoardId;
+  }
+  const boardLink = [...document.querySelectorAll('a[href*="/board/"]')]
+    .map((link) => link instanceof HTMLAnchorElement ? (link.href || link.getAttribute("href") || "") : "")
+    .map((href) => href.match(/\/board\/(\d+)/i)?.[1])
+    .find(Boolean);
+  return Math.max(0, Number(boardLink) || 0);
+}
+
 function getSearchUrl(keyword) {
   const url = new URL("/search", location.origin);
   url.search = `?boardId=0&keyword=${encodeSearchKeyword(keyword)}`;
   return url;
 }
 
-function submitRebuiltSearch(keyword) {
+function getRebuiltSearchTargetHref(keyword, type) {
+  const normalized = normalizeSuggestionText(keyword);
+  const normalizedType = cleanupPostText(type);
+  if (!normalized) {
+    return "";
+  }
+  if (normalizedType === "\u7528\u6237") {
+    return `${location.origin}/user/name/${encodeURIComponent(normalized)}`;
+  }
+  if (normalizedType === "\u7248\u9762") {
+    return `${location.origin}/searchBoard?keyword=${encodeNativeSearchKeyword(normalized)}`;
+  }
+  const boardId = normalizedType === "\u7248\u5185" ? getCurrentSearchBoardId() : 0;
+  return `${location.origin}/search?boardId=${boardId}&keyword=${encodeNativeSearchKeyword(normalized)}`;
+}
+
+function submitNativeSearch(keyword, type) {
+  const root = getNativeSearchRoot();
+  const input = root?.querySelector?.("#searchText");
+  const submit = root?.querySelector?.(".searchIco");
+  if (!(root instanceof HTMLElement) || !(input instanceof HTMLInputElement) || !(submit instanceof HTMLElement)) {
+    return false;
+  }
+  selectNativeSearchType(root, type);
+  setNativeSearchInputValue(input, keyword);
+  window.setTimeout(() => {
+    dispatchMouseSequence(submit);
+  }, 20);
+  return true;
+}
+
+function submitRebuiltSearch(keyword, type = getNativeSearchState().selected) {
   const normalized = String(keyword ?? "").trim();
   if (!normalized) {
     return false;
   }
-  location.href = getSearchUrl(normalized).href;
+  const targetHref = getRebuiltSearchTargetHref(normalized, type);
+  const startedAt = getRoutePageKey();
+  scheduleRouteFollowup(targetHref, startedAt);
+  if (submitNativeSearch(normalized, type)) {
+    const forceNavigation = (replace = false) => {
+      if (getRoutePageKey() !== startedAt || !targetHref) {
+        scheduleRouteFollowup(targetHref, startedAt);
+        return;
+      }
+      if (replace) {
+        location.replace(targetHref);
+        scheduleRouteFollowup(targetHref, startedAt);
+        return;
+      }
+      location.assign(targetHref);
+      scheduleRouteFollowup(targetHref, startedAt);
+    };
+    const baseDelay = cleanupPostText(type) === "\u7528\u6237" ? 520 : 120;
+    [baseDelay, baseDelay + 240, baseDelay + 820, baseDelay + 1500].forEach((delay, index) => {
+      window.setTimeout(() => forceNavigation(index > 1), delay);
+    });
+    return true;
+  }
+  location.assign(targetHref || getSearchUrl(normalized).href);
+  scheduleRouteFollowup(targetHref || getSearchUrl(normalized).href, startedAt);
   return true;
 }
 
@@ -8838,7 +10397,7 @@ function createAdvancedFuzzySearchPanel(query, terms, feed, initialItems) {
   return section;
 }
 
-function renderSearchSuggestions(box, input, suggestions, state = "ready") {
+function renderSearchSuggestions(box, input, suggestions, state = "ready", onSubmit = submitRebuiltSearch) {
   box.textContent = "";
   box.dataset.state = state;
   if (state === "idle") {
@@ -8862,7 +10421,7 @@ function renderSearchSuggestions(box, input, suggestions, state = "ready") {
     });
     option.addEventListener("click", () => {
       input.value = suggestion;
-      submitRebuiltSearch(suggestion);
+      onSubmit(suggestion);
     });
     box.append(option);
   });
@@ -9186,7 +10745,33 @@ async function fetchSearchSuggestions(keyword) {
 }
 
 function createSearchForm() {
+  const nativeSearchState = getNativeSearchState();
+  let selectedSearchType = nativeSearchState.selected;
   const form = createElement("form", "cc98-rebuild-search");
+  form.dataset.searchType = selectedSearchType;
+  const typeWrap = createElement("div", "cc98-rebuild-search-type-wrap");
+  const typeButton = createElement("button", "cc98-rebuild-search-type", selectedSearchType);
+  typeButton.type = "button";
+  typeButton.setAttribute("aria-haspopup", "listbox");
+  typeButton.setAttribute("aria-expanded", "false");
+  const typeMenu = createElement("div", "cc98-rebuild-search-type-menu");
+  typeMenu.hidden = true;
+  typeMenu.setAttribute("role", "listbox");
+  const closeTypeMenu = () => {
+    typeMenu.hidden = true;
+    typeButton.setAttribute("aria-expanded", "false");
+  };
+  const setSearchType = (type) => {
+    selectedSearchType = type;
+    form.dataset.searchType = type;
+    typeButton.textContent = type;
+    closeTypeMenu();
+    selectNativeSearchType(getNativeSearchRoot(), type);
+    if (!canShowSearchSuggestionsForType(type)) {
+      window.clearTimeout(suggestTimer);
+      renderSearchSuggestions(suggestionBox, input, [], "idle");
+    }
+  };
   const input = createElement("input", "");
   input.type = "search";
   input.placeholder = "搜索主题";
@@ -9248,6 +10833,362 @@ function createSearchForm() {
   return form;
 }
 
+function createRebuiltSearchForm() {
+  const nativeSearchState = getNativeSearchState();
+  let selectedSearchType = nativeSearchState.selected;
+  let suggestTimer = 0;
+  const form = createElement("form", "cc98-rebuild-search");
+  form.dataset.searchType = selectedSearchType;
+
+  const typeWrap = createElement("div", "cc98-rebuild-search-type-wrap");
+  const typeButton = createElement("button", "cc98-rebuild-search-type", selectedSearchType);
+  typeButton.type = "button";
+  typeButton.setAttribute("aria-haspopup", "listbox");
+  typeButton.setAttribute("aria-expanded", "false");
+  const typeMenu = createElement("div", "cc98-rebuild-search-type-menu");
+  typeMenu.hidden = true;
+  typeMenu.setAttribute("role", "listbox");
+
+  const input = createElement("input", "");
+  input.type = "search";
+  input.placeholder = "\u8bf7\u8f93\u5165\u641c\u7d22\u5185\u5bb9";
+  input.value = getCurrentSearchKeyword();
+  input.autocomplete = "off";
+  const inputWrap = createElement("div", "cc98-rebuild-search-field");
+  const suggestionBox = createElement("div", "cc98-rebuild-search-suggestions");
+  suggestionBox.hidden = true;
+  inputWrap.append(input, suggestionBox);
+
+  const closeTypeMenu = () => {
+    typeMenu.hidden = true;
+    typeButton.setAttribute("aria-expanded", "false");
+  };
+  const submitCurrentSearch = (value) => submitRebuiltSearch(value, selectedSearchType);
+  const setSearchType = (type) => {
+    selectedSearchType = type;
+    form.dataset.searchType = type;
+    typeButton.textContent = type;
+    closeTypeMenu();
+    selectNativeSearchType(getNativeSearchRoot(), type);
+    if (!canShowSearchSuggestionsForType(type)) {
+      window.clearTimeout(suggestTimer);
+      renderSearchSuggestions(suggestionBox, input, [], "idle", submitCurrentSearch);
+    }
+  };
+
+  nativeSearchState.options.forEach((type) => {
+    const option = createElement("button", "cc98-rebuild-search-type-option", type);
+    option.type = "button";
+    option.setAttribute("role", "option");
+    option.setAttribute("aria-selected", String(type === selectedSearchType));
+    option.addEventListener("mousedown", (event) => event.preventDefault());
+    option.addEventListener("click", () => {
+      typeMenu.querySelectorAll(".cc98-rebuild-search-type-option").forEach((node) => {
+        node.setAttribute("aria-selected", String(node === option));
+      });
+      setSearchType(type);
+      input.focus({ preventScroll: true });
+    });
+    typeMenu.append(option);
+  });
+  typeButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const nextOpen = typeMenu.hidden;
+    typeMenu.hidden = !nextOpen;
+    typeButton.setAttribute("aria-expanded", String(nextOpen));
+  });
+  typeWrap.addEventListener("focusout", () => {
+    window.setTimeout(() => {
+      if (!typeWrap.contains(document.activeElement)) {
+        closeTypeMenu();
+      }
+    }, 0);
+  });
+  typeWrap.append(typeButton, typeMenu);
+
+  const submitButton = createElement("button", "cc98-rebuild-search-submit", "\u641c\u7d22");
+  submitButton.type = "submit";
+  form.append(typeWrap, inputWrap, submitButton);
+
+  const scheduleSuggestions = () => {
+    window.clearTimeout(suggestTimer);
+    const keyword = input.value.trim();
+    if (keyword.length < 2 || !canShowSearchSuggestionsForType(selectedSearchType)) {
+      renderSearchSuggestions(suggestionBox, input, [], "idle", submitCurrentSearch);
+      return;
+    }
+    const cached = searchSuggestionCache.get(normalizeSuggestionText(keyword));
+    if (cached && cached.suggestions.length) {
+      renderSearchSuggestions(suggestionBox, input, cached.suggestions, "ready", submitCurrentSearch);
+    }
+    suggestTimer = window.setTimeout(async () => {
+      const sequence = ++searchSuggestionSequence;
+      const typeAtRequest = selectedSearchType;
+      renderSearchSuggestions(suggestionBox, input, cached?.suggestions ?? [], cached ? "ready" : "loading", submitCurrentSearch);
+      try {
+        const suggestions = await fetchSearchSuggestions(keyword);
+        if (sequence === searchSuggestionSequence && input.value.trim() === keyword && selectedSearchType === typeAtRequest) {
+          renderSearchSuggestions(suggestionBox, input, suggestions, "ready", submitCurrentSearch);
+        }
+      } catch {
+        if (sequence === searchSuggestionSequence) {
+          renderSearchSuggestions(suggestionBox, input, cached?.suggestions ?? [], "ready", submitCurrentSearch);
+        }
+      }
+    }, 900);
+  };
+
+  input.addEventListener("input", scheduleSuggestions);
+  input.addEventListener("focus", () => {
+    closeTypeMenu();
+    scheduleSuggestions();
+  });
+  input.addEventListener("blur", () => {
+    window.setTimeout(() => {
+      suggestionBox.hidden = true;
+    }, 140);
+  });
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const keyword = input.value.trim();
+    if (!keyword) {
+      input.focus();
+      return;
+    }
+    submitCurrentSearch(keyword);
+  });
+  return form;
+}
+
+function formatReadLaterTime(timestamp) {
+  if (!Number(timestamp)) {
+    return "";
+  }
+  try {
+    return new Date(Number(timestamp)).toLocaleString("zh-CN", {
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  } catch {
+    return "";
+  }
+}
+
+function exportReadLaterItems(anchor) {
+  const payload = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    items: readReadLaterItems()
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `cc98-reborn-read-later-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1200);
+  showRebuiltTransientToast(anchor, "\u5df2\u5bfc\u51fa\u7a0d\u540e\u518d\u770b");
+}
+
+function importReadLaterItemsFromFile(file, anchor) {
+  if (!(file instanceof File)) {
+    return;
+  }
+  const reader = new FileReader();
+  reader.addEventListener("load", () => {
+    try {
+      const parsed = JSON.parse(String(reader.result || ""));
+      const imported = Array.isArray(parsed) ? parsed : parsed?.items;
+      if (!Array.isArray(imported)) {
+        throw new Error("Invalid read-later payload");
+      }
+      const existing = readReadLaterItems();
+      const merged = [...imported, ...existing].map((item) => ({
+        ...item,
+        key: item?.key || getReadLaterKeyFromHref(item?.href)
+      }));
+      writeReadLaterItems(merged);
+      showRebuiltTransientToast(anchor, "\u5df2\u5bfc\u5165\u7a0d\u540e\u518d\u770b");
+      scheduleRebuild();
+    } catch {
+      showRebuiltTransientToast(anchor, "\u5bfc\u5165\u5931\u8d25");
+    }
+  });
+  reader.readAsText(file, "utf-8");
+}
+
+function readLaterItemMatchesQuery(item, query) {
+  const keyword = normalizeSuggestionText(query).toLowerCase();
+  if (!keyword) {
+    return true;
+  }
+  const haystack = [
+    item.title,
+    item.board,
+    item.user,
+    item.uid,
+    item.meta,
+    item.href
+  ].map((value) => normalizeSuggestionText(value).toLowerCase()).join(" ");
+  return haystack.includes(keyword);
+}
+
+function renderReadLaterSearchControls(section, totalCount, filteredCount) {
+  const form = createElement("form", "cc98-rebuild-read-later-search");
+  const input = createElement("input", "");
+  input.type = "search";
+  input.placeholder = "\u641c\u7d22\u7a0d\u540e\u518d\u770b";
+  input.value = readLaterSearchQuery;
+  input.autocomplete = "off";
+  const submit = createElement("button", "cc98-rebuild-search-submit", "\u641c\u7d22");
+  submit.type = "submit";
+  const reset = createButton("cc98-rebuild-action", "\u6e05\u7a7a", () => {
+    readLaterSearchQuery = "";
+    readLaterPage = 1;
+    scheduleRebuild();
+  });
+  reset.type = "button";
+  reset.disabled = !readLaterSearchQuery;
+  form.append(input, submit, reset);
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    readLaterSearchQuery = input.value.trim();
+    readLaterPage = 1;
+    scheduleRebuild();
+  });
+  section.append(form);
+  if (readLaterSearchQuery) {
+    section.append(createElement("p", "cc98-rebuild-card-meta", `\u641c\u7d22\u7ed3\u679c ${filteredCount} / ${totalCount}`));
+  }
+}
+
+function renderReadLaterPager(section, totalPages) {
+  if (totalPages <= 1) {
+    return;
+  }
+  const pager = createElement("div", "cc98-rebuild-read-later-pager");
+  const prev = createButton("cc98-rebuild-mini-action", "\u4e0a\u4e00\u9875", () => {
+    readLaterPage = Math.max(1, readLaterPage - 1);
+    scheduleRebuild();
+  });
+  prev.disabled = readLaterPage <= 1;
+  const info = createElement("span", "cc98-rebuild-read-later-page-info", `${readLaterPage} / ${totalPages}`);
+  const next = createButton("cc98-rebuild-mini-action", "\u4e0b\u4e00\u9875", () => {
+    readLaterPage = Math.min(totalPages, readLaterPage + 1);
+    scheduleRebuild();
+  });
+  next.disabled = readLaterPage >= totalPages;
+  pager.append(prev, info, next);
+  section.append(pager);
+}
+
+function renderReadLaterPage(app) {
+  markCurrentTopicReadLaterRead();
+  const section = createElement("section", "cc98-rebuild-section cc98-rebuild-read-later-page");
+  const heading = createElement("div", "cc98-rebuild-section-heading cc98-rebuild-read-later-heading");
+  heading.append(createElement("h2", "", "\u7a0d\u540e\u518d\u770b"));
+  const actions = createElement("div", "cc98-rebuild-read-later-actions");
+  const importInput = createElement("input", "");
+  importInput.type = "file";
+  importInput.accept = "application/json,.json";
+  importInput.hidden = true;
+  const importButton = createButton("cc98-rebuild-action", "\u5bfc\u5165", () => importInput.click());
+  importInput.addEventListener("change", () => {
+    importReadLaterItemsFromFile(importInput.files?.[0], importButton);
+    importInput.value = "";
+  });
+  const exportButton = createButton("cc98-rebuild-action", "\u5bfc\u51fa", () => exportReadLaterItems(exportButton));
+  const clearReadButton = createButton("cc98-rebuild-action cc98-rebuild-read-later-clear", "\u6e05\u9664\u5df2\u8bfb", () => {
+    writeReadLaterItems(readReadLaterItems().filter((item) => !item.readAt));
+    showRebuiltTransientToast(clearReadButton, "\u5df2\u6e05\u9664\u5df2\u8bfb\u9879");
+    scheduleRebuild();
+  });
+  actions.append(importButton, exportButton, clearReadButton, importInput);
+  heading.append(actions);
+  section.append(heading);
+
+  const allItems = readReadLaterItems()
+    .sort((a, b) => {
+      if (Boolean(a.readAt) !== Boolean(b.readAt)) {
+        return a.readAt ? 1 : -1;
+      }
+      return (b.addedAt || 0) - (a.addedAt || 0);
+    });
+  const filteredItems = allItems.filter((item) => readLaterItemMatchesQuery(item, readLaterSearchQuery));
+  const pageSize = 10;
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize));
+  readLaterPage = Math.max(1, Math.min(totalPages, Number(readLaterPage) || 1));
+  const items = filteredItems.slice((readLaterPage - 1) * pageSize, readLaterPage * pageSize);
+  renderReadLaterSearchControls(section, allItems.length, filteredItems.length);
+  const summary = createElement("p", "cc98-rebuild-card-meta", `\u672a\u8bfb ${allItems.filter((item) => !item.readAt).length} / \u5168\u90e8 ${allItems.length}`);
+  section.append(summary);
+  if (!allItems.length) {
+    const empty = createElement("div", "cc98-rebuild-empty-state");
+    empty.append(createElement("h2", "", "\u6ca1\u6709\u7a0d\u540e\u518d\u770b"));
+    empty.append(createElement("p", "", "\u5728\u65b0\u5e16\u3001\u5341\u5927\u3001\u641c\u7d22\u3001\u5173\u6ce8\u548c\u7cbe\u9009\u9875\u9762\u7684\u5e16\u5b50\u53f3\u4fa7\u70b9\u51fb\u201c\u7a0d\u540e\u518d\u770b\u201d\u5373\u53ef\u6536\u85cf\u5230\u8fd9\u91cc\u3002"));
+    section.append(empty);
+    app.append(section);
+    return;
+  }
+  if (!filteredItems.length) {
+    const empty = createElement("div", "cc98-rebuild-empty-state");
+    empty.append(createElement("h2", "", "\u6ca1\u6709\u5339\u914d\u9879"));
+    empty.append(createElement("p", "", "\u6362\u4e00\u4e2a\u5173\u952e\u8bcd\u518d\u8bd5\u3002"));
+    section.append(empty);
+    app.append(section);
+    return;
+  }
+
+  const list = createElement("div", "cc98-rebuild-read-later-list");
+  items.forEach((item) => {
+    const card = createElement("article", `cc98-rebuild-card cc98-rebuild-read-later-item${item.readAt ? " is-read" : ""}`);
+    const top = createElement("div", "cc98-rebuild-card-top");
+    top.append(createElement("span", `cc98-rebuild-read-later-status${item.readAt ? " is-read" : ""}`, item.readAt ? "\u5df2\u8bfb" : "\u672a\u8bfb"));
+    if (item.board) {
+      top.append(item.boardHref ? createLink("cc98-rebuild-chip", item.board, item.boardHref) : createElement("span", "cc98-rebuild-chip", item.board));
+    }
+    if (item.user) {
+      top.append(createElement("span", "cc98-rebuild-muted", item.uid ? `${item.user} 路 ${item.uid}` : item.user));
+    }
+    card.append(top);
+    const title = createLink("cc98-rebuild-card-title", item.title, item.href);
+    title.addEventListener("click", () => {
+      markReadLaterItemRead(item.key, true);
+    });
+    card.append(title);
+    const metaParts = [
+      item.meta,
+      item.addedAt ? `\u52a0\u5165 ${formatReadLaterTime(item.addedAt)}` : "",
+      item.readAt ? `\u9605\u8bfb ${formatReadLaterTime(item.readAt)}` : ""
+    ].filter(Boolean);
+    if (metaParts.length) {
+      card.append(createElement("p", "cc98-rebuild-card-meta", metaParts.join("  /  ")));
+    }
+    const itemActions = createElement("div", "cc98-rebuild-read-later-item-actions");
+    itemActions.append(createLink("cc98-rebuild-mini-action", "\u9605\u8bfb", item.href));
+    itemActions.lastElementChild?.addEventListener?.("click", () => markReadLaterItemRead(item.key, true));
+    itemActions.append(createButton("cc98-rebuild-mini-action", item.readAt ? "\u6807\u4e3a\u672a\u8bfb" : "\u6807\u4e3a\u5df2\u8bfb", () => {
+      markReadLaterItemRead(item.key, !item.readAt);
+      scheduleRebuild();
+    }));
+    itemActions.append(createButton("cc98-rebuild-mini-action cc98-rebuild-read-later-delete", "\u5220\u9664", () => {
+      removeReadLaterItem(item.key);
+      showRebuiltTransientToast(card, "\u5df2\u5220\u9664");
+      scheduleRebuild();
+    }));
+    card.append(itemActions);
+    list.append(card);
+  });
+  section.append(list);
+  renderReadLaterPager(section, totalPages);
+  app.append(section);
+}
+
 function getErrorPageData() {
   const source = document.querySelector(".errorState");
   const rawTitle = getFirstText(document, ".errorTitle") || "糟糕！好像出错了";
@@ -9307,6 +11248,9 @@ function renderGeneric(app) {
 }
 
 function renderRebuiltUi() {
+  if (repairStaleEditorTopicRoute()) {
+    return;
+  }
   if (isRebuilding) {
     return;
   }
@@ -9336,6 +11280,7 @@ function renderRebuiltUi() {
   }
 
   try {
+    removeDecorativeFrameImages(document);
     const app = createElement("div", "cc98-rebuild-shell");
     app.id = "cc98-comfort-app";
     app.dataset.cc98ComfortVersion = EXTENSION_VERSION;
@@ -9361,10 +11306,11 @@ function renderRebuiltUi() {
       ["版面", "https://www.cc98.org/boardList"],
       ["新帖", "https://www.cc98.org/newTopics"],
       ["关注", "https://www.cc98.org/focus"],
-      ["精选", "https://www.cc98.org/recommendedTopics"]
+      ["精选", "https://www.cc98.org/recommendedTopics"],
+      ["\u7a0d\u540e\u518d\u770b", getReadLaterPageHref()]
     ].forEach(([label, href]) => navLinks.append(createLink("", label, href)));
     nav.append(navLinks);
-    nav.append(createSearchForm());
+    nav.append(createRebuiltSearchForm());
     const actions = createElement("div", "cc98-rebuild-actions");
     actions.append(createButton("cc98-rebuild-icon-button", "刷新", () => location.reload()));
     actions.append(renderTopbarUserEntry());
@@ -9394,6 +11340,10 @@ function renderRebuiltUi() {
       renderErrorPage(app);
     } else if (kind === "message") {
       renderMessagePage(app);
+    } else if (kind === "readLater") {
+      renderReadLaterPage(app);
+    } else if (kind === "boardSearch") {
+      renderBoardSearch(app);
     } else if (kind === "topics" || kind === "search") {
       renderTopics(app);
     } else if (kind === "post") {
@@ -9625,6 +11575,9 @@ function scheduleFiltering() {
 }
 
 function scheduleRebuild() {
+  if (repairStaleEditorTopicRoute()) {
+    return;
+  }
   if (handleTopicFirstPagePrevisitNavigation()) {
     return;
   }
@@ -9639,6 +11592,9 @@ function scheduleRebuild() {
   rebuildQueued = true;
   requestAnimationFrame(() => {
     rebuildQueued = false;
+    if (repairStaleEditorTopicRoute()) {
+      return;
+    }
     if (handleTopicFirstPagePrevisitNavigation()) {
       return;
     }
@@ -9699,11 +11655,15 @@ function syncRebuiltContent() {
     return;
   }
 
+  removeDecorativeFrameImages(document);
   const app = document.querySelector("#cc98-comfort-app");
   stabilizeTopbarUserEntry(app);
   const feed = app?.querySelector("[data-feed-kind]");
   if (getPageKind() === "userCenter") {
     updateUserCenterHero(app);
+    return;
+  }
+  if (getPageKind() === "readLater") {
     return;
   }
   if (!feed) {
@@ -9714,6 +11674,13 @@ function syncRebuiltContent() {
   if (feed.dataset.feedKind === "topics") {
     getTopicItems().forEach((item) => {
       upsertCard(feed, `topic:${item.href}`, renderTopicCard(item));
+    });
+    return;
+  }
+
+  if (feed.dataset.feedKind === "boardSearch") {
+    getBoardSearchItems().forEach((item) => {
+      upsertCard(feed, `board-search:${item.href}`, renderTopicCard(item));
     });
     return;
   }
@@ -9826,8 +11793,8 @@ function ensureObserver() {
         return node instanceof Element
           && !node.closest?.("#cc98-comfort-app")
           && (
-            node.matches?.(".topBarRight, .topBarUserInfo, .topBarUserCenter, .topBarUserCenter-mainPage, .topBarMessageDetails, .topBarMessageDetails-mainPage, .focus-topic, .card-topic, .board-postItem-body, article, [class*='floor'], [class*='post'], [class*='reply']")
-            || Boolean(node.querySelector?.(".topBarRight, .topBarUserInfo, .topBarUserCenter, .topBarUserCenter-mainPage, .topBarMessageDetails, .topBarMessageDetails-mainPage, .focus-topic, .card-topic, .board-postItem-body, article, [class*='floor'], [class*='post'], [class*='reply']"))
+            node.matches?.(".topBarRight, .topBarUserInfo, .topBarUserCenter, .topBarUserCenter-mainPage, .topBarMessageDetails, .topBarMessageDetails-mainPage, .focus-topic, .card-topic, .board-postItem-body, .createTopic, #sendTopicInfo, article, [class*='floor'], [class*='post'], [class*='reply']")
+            || Boolean(node.querySelector?.(".topBarRight, .topBarUserInfo, .topBarUserCenter, .topBarUserCenter-mainPage, .topBarMessageDetails, .topBarMessageDetails-mainPage, .focus-topic, .card-topic, .board-postItem-body, .createTopic, #sendTopicInfo, article, [class*='floor'], [class*='post'], [class*='reply']"))
           );
       });
     });
@@ -9860,9 +11827,12 @@ function patchHistoryNavigation() {
       setTimeout(() => {
         const nextRouteKey = getRoutePageKey();
         previousRouteKey = nextRouteKey;
+        markCurrentTopicReadLaterRead();
         scheduleFiltering();
         if (nextRouteKey !== beforeRouteKey) {
-          scheduleDelayedRebuilds();
+          if (!repairStaleEditorTopicRoute()) {
+            scheduleDelayedRebuilds();
+          }
         } else {
           scrollToCurrentRebuiltHash();
           scheduleSync();
@@ -9879,13 +11849,20 @@ function patchHistoryNavigation() {
     const nextRouteKey = getRoutePageKey();
     if (nextRouteKey !== previousRouteKey) {
       previousRouteKey = nextRouteKey;
-      scheduleDelayedRebuilds();
+      markCurrentTopicReadLaterRead();
+      if (!repairStaleEditorTopicRoute()) {
+        scheduleDelayedRebuilds();
+      }
       return;
     }
     scrollToCurrentRebuiltHash();
     scheduleSync();
   });
   window.addEventListener("hashchange", () => {
+    if (isReadLaterRoute() || document.querySelector("#cc98-comfort-app")?.dataset.pageKind === "readLater") {
+      scheduleDelayedRebuilds();
+      return;
+    }
     scrollToCurrentRebuiltHash();
   });
 }
