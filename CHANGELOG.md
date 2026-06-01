@@ -2,46 +2,6 @@
 
 All notable changes to CC98 Reborn are documented here.
 
-## 0.2.0 - 2026-06-02
-
-### Added
-
-- Cached hot-reply fingerprints during first-page previsit so matching hot replies on later pages can be highlighted consistently.
-- Added a fuller private-message proxy UBB editor with link, image, video, Bilibili, audio, emoji, color, and preview controls while preserving native message sending.
-- Switched emoji rendering to bundled local extension assets, including CC98, AC, dark AC, Tieba, Mahjong Soul, classic, and Mahjong-face resources.
-
-### Fixed
-
-- Replaced native post/reply/edit emoji panels with the same custom floating emoji panel used by private messages.
-- Hardened post, reply, and edit submit recovery so successful submissions no longer stay stuck on the loading overlay.
-- Preserved submit target information across native-editor restoration, preventing the fallback refresh from losing its destination.
-- Improved private-message emoji popup stacking and spacing when category tabs wrap.
-- Fixed image prewarm flow so applicable pages scroll from the top before collecting images.
-- Restored enough bottom scroll room for editor popovers that extend below the visible editor.
-
-### Changed
-
-- Version bumped to `0.2.0`.
-- Release packages now include the bundled `images/` emoji asset directory.
-- The release package was regenerated as `dist/cc98-reborn-0.2.0.zip`.
-
-## 0.1.8 - 2026-06-01
-
-### 新增
-
-- 为全站新增更多配色方案：竹影、湖蓝、蔷薇、石墨、星夜、绛夜。
-- 插件弹窗主题区新增“更多……”展开菜单，选择更多主题后会在按钮旁显示当前主题。
-
-### 修复
-
-- 新增暗色主题会统一走暗色适配层，避免 Ant 弹窗、下拉、日历等组件只在“夜读”主题下适配。
-- 修复“正在加载帖子图片”“正在整理阅读界面”等加载遮罩在部分暗色主题下仍使用浅色文字或浅色底的问题。
-
-### 变更
-
-- 版本号提升到 `0.1.8`。
-- 重新生成发布包 `dist/cc98-reborn-0.1.8.zip`。
-
 ## 0.1.7 - 2026-06-01
 
 ### 新增

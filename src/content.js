@@ -2,27 +2,22 @@ const STORAGE_KEY = "cc98ComfortSettings";
 const PINNED_BOARDS_STORAGE_KEY = "cc98RebornPinnedBoards:v1";
 const READ_LATER_STORAGE_KEY = "cc98RebornReadLater:v1";
 const READ_LATER_ROUTE_HASH = "#cc98-reborn-read-later";
-const EXTENSION_VERSION = "0.2.0";
+const EXTENSION_VERSION = "0.1.7";
 const LOGIN_REDIRECT_MARK_KEY = "cc98RebornLoginRedirectStartedAt";
-const LOGIN_HOME_REFRESH_MARK_KEY = "cc98RebornLoginHomeRefreshPendingAt";
 const LOGOUT_REDIRECT_MARK_KEY = "cc98RebornLogoutRedirectStartedAt";
 const FIRST_PAGE_PREVISIT_PENDING_KEY = "cc98RebornFirstPagePrevisitPending";
 const FIRST_PAGE_PREVISIT_DONE_PREFIX = "cc98RebornFirstPagePrevisitDone:";
 const FIRST_PAGE_PREVISIT_TTL = 5 * 60 * 1000;
-const HOT_REPLY_FINGERPRINT_CACHE_PREFIX = "cc98RebornHotReplyFingerprints:v1:";
 const VOTE_OPTIMISTIC_COUNT_TTL = 2100;
 const VOTE_OPTIMISTIC_STATE_TTL = 2600;
 const HOME_HOT_RANK_CACHE_KEY_PREFIX = "cc98RebornHomeHotRanking:v1:";
 const SEARCH_EMPTY_INITIAL_GRACE_MS = 2600;
 const SEARCH_EMPTY_LOADING_GRACE_MS = 7000;
 const EDITOR_SUBMIT_INTENT_KEY = "cc98RebornEditorSubmitIntentAt";
-const EDITOR_SUBMIT_CONTEXT_KEY = "cc98RebornEditorSubmitContext";
-const EDITOR_LAST_TOPIC_HREF_KEY = "cc98RebornLastTopicHref";
 const EDITOR_TOPIC_RELOAD_KEY_PREFIX = "cc98RebornEditorTopicReload:";
 const EDITOR_TOPIC_RELOAD_TTL = 15000;
 const EDITOR_TOPIC_SUBMIT_RELOAD_KEY_PREFIX = "cc98RebornEditorTopicSubmitReload:";
 const EDITOR_TOPIC_SUBMIT_RELOAD_TTL = 30000;
-const EDITOR_SUBMIT_FORCE_REFRESH_DELAY = 1000;
 const EXTERNAL_AI_SEARCH_REQUIRES_EXPLICIT_CONSENT = true;
 // Disabled until the official CC98 OAuth authorization flow is wired.
 const WATERMARK_FEATURE_ENABLED = false;
@@ -60,101 +55,6 @@ const DEFAULT_SETTINGS = {
   placeholderText: "已根据你的屏蔽规则折叠一条内容"
 };
 
-const THEME_IDS = new Set(["soft", "mist", "night", "sage", "lake", "rose", "graphite", "midnight", "wine"]);
-const DARK_THEME_IDS = new Set(["night", "graphite", "midnight", "wine"]);
-const THEME_LOADING_COLORS = {
-  soft: {
-    bg: "#f4f6f5",
-    surface: "#ffffff",
-    text: "#24302d",
-    muted: "#5f6d68",
-    border: "#dbe3df",
-    accent: "#1f6f66",
-    panelBorder: "rgba(31, 111, 102, 0.18)",
-    shadow: "0 18px 48px rgba(30, 45, 40, 0.16)"
-  },
-  mist: {
-    bg: "#f2f5f8",
-    surface: "#ffffff",
-    text: "#25313a",
-    muted: "#60717c",
-    border: "#d5e0e7",
-    accent: "#286f84",
-    panelBorder: "rgba(40, 111, 132, 0.2)",
-    shadow: "0 18px 48px rgba(30, 45, 55, 0.16)"
-  },
-  sage: {
-    bg: "#eef5ef",
-    surface: "#fbfdfb",
-    text: "#22342a",
-    muted: "#607466",
-    border: "#d1dfd5",
-    accent: "#39785a",
-    panelBorder: "rgba(57, 120, 90, 0.2)",
-    shadow: "0 18px 48px rgba(34, 58, 43, 0.16)"
-  },
-  lake: {
-    bg: "#edf5f7",
-    surface: "#fbfdfe",
-    text: "#21313a",
-    muted: "#5d707a",
-    border: "#cfdfe6",
-    accent: "#2d7890",
-    panelBorder: "rgba(45, 120, 144, 0.2)",
-    shadow: "0 18px 48px rgba(33, 58, 66, 0.16)"
-  },
-  rose: {
-    bg: "#f7f1f4",
-    surface: "#fffafb",
-    text: "#352830",
-    muted: "#75636c",
-    border: "#e0cfd7",
-    accent: "#9a4968",
-    panelBorder: "rgba(154, 73, 104, 0.2)",
-    shadow: "0 18px 48px rgba(61, 39, 50, 0.16)"
-  },
-  night: {
-    bg: "#15191d",
-    surface: "#20262b",
-    text: "#e8edf0",
-    muted: "#b4c0c6",
-    border: "#3d4850",
-    accent: "#8bc7bd",
-    panelBorder: "rgba(139, 199, 189, 0.22)",
-    shadow: "0 18px 52px rgba(0, 0, 0, 0.35)"
-  },
-  graphite: {
-    bg: "#151716",
-    surface: "#202421",
-    text: "#e7ede9",
-    muted: "#b5c1bb",
-    border: "#3b4740",
-    accent: "#9cc8b3",
-    panelBorder: "rgba(156, 200, 179, 0.22)",
-    shadow: "0 18px 52px rgba(0, 0, 0, 0.35)"
-  },
-  midnight: {
-    bg: "#14171d",
-    surface: "#1f242c",
-    text: "#e7edf5",
-    muted: "#b3becb",
-    border: "#3c4654",
-    accent: "#9dbde8",
-    panelBorder: "rgba(157, 189, 232, 0.22)",
-    shadow: "0 18px 52px rgba(0, 0, 0, 0.35)"
-  },
-  wine: {
-    bg: "#1a1518",
-    surface: "#241f22",
-    text: "#efe8ec",
-    muted: "#c7b5bd",
-    border: "#4a3c43",
-    accent: "#e1a3b5",
-    panelBorder: "rgba(225, 163, 181, 0.22)",
-    shadow: "0 18px 52px rgba(0, 0, 0, 0.35)"
-  }
-};
-
 const BLOCKABLE_SELECTORS = [
   ".focus-topic",
   ".card-topic",
@@ -190,8 +90,6 @@ let firstPagePrevisitInProgress = false;
 let loadingOverlayActive = false;
 let loadingOverlayMessage = "";
 let loadingOverlayWatchdog = null;
-let loadingOverlayFailsafeTimer = null;
-let loadingOverlayStartedAt = 0;
 let messageTitleObserver = null;
 let nativeAntUiObserver = null;
 let nativeAntUiStabilizeTimer = null;
@@ -203,7 +101,6 @@ let imageViewerPushedState = false;
 let imageViewerItems = [];
 let imageViewerIndex = -1;
 let nativePostSubmitRefreshTimers = [];
-let editorSubmitHardRefreshTimers = [];
 let editorColorPopoverSequence = 0;
 let editorColorGlobalInterceptorBound = false;
 let editorFontSizePopoverSequence = 0;
@@ -218,7 +115,6 @@ let searchPageRouteKey = "";
 let searchPageRouteFirstSeenAt = 0;
 let readLaterSearchQuery = "";
 let readLaterPage = 1;
-let editorSubmitIntermediateTimer = null;
 const originalPosterIdentityPrefetches = new Map();
 const neutralizedLinks = new WeakMap();
 const reparentedNativeNodes = new WeakMap();
@@ -294,11 +190,9 @@ const TOPIC_TIME_PATTERN = "(?:刚刚|\\d+\\s*(?:秒前|分钟前|小时前|天�
 const TOPIC_TIME_RE = new RegExp(`^${TOPIC_TIME_PATTERN}$`);
 
 function normalizeSettings(settings = {}) {
-  const theme = THEME_IDS.has(settings.theme) ? settings.theme : DEFAULT_SETTINGS.theme;
   return {
     ...DEFAULT_SETTINGS,
     ...settings,
-    theme,
     density: DEFAULT_SETTINGS.density,
     neutralizeNativeSkin: DEFAULT_SETTINGS.neutralizeNativeSkin,
     rebuildUi: DEFAULT_SETTINGS.rebuildUi,
@@ -336,26 +230,6 @@ function clampNumber(value, min, max, fallback) {
   return Math.min(max, Math.max(min, number));
 }
 
-function getThemeLoadingColors() {
-  const root = document.documentElement;
-  const theme = THEME_IDS.has(lastSettings?.theme)
-    ? lastSettings.theme
-    : normalizeSettings({ theme: root.dataset.cc98ComfortTheme }).theme;
-  const fallback = THEME_LOADING_COLORS[theme] || THEME_LOADING_COLORS.soft;
-  const computed = window.getComputedStyle(root);
-  const readVar = (name, fallbackValue) => computed.getPropertyValue(name).trim() || fallbackValue;
-  return {
-    bg: readVar("--cc98-comfort-bg", fallback.bg),
-    surface: readVar("--cc98-comfort-surface", fallback.surface),
-    text: readVar("--cc98-comfort-text", fallback.text),
-    muted: readVar("--cc98-comfort-muted", fallback.muted),
-    border: readVar("--cc98-comfort-border", fallback.border),
-    accent: readVar("--cc98-comfort-accent", fallback.accent),
-    panelBorder: fallback.panelBorder,
-    shadow: fallback.shadow
-  };
-}
-
 function applySettings(settings) {
   lastSettings = normalizeSettings(settings);
   ensureSecurityWatermark();
@@ -365,7 +239,6 @@ function applySettings(settings) {
   const root = document.documentElement;
   root.classList.toggle("cc98-comfort", lastSettings.enabled);
   root.dataset.cc98ComfortTheme = lastSettings.theme;
-  root.dataset.cc98ComfortTone = DARK_THEME_IDS.has(lastSettings.theme) ? "dark" : "light";
   root.dataset.cc98ComfortDensity = lastSettings.density;
   root.dataset.cc98ComfortAvatars = String(lastSettings.softenAvatars);
   root.dataset.cc98ComfortHideSticky = String(lastSettings.hideSticky);
@@ -380,10 +253,6 @@ function applySettings(settings) {
   root.style.setProperty("--cc98-emoji-size", `${(1.75 * lastSettings.emojiScale / 100).toFixed(3)}em`);
   root.style.setProperty("--cc98-editor-emoji-size", `${(2.2 * lastSettings.emojiScale / 100).toFixed(3)}em`);
   root.style.setProperty("--cc98-comfort-radius", `${lastSettings.cornerRadius}px`);
-
-  if (consumeLoginHomeRefreshIntent()) {
-    return;
-  }
 
   scheduleFiltering();
   stabilizeEmojiRendering(document);
@@ -1874,28 +1743,7 @@ function markCurrentTopicReadLaterRead() {
   if (!routeInfo) {
     return;
   }
-  rememberCurrentTopicHref(routeInfo);
   markReadLaterItemRead(`topic:${routeInfo.topicId}`, true);
-}
-
-function rememberCurrentTopicHref(routeInfo = getTopicRouteInfo()) {
-  if (!routeInfo?.href) {
-    return;
-  }
-  try {
-    sessionStorage.setItem(EDITOR_LAST_TOPIC_HREF_KEY, routeInfo.href);
-  } catch {
-    // Last-topic routing is best-effort.
-  }
-}
-
-function getStoredLastTopicHref() {
-  try {
-    const href = sessionStorage.getItem(EDITOR_LAST_TOPIC_HREF_KEY) || "";
-    return getTopicRouteInfo(href) ? href : "";
-  } catch {
-    return "";
-  }
 }
 
 function getEditorStaleTopicReloadKey(routeInfo = getTopicRouteInfo()) {
@@ -1904,146 +1752,12 @@ function getEditorStaleTopicReloadKey(routeInfo = getTopicRouteInfo()) {
     : "";
 }
 
-function readEditorSubmitContext() {
+function markEditorSubmitIntent() {
   try {
-    const context = JSON.parse(sessionStorage.getItem(EDITOR_SUBMIT_CONTEXT_KEY) || "null");
-    if (!context || typeof context !== "object") {
-      return null;
-    }
-    const submittedAt = Number(context.submittedAt);
-    if (!Number.isFinite(submittedAt) || Date.now() - submittedAt > 90000) {
-      return null;
-    }
-    return context;
-  } catch {
-    return null;
-  }
-}
-
-function writeEditorSubmitContext(context) {
-  if (!context || typeof context !== "object") {
-    return null;
-  }
-  try {
-    sessionStorage.setItem(EDITOR_SUBMIT_CONTEXT_KEY, JSON.stringify(context));
+    sessionStorage.setItem(EDITOR_SUBMIT_INTENT_KEY, String(Date.now()));
   } catch {
     // Ignore session storage failures.
   }
-  return context;
-}
-
-function updateEditorSubmitContext(patch = {}) {
-  const context = readEditorSubmitContext();
-  if (!context) {
-    return null;
-  }
-  return writeEditorSubmitContext({
-    ...context,
-    ...patch
-  });
-}
-
-function clearEditorSubmitIntent() {
-  try {
-    sessionStorage.removeItem(EDITOR_SUBMIT_INTENT_KEY);
-    sessionStorage.removeItem(EDITOR_SUBMIT_CONTEXT_KEY);
-  } catch {
-    // Ignore session storage failures.
-  }
-  if (editorSubmitIntermediateTimer) {
-    window.clearTimeout(editorSubmitIntermediateTimer);
-    editorSubmitIntermediateTimer = null;
-  }
-  nativePostSubmitRefreshTimers.forEach((timer) => window.clearTimeout(timer));
-  nativePostSubmitRefreshTimers = [];
-  editorSubmitHardRefreshTimers.forEach((timer) => window.clearTimeout(timer));
-  editorSubmitHardRefreshTimers = [];
-  if (document.documentElement.dataset.cc98ComfortOriginalPrewarming !== "true" && !firstPagePrevisitInProgress) {
-    hideLoadingOverlay();
-  }
-}
-
-function isSubmitContextAttempted(context, field) {
-  const submittedAt = Number(context?.submittedAt) || 0;
-  const attemptedAt = Number(context?.[field]) || 0;
-  return attemptedAt >= submittedAt && Date.now() - attemptedAt <= 120000;
-}
-
-function clearSettledEditorSubmitIntent() {
-  const context = readEditorSubmitContext();
-  const routeInfo = getTopicRouteInfo();
-  if (!context || !routeInfo || !pageHasNativeTopicContent()) {
-    return false;
-  }
-  const destinationInfo = getTopicRouteInfo(context.destinationHref || context.startedHref || "");
-  if (destinationInfo?.topicId && destinationInfo.topicId !== routeInfo.topicId) {
-    return false;
-  }
-  const submittedAt = Number(context.submittedAt) || 0;
-  const elapsed = Date.now() - submittedAt;
-  const hasNavigationAttempt = [
-    "topicRefreshAttemptedAt",
-    "successNavigationAttemptedAt",
-    "intermediateRecoveryAttemptedAt",
-    "staleTopicReloadAttemptedAt",
-    "forcedRefreshAttemptedAt"
-  ].some((field) => isSubmitContextAttempted(context, field));
-  if (!hasNavigationAttempt && elapsed < 10000) {
-    return false;
-  }
-  clearEditorSubmitIntent();
-  return true;
-}
-
-function getTopicReferrerHref() {
-  const referrer = document.referrer || "";
-  return getTopicRouteInfo(referrer) ? referrer : "";
-}
-
-function getEditorEditPostId(url = location.href) {
-  try {
-    return new URL(url, location.href).pathname.match(/\/editor\/edit\/(\d+)/i)?.[1] || "";
-  } catch {
-    return String(url ?? "").match(/\/editor\/edit\/(\d+)/i)?.[1] || "";
-  }
-}
-
-function getEditorSubmitTargetHref() {
-  const currentTopic = getTopicRouteInfo();
-  if (currentTopic?.href) {
-    return currentTopic.href;
-  }
-  return getTopicReferrerHref()
-    || getStoredLastTopicHref()
-    || getEditorSubmitDestinationHref()
-    || "";
-}
-
-function markEditorSubmitIntent(context = {}) {
-  const submittedAt = Date.now();
-  const routeInfo = getTopicRouteInfo();
-  const targetHref = context.destinationHref || getEditorSubmitTargetHref();
-  const payload = {
-    ...(readEditorSubmitContext() || {}),
-    ...context,
-    submittedAt,
-    startedHref: context.startedHref || location.href,
-    startedRouteKey: context.startedRouteKey || getRoutePageKey(),
-    startedOnTopic: Boolean(context.startedOnTopic ?? routeInfo),
-    destinationHref: targetHref,
-    editPostId: context.editPostId || getEditorEditPostId(),
-    isEdit: Boolean(context.isEdit ?? getEditorEditPostId())
-  };
-  try {
-    sessionStorage.setItem(EDITOR_SUBMIT_INTENT_KEY, String(submittedAt));
-    sessionStorage.setItem(EDITOR_SUBMIT_CONTEXT_KEY, JSON.stringify(payload));
-  } catch {
-    // Ignore session storage failures.
-  }
-  showLoadingOverlay(payload.isEdit
-    ? "\u6b63\u5728\u63d0\u4ea4\u4fee\u6539\uff0c\u7b49\u5f85\u4fee\u6539\u5b8c\u6210..."
-    : "\u6b63\u5728\u63d0\u4ea4\uff0c\u8bf7\u7a0d\u5019...");
-  armEditorSubmitHardRefreshWatchdog(payload);
 }
 
 function hasRecentEditorSubmitIntent(ttl = 45000) {
@@ -2081,12 +1795,7 @@ function pageHasStaleEditorOnTopicRoute() {
 }
 
 function repairStaleEditorTopicRoute() {
-  clearSettledEditorSubmitIntent();
   if (!pageHasStaleEditorOnTopicRoute()) {
-    return false;
-  }
-  const context = readEditorSubmitContext();
-  if (isSubmitContextAttempted(context, "staleTopicReloadAttemptedAt")) {
     return false;
   }
   const key = getEditorStaleTopicReloadKey();
@@ -2103,8 +1812,7 @@ function repairStaleEditorTopicRoute() {
     // Continue with the reload; the guard is best-effort only.
   }
   showLoadingOverlay("\u63d0\u4ea4\u5df2\u6210\u529f\uff0c\u6b63\u5728\u91cd\u65b0\u52a0\u8f7d\u5e16\u5b50\u9875\u9762...");
-  updateEditorSubmitContext({ staleTopicReloadAttemptedAt: Date.now() });
-  navigateToEditorSubmitTarget(location.href, { reloadFallback: true, fallbackDelay: 400 });
+  location.replace(location.href);
   return true;
 }
 
@@ -2117,10 +1825,6 @@ function getSubmittedTopicRouteReloadKey(routeInfo = getTopicRouteInfo()) {
 function refreshSubmittedTopicRoute() {
   const routeInfo = getTopicRouteInfo();
   if (!routeInfo || !hasRecentEditorSubmitIntent(60000)) {
-    return false;
-  }
-  const context = readEditorSubmitContext();
-  if (isSubmitContextAttempted(context, "topicRefreshAttemptedAt")) {
     return false;
   }
   const key = getSubmittedTopicRouteReloadKey(routeInfo);
@@ -2137,272 +1841,7 @@ function refreshSubmittedTopicRoute() {
     // Continue with the reload; the guard is best-effort only.
   }
   showLoadingOverlay("\u63d0\u4ea4\u5df2\u6210\u529f\uff0c\u6b63\u5728\u5237\u65b0\u5e16\u5b50\u9875\u9762...");
-  updateEditorSubmitContext({ topicRefreshAttemptedAt: Date.now() });
-  navigateToEditorSubmitTarget(routeInfo.href, { reloadFallback: true, fallbackDelay: 400 });
-  return true;
-}
-
-function isElementDisplayed(element) {
-  if (!(element instanceof HTMLElement)) {
-    return false;
-  }
-  if (element.hidden || element.classList.contains("displaynone")) {
-    return false;
-  }
-  const style = window.getComputedStyle(element);
-  return style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity || 1) !== 0;
-}
-
-function hasVisibleEditorSubmitSuccess() {
-  const successPattern = /\u6210\u529f|\u4fee\u6539\u5b8c\u6210|\u7f16\u8f91\u5b8c\u6210|\u5df2\u4fee\u6539|\u5df2\u53d1\u8868|\u5df2\u53d1\u5e03|\u5df2\u63d0\u4ea4|\u5df2\u4fdd\u5b58|\u5df2\u7f16\u8f91/;
-  const notices = [
-    ...document.querySelectorAll(".send-topic-notice-success, .noticeSuccess, [class*='notice-success'], [class*='NoticeSuccess'], [class*='success'], [class*='Success']")
-  ].filter((node) => node instanceof HTMLElement);
-  return notices.some((node) => isElementDisplayed(node) && successPattern.test(cleanupPostText(node.textContent)));
-}
-
-function getEditorSubmitDestinationHref() {
-  const topicLink = [...document.querySelectorAll('a[href*="/topic/"]')]
-    .map((link) => makeAbsoluteCc98Url(link.getAttribute("href") || link.href || ""))
-    .find((href) => getTopicRouteInfo(href));
-  if (topicLink) {
-    return topicLink;
-  }
-  if (/\/topic\/\d+/i.test(document.referrer || "")) {
-    return document.referrer;
-  }
-  const boardLink = [...document.querySelectorAll('.createTopic a[href*="/board/"], a[href*="/board/"]')]
-    .map((link) => makeAbsoluteCc98Url(link.getAttribute("href") || link.href || ""))
-    .find((href) => /\/board\/\d+/i.test(href));
-  return boardLink || "";
-}
-
-function navigateAfterEditorSubmitSuccess(startedOnTopic = false) {
-  if (!hasRecentEditorSubmitIntent(60000) || !hasVisibleEditorSubmitSuccess()) {
-    return false;
-  }
-  const context = readEditorSubmitContext();
-  if (isSubmitContextAttempted(context, "successNavigationAttemptedAt")) {
-    return false;
-  }
-  const routeInfo = getTopicRouteInfo();
-  if (routeInfo) {
-    showLoadingOverlay("\u63d0\u4ea4\u5df2\u6210\u529f\uff0c\u6b63\u5728\u5237\u65b0\u5e16\u5b50\u9875\u9762...");
-    updateEditorSubmitContext({ successNavigationAttemptedAt: Date.now(), topicRefreshAttemptedAt: Date.now() });
-    navigateToEditorSubmitTarget(routeInfo.href, { reloadFallback: true, fallbackDelay: 400 });
-    return true;
-  }
-  const destination = getEditorSubmitDestinationHref();
-  if (destination) {
-    showLoadingOverlay(startedOnTopic
-      ? "\u63d0\u4ea4\u5df2\u6210\u529f\uff0c\u6b63\u5728\u8fd4\u56de\u5e16\u5b50\u9875\u9762..."
-      : "\u63d0\u4ea4\u5df2\u6210\u529f\uff0c\u6b63\u5728\u8df3\u8f6c...");
-    updateEditorSubmitContext({ successNavigationAttemptedAt: Date.now() });
-    navigateToEditorSubmitTarget(destination, { reloadFallback: true, fallbackDelay: 450 });
-    return true;
-  }
-  showLoadingOverlay("\u63d0\u4ea4\u5df2\u6210\u529f\uff0c\u6b63\u5728\u5237\u65b0\u9875\u9762...");
-  updateEditorSubmitContext({ successNavigationAttemptedAt: Date.now() });
-  hardReloadCurrentLocation();
-  return true;
-}
-
-function isEditorSubmitIntermediatePage() {
-  if (!hasRecentEditorSubmitIntent(90000)) {
-    return false;
-  }
-  const title = cleanupPostText(document.title);
-  const bodyText = cleanupPostText(document.body?.textContent || "");
-  const hasCrashTemplate = Boolean(document.querySelector("#error-text, #stack-text, #source-text"))
-    || /CC98\s*\u8bba\u575b\s*-\s*\u9519\u8bef/.test(title);
-  const hasErrorState = Boolean(document.querySelector(".errorState, .errorTitle, .errorText"));
-  return hasCrashTemplate
-    || hasErrorState
-    || (/(\u9519\u8bef|\u51fa\u9519|Error|Exception|Invariant)/i.test(`${title} ${bodyText}`) && !pageHasNativeTopicContent());
-}
-
-function getEditorSubmitRecoveryTarget(context = readEditorSubmitContext()) {
-  const candidates = [
-    context?.destinationHref,
-    getStoredLastTopicHref(),
-    getTopicReferrerHref(),
-    getTopicRouteInfo()?.href
-  ];
-  return candidates
-    .map((href) => makeAbsoluteCc98Url(href || ""))
-    .find((href) => href && getTopicRouteInfo(href)) || "";
-}
-
-function shouldForceRefreshAfterEditorSubmit(context, startedOnTopic = false) {
-  return Boolean(context?.submittedAt || context?.destinationHref || context?.startedHref || context?.isEdit || context?.startedOnTopic || startedOnTopic);
-}
-
-function getEditorSubmitHardTarget(context = readEditorSubmitContext()) {
-  const currentTopic = getTopicRouteInfo()?.href || "";
-  if (currentTopic) {
-    return currentTopic;
-  }
-  const recoveryTarget = getEditorSubmitRecoveryTarget(context);
-  if (recoveryTarget) {
-    return recoveryTarget;
-  }
-  const destination = makeAbsoluteCc98Url(context?.destinationHref || "");
-  if (destination) {
-    return destination;
-  }
-  const startedHref = makeAbsoluteCc98Url(context?.startedHref || "");
-  if (context?.startedOnTopic && startedHref) {
-    return startedHref;
-  }
-  return getStoredLastTopicHref() || getTopicReferrerHref() || startedHref || location.href;
-}
-
-function hardReloadCurrentLocation() {
-  try {
-    location.reload();
-  } catch {
-    location.href = location.href;
-  }
-}
-
-function navigateToEditorSubmitTarget(destination, options = {}) {
-  const target = makeAbsoluteCc98Url(destination || "");
-  const currentWithoutHash = stripUrlHash(location.href);
-  const targetWithoutHash = target ? stripUrlHash(target) : "";
-  if (target && targetWithoutHash !== currentWithoutHash) {
-    location.replace(target);
-    if (options.reloadFallback !== false) {
-      window.setTimeout(() => {
-        if (hasRecentEditorSubmitIntent(90000)) {
-          hardReloadCurrentLocation();
-        }
-      }, Number.isFinite(options.fallbackDelay) ? options.fallbackDelay : 650);
-    }
-    return;
-  }
-  hardReloadCurrentLocation();
-}
-
-function absoluteNavigateAfterEditorSubmit(context = readEditorSubmitContext(), options = {}) {
-  const target = getEditorSubmitHardTarget(context);
-  showLoadingOverlay(context?.isEdit
-    ? "\u4fee\u6539\u5df2\u63d0\u4ea4\uff0c\u6b63\u5728\u5f3a\u5236\u8fd4\u56de..."
-    : "\u63d0\u4ea4\u5df2\u53d1\u51fa\uff0c\u6b63\u5728\u5f3a\u5236\u8fd4\u56de...");
-  if (context) {
-    updateEditorSubmitContext({
-      absoluteNavigationAttemptedAt: Date.now(),
-      forcedRefreshAttemptedAt: Date.now(),
-      successNavigationAttemptedAt: Date.now()
-    });
-  }
-  navigateToEditorSubmitTarget(target, {
-    reloadFallback: true,
-    fallbackDelay: Number.isFinite(options.fallbackDelay) ? options.fallbackDelay : 260
-  });
-  return true;
-}
-
-function forceRefreshAfterEditorSubmit(startedOnTopic = false, options = {}) {
-  const context = readEditorSubmitContext();
-  if (!context || !hasRecentEditorSubmitIntent(90000) || !shouldForceRefreshAfterEditorSubmit(context, startedOnTopic)) {
-    return false;
-  }
-  if (isSubmitContextAttempted(context, "forcedRefreshAttemptedAt") && !options.allowRepeat) {
-    return false;
-  }
-  const submittedAt = Number(context.submittedAt) || 0;
-  if (!options.ignoreDelay && Date.now() - submittedAt < EDITOR_SUBMIT_FORCE_REFRESH_DELAY) {
-    return false;
-  }
-  const currentTopic = getTopicRouteInfo()?.href || "";
-  const destination = currentTopic
-    || getEditorSubmitRecoveryTarget(context)
-    || makeAbsoluteCc98Url(context.destinationHref || "");
-  showLoadingOverlay(context.isEdit
-    ? "\u5df2\u89e6\u53d1\u4fee\u6539\u63d0\u4ea4\uff0c\u6b63\u5728\u5f3a\u5236\u5237\u65b0\u5e16\u5b50..."
-    : "\u5df2\u89e6\u53d1\u63d0\u4ea4\uff0c\u6b63\u5728\u5f3a\u5236\u5237\u65b0\u76ee\u6807\u9875...");
-  updateEditorSubmitContext({
-    forcedRefreshAttemptedAt: Date.now(),
-    forcedRefreshRepeatAt: options.allowRepeat ? Date.now() : context.forcedRefreshRepeatAt,
-    successNavigationAttemptedAt: Date.now()
-  });
-  navigateToEditorSubmitTarget(destination, {
-    reloadFallback: true,
-    fallbackDelay: options.fallbackDelay
-  });
-  return true;
-}
-
-function armEditorSubmitHardRefreshWatchdog(context = readEditorSubmitContext()) {
-  editorSubmitHardRefreshTimers.forEach((timer) => window.clearTimeout(timer));
-  editorSubmitHardRefreshTimers = [];
-  if (!context || !shouldForceRefreshAfterEditorSubmit(context, Boolean(context.startedOnTopic))) {
-    return;
-  }
-  const submittedAt = Number(context.submittedAt) || Date.now();
-  const checks = [
-    EDITOR_SUBMIT_FORCE_REFRESH_DELAY,
-    EDITOR_SUBMIT_FORCE_REFRESH_DELAY + 650,
-    EDITOR_SUBMIT_FORCE_REFRESH_DELAY + 1450,
-    EDITOR_SUBMIT_FORCE_REFRESH_DELAY + 2600
-  ];
-  editorSubmitHardRefreshTimers = checks.map((absoluteDelay, index) => {
-    const delay = Math.max(0, absoluteDelay - (Date.now() - submittedAt));
-    return window.setTimeout(() => {
-      const latest = readEditorSubmitContext() || context;
-      if (!latest || !shouldForceRefreshAfterEditorSubmit(latest, Boolean(latest.startedOnTopic))) {
-        return;
-      }
-      if (index >= 1) {
-        absoluteNavigateAfterEditorSubmit(latest, { fallbackDelay: index >= 2 ? 180 : 260 });
-        return;
-      }
-      if (clearSettledEditorSubmitIntent()) {
-        return;
-      }
-      if (navigateAfterEditorSubmitSuccess(Boolean(latest.startedOnTopic))) {
-        return;
-      }
-      forceRefreshAfterEditorSubmit(Boolean(latest.startedOnTopic), {
-        allowRepeat: true,
-        ignoreDelay: true,
-        fallbackDelay: 420
-      });
-    }, delay);
-  });
-}
-
-function handleEditorSubmitIntermediatePage() {
-  clearSettledEditorSubmitIntent();
-  if (!isEditorSubmitIntermediatePage()) {
-    return false;
-  }
-  const context = readEditorSubmitContext();
-  if (isSubmitContextAttempted(context, "intermediateRecoveryAttemptedAt")) {
-    clearEditorSubmitIntent();
-    return false;
-  }
-  if (forceRefreshAfterEditorSubmit(Boolean(context?.startedOnTopic))) {
-    return true;
-  }
-  const target = getEditorSubmitRecoveryTarget(context);
-  showLoadingOverlay(context?.isEdit
-    ? "\u6b63\u5728\u7b49\u5f85\u4fee\u6539\u5b8c\u6210\uff0c\u7a0d\u540e\u5237\u65b0\u5e16\u5b50..."
-    : "\u6b63\u5728\u7b49\u5f85\u63d0\u4ea4\u5b8c\u6210\uff0c\u7a0d\u540e\u5237\u65b0\u9875\u9762...");
-  if (editorSubmitIntermediateTimer) {
-    return true;
-  }
-  const submittedAt = Number(context?.submittedAt) || Date.now();
-  const delay = Math.max(0, EDITOR_SUBMIT_FORCE_REFRESH_DELAY - (Date.now() - submittedAt));
-  editorSubmitIntermediateTimer = window.setTimeout(() => {
-    editorSubmitIntermediateTimer = null;
-    const destination = target || context?.destinationHref || context?.startedHref || "";
-    showLoadingOverlay(context?.isEdit
-      ? "\u4fee\u6539\u5b8c\u6210\uff0c\u6b63\u5728\u5f3a\u5236\u5237\u65b0..."
-      : "\u63d0\u4ea4\u5b8c\u6210\uff0c\u6b63\u5728\u5f3a\u5236\u5237\u65b0...");
-    updateEditorSubmitContext({ intermediateRecoveryAttemptedAt: Date.now() });
-    navigateToEditorSubmitTarget(destination);
-  }, delay);
+  location.replace(routeInfo.href);
   return true;
 }
 
@@ -2511,7 +1950,6 @@ function startFirstPagePrevisitReturn(pending) {
     if (identity) {
       setCachedOriginalPosterIdentity(pending.topicId, identity);
     }
-    cacheHotReplyFingerprintsFromRoot(pending.topicId, document);
     await wait(260);
   })()
     .catch(() => {})
@@ -2626,25 +2064,24 @@ async function prewarmNativeLazyMedia() {
 
   lazyPrewarmPromise = (async () => {
     const root = document.querySelector("#root");
-    const originalScrollPositions = captureNativeScrollPositions();
+    const originalRootScrollTop = root?.scrollTop ?? 0;
+    const originalRootScrollLeft = root?.scrollLeft ?? 0;
     document.documentElement.dataset.cc98ComfortPrewarming = "true";
 
     try {
       await wait(120);
-      const media = sortNodesByDocumentPosition([...document.querySelectorAll([
+      const media = [...document.querySelectorAll([
         "#root .reply-content .substance img",
         "#root .reply-content .substance [style*='url(']",
         "#root .signature img",
         "#root .signature [style*='url(']",
         "#root article img",
         "#root article [style*='url(']"
-      ].join(","))])
+      ].join(","))]
         .filter((node) => node instanceof Element && !node.closest("#cc98-comfort-app"));
 
       [...root?.querySelectorAll("img") ?? []].forEach(eagerNativeImage);
-      getNativeScrollTargets().forEach((target) => scrollNativeTargetTo(target, 0));
       dispatchNativeLazySignals();
-      await wait(90);
 
       for (const node of media) {
         node.scrollIntoView?.({ block: "center", inline: "nearest" });
@@ -2664,7 +2101,7 @@ async function prewarmNativeLazyMedia() {
         .map((image) => waitForNativeImage(image)));
       lazyPrewarmedPageKey = pageKey;
     } finally {
-      restoreNativeScrollPositions(originalScrollPositions);
+      root?.scrollTo?.({ top: originalRootScrollTop, left: originalRootScrollLeft, behavior: "auto" });
       dispatchNativeLazySignals();
       delete document.documentElement.dataset.cc98ComfortPrewarming;
       lazyPrewarmPromise = null;
@@ -2706,51 +2143,6 @@ function scrollNativeTargetTo(target, top) {
   target.dispatchEvent(new Event("scroll", { bubbles: true }));
 }
 
-function getNativeScrollTop(target) {
-  if (target === window) {
-    return window.scrollY || document.documentElement?.scrollTop || document.body?.scrollTop || 0;
-  }
-  return target?.scrollTop || 0;
-}
-
-function captureNativeScrollPositions() {
-  return getNativeScrollTargets().map((target) => ({
-    target,
-    top: getNativeScrollTop(target),
-    left: target === window ? (window.scrollX || 0) : (target.scrollLeft || 0)
-  }));
-}
-
-function restoreNativeScrollPositions(positions) {
-  (positions || []).forEach(({ target, top, left }) => {
-    if (target === window) {
-      window.scrollTo({ top, left: left || 0, behavior: "auto" });
-      return;
-    }
-    if (target) {
-      target.scrollTop = top || 0;
-      target.scrollLeft = left || 0;
-      target.dispatchEvent(new Event("scroll", { bubbles: true }));
-    }
-  });
-}
-
-function sortNodesByDocumentPosition(nodes) {
-  return [...nodes].sort((a, b) => {
-    if (a === b) {
-      return 0;
-    }
-    const position = a.compareDocumentPosition?.(b) || 0;
-    if (position & Node.DOCUMENT_POSITION_FOLLOWING) {
-      return -1;
-    }
-    if (position & Node.DOCUMENT_POSITION_PRECEDING) {
-      return 1;
-    }
-    return 0;
-  });
-}
-
 async function scrollOriginalPageForLazyMedia(duration = 2100, shouldStop = () => false) {
   const durationMs = clampNumber(duration, 800, 8000, DEFAULT_SETTINGS.imageLoadDuration);
   const steps = Math.max(6, Math.min(40, Math.round(durationMs / 120)));
@@ -2786,11 +2178,9 @@ async function scrollOriginalPageForLazyMedia(duration = 2100, shouldStop = () =
 function collectSnapshotMedia(root) {
   const media = [];
   const seen = new Set();
-  root?.querySelectorAll("img, video, source").forEach((node) => {
-    const src = node instanceof HTMLImageElement
-      ? getNonDecorativeImageSrc(node)
-      : makeAbsoluteCc98Url(getMediaUrl(node) || node.src || "");
-    if (!src || isEmojiImageUrl(src) || isDownloadFileUrl(src) || (!isProbablyPostImageUrl(src) && !isProbablyPostVideoUrl(src))) {
+  root?.querySelectorAll("img").forEach((image) => {
+    const src = getNonDecorativeImageSrc(image);
+    if (!src || isEmojiImageUrl(src) || isDownloadFileUrl(src)) {
       return;
     }
     const key = normalizeMediaKey(src);
@@ -2798,7 +2188,7 @@ function collectSnapshotMedia(root) {
       return;
     }
     seen.add(key);
-    media.push({ src, alt: node.alt || "", kind: isProbablyPostVideoUrl(src) ? "video" : "image" });
+    media.push({ src, alt: image.alt || "" });
   });
   return media;
 }
@@ -3241,7 +2631,7 @@ function ensureLoadingOverlayElement() {
     parent.append(overlay);
   }
 
-  const colors = getThemeLoadingColors();
+  const isNight = document.documentElement.dataset.cc98ComfortTheme === "night";
   applyImportantStyle(overlay, {
     position: "fixed",
     inset: "0",
@@ -3251,8 +2641,7 @@ function ensureLoadingOverlayElement() {
     "pointer-events": "auto",
     opacity: "1",
     visibility: "visible",
-    background: colors.bg,
-    color: colors.text
+    background: isNight ? "#15191d" : "#f4f6f5"
   });
 
   const panel = overlay.querySelector(".cc98-comfort-loading-panel");
@@ -3260,41 +2649,18 @@ function ensureLoadingOverlayElement() {
     applyImportantStyle(panel, {
       display: "grid",
       visibility: "visible",
-      opacity: "1",
-      background: colors.surface,
-      "border-color": colors.panelBorder,
-      "box-shadow": colors.shadow
+      opacity: "1"
     });
   }
 
-  const spinner = overlay.querySelector(".cc98-comfort-loading-spinner");
-  if (spinner) {
-    applyImportantStyle(spinner, {
-      "border-color": colors.border,
-      "border-top-color": colors.accent
-    });
-  }
-
-  const title = overlay.querySelector(".cc98-comfort-loading-title");
-  if (title) {
-    title.textContent = loadingOverlayMessage;
-    applyImportantStyle(title, { color: colors.text });
-  }
-
-  const subtitle = overlay.querySelector(".cc98-comfort-loading-subtitle");
-  if (subtitle) {
-    subtitle.textContent = "\u539f\u7248\u9875\u9762\u6b63\u5728\u906e\u7f69\u540e\u9762\u9884\u70ed\uff0c\u5b8c\u6210\u540e\u4f1a\u81ea\u52a8\u663e\u793a\u5b8c\u6574\u9605\u8bfb\u754c\u9762\u3002";
-    applyImportantStyle(subtitle, { color: colors.muted });
-  }
+  overlay.querySelector(".cc98-comfort-loading-title").textContent = loadingOverlayMessage;
+  overlay.querySelector(".cc98-comfort-loading-subtitle").textContent = "\u539f\u7248\u9875\u9762\u6b63\u5728\u906e\u7f69\u540e\u9762\u9884\u70ed\uff0c\u5b8c\u6210\u540e\u4f1a\u81ea\u52a8\u663e\u793a\u5b8c\u6574\u9605\u8bfb\u754c\u9762\u3002";
   overlay.hidden = false;
   overlay.removeAttribute("aria-hidden");
   return overlay;
 }
 
 function showLoadingOverlay(message = "\u6b63\u5728\u52a0\u8f7d\u5e16\u5b50\u56fe\u7247...") {
-  if (!loadingOverlayActive) {
-    loadingOverlayStartedAt = Date.now();
-  }
   loadingOverlayActive = true;
   loadingOverlayMessage = message;
   ensureLoadingOverlayElement();
@@ -3305,43 +2671,13 @@ function showLoadingOverlay(message = "\u6b63\u5728\u52a0\u8f7d\u5e16\u5b50\u56f
       }
     }, 120);
   }
-  if (!loadingOverlayFailsafeTimer) {
-    loadingOverlayFailsafeTimer = window.setTimeout(() => {
-      loadingOverlayFailsafeTimer = null;
-      if (!loadingOverlayActive) {
-        return;
-      }
-      const elapsed = Date.now() - loadingOverlayStartedAt;
-      if (elapsed < 18000) {
-        return;
-      }
-      if (firstPagePrevisitInProgress) {
-        firstPagePrevisitInProgress = false;
-        removeSessionItem(FIRST_PAGE_PREVISIT_PENDING_KEY);
-      }
-      if (document.documentElement.dataset.cc98ComfortOriginalPrewarming === "true") {
-        lazyPrewarmedPageKey = getLazyPrewarmPageKey();
-        delete document.documentElement.dataset.cc98ComfortOriginalPrewarming;
-        document.documentElement.classList.toggle("cc98-comfort", Boolean(lastSettings?.enabled));
-      }
-      delete document.documentElement.dataset.cc98ComfortPrewarming;
-      hideLoadingOverlay();
-      scheduleRebuild();
-      scheduleSync();
-    }, 18500);
-  }
 }
 
 function hideLoadingOverlay() {
   loadingOverlayActive = false;
-  loadingOverlayStartedAt = 0;
   if (loadingOverlayWatchdog) {
     clearInterval(loadingOverlayWatchdog);
     loadingOverlayWatchdog = null;
-  }
-  if (loadingOverlayFailsafeTimer) {
-    window.clearTimeout(loadingOverlayFailsafeTimer);
-    loadingOverlayFailsafeTimer = null;
   }
   document.querySelector("#cc98-comfort-loading")?.remove();
 }
@@ -3923,81 +3259,8 @@ function getMediaUrl(node) {
   return "";
 }
 
-function getRuntimeMediaUrl(node) {
-  if (typeof HTMLMediaElement !== "undefined" && node instanceof HTMLMediaElement) {
-    return node.currentSrc || node.src || node.getAttribute("src") || "";
-  }
-  if (typeof HTMLSourceElement !== "undefined" && node instanceof HTMLSourceElement) {
-    return node.src || node.getAttribute("src") || "";
-  }
-  return "";
-}
-
 function isImageUrl(url) {
   return /\.(?:png|jpe?g|gif|webp|bmp|avif)(?:[?#].*)?$/i.test(String(url ?? ""));
-}
-
-function getExtensionAssetUrl(assetPath) {
-  const path = String(assetPath ?? "").replace(/^\/+/, "").replace(/\\/g, "/");
-  if (!path) {
-    return "";
-  }
-  try {
-    if (typeof chrome !== "undefined" && chrome.runtime?.getURL) {
-      return chrome.runtime.getURL(path);
-    }
-  } catch {
-    // Extension URL resolution is best-effort in content scripts.
-  }
-  return path;
-}
-
-function isDarkComfortTheme() {
-  return document.documentElement.dataset.cc98ComfortTone === "dark"
-    || DARK_THEME_IDS.has(lastSettings?.theme);
-}
-
-function getLocalAcEmojiFolder() {
-  return isDarkComfortTheme() ? "images/ac1" : "images/ac";
-}
-
-function getLocalEmojiAssetUrlFromSrc(src) {
-  const raw = String(src ?? "");
-  if (!raw) {
-    return "";
-  }
-  let value = raw;
-  try {
-    value = decodeURIComponent(raw);
-  } catch {
-    // Keep the raw value when decoding fails.
-  }
-
-  let match = value.match(/(?:^|\/)(?:static\/)?images\/CC98\/CC98(\d{2})\.(gif|png)(?:[?#].*)?$/i);
-  if (match) {
-    return getExtensionAssetUrl(`images/CC98/CC98${match[1]}.${match[2].toLowerCase()}`);
-  }
-  match = value.match(/(?:^|\/)(?:static\/)?images\/ac1?\/(\d{2}|\d{4})\.png(?:[?#].*)?$/i);
-  if (match) {
-    return getExtensionAssetUrl(`${getLocalAcEmojiFolder()}/${match[1]}.png`);
-  }
-  match = value.match(/(?:^|\/)(?:static\/)?images\/mahjong\/(animal2017|carton2017|face2017)\/(\d{3})\.(gif|png)(?:[?#].*)?$/i);
-  if (match) {
-    return getExtensionAssetUrl(`images/mahjong/${match[1].toLowerCase()}/${match[2]}.${match[3].toLowerCase()}`);
-  }
-  match = value.match(/(?:^|\/)(?:static\/)?images\/tb\/tb(\d{2})\.png(?:[?#].*)?$/i);
-  if (match) {
-    return getExtensionAssetUrl(`images/tb/tb${match[1]}.png`);
-  }
-  match = value.match(/(?:^|\/)(?:static\/)?images\/ms\/ms(\d{2})\.png(?:[?#].*)?$/i);
-  if (match) {
-    return getExtensionAssetUrl(`images/ms/ms${match[1]}.png`);
-  }
-  match = value.match(/(?:^|\/)(?:static\/)?images\/em\/em(\d{2})\.gif(?:[?#].*)?$/i);
-  if (match) {
-    return getExtensionAssetUrl(`images/em/em${match[1]}.gif`);
-  }
-  return "";
 }
 
 function isAudioUrl(url) {
@@ -4007,7 +3270,7 @@ function isAudioUrl(url) {
 function isDownloadFileUrl(url) {
   const value = String(url ?? "");
   return /\.(?:pdf|docx?|xlsx?|pptx?|zip|rar|7z|txt|csv|tsv|md)(?:[?#].*)?$/i.test(value)
-    || (/\/v4-upload\/d\//i.test(value) && !isAudioUrl(value) && !isImageUrl(value) && !isVideoUrl(value));
+    || (/\/v4-upload\/d\//i.test(value) && !isAudioUrl(value) && !isImageUrl(value));
 }
 
 function isDecorativeFrameImageUrl(url) {
@@ -4073,18 +3336,6 @@ function isVideoUrl(url) {
 
 function isProbablyPostVideoUrl(url) {
   return isVideoUrl(url) || /(?:^|\/\/)file\.cc98\.org\/.*\/v\//i.test(String(url ?? ""));
-}
-
-function isBilibiliVideoUrl(url) {
-  return /(?:bilibili\.com|b23\.tv)/i.test(String(url ?? ""));
-}
-
-function isUsableNativeVideoUrl(url) {
-  const value = String(url ?? "");
-  return Boolean(value)
-    && !value.startsWith("data:")
-    && !isBilibiliVideoUrl(value)
-    && (/^blob:/i.test(value) || isProbablyPostVideoUrl(value));
 }
 
 function isAPlayerElement(node) {
@@ -4161,170 +3412,6 @@ function isVideoCarrierNode(node) {
   return /\b(?:video|player|dplayer|media)\b/i.test(haystack);
 }
 
-const LEGACY_VIDEO_PLAYER_SELECTOR = [
-  ".dplayer",
-  "[class*='dplayer' i]",
-  "[id*='dplayer' i]",
-  "[class*='video' i]",
-  "[id*='video' i]",
-  "[class*='player' i]",
-  "[id*='player' i]"
-].join(", ");
-
-const LEGACY_VIDEO_CHROME_SELECTOR = [
-  ".dplayer-controller",
-  ".dplayer-bezel",
-  ".dplayer-mobile-play",
-  ".dplayer-notice",
-  ".dplayer-menu",
-  ".dplayer-icons",
-  ".dplayer-bar-wrap",
-  ".dplayer-mask",
-  ".dplayer-logo",
-  ".dplayer-loading",
-  ".dplayer-setting",
-  ".dplayer-comment",
-  ".dplayer-subtitle",
-  ".dplayer-info-panel",
-  "[class*='dplayer-controller' i]",
-  "[class*='dplayer-bezel' i]",
-  "[class*='dplayer-mobile-play' i]",
-  "[class*='dplayer-notice' i]",
-  "[class*='dplayer-menu' i]",
-  "[class*='dplayer-icons' i]",
-  "[class*='dplayer-bar' i]",
-  "[class*='dplayer-mask' i]",
-  "[class*='dplayer-logo' i]",
-  "[class*='dplayer-loading' i]",
-  "[class*='dplayer-setting' i]",
-  "[class*='dplayer-comment' i]",
-  "[class*='dplayer-subtitle' i]",
-  "[class*='dplayer-info' i]"
-].join(", ");
-
-function isNativeVideoPlayerContainer(node) {
-  if (!(node instanceof Element) || isAPlayerElement(node)) {
-    return false;
-  }
-  const haystack = [
-    node.getAttribute?.("class"),
-    node.getAttribute?.("id"),
-    ...[...node.attributes ?? []].map((attr) => attr.name),
-    ...[...node.attributes ?? []].map((attr) => attr.value)
-  ].join(" ");
-  return /\b(?:dplayer|video|video-player|player|media)\b/i.test(haystack)
-    && !/(?:bilibili|bili|aplayer|audio)/i.test(haystack);
-}
-
-function extractVideoUrlFromText(text) {
-  const match = String(text ?? "").match(/(?:https?:\/\/[^\s<>"']+|\/[^\s<>"']+)\.(?:mp4|webm|ogg|mov|m4v)(?:[?#][^\s<>"']*)?/i);
-  return match ? makeAbsoluteCc98Url(match[0]) : "";
-}
-
-function getVideoSourceFromElement(root) {
-  if (!(root instanceof Element) || isAPlayerElement(root)) {
-    return "";
-  }
-  const runtime = getRuntimeMediaUrl(root);
-  if (isUsableNativeVideoUrl(runtime)) {
-    return makeAbsoluteCc98Url(runtime);
-  }
-  const own = getOwnMediaUrl(root);
-  if (isUsableNativeVideoUrl(own)) {
-    return makeAbsoluteCc98Url(own);
-  }
-  const candidates = [
-    ...(root.matches("video, source, a[href], [data-src], [data-url], [data-file], [data-href]") ? [root] : []),
-    ...root.querySelectorAll("video, source, a[href], [data-src], [data-original], [data-url], [data-file], [data-href]")
-  ];
-  for (const candidate of candidates) {
-    if (!(candidate instanceof Element) || isAPlayerElement(candidate)) {
-      continue;
-    }
-    const src = getRuntimeMediaUrl(candidate) || getOwnMediaUrl(candidate) || getMediaUrl(candidate);
-    if (isUsableNativeVideoUrl(src)) {
-      return makeAbsoluteCc98Url(src);
-    }
-  }
-  const textUrl = extractVideoUrlFromText(root.textContent);
-  return textUrl && !isBilibiliVideoUrl(textUrl) ? textUrl : "";
-}
-
-function getNativeVideoReplacementTarget(node, boundary) {
-  if (!(node instanceof Element)) {
-    return null;
-  }
-  const carrier = node.closest?.(LEGACY_VIDEO_PLAYER_SELECTOR);
-  if (carrier instanceof Element
-    && carrier !== boundary
-    && !carrier.closest?.(".aplayer, .cc98-rebuild-audio-player")
-    && !/bilibili|bili/i.test(`${carrier.className || ""} ${carrier.id || ""}`)
-    && getVideoSourceFromElement(carrier)) {
-    return carrier;
-  }
-  return node;
-}
-
-function replaceNativeVideoPlayers(clone) {
-  const targets = new Set();
-  clone.querySelectorAll(`${LEGACY_VIDEO_PLAYER_SELECTOR}, video, source, a[href], [data-src], [data-original], [data-url], [data-file], [data-href]`).forEach((node) => {
-    if (!(node instanceof Element) || isAPlayerElement(node)) {
-      return;
-    }
-    const src = getVideoSourceFromElement(node);
-    if (!src || !isUsableNativeVideoUrl(src)) {
-      return;
-    }
-    const target = getNativeVideoReplacementTarget(node, clone);
-    if (target instanceof Element) {
-      targets.add(target);
-    }
-  });
-
-  [...targets]
-    .filter((target) => target.isConnected)
-    .sort((a, b) => (a.contains(b) ? -1 : b.contains(a) ? 1 : 0))
-    .forEach((target) => {
-      if (!target.isConnected || isAPlayerElement(target)) {
-        return;
-      }
-      const src = getVideoSourceFromElement(target);
-      if (!src) {
-        return;
-      }
-      target.replaceWith(createContentVideoFromUrl(src));
-    });
-}
-
-function removeLegacyVideoPlayerChrome(root) {
-  root.querySelectorAll(LEGACY_VIDEO_CHROME_SELECTOR).forEach((node) => {
-    if (!(node instanceof Element) || isAPlayerElement(node)) {
-      return;
-    }
-    node.remove();
-  });
-
-  root.querySelectorAll(".dplayer, [class*='dplayer' i], [id*='dplayer' i]").forEach((player) => {
-    if (!(player instanceof Element) || isAPlayerElement(player) || !player.isConnected) {
-      return;
-    }
-    const src = getVideoSourceFromElement(player);
-    if (src) {
-      player.replaceWith(createContentVideoFromUrl(src));
-      return;
-    }
-    const nativeVideo = player.querySelector("video");
-    if (nativeVideo instanceof HTMLVideoElement) {
-      const nativeSrc = getVideoSourceFromElement(nativeVideo);
-      const replacement = nativeSrc ? createContentVideoFromUrl(nativeSrc) : nativeVideo.cloneNode(true);
-      normalizeContentVideoElement(replacement);
-      player.replaceWith(replacement);
-      return;
-    }
-    player.querySelectorAll(LEGACY_VIDEO_CHROME_SELECTOR).forEach((node) => node.remove());
-  });
-}
-
 function createContentImageFromUrl(url, alt = "") {
   const image = document.createElement("img");
   image.src = url;
@@ -4339,30 +3426,6 @@ function createContentVideoFromUrl(url) {
   video.controls = true;
   video.preload = "metadata";
   video.playsInline = true;
-  video.tabIndex = 0;
-  return video;
-}
-
-function normalizeContentVideoElement(video) {
-  if (!(video instanceof HTMLVideoElement)) {
-    return null;
-  }
-  const source = video.querySelector("source[src]");
-  const src = getRuntimeMediaUrl(video) || getMediaUrl(video) || (source ? getRuntimeMediaUrl(source) || getMediaUrl(source) : "");
-  if (src) {
-    video.src = makeAbsoluteCc98Url(src);
-  }
-  video.querySelectorAll("source[src]").forEach((sourceNode) => {
-    const sourceSrc = getMediaUrl(sourceNode);
-    if (sourceSrc) {
-      sourceNode.src = makeAbsoluteCc98Url(sourceSrc);
-    }
-  });
-  video.classList.add("cc98-rebuild-content-video");
-  video.controls = true;
-  video.preload = video.getAttribute("preload") || "metadata";
-  video.playsInline = true;
-  video.tabIndex = 0;
   return video;
 }
 
@@ -4374,9 +3437,6 @@ function normalizeMediaKey(url) {
 }
 
 function isEmojiImageUrl(url) {
-  if (getLocalEmojiAssetUrlFromSrc(url)) {
-    return true;
-  }
   const filename = decodeURIComponent(String(url ?? "").split(/[/?#]/).filter(Boolean).pop() || "");
   return /^\d{1,6}\.png$/i.test(filename)
     || /^[a-z]{4,6}\.png$/i.test(filename)
@@ -4399,18 +3459,13 @@ function markRebuiltEmojiImage(image, src = image?.src) {
   if (!(image instanceof HTMLImageElement)) {
     return false;
   }
-  const localSrc = getLocalEmojiAssetUrlFromSrc(src);
-  const effectiveSrc = localSrc || src;
-  if (localSrc && image.src !== localSrc) {
-    image.src = localSrc;
-  }
-  if (!isEmojiImageUrl(effectiveSrc)) {
+  if (!isEmojiImageUrl(src)) {
     image.classList.add("cc98-rebuild-content-image");
     return false;
   }
   image.classList.add("cc98-rebuild-inline-emoji");
   image.classList.remove("cc98-rebuild-content-image");
-  if (!localSrc && isTransparentAcEmojiUrl(src)) {
+  if (isTransparentAcEmojiUrl(src)) {
     image.classList.add("cc98-rebuild-invertible-emoji");
   } else {
     image.classList.remove("cc98-rebuild-invertible-emoji");
@@ -4715,93 +3770,9 @@ function renderQuoteBox(node) {
   return box;
 }
 
-function getCc98EmotionUrl(id) {
-  const code = String(id ?? "").padStart(2, "0");
-  const numericId = Number(code);
-  const extension = (numericId > 14 && numericId < 31) || numericId > 35 ? "png" : "gif";
-  return getExtensionAssetUrl(`images/CC98/CC98${code}.${extension}`);
-}
-
-function getMahjongEmotionUrl(prefix, id) {
-  const code = String(id ?? "").padStart(3, "0");
-  const numericId = Number(code);
-  if (prefix === "a") {
-    return getExtensionAssetUrl(`images/mahjong/animal2017/${code}.png`);
-  }
-  if (prefix === "c") {
-    const gifIds = new Set([18, 49, 96]);
-    return getExtensionAssetUrl(`images/mahjong/carton2017/${code}.${gifIds.has(numericId) ? "gif" : "png"}`);
-  }
-  const faceGifIds = new Set([4, 9, 56, 61, 62, 87, 115, 120, 137, 168, 169, 175, 206]);
-  return getExtensionAssetUrl(`images/mahjong/face2017/${code}.${faceGifIds.has(numericId) ? "gif" : "png"}`);
-}
-
-function getUbbEmotionImageUrl(tag) {
-  const value = String(tag ?? "").trim();
-  let match = value.match(/^cc98(\d{2})$/i);
-  if (match) {
-    return getCc98EmotionUrl(match[1]);
-  }
-  match = value.match(/^ac(\d{2}|\d{4})$/i);
-  if (match) {
-    return getExtensionAssetUrl(`${getLocalAcEmojiFolder()}/${match[1]}.png`);
-  }
-  match = value.match(/^([acf]):(\d{3})$/i);
-  if (match) {
-    return getMahjongEmotionUrl(match[1].toLowerCase(), match[2]);
-  }
-  match = value.match(/^tb(\d{2})$/i);
-  if (match) {
-    return getExtensionAssetUrl(`images/tb/tb${match[1]}.png`);
-  }
-  match = value.match(/^ms(\d{2})$/i);
-  if (match) {
-    return getExtensionAssetUrl(`images/ms/ms${match[1]}.png`);
-  }
-  match = value.match(/^em(\d{2})$/i);
-  if (match) {
-    return getExtensionAssetUrl(`images/em/em${match[1]}.gif`);
-  }
-  return "";
-}
-
-function createUbbEmotionPreviewNode(tag) {
-  const src = getUbbEmotionImageUrl(tag);
-  if (!src) {
-    return document.createTextNode(`[${tag}]`);
-  }
-  const wrap = createElement("span", "cc98-rebuild-inline-emoji-wrap");
-  wrap.style.display = "inline";
-  const image = createContentImageFromUrl(src, "");
-  markRebuiltEmojiImage(image, src);
-  wrap.append(image);
-  return wrap;
-}
-
-function createUbbMediaPreviewNode(tag, url, title = "") {
-  const src = String(url ?? "").trim();
-  if (!src) {
-    return null;
-  }
-  const normalizedTag = String(tag ?? "").toLowerCase();
-  if (normalizedTag === "audio" || normalizedTag === "mp3") {
-    return createAudioPlayerFromUrl(src, title);
-  }
-  if (normalizedTag === "video") {
-    return createContentVideoFromUrl(src);
-  }
-  if (normalizedTag === "bili" || normalizedTag === "bilibili") {
-    const link = createLink("cc98-rebuild-ubb-media-link", `Bilibili 视频：${src}`, makeAbsoluteCc98Url(src));
-    link.target = "_blank";
-    link.rel = "noreferrer";
-    return link;
-  }
-  return null;
-}
-
 function appendInlineUbbText(target, text) {
   const source = String(text ?? "");
-  const tokenPattern = /\[(cc98\d{2}|ac(?:\d{2}|\d{4})|[acf]:\d{3}|tb\d{2}|ms\d{2}|em\d{2})\]|\[(\/?)(b|i|u|s|del|url|color|size|align|audio|mp3|video|bili|bilibili)(?:=([^\]]+))?\]|\[img\]([\s\S]*?)\[\/img\]/ig;
+  const tokenPattern = /\[(\/?)(b|i|u|s|del|url|color|size|align)(?:=([^\]]+))?\]|\[img\]([\s\S]*?)\[\/img\]/ig;
   const stack = [{ tag: "", node: target }];
   let lastIndex = 0;
 
@@ -4855,20 +3826,12 @@ function appendInlineUbbText(target, text) {
       node.style.setProperty("display", "block", "important");
       node.style.setProperty("text-align", value.toLowerCase(), "important");
     }
-    if (/^(?:audio|mp3|video|bili|bilibili)$/i.test(tag)) {
-      node.dataset.cc98UbbMediaTag = tag.toLowerCase();
-      node.dataset.cc98UbbMediaTitle = value || "";
-    }
     return node;
   };
 
-  source.replace(tokenPattern, (match, emotionTag, closing, tag, value, imageUrl, offset) => {
+  source.replace(tokenPattern, (match, closing, tag, value, imageUrl, offset) => {
     appendText(source.slice(lastIndex, offset));
     lastIndex = offset + match.length;
-    if (emotionTag) {
-      stack.at(-1).node.append(createUbbEmotionPreviewNode(emotionTag));
-      return match;
-    }
     if (imageUrl) {
       const src = imageUrl.trim();
       if (src) {
@@ -4893,16 +3856,6 @@ function appendInlineUbbText(target, text) {
             }
           }
           delete closedNode.dataset.cc98UbbExplicitUrl;
-        }
-        if (closedNode instanceof HTMLElement && /^(?:audio|mp3|video|bili|bilibili)$/i.test(normalizedTag)) {
-          const media = createUbbMediaPreviewNode(
-            closedNode.dataset.cc98UbbMediaTag || normalizedTag,
-            closedNode.textContent || "",
-            closedNode.dataset.cc98UbbMediaTitle || ""
-          );
-          if (media) {
-            closedNode.replaceWith(media);
-          }
         }
         stack.length = index;
       }
@@ -4969,55 +3922,6 @@ function strengthenInlineTextStyles(root) {
         node.style.setProperty(prop, value, "important");
       }
     });
-  });
-}
-
-function markInlineUbbStyleClasses(root) {
-  if (!root) {
-    return;
-  }
-  const nodes = [
-    ...(root instanceof HTMLElement ? [root] : []),
-    ...(root.querySelectorAll?.("*") ?? [])
-  ].filter((node) => node instanceof HTMLElement);
-  nodes.forEach((node) => {
-    const styleText = node.getAttribute("style") || "";
-    const tagName = node.tagName.toLowerCase();
-    const color = getExplicitTextColor(node);
-    if (color) {
-      node.classList.add("cc98-rebuild-preview-colored");
-      node.style.setProperty("--cc98-preview-color", color);
-      node.querySelectorAll("*").forEach((child) => {
-        if (!(child instanceof HTMLElement) || getExplicitTextColor(child)) {
-          return;
-        }
-        child.classList.add("cc98-rebuild-preview-colored");
-        child.style.setProperty("--cc98-preview-color", color);
-      });
-    }
-    const textDecoration = `${node.style.textDecoration} ${node.style.textDecorationLine} ${styleText}`;
-    if (tagName === "u" || /underline/i.test(textDecoration)) {
-      node.classList.add("cc98-rebuild-preview-underline");
-    }
-    if (tagName === "s" || tagName === "del" || tagName === "strike" || /line-through|text-decoration\s*:\s*.*(?:del|through)/i.test(textDecoration)) {
-      node.classList.add("cc98-rebuild-preview-strike");
-    }
-    if (tagName === "b" || tagName === "strong" || /font-weight\s*:\s*(?:bold|[6-9]00)/i.test(styleText)) {
-      node.classList.add("cc98-rebuild-preview-bold");
-    }
-    if (tagName === "i" || tagName === "em" || /font-style\s*:\s*italic/i.test(styleText)) {
-      node.classList.add("cc98-rebuild-preview-italic");
-    }
-    const textAlign = node.style.textAlign || styleText.match(/text-align\s*:\s*([^;]+)/i)?.[1]?.trim() || "";
-    if (/^(left|center|right)$/i.test(textAlign)) {
-      node.classList.add("cc98-rebuild-preview-align");
-      node.style.setProperty("--cc98-preview-align", textAlign.toLowerCase());
-    }
-    const fontSize = node.style.fontSize || node.getAttribute("size") || "";
-    if (fontSize) {
-      node.classList.add("cc98-rebuild-preview-size");
-      node.style.setProperty("--cc98-preview-size", fontSize);
-    }
   });
 }
 
@@ -5165,7 +4069,7 @@ function buildReadablePostContent(contentNode) {
 function collectPostMediaSources(root) {
   const sources = [];
   const seen = new Set();
-  root.querySelectorAll("img, video, source, a[href], [style*='url('], [data-src], [data-original], [data-url], [data-img], [data-image], [data-full], [data-full-src], [data-file], [data-href]").forEach((node) => {
+  root.querySelectorAll("img, a[href], [style*='url('], [data-src], [data-original], [data-url], [data-img], [data-image], [data-full], [data-full-src], [data-file], [data-href]").forEach((node) => {
     if (!(node instanceof Element) || node.closest('[class*="signature"], [class*="Signature"]')) {
       return;
     }
@@ -5173,15 +4077,7 @@ function collectPostMediaSources(root) {
       return;
     }
     const src = getMediaUrl(node);
-    const isVideoSource = node.tagName === "VIDEO"
-      || (node.tagName === "SOURCE" && Boolean(node.closest("video")))
-      || isProbablyPostVideoUrl(src)
-      || isVideoCarrierNode(node);
-    if (!src
-      || isDecorativeFrameImageUrl(src)
-      || isEmojiImageUrl(src)
-      || isDownloadFileUrl(src)
-      || (!isProbablyPostImageUrl(src) && !isImageCarrierNode(node) && !isVideoSource)) {
+    if (!src || isDecorativeFrameImageUrl(src) || isEmojiImageUrl(src) || isDownloadFileUrl(src) || (!isProbablyPostImageUrl(src) && !isImageCarrierNode(node))) {
       return;
     }
     const key = normalizeMediaKey(src);
@@ -5189,7 +4085,7 @@ function collectPostMediaSources(root) {
       return;
     }
     seen.add(key);
-    sources.push({ src, alt: cleanupPostText(node.textContent), kind: isVideoSource ? "video" : "image" });
+    sources.push({ src, alt: cleanupPostText(node.textContent) });
   });
   return sources;
 }
@@ -5206,23 +4102,6 @@ function materializeAudioPlayers(clone) {
 }
 
 function materializePostMedia(clone) {
-  replaceNativeVideoPlayers(clone);
-  removeLegacyVideoPlayerChrome(clone);
-
-  clone.querySelectorAll("video").forEach((video) => {
-    normalizeContentVideoElement(video);
-  });
-
-  clone.querySelectorAll("source[src]").forEach((source) => {
-    if (!(source instanceof HTMLSourceElement) || source.closest("video, audio")) {
-      return;
-    }
-    const src = getMediaUrl(source);
-    if (isProbablyPostVideoUrl(src)) {
-      source.replaceWith(createContentVideoFromUrl(src));
-    }
-  });
-
   clone.querySelectorAll("img").forEach((image) => {
     if (isAPlayerElement(image)) {
       return;
@@ -5247,10 +4126,6 @@ function materializePostMedia(clone) {
       link.remove();
       return;
     }
-    if (isProbablyPostVideoUrl(href) && !link.querySelector("video")) {
-      link.replaceWith(createContentVideoFromUrl(href));
-      return;
-    }
     if ((!isProbablyPostImageUrl(href) && !isImageCarrierNode(link)) || link.querySelector("img")) {
       return;
     }
@@ -5266,18 +4141,11 @@ function materializePostMedia(clone) {
     if (isAPlayerElement(node)) {
       return;
     }
-    if (node.matches("iframe, embed, object") || /bilibili|bili/i.test(`${node.className || ""} ${node.id || ""} ${getOwnMediaUrl(node)}`)) {
-      return;
-    }
     if (node.querySelector("img")) {
       return;
     }
     const src = getOwnMediaUrl(node);
     const hasBackgroundImage = /url\(/i.test(node.getAttribute("style") || "");
-    if (src && (isProbablyPostVideoUrl(src) || isVideoCarrierNode(node)) && !node.querySelector("video")) {
-      node.replaceChildren(createContentVideoFromUrl(src));
-      return;
-    }
     if (!src || isDecorativeFrameImageUrl(src) || (!isProbablyPostImageUrl(src) && !isImageCarrierNode(node) && !hasBackgroundImage)) {
       return;
     }
@@ -5288,8 +4156,6 @@ function materializePostMedia(clone) {
     }
     node.replaceChildren(image);
   });
-
-  removeLegacyVideoPlayerChrome(clone);
 }
 
 function classifyPostImages(clone) {
@@ -5320,13 +4186,12 @@ function ensurePostMediaCoverage(clone, originalSources) {
     return;
   }
 
-  const present = new Set([...clone.querySelectorAll("img, video, source")]
-    .map((node) => normalizeMediaKey(getMediaUrl(node) || node.src))
+  const present = new Set([...clone.querySelectorAll("img")]
+    .map((image) => normalizeMediaKey(getMediaUrl(image) || image.src))
     .filter(Boolean));
   const missing = originalSources.filter((item) => !present.has(normalizeMediaKey(item.src)));
   const imageMissing = missing.filter((item) => !isDecorativeFrameImageUrl(item.src) && !isDownloadFileUrl(item.src) && isProbablyPostImageUrl(item.src));
-  const videoMissing = missing.filter((item) => !isDecorativeFrameImageUrl(item.src) && !isDownloadFileUrl(item.src) && isProbablyPostVideoUrl(item.src));
-  if (!imageMissing.length && !videoMissing.length) {
+  if (!imageMissing.length) {
     return;
   }
 
@@ -5335,9 +4200,6 @@ function ensurePostMediaCoverage(clone, originalSources) {
     const image = createContentImageFromUrl(item.src, item.alt);
     image.classList.add("cc98-rebuild-content-image");
     wrap.append(image);
-  });
-  videoMissing.forEach((item) => {
-    wrap.append(createContentVideoFromUrl(item.src));
   });
   clone.append(wrap);
 }
@@ -5608,8 +4470,6 @@ function sanitizeClonedPostContent(contentNode) {
   materializeAudioPlayers(clone);
   materializePostMedia(clone);
   normalizePostContentClone(clone);
-  parseInlineUbbTextNodes(clone);
-  materializePostMedia(clone);
   rewriteLegacyQuoteInlineStyles(clone);
   classifyPostImages(clone);
   stabilizePostQuoteBlocks(clone);
@@ -5920,102 +4780,6 @@ function setCachedOriginalPosterIdentity(topicId, identity) {
   }
 }
 
-function getHotReplyFingerprintCacheKey(topicId) {
-  return topicId ? `${HOT_REPLY_FINGERPRINT_CACHE_PREFIX}${topicId}` : "";
-}
-
-function normalizeHotReplyFingerprintText(value) {
-  return cleanupPostText(value)
-    .replace(/\s+/g, "")
-    .toLowerCase();
-}
-
-function getContentMediaFingerprint(root) {
-  if (!root?.querySelectorAll) {
-    return "";
-  }
-  return [...root.querySelectorAll("img, video, source, audio, a[href]")]
-    .map((node) => {
-      const url = node instanceof HTMLAnchorElement
-        ? (node.getAttribute("href") || node.href || "")
-        : getMediaUrl(node);
-      return normalizeMediaKey(makeAbsoluteCc98Url(url || ""));
-    })
-    .filter(Boolean)
-    .filter((url) => !/\/static\/images\/(?:hot|相框)\//i.test(url))
-    .join("|");
-}
-
-function getPostContentFingerprintFromContent(content) {
-  if (!content) {
-    return "";
-  }
-  const text = normalizeHotReplyFingerprintText(content.textContent || content.innerText || "");
-  const media = getContentMediaFingerprint(content);
-  const fingerprint = `${text}|${media}`.slice(0, 720);
-  return fingerprint.replace(/[|]+$/g, "").length >= 8 ? fingerprint : "";
-}
-
-function getPostContentFingerprintFromNode(post) {
-  const contentNode = findPostContentNode(post);
-  return getPostContentFingerprintFromContent(contentNode);
-}
-
-function readCachedHotReplyFingerprints(topicId) {
-  const key = getHotReplyFingerprintCacheKey(topicId);
-  if (!key) {
-    return [];
-  }
-  try {
-    const raw = JSON.parse(localStorage.getItem(key) || "null");
-    const values = Array.isArray(raw) ? raw : raw?.fingerprints;
-    return [...new Set((values || []).filter((value) => typeof value === "string" && value.length >= 8))];
-  } catch {
-    return [];
-  }
-}
-
-function writeCachedHotReplyFingerprints(topicId, fingerprints) {
-  const key = getHotReplyFingerprintCacheKey(topicId);
-  const values = [...new Set((fingerprints || []).filter((value) => typeof value === "string" && value.length >= 8))];
-  if (!key || !values.length) {
-    return;
-  }
-  try {
-    localStorage.setItem(key, JSON.stringify({ savedAt: Date.now(), fingerprints: values.slice(0, 80) }));
-  } catch {
-    // Hot reply cache is best-effort.
-  }
-}
-
-function mergeCachedHotReplyFingerprints(topicId, fingerprints) {
-  if (!topicId || !fingerprints?.length) {
-    return [];
-  }
-  const merged = [...new Set([...readCachedHotReplyFingerprints(topicId), ...fingerprints])];
-  writeCachedHotReplyFingerprints(topicId, merged);
-  return merged;
-}
-
-function getHotReplyFingerprintsFromRoot(root) {
-  if (!root?.querySelectorAll) {
-    return [];
-  }
-  return [...new Set([...root.querySelectorAll(".reply")]
-    .filter((node) => !node.closest("#cc98-comfort-app"))
-    .filter((node) => node instanceof HTMLElement && isHotPostNode(node))
-    .map(getPostContentFingerprintFromNode)
-    .filter(Boolean))];
-}
-
-function cacheHotReplyFingerprintsFromRoot(topicId, root) {
-  const fingerprints = getHotReplyFingerprintsFromRoot(root);
-  if (fingerprints.length) {
-    mergeCachedHotReplyFingerprints(topicId, fingerprints);
-  }
-  return fingerprints;
-}
-
 function getPostIdentityFromNode(post) {
   const user = getFirstLink(post, 'a[href*="/user/id/"], a[href*="/user/name/"]');
   const uidMatch = user?.href?.match(/\/user\/id\/(\d+)/);
@@ -6057,11 +4821,7 @@ function fetchOriginalPosterIdentityFromHtml(topicInfo) {
     cache: "no-store"
   })
     .then((response) => response.ok ? response.text() : "")
-    .then((html) => {
-      const doc = new DOMParser().parseFromString(html || "", "text/html");
-      cacheHotReplyFingerprintsFromRoot(topicInfo.topicId, doc);
-      return getOriginalPosterIdentityFromRoot(doc);
-    })
+    .then(readOriginalPosterIdentityFromStaticHtml)
     .catch(() => "");
 }
 
@@ -6112,7 +4872,6 @@ function fetchOriginalPosterIdentityFromRenderedPage(topicInfo) {
       } catch {
         return "";
       }
-      cacheHotReplyFingerprintsFromRoot(topicInfo.topicId, doc);
       return getOriginalPosterIdentityFromRoot(doc);
     };
 
@@ -6143,12 +4902,7 @@ async function fetchOriginalPosterIdentityFromFirstPage(topicInfo) {
 }
 
 function scheduleOriginalPosterIdentityPrefetch(topicInfo) {
-  if (!topicInfo?.topicId) {
-    return;
-  }
-  const hasOriginalPoster = Boolean(getCachedOriginalPosterIdentity(topicInfo.topicId));
-  const hasHotReplies = readCachedHotReplyFingerprints(topicInfo.topicId).length > 0;
-  if (hasOriginalPoster && hasHotReplies) {
+  if (!topicInfo?.topicId || getCachedOriginalPosterIdentity(topicInfo.topicId)) {
     return;
   }
   if (originalPosterIdentityPrefetches.has(topicInfo.topicId)) {
@@ -6156,18 +4910,12 @@ function scheduleOriginalPosterIdentityPrefetch(topicInfo) {
   }
   const promise = fetchOriginalPosterIdentityFromFirstPage(topicInfo)
     .then((identity) => {
-      let shouldRefresh = false;
-      if (identity) {
-        setCachedOriginalPosterIdentity(topicInfo.topicId, identity);
-        shouldRefresh = true;
+      if (!identity) {
+        return;
       }
-      if (!hasHotReplies && readCachedHotReplyFingerprints(topicInfo.topicId).length > 0) {
-        shouldRefresh = true;
-      }
-      if (shouldRefresh) {
-        scheduleRebuild();
-        setTimeout(scheduleSync, 180);
-      }
+      setCachedOriginalPosterIdentity(topicInfo.topicId, identity);
+      scheduleRebuild();
+      setTimeout(scheduleSync, 180);
     })
     .catch(() => {
       // If the first page cannot be fetched, simply avoid showing a false OP badge.
@@ -6201,32 +4949,6 @@ function markOriginalPosterItems(items) {
   }
   items.forEach((item) => {
     item.isOriginalPoster = getPostAuthorIdentity(item) === originalIdentity;
-  });
-  return items;
-}
-
-function markHotReplyItems(items) {
-  const topicInfo = getTopicPageInfo();
-  if (!topicInfo?.topicId || !items?.length) {
-    return items;
-  }
-  const visibleHotFingerprints = items
-    .filter((item) => item.isHot)
-    .map((item) => getPostContentFingerprintFromContent(item.content))
-    .filter(Boolean);
-  const hotFingerprints = visibleHotFingerprints.length
-    ? mergeCachedHotReplyFingerprints(topicInfo.topicId, visibleHotFingerprints)
-    : readCachedHotReplyFingerprints(topicInfo.topicId);
-
-  if (!hotFingerprints.length) {
-    scheduleOriginalPosterIdentityPrefetch(topicInfo);
-    return items;
-  }
-
-  const hotSet = new Set(hotFingerprints);
-  items.forEach((item) => {
-    const fingerprint = getPostContentFingerprintFromContent(item.content);
-    item.isHotHighlight = Boolean(item.isHot || (fingerprint && hotSet.has(fingerprint)));
   });
   return items;
 }
@@ -6267,7 +4989,7 @@ function collectPostActions(post) {
     const text = getActionText(control);
     const href = control instanceof HTMLAnchorElement ? makeAbsoluteCc98Url(control.href || control.getAttribute("href") || "") : "";
     const normalized = text.replace(/\s+\d+$/, "");
-    if (!/^(赞|踩|关注|取关|取消关注|私信|评分|引用|追踪|编辑)$/.test(normalized)) {
+    if (!/^(赞|踩|关注|取关|取消关注|私信|评分|追踪|编辑)$/.test(normalized)) {
       return;
     }
     const stableKind = /^(关注|取关|取消关注)$/.test(normalized) ? "关注" : normalized;
@@ -6293,14 +5015,7 @@ function collectPostActions(post) {
       }
     });
   }
-  const quoteIndex = actions.findIndex((action) => cleanupPostText(action.text).replace(/\s+\d+$/, "") === "引用");
-  const scoreIndex = actions.findIndex((action) => cleanupPostText(action.text).replace(/\s+\d+$/, "").includes("评分"));
-  if (quoteIndex >= 0 && scoreIndex >= 0 && quoteIndex !== scoreIndex + 1) {
-    const [quoteAction] = actions.splice(quoteIndex, 1);
-    const nextScoreIndex = actions.findIndex((action) => cleanupPostText(action.text).replace(/\s+\d+$/, "").includes("评分"));
-    actions.splice(nextScoreIndex + 1, 0, quoteAction);
-  }
-  return actions.slice(0, 10);
+  return actions.slice(0, 8);
 }
 
 function hasRenderablePostContent(contentNode) {
@@ -6308,46 +5023,17 @@ function hasRenderablePostContent(contentNode) {
     return false;
   }
   const text = cleanupPostText(contentNode.innerText || contentNode.textContent);
-  return text.length > 0 || Boolean(contentNode.querySelector("img, video, source, a[href], [style*='url('], [data-src], [data-original], [data-url], [data-img], [data-image]"));
+  return text.length > 0 || Boolean(contentNode.querySelector("img, a[href], [style*='url('], [data-src], [data-original], [data-url], [data-img], [data-image]"));
 }
 
 function getPostSignatureContent(post) {
-  if (!(post instanceof Element)) {
+  const signatureArticle = post.querySelector(".signature > article, .signature article");
+  if (!signatureArticle) {
     return null;
   }
-  const signatureSelectors = [
-    ".signature > article",
-    ".signature article",
-    ".signature",
-    "[class*='Signature'] > article",
-    "[class*='Signature'] article",
-    "[class*='Signature']",
-    "[class*='signature'] > article",
-    "[class*='signature'] article",
-    "[class*='signature']",
-    "[class*='userSign']",
-    "[class*='usersign']",
-    "[id*='signature']",
-    "[id*='Signature']",
-    "[id*='userSign']",
-    ".reply-content > div:not(.substance)"
-  ].join(",");
-  const signatureSource = [...post.querySelectorAll(signatureSelectors)]
-    .filter((node) => node instanceof HTMLElement)
-    .filter((node) => !node.closest("#cc98-comfort-app"))
-    .filter((node) => node !== post)
-    .filter((node) => !node.closest(".reply-content .substance, .substance"))
-    .find((node) => cleanupPostText(node.textContent) || node.querySelector("img, a[href], [style*='url(']"));
-  if (!signatureSource) {
-    return null;
-  }
-  const signaturePayload = signatureSource.matches("article")
-    ? signatureSource
-    : (signatureSource.querySelector("article") || signatureSource);
-  const signature = normalizeRichContentNode(signaturePayload, { keepSignatureChildren: true });
+  const signature = normalizeRichContentNode(signatureArticle, { keepSignatureChildren: true });
   parseInlineUbbTextNodes(signature);
   strengthenInlineTextStyles(signature);
-  markInlineUbbStyleClasses(signature);
   markInlineEmojiContainers(signature);
   stabilizeEmojiRendering(signature);
   signature.classList.add("cc98-rebuild-signature-content");
@@ -6415,18 +5101,6 @@ function formatAwardDelta(delta) {
   return number > 0 ? `+${number}` : String(number);
 }
 
-function getPostEditInfo(post) {
-  const text = cleanupPostText(post?.innerText || "");
-  const match = text.match(/该帖最后由\s*(.*?)\s*在\s*(\d{4}[-/]\d{1,2}[-/]\d{1,2}\s+\d{1,2}:\d{2}(?::\d{2})?)\s*编辑/);
-  if (!match) {
-    return { editor: "", editedAt: "" };
-  }
-  return {
-    editor: cleanupPostText(match[1]),
-    editedAt: match[2]
-  };
-}
-
 function applyAwardDeltaToActions(actions, rows) {
   if (!Array.isArray(actions) || !rows?.length) {
     return actions;
@@ -6488,7 +5162,6 @@ function getPostItems() {
     const awards = getPostAwardRows(post);
     const text = cleanupPostText(content.innerText);
     const publishedAt = cleanupPostText(post.innerText).match(/发表于\s+([0-9:-]+\s+[0-9:]+)/)?.[1] ?? "";
-    const editInfo = getPostEditInfo(post);
     const actions = collectPostActions(post);
     applyAwardDeltaToActions(actions, awards);
     const isHot = isHotPostNode(post);
@@ -6509,14 +5182,16 @@ function getPostItems() {
       signature,
       awards,
       publishedAt,
-      editedAt: editInfo.editedAt,
-      editedBy: editInfo.editor,
       actions,
       isHot
     };
   }).filter((item) => item && (item.text.length > 0 || item.content?.querySelector("img")));
   markOriginalPosterItems(items);
-  markHotReplyItems(items);
+  const favoriteAction = getTopicToolbarActions().favorite;
+  const favoriteTarget = favoriteAction ? (items.find((item) => !item.isHot) || items[0]) : null;
+  if (favoriteTarget) {
+    favoriteTarget.actions = insertTopicFavoriteAction(favoriteTarget.actions, favoriteAction);
+  }
 
   if (items.length > 0) {
     return items;
@@ -6547,6 +5222,22 @@ function getTopicToolbarActions() {
     favorite: makeAction(favoriteControl, "收藏"),
     share: makeAction(shareControl, "分享帖子链接")
   };
+}
+
+function insertTopicFavoriteAction(actions, favoriteAction) {
+  if (!favoriteAction || !Array.isArray(actions)) {
+    return actions || [];
+  }
+  if (actions.some((action) => /^(?:收藏|取消收藏|已收藏)$/.test(cleanupPostText(action.text).replace(/\s+\d+$/, "")))) {
+    return actions;
+  }
+  const insertAfter = actions.reduce((last, action, index) => {
+    const label = cleanupPostText(action.text).replace(/\s+\d+$/, "");
+    return /^(?:关注|取关|取消关注|私信)$/.test(label) ? index : last;
+  }, -1);
+  const nextActions = [...actions];
+  nextActions.splice(insertAfter + 1, 0, favoriteAction);
+  return nextActions;
 }
 
 function isHomeAnnouncementDetailText(text) {
@@ -7507,7 +6198,6 @@ function renderPostCard(item) {
   const card = createElement("article", "cc98-rebuild-card cc98-rebuild-post");
   card.dataset.itemKey = `post:${item.id}`;
   card.classList.toggle("cc98-rebuild-hot-post", Boolean(item.isHot));
-  card.classList.toggle("cc98-rebuild-hot-highlight", Boolean(item.isHot || item.isHotHighlight));
   const floor = Number(item.index);
   if (!item.isHot && Number.isFinite(floor) && floor > 0) {
     card.id = getRebuiltFloorAnchorId(floor);
@@ -7590,18 +6280,10 @@ function renderPostCard(item) {
     card.append(signatureWrap);
   }
 
-  if (item.publishedAt || item.editedAt || item.actions?.length) {
+  if (item.publishedAt || item.actions?.length) {
     const footer = createElement("div", "cc98-rebuild-post-footer");
-    if (item.publishedAt || item.editedAt) {
-      const meta = createElement("span", "cc98-rebuild-muted cc98-rebuild-post-meta");
-      if (item.publishedAt) {
-        meta.append(document.createTextNode(`发表于 ${item.publishedAt}`));
-      }
-      if (item.editedAt) {
-        const edited = createElement("span", `cc98-rebuild-post-edited${item.publishedAt ? " has-published-at" : ""}`, `${item.editedBy ? `最后由 ${item.editedBy} ` : ""}编辑于 ${item.editedAt}`);
-        meta.append(edited);
-      }
-      footer.append(meta);
+    if (item.publishedAt) {
+      footer.append(createElement("span", "cc98-rebuild-muted", `发表于 ${item.publishedAt}`));
     }
     if (item.actions?.length) {
       const actionWrap = createElement("div", "cc98-rebuild-post-actions");
@@ -7684,18 +6366,11 @@ function renderPostPager() {
     navigateToRebuiltHref(pageInfo.pages.get(page) || buildTopicPageHref(pageInfo.topicId, page));
   });
   pager.append(form);
-  const topicActions = getTopicToolbarActions();
-  const shareAction = topicActions.share;
+  const shareAction = getTopicToolbarActions().share;
   if (shareAction) {
     const shareButton = renderProxyControl(shareAction);
     shareButton.classList.add("cc98-rebuild-pager-action");
     pager.append(shareButton);
-  }
-  const favoriteAction = topicActions.favorite;
-  if (favoriteAction) {
-    const favoriteButton = renderProxyControl(favoriteAction);
-    favoriteButton.classList.add("cc98-rebuild-pager-action");
-    pager.append(favoriteButton);
   }
 
   return pager;
@@ -7943,38 +6618,12 @@ function restoreReparentedNativeNodes(app) {
     .forEach((node) => restoreNativeNode(node));
 }
 
-function isEditorAuxiliarySubmitControl(control) {
-  if (!(control instanceof HTMLElement)) {
-    return true;
-  }
-  if (control.matches("button.fa-check, button.fa-remove, button.fa-times, button[class*='fa-check'], button[class*='fa-remove'], button[class*='fa-times'], button[data-cc98-editor-label]")) {
-    return true;
-  }
-  if (control.closest(".cc98-rebuild-color-popover, .cc98-rebuild-font-size-popover, .ubb-emoji, .ubb-extend")) {
-    return true;
-  }
-  if (control.closest(".ubb-editor") && !control.matches("#post-topic-button, .button.blue")) {
-    return true;
-  }
-  return false;
-}
-
-function isEditorAuxiliarySubmitEvent(event, editor) {
-  const submitter = event?.submitter;
-  if (submitter instanceof HTMLElement && isEditorAuxiliarySubmitControl(submitter)) {
-    return true;
-  }
-  const source = event?.target;
-  if (!(source instanceof Element) || source === editor) {
-    return false;
-  }
-  return Boolean(source.closest(".ubb-extend, .ubb-emoji, .cc98-rebuild-color-popover, .cc98-rebuild-font-size-popover"))
-    || (Boolean(source.closest(".ubb-editor")) && !source.matches("#post-topic-button, .button.blue"));
-}
-
 function isLikelyEditorSubmitControl(target) {
   const control = target?.closest?.("#post-topic-button, button, input[type='button'], input[type='submit'], .button, .ant-btn, [role='button']");
-  if (!(control instanceof HTMLElement) || isEditorAuxiliarySubmitControl(control)) {
+  if (!(control instanceof HTMLElement)) {
+    return false;
+  }
+  if (control.closest(".cc98-rebuild-color-popover, .cc98-rebuild-font-size-popover, .ubb-emoji, .ubb-extend")) {
     return false;
   }
   const signature = [
@@ -7988,11 +6637,11 @@ function isLikelyEditorSubmitControl(target) {
   return /post-topic-button|submit|\u53d1\u8868|\u53d1\u5e16|\u56de\u590d|\u63d0\u4ea4|\u7f16\u8f91|\u4fdd\u5b58|\u66f4\u65b0|\u53d1\u5e03|\u786e\u5b9a/i.test(signature);
 }
 
-function releaseNativeEditorForSubmit(editor, context = {}) {
+function releaseNativeEditorForSubmit(editor) {
   if (!(editor instanceof HTMLElement)) {
     return false;
   }
-  markEditorSubmitIntent(context);
+  markEditorSubmitIntent();
   if (editor.dataset.cc98NativeSubmitReleased === "true") {
     return false;
   }
@@ -8011,7 +6660,6 @@ function releaseNativeEditorForSubmit(editor, context = {}) {
   }
   document.documentElement.classList.remove("cc98-comfort-rebuild-active");
   document.documentElement.dataset.cc98ComfortRebuildReady = "false";
-  document.documentElement.removeAttribute("data-cc98-comfort-app-root");
 
   window.setTimeout(() => {
     if (!getTopicRouteInfo()) {
@@ -8031,10 +6679,9 @@ function replayNativeEditorSubmitClick(editor, control) {
   }
   const startedRouteKey = getRoutePageKey();
   const startedOnTopic = Boolean(getTopicRouteInfo());
-  const destinationHref = getEditorSubmitTargetHref();
   control.dataset.cc98SubmitReplayQueued = "true";
-  releaseNativeEditorForSubmit(editor, { startedRouteKey, startedOnTopic, destinationHref });
-  schedulePostSubmitPageRefresh({ startedRouteKey, startedOnTopic, destinationHref });
+  releaseNativeEditorForSubmit(editor);
+  schedulePostSubmitPageRefresh({ startedRouteKey, startedOnTopic });
   window.setTimeout(() => {
     editor.dataset.cc98NativeSubmitReplaying = "true";
     try {
@@ -8047,10 +6694,6 @@ function replayNativeEditorSubmitClick(editor, control) {
     }
   }, 40);
   return true;
-}
-
-function isNativeEditorInsideReactRoot(editor) {
-  return Boolean(editor?.closest?.("#root"));
 }
 
 function getEditorPageData() {
@@ -8190,7 +6833,7 @@ function getNativeEditorPassthroughControl(target) {
     control.dataset.cc98ToolbarLabel,
     control.textContent
   ].filter(Boolean).join(" ");
-  return /(?:fa-link|fa-picture-o|fa-film|fa-video|fa-video-camera|fa-play|fa-youtube-play|fa-music|fa-file|bilibili|bili|url|link|image|picture|video|audio|file|upload|ubbFileUpload|插入(?:url|链接|图片|视频|音频)|上传文件|链|图|影|▶|音|文|🔗|♪)/i.test(signature)
+  return /(?:fa-link|fa-picture-o|fa-film|fa-music|fa-file|bilibili|bili|url|image|picture|video|audio|file|upload|ubbFileUpload)/i.test(signature)
     ? control
     : null;
 }
@@ -8348,7 +6991,7 @@ function ensureLegacyColorPickerSuppressor() {
 }
 
 function findEditorForColorButton(button) {
-  return button?.closest?.(".cc98-rebuild-message-editor, .cc98-rebuild-native-editor, .createTopic, #sendTopicInfo, .sendTopicInfo, .reply-input, .ubb-editor, form")
+  return button?.closest?.(".cc98-rebuild-native-editor, .createTopic, #sendTopicInfo, .sendTopicInfo, .reply-input, .ubb-editor, form")
     || document.querySelector(".cc98-rebuild-native-editor, .createTopic, #sendTopicInfo")
     || null;
 }
@@ -8959,7 +7602,6 @@ function stabilizeEditorFontSizeButton(editor) {
 
 function stabilizeEditorEmojiImages(editor) {
   stabilizeEmojiRendering(editor);
-  hideNativeEditorLegacyEmojiPanel(editor);
 }
 
 function isEditorEmojiButtonTarget(target) {
@@ -8980,70 +7622,11 @@ function isEditorEmojiButtonTarget(target) {
   return /(?:表情|emoji|emoticon|smile|fa-smile|fa-meh|☺)/i.test(signature);
 }
 
-function hideNativeEditorLegacyEmojiPanel(editor) {
-  if (!(editor instanceof HTMLElement)) {
-    return;
-  }
-  editor.querySelectorAll(".ubb-editor > .ubb-emoji").forEach((panel) => {
-    if (!(panel instanceof HTMLElement) || panel.classList.contains("cc98-rebuild-message-emoji-panel")) {
-      return;
-    }
-    panel.style.setProperty("display", "none", "important");
-    panel.style.setProperty("visibility", "hidden", "important");
-    panel.style.setProperty("pointer-events", "none", "important");
-    panel.style.setProperty("max-height", "0", "important");
-    panel.style.setProperty("overflow", "hidden", "important");
-  });
-}
-
-function positionNativeEditorEmojiPanel(editor, panel) {
-  if (!(editor instanceof HTMLElement) || !(panel instanceof HTMLElement)) {
-    return;
-  }
-  const toolbar = editor.querySelector(".ubb-buttons, .cc98-rebuild-message-editor-toolbar");
-  if (!(toolbar instanceof HTMLElement)) {
-    panel.style.removeProperty("--cc98-editor-emoji-panel-top");
-    return;
-  }
-  const editorRect = editor.getBoundingClientRect();
-  const toolbarRect = toolbar.getBoundingClientRect();
-  const top = Math.max(48, Math.ceil(toolbarRect.bottom - editorRect.top + 6));
-  panel.style.setProperty("--cc98-editor-emoji-panel-top", `${top}px`);
-}
-
 function setEditorEmojiPanelOpen(editor, open) {
   if (!(editor instanceof HTMLElement)) {
     return;
   }
-  hideNativeEditorLegacyEmojiPanel(editor);
-  const shouldOpen = Boolean(open);
-  let panel = editor.querySelector(":scope > .cc98-rebuild-message-emoji-panel");
-  if (shouldOpen) {
-    const textarea = getNativeEditorTextarea(editor);
-    if (!(textarea instanceof HTMLTextAreaElement)) {
-      return;
-    }
-    panel = ensurePrivateMessageEmojiPanel(editor, textarea, { nativeEditor: true });
-  }
-  if (panel instanceof HTMLElement) {
-    panel.hidden = !shouldOpen;
-    if (shouldOpen) {
-      panel.classList.add("cc98-rebuild-editor-emoji-panel");
-      positionNativeEditorEmojiPanel(editor, panel);
-    }
-  }
-  editor.classList.toggle("cc98-rebuild-emoji-panel-open", shouldOpen);
-  editor.classList.toggle("cc98-rebuild-message-emoji-open", shouldOpen);
-  if (shouldOpen) {
-    [0, 80, 220].forEach((delay) => {
-      window.setTimeout(() => {
-        hideNativeEditorLegacyEmojiPanel(editor);
-        if (panel instanceof HTMLElement) {
-          positionNativeEditorEmojiPanel(editor, panel);
-        }
-      }, delay);
-    });
-  }
+  editor.classList.toggle("cc98-rebuild-emoji-panel-open", Boolean(open));
 }
 
 function closeEditorEmojiPanelSoon(editor) {
@@ -9159,7 +7742,7 @@ function getExplicitTextColor(node) {
 }
 
 function hasInlineUbbFormatting(text) {
-  return /\[(?:(?:\/?)(?:b|i|u|s|del|color|size|align|img|audio|mp3|video|bili|bilibili)(?:=[^\]]+)?|cc98\d{2}|ac(?:\d{2}|\d{4})|[acf]:\d{3}|tb\d{2}|ms\d{2}|em\d{2})\]/i.test(String(text ?? ""));
+  return /\[(?:\/?)(?:b|i|u|s|del|color|size|align)(?:=[^\]]+)?\]/i.test(String(text ?? ""));
 }
 
 function buildNativeEditorUbbPreview(source) {
@@ -9282,24 +7865,11 @@ function scheduleNativeEditorStabilize(editor) {
 function schedulePostSubmitPageRefresh(options = {}) {
   const startedRouteKey = options.startedRouteKey || getRoutePageKey();
   const startedOnTopic = Boolean(options.startedOnTopic);
-  markEditorSubmitIntent({
-    startedRouteKey,
-    startedOnTopic,
-    destinationHref: options.destinationHref || getEditorSubmitTargetHref()
-  });
+  markEditorSubmitIntent();
   nativePostSubmitRefreshTimers.forEach((timer) => window.clearTimeout(timer));
-  nativePostSubmitRefreshTimers = [180, 420, 900, 1000, 1600, 2600, 4200, 6500, 9000].map((delay, index, delays) => {
+  nativePostSubmitRefreshTimers = [420, 900, 1600, 2600, 4200, 6500, 9000].map((delay, index, delays) => {
     return window.setTimeout(() => {
-      if (handleEditorSubmitIntermediatePage()) {
-        return;
-      }
       if (repairStaleEditorTopicRoute()) {
-        return;
-      }
-      if (navigateAfterEditorSubmitSuccess(startedOnTopic)) {
-        return;
-      }
-      if (delay >= EDITOR_SUBMIT_FORCE_REFRESH_DELAY && forceRefreshAfterEditorSubmit(startedOnTopic)) {
         return;
       }
       if (getTopicRouteInfo()) {
@@ -9308,11 +7878,6 @@ function schedulePostSubmitPageRefresh(options = {}) {
         if ((routeChangedToTopic || safeExistingTopicRefresh) && refreshSubmittedTopicRoute()) {
           return;
         }
-        scheduleFiltering();
-        scheduleRebuild();
-        scheduleSync();
-      }
-      if (getRoutePageKey() !== startedRouteKey) {
         scheduleFiltering();
         scheduleRebuild();
         scheduleSync();
@@ -9334,23 +7899,10 @@ function bindNativeEditorStabilizer(editor) {
   }
   nativeEditorStabilizers.add(editor);
   editor.addEventListener("pointerdown", (event) => {
-    if (event.target?.closest?.(".cc98-rebuild-message-emoji-panel")) {
-      return;
-    }
     if (isEditorEmojiButtonTarget(event.target)) {
-      event.preventDefault();
-      event.stopPropagation();
-      hideNativeEditorLegacyEmojiPanel(editor);
-      const currentPanel = editor.querySelector(":scope > .cc98-rebuild-message-emoji-panel");
-      const shouldOpen = !(currentPanel instanceof HTMLElement) || currentPanel.hidden;
-      editor.dataset.cc98EmojiPointerToggle = shouldOpen ? "open" : "close";
-      setEditorEmojiPanelOpen(editor, shouldOpen);
-      window.setTimeout(() => {
-        delete editor.dataset.cc98EmojiPointerToggle;
-      }, 160);
       return;
     }
-    if (!event.target?.closest?.(".cc98-rebuild-message-emoji-panel")) {
+    if (!event.target?.closest?.(".ubb-emoji")) {
       setEditorEmojiPanelOpen(editor, false);
     }
     if (getNativeEditorPassthroughControl(event.target)) {
@@ -9377,40 +7929,25 @@ function bindNativeEditorStabilizer(editor) {
       if (editor.dataset.cc98NativeSubmitReplaying === "true") {
         return;
       }
-      const startedRouteKey = getRoutePageKey();
-      const startedOnTopic = Boolean(getTopicRouteInfo());
-      const destinationHref = getEditorSubmitTargetHref();
-      markEditorSubmitIntent({ startedRouteKey, startedOnTopic, destinationHref });
-      schedulePostSubmitPageRefresh({ startedRouteKey, startedOnTopic, destinationHref });
-      if (!isNativeEditorInsideReactRoot(editor)) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        replayNativeEditorSubmitClick(editor, submitControl);
-      }
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      replayNativeEditorSubmitClick(editor, submitControl);
       return;
     }
-    if (event.target?.closest?.(".cc98-rebuild-message-emoji-panel img")) {
+    if (event.target?.closest?.(".ubb-emoji img")) {
       closeEditorEmojiPanelSoon(editor);
       return;
     }
-    if (event.target?.closest?.(".cc98-rebuild-message-emoji-panel")) {
+    if (event.target?.closest?.(".ubb-emoji")) {
       return;
     }
     if (isEditorEmojiButtonTarget(event.target)) {
-      event.preventDefault();
-      event.stopPropagation();
-      if (editor.dataset.cc98EmojiPointerToggle) {
-        delete editor.dataset.cc98EmojiPointerToggle;
-        scheduleNativeEditorStabilize(editor);
-        return;
-      }
-      const currentPanel = editor.querySelector(":scope > .cc98-rebuild-message-emoji-panel");
-      const shouldOpen = !(currentPanel instanceof HTMLElement) || currentPanel.hidden;
+      const shouldOpen = !editor.classList.contains("cc98-rebuild-emoji-panel-open");
       setEditorEmojiPanelOpen(editor, shouldOpen);
       scheduleNativeEditorStabilize(editor);
       return;
     }
-    if (!event.target?.closest?.(".cc98-rebuild-message-emoji-panel")) {
+    if (!event.target?.closest?.(".ubb-emoji")) {
       setEditorEmojiPanelOpen(editor, false);
     }
     if (getNativeEditorPassthroughControl(event.target)) {
@@ -9431,19 +7968,11 @@ function bindNativeEditorStabilizer(editor) {
       scheduleNativeEditorStabilize(editor);
     }
   }, true);
-  editor.addEventListener("submit", (event) => {
-    if (isEditorAuxiliarySubmitEvent(event, editor)) {
-      return;
-    }
+  editor.addEventListener("submit", () => {
     const startedRouteKey = getRoutePageKey();
     const startedOnTopic = Boolean(getTopicRouteInfo());
-    const destinationHref = getEditorSubmitTargetHref();
-    if (!isNativeEditorInsideReactRoot(editor)) {
-      releaseNativeEditorForSubmit(editor, { startedRouteKey, startedOnTopic, destinationHref });
-    } else {
-      markEditorSubmitIntent({ startedRouteKey, startedOnTopic, destinationHref });
-    }
-    schedulePostSubmitPageRefresh({ startedRouteKey, startedOnTopic, destinationHref });
+    releaseNativeEditorForSubmit(editor);
+    schedulePostSubmitPageRefresh({ startedRouteKey, startedOnTopic });
   }, true);
   const editorObserver = new MutationObserver(() => scheduleNativeEditorStabilize(editor));
   editorObserver.observe(editor, {
@@ -9604,566 +8133,6 @@ function stabilizeNativeMessageSurfaces(source) {
   });
 }
 
-function setNativeMessageInputValue(input, value) {
-  if (!(input instanceof HTMLTextAreaElement) && !(input instanceof HTMLInputElement)) {
-    return;
-  }
-  const descriptor = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(input), "value")
-    || Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")
-    || Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value");
-  if (descriptor?.set) {
-    descriptor.set.call(input, value);
-  } else {
-    input.value = value;
-  }
-  input.dispatchEvent(new Event("input", { bubbles: true, cancelable: true }));
-  input.dispatchEvent(new Event("change", { bubbles: true, cancelable: true }));
-}
-
-function insertPrivateMessageText(textarea, text, caretOffset = null) {
-  if (!(textarea instanceof HTMLTextAreaElement)) {
-    return;
-  }
-  const start = Number.isFinite(textarea.selectionStart) ? textarea.selectionStart : textarea.value.length;
-  const end = Number.isFinite(textarea.selectionEnd) ? textarea.selectionEnd : start;
-  const value = textarea.value;
-  textarea.value = `${value.slice(0, start)}${text}${value.slice(end)}`;
-  const nextPosition = start + (Number.isFinite(caretOffset) ? caretOffset : text.length);
-  textarea.focus();
-  textarea.setSelectionRange(nextPosition, nextPosition);
-  textarea.dispatchEvent(new Event("input", { bubbles: true }));
-}
-
-function insertPrivateMessageUbb(textarea, before, after = before) {
-  if (!(textarea instanceof HTMLTextAreaElement)) {
-    return;
-  }
-  const start = Number.isFinite(textarea.selectionStart) ? textarea.selectionStart : textarea.value.length;
-  const end = Number.isFinite(textarea.selectionEnd) ? textarea.selectionEnd : start;
-  const selected = textarea.value.slice(start, end);
-  const text = `${before}${selected}${after}`;
-  insertPrivateMessageText(textarea, text, selected ? text.length : before.length);
-}
-
-function getPrivateMessageSelectedText(textarea) {
-  if (!(textarea instanceof HTMLTextAreaElement)) {
-    return "";
-  }
-  const start = Number.isFinite(textarea.selectionStart) ? textarea.selectionStart : textarea.value.length;
-  const end = Number.isFinite(textarea.selectionEnd) ? textarea.selectionEnd : start;
-  return textarea.value.slice(start, end);
-}
-
-function promptPrivateMessageValue(message, defaultValue = "") {
-  const value = window.prompt(message, defaultValue);
-  return value == null ? "" : String(value).trim();
-}
-
-function insertPrivateMessageLink(textarea) {
-  const selected = getPrivateMessageSelectedText(textarea);
-  const urlDefault = /^https?:\/\//i.test(selected) ? selected : "";
-  const url = promptPrivateMessageValue("请输入链接地址", urlDefault);
-  if (!url) {
-    return;
-  }
-  const label = selected || promptPrivateMessageValue("请输入显示文字（可留空）", url) || url;
-  insertPrivateMessageText(textarea, `[url=${url}]${label}[/url]`);
-}
-
-function insertPrivateMessageTaggedUrl(textarea, tag, label) {
-  const selected = getPrivateMessageSelectedText(textarea);
-  const url = promptPrivateMessageValue(label, /^https?:\/\//i.test(selected) ? selected : "");
-  if (!url) {
-    return;
-  }
-  insertPrivateMessageText(textarea, `[${tag}]${url}[/${tag}]`);
-}
-
-function getPrivateMessageEmojiCategories() {
-  const pad2 = (value) => String(value).padStart(2, "0");
-  const pad3 = (value) => String(value).padStart(3, "0");
-  const makeItem = (tag, src) => ({ src, insertText: `[${tag}]` });
-  const makeRange = (length, toCode, toTag, toSrc) => {
-    return Array.from({ length }, (_, index) => {
-      const code = toCode(index);
-      return makeItem(toTag(code), toSrc(code));
-    }).filter(Boolean);
-  };
-  const mahjongCartoonIds = ["003", "018", "019", "046", "049", "059", "096", "134", "189", "217"];
-  const mahjongCartoonGifIds = new Set(["018", "049", "096"]);
-  const mahjongFaceGifIds = new Set(["004", "009", "056", "061", "062", "087", "115", "120", "137", "168", "169", "175", "206"]);
-  const classicIds = [
-    ...Array.from({ length: 10 }, (_, index) => pad2(index)),
-    ...Array.from({ length: 34 }, (_, index) => String(index + 10)),
-    ...Array.from({ length: 21 }, (_, index) => String(index + 71))
-  ];
-  return [
-    {
-      key: "cc98",
-      label: "CC98",
-      items: makeRange(
-        37,
-        (index) => pad2(index + 1),
-        (code) => `cc98${code}`,
-        (code) => getCc98EmotionUrl(code)
-      )
-    },
-    {
-      key: "ac",
-      label: "AC娘",
-      items: [
-        ...makeRange(54, (index) => pad2(index + 1), (code) => `ac${code}`, (code) => getExtensionAssetUrl(`${getLocalAcEmojiFolder()}/${code}.png`)),
-        ...makeRange(40, (index) => String(index + 1001), (code) => `ac${code}`, (code) => getExtensionAssetUrl(`${getLocalAcEmojiFolder()}/${code}.png`)),
-        ...makeRange(55, (index) => String(index + 2001), (code) => `ac${code}`, (code) => getExtensionAssetUrl(`${getLocalAcEmojiFolder()}/${code}.png`))
-      ]
-    },
-    {
-      key: "mahjong",
-      label: "麻将脸",
-      items: [
-        ...makeRange(16, (index) => pad3(index + 1), (code) => `a:${code}`, (code) => getMahjongEmotionUrl("a", code)),
-        ...mahjongCartoonIds.map((code) => makeItem(
-          `c:${code}`,
-          getExtensionAssetUrl(`images/mahjong/carton2017/${code}.${mahjongCartoonGifIds.has(code) ? "gif" : "png"}`)
-        )),
-        ...makeRange(208, (index) => pad3(index + 1), (code) => `f:${code}`, (code) => getExtensionAssetUrl(`images/mahjong/face2017/${code}.${mahjongFaceGifIds.has(code) ? "gif" : "png"}`))
-      ]
-    },
-    {
-      key: "tb",
-      label: "贴吧",
-      items: makeRange(
-        33,
-        (index) => pad2(index + 1),
-        (code) => `tb${code}`,
-        (code) => getExtensionAssetUrl(`images/tb/tb${code}.png`)
-      )
-    },
-    {
-      key: "ms",
-      label: "雀魂",
-      items: makeRange(
-        54,
-        (index) => pad2(index + 1),
-        (code) => `ms${code}`,
-        (code) => getExtensionAssetUrl(`images/ms/ms${code}.png`)
-      )
-    },
-    {
-      key: "em",
-      label: "经典",
-      items: classicIds.map((code) => makeItem(
-        `em${code}`,
-        getExtensionAssetUrl(`images/em/em${code}.gif`)
-      ))
-    }
-  ];
-}
-
-function ensurePrivateMessageEmojiPanel(editor, textarea, options = {}) {
-  if (!(editor instanceof HTMLElement) || !(textarea instanceof HTMLTextAreaElement)) {
-    return null;
-  }
-  const isNativeEditorPanel = Boolean(options.nativeEditor);
-  let panel = editor.querySelector(":scope > .cc98-rebuild-message-emoji-panel");
-  if (panel instanceof HTMLElement) {
-    panel.__cc98EmojiTextarea = textarea;
-    panel.classList.toggle("cc98-rebuild-editor-emoji-panel", isNativeEditorPanel);
-    if (isNativeEditorPanel) {
-      panel.dataset.cc98NativeEditorEmoji = "true";
-    } else {
-      delete panel.dataset.cc98NativeEditorEmoji;
-    }
-    return panel;
-  }
-  const categories = getPrivateMessageEmojiCategories();
-  panel = createElement("div", "cc98-rebuild-message-emoji-panel ubb-emoji");
-  panel.__cc98EmojiTextarea = textarea;
-  if (isNativeEditorPanel) {
-    panel.classList.add("cc98-rebuild-editor-emoji-panel");
-    panel.dataset.cc98NativeEditorEmoji = "true";
-  }
-  const tabs = createElement("div", "cc98-rebuild-message-emoji-tabs ubb-emoji-buttons");
-  const content = createElement("div", "cc98-rebuild-message-emoji-content ubb-emoji-content");
-  const renderCategory = (activeKey) => {
-    const category = categories.find((item) => item.key === activeKey) || categories[0];
-    tabs.querySelectorAll(".cc98-rebuild-message-emoji-tab").forEach((tab) => {
-      tab.classList.toggle("is-active", tab.dataset.emojiKey === category.key);
-    });
-    content.replaceChildren();
-    category.items.forEach((item, index) => {
-      const button = createButton("cc98-rebuild-message-emoji-option", "", (event) => {
-        event?.preventDefault?.();
-        const targetTextarea = panel.__cc98EmojiTextarea instanceof HTMLTextAreaElement ? panel.__cc98EmojiTextarea : textarea;
-        insertPrivateMessageText(targetTextarea, item.insertText);
-        panel.hidden = true;
-        editor.classList.remove("cc98-rebuild-message-emoji-open", "cc98-rebuild-emoji-panel-open");
-        if (panel.dataset.cc98NativeEditorEmoji === "true") {
-          scheduleNativeEditorStabilize(editor);
-        }
-      });
-      button.type = "button";
-      button.title = `${category.label} ${index + 1}`;
-      const image = document.createElement("img");
-      image.src = item.src;
-      image.alt = "";
-      image.loading = "lazy";
-      image.addEventListener("error", () => {
-        button.hidden = true;
-      }, { once: true });
-      markRebuiltEmojiImage(image, item.src);
-      button.append(image);
-      content.append(button);
-    });
-  };
-  categories.forEach((category) => {
-    const tab = createButton("cc98-rebuild-message-emoji-tab ubb-emoji-button", category.label, (event) => {
-      event?.preventDefault?.();
-      renderCategory(category.key);
-    });
-    tab.type = "button";
-    tab.dataset.emojiKey = category.key;
-    tabs.append(tab);
-  });
-  panel.append(tabs, content);
-  renderCategory(categories[0]?.key);
-  const toolbar = editor.querySelector(":scope > .cc98-rebuild-message-editor-toolbar");
-  if (toolbar instanceof HTMLElement) {
-    toolbar.after(panel);
-  } else {
-    editor.append(panel);
-  }
-  panel.hidden = true;
-  return panel;
-}
-
-function buildPrivateMessageInsertPanel(editor, fields, onConfirm) {
-  if (!(editor instanceof HTMLElement)) {
-    return null;
-  }
-  let panel = editor.querySelector(":scope > .cc98-rebuild-message-editor-insert-panel");
-  if (!(panel instanceof HTMLElement)) {
-    panel = createElement("div", "cc98-rebuild-message-editor-insert-panel");
-    editor.append(panel);
-  }
-  panel.replaceChildren();
-  const inputs = {};
-  fields.forEach((field) => {
-    const label = createElement("label", "cc98-rebuild-message-editor-field");
-    label.append(createElement("span", "", field.label));
-    const input = document.createElement("input");
-    input.type = field.type || "text";
-    input.placeholder = field.placeholder || "";
-    input.value = field.value || "";
-    input.dataset.field = field.name;
-    label.append(input);
-    panel.append(label);
-    inputs[field.name] = input;
-  });
-  const actions = createElement("div", "cc98-rebuild-message-editor-panel-actions");
-  const confirm = createButton("cc98-rebuild-message-editor-panel-button is-primary", "确定", (event) => {
-    event.preventDefault();
-    const values = Object.fromEntries(Object.entries(inputs).map(([key, input]) => [key, input.value.trim()]));
-    onConfirm(values);
-    panel.hidden = true;
-  });
-  const cancel = createButton("cc98-rebuild-message-editor-panel-button", "取消", (event) => {
-    event.preventDefault();
-    panel.hidden = true;
-  });
-  actions.append(confirm, cancel);
-  panel.append(actions);
-  panel.hidden = false;
-  Object.values(inputs)[0]?.focus({ preventScroll: true });
-  return panel;
-}
-
-function getPrivateMessageNativeControls(source, container) {
-  return [...new Set([
-    ...container.querySelectorAll("button, a, label, input[type='file'], [role='button']"),
-    ...source.querySelectorAll(".message-message-wPost button, .message-message-wPost a, .message-message-wPost label, .message-message-wPost input[type='file'], .message-message-wPost [role='button']")
-  ].filter((control) => control instanceof HTMLElement && !control.closest(".cc98-rebuild-message-editor")))];
-}
-
-function getPrivateMessageControlSignature(control) {
-  return [
-    control.id,
-    control.className,
-    control.getAttribute?.("for"),
-    control.getAttribute?.("title"),
-    control.getAttribute?.("aria-label"),
-    control.textContent
-  ].filter(Boolean).join(" ");
-}
-
-function findPrivateMessageNativeControl(source, container, kind) {
-  const controls = getPrivateMessageNativeControls(source, container);
-  if (kind === "send") {
-    return controls.find((control) => /发送|send/i.test(cleanupPostText(control.textContent) || getPrivateMessageControlSignature(control)))
-      || controls.find((control) => control.classList?.contains("message-message-wPostBtn") && !/上传|图片|upload|image/i.test(getPrivateMessageControlSignature(control)))
-      || null;
-  }
-  if (kind === "uploadImage") {
-    const imageInput = controls.find((control) => {
-      return control instanceof HTMLInputElement
-        && control.type === "file"
-        && /image|\.png|\.jpe?g|\.gif|\.webp/i.test(control.accept || getPrivateMessageControlSignature(control));
-    });
-    if (imageInput) {
-      return imageInput;
-    }
-    return controls.find((control) => {
-      const signature = getPrivateMessageControlSignature(control);
-      return /上传图片|图片|image|picture|upload/i.test(signature) && !/发送|send/i.test(signature);
-    }) || null;
-  }
-  return null;
-}
-
-function getPrivateMessageUploadFileInput(control, source) {
-  if (!(control instanceof HTMLElement)) {
-    return null;
-  }
-  if (control instanceof HTMLInputElement && control.type === "file") {
-    return control;
-  }
-  const nestedInput = control.querySelector?.("input[type='file']");
-  if (nestedInput instanceof HTMLInputElement) {
-    return nestedInput;
-  }
-  if (control instanceof HTMLLabelElement) {
-    const forId = control.getAttribute("for");
-    if (forId) {
-      const owner = control.ownerDocument || document;
-      const input = owner.getElementById(forId)
-        || source?.querySelector?.(`#${CSS.escape(forId)}`);
-      if (input instanceof HTMLInputElement && input.type === "file") {
-        return input;
-      }
-    }
-  }
-  return null;
-}
-
-function triggerPrivateMessageUploadImage(source, container) {
-  const control = findPrivateMessageNativeControl(source, container, "uploadImage");
-  if (!(control instanceof HTMLElement)) {
-    return false;
-  }
-  const fileInput = getPrivateMessageUploadFileInput(control, source);
-  if (fileInput instanceof HTMLInputElement) {
-    fileInput.click();
-    return true;
-  }
-  triggerOriginalControl(control);
-  return true;
-}
-
-function renderPrivateMessageEditorPreview(preview, sourceText) {
-  if (!(preview instanceof HTMLElement)) {
-    return;
-  }
-  const article = buildNativeEditorUbbPreview(sourceText);
-  markInlineUbbStyleClasses(article);
-  strengthenInlineTextStyles(article);
-  markInlineEmojiContainers(article);
-  stabilizeEmojiRendering(article);
-  preview.replaceChildren(article);
-  preview.hidden = false;
-}
-
-function stabilizePrivateMessageEditor(source) {
-  if (!(source instanceof HTMLElement)) {
-    return;
-  }
-  const nativeInput = source.querySelector("textarea.message-message-wPostArea, input.message-message-wPostArea");
-  if (!(nativeInput instanceof HTMLTextAreaElement) && !(nativeInput instanceof HTMLInputElement)) {
-    return;
-  }
-  if (nativeInput.dataset.cc98RebuildMessageEditorBound === "true") {
-    return;
-  }
-  const container = nativeInput.closest(".message-message-wPost") || nativeInput.parentElement;
-  if (!(container instanceof HTMLElement)) {
-    return;
-  }
-  nativeInput.dataset.cc98RebuildMessageEditorBound = "true";
-
-  const originalButton = findPrivateMessageNativeControl(source, container, "send");
-  const originalUploadButton = findPrivateMessageNativeControl(source, container, "uploadImage");
-  const editor = createElement("div", "cc98-rebuild-message-editor");
-  const toolbar = createElement("div", "cc98-rebuild-message-editor-toolbar");
-  const textarea = document.createElement("textarea");
-  textarea.className = "cc98-rebuild-message-editor-textarea";
-  textarea.placeholder = nativeInput.getAttribute("placeholder") || "";
-  textarea.value = nativeInput.value || "";
-  const preview = createElement("div", "cc98-rebuild-message-editor-preview");
-  preview.hidden = true;
-
-  const syncToNative = () => setNativeMessageInputValue(nativeInput, textarea.value);
-  const syncFromNative = (force = false) => {
-    const value = nativeInput.value || "";
-    if (value === textarea.value) {
-      return;
-    }
-    if (force || document.activeElement !== textarea || value.includes(textarea.value) || textarea.value.includes(value)) {
-      textarea.value = value;
-      textarea.dispatchEvent(new Event("input", { bubbles: true }));
-    }
-  };
-  const scheduleSyncFromNative = () => {
-    [250, 700, 1400, 2600, 4200, 6500].forEach((delay) => {
-      window.setTimeout(() => syncFromNative(true), delay);
-    });
-  };
-  const addButton = (label, title, before, after = before) => {
-    const button = createButton("cc98-rebuild-message-editor-button", label, (event) => {
-      event?.preventDefault?.();
-      insertPrivateMessageUbb(textarea, before, after);
-    });
-    button.type = "button";
-    button.title = title;
-    toolbar.append(button);
-  };
-  const addActionButton = (label, title, onClick) => {
-    const button = createButton("cc98-rebuild-message-editor-button", label, (event) => {
-      event?.preventDefault?.();
-      onClick(event);
-    });
-    button.type = "button";
-    button.title = title;
-    toolbar.append(button);
-    return button;
-  };
-
-  addButton("B", "粗体", "[b]", "[/b]");
-  addButton("I", "斜体", "[i]", "[/i]");
-  addButton("U", "下划线", "[u]", "[/u]");
-  addButton("S", "删除线", "[del]", "[/del]");
-  addButton("左", "左对齐", "[align=left]", "[/align]");
-  addButton("中", "居中", "[align=center]", "[/align]");
-  addButton("右", "右对齐", "[align=right]", "[/align]");
-  addActionButton("链", "插入链接", () => insertPrivateMessageLink(textarea));
-  addActionButton("图", "上传图片", () => {
-    syncToNative();
-    if (triggerPrivateMessageUploadImage(source, container)) {
-      scheduleSyncFromNative();
-    } else {
-      insertPrivateMessageTaggedUrl(textarea, "img", "请输入图片地址");
-    }
-  });
-  addActionButton("影", "插入视频", () => insertPrivateMessageTaggedUrl(textarea, "video", "请输入视频地址"));
-  addActionButton("Bili", "插入 Bilibili 视频", () => insertPrivateMessageTaggedUrl(textarea, "bilibili", "请输入 Bilibili 地址或 BV 号"));
-  addActionButton("音", "插入音频", () => insertPrivateMessageTaggedUrl(textarea, "audio", "请输入音频地址"));
-  addActionButton("☺", "插入表情", () => {
-    const panel = ensurePrivateMessageEmojiPanel(editor, textarea);
-    if (panel instanceof HTMLElement) {
-      const willOpen = panel.hidden;
-      panel.hidden = !willOpen;
-      editor.classList.toggle("cc98-rebuild-message-emoji-open", willOpen);
-    }
-  });
-  addActionButton("预", "预览", () => {
-    const willShow = preview.hidden;
-    if (willShow) {
-      renderPrivateMessageEditorPreview(preview, textarea.value);
-    } else {
-      preview.hidden = true;
-    }
-    editor.classList.toggle("cc98-rebuild-message-preview-open", willShow);
-  });
-
-  const size = document.createElement("select");
-  size.className = "cc98-rebuild-message-editor-select";
-  size.title = "字号";
-  size.append(...["字号", "1", "2", "3", "4", "5", "6", "7"].map((value, index) => {
-    const option = document.createElement("option");
-    option.value = index === 0 ? "" : value;
-    option.textContent = value;
-    return option;
-  }));
-  size.addEventListener("change", () => {
-    if (size.value) {
-      insertPrivateMessageUbb(textarea, `[size=${size.value}]`, "[/size]");
-      size.value = "";
-    }
-  });
-  toolbar.append(size);
-
-  const colorButton = createButton("cc98-rebuild-message-editor-button cc98-rebuild-message-editor-color cc98-rebuild-color-button", "", (event) => {
-    event?.preventDefault?.();
-    event?.stopPropagation?.();
-    rememberEditorSelection(editor, colorButton);
-    openEditorColorPicker(colorButton, editor);
-  });
-  colorButton.type = "button";
-  colorButton.title = "文字颜色";
-  colorButton.setAttribute("aria-label", "文字颜色");
-  colorButton.append(createElement("span", "cc98-rebuild-message-editor-color-label", "色"));
-  colorButton.append(createElement("span", "sp-preview"));
-  toolbar.append(colorButton);
-  ensureNativeColorInput(editor, colorButton);
-  ensureEditorColorPopover(editor, colorButton);
-  updateEditorColorButtonPreview(colorButton, "#ff6666");
-
-  const footer = createElement("div", "cc98-rebuild-message-editor-footer");
-  const send = createButton("cc98-rebuild-message-editor-send", "发送", (event) => {
-    event?.preventDefault?.();
-    syncToNative();
-    if (originalButton instanceof HTMLElement) {
-      triggerOriginalControl(originalButton);
-      window.setTimeout(() => {
-        textarea.value = nativeInput.value || "";
-      }, 420);
-      window.setTimeout(() => {
-        textarea.value = nativeInput.value || "";
-      }, 1200);
-    }
-  });
-  send.type = "button";
-  footer.append(send);
-  editor.append(toolbar, textarea, preview, footer);
-
-  textarea.addEventListener("input", () => {
-    syncToNative();
-    if (!preview.hidden) {
-      renderPrivateMessageEditorPreview(preview, textarea.value);
-    }
-  });
-  textarea.addEventListener("keydown", (event) => {
-    if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
-      event.preventDefault();
-      send.click();
-    }
-  });
-  nativeInput.addEventListener("input", () => {
-    if (document.activeElement !== textarea) {
-      textarea.value = nativeInput.value || "";
-      if (!preview.hidden) {
-        renderPrivateMessageEditorPreview(preview, textarea.value);
-      }
-    }
-  });
-  nativeInput.addEventListener("change", () => syncFromNative());
-  getPrivateMessageNativeControls(source, container).forEach((control) => {
-    const input = getPrivateMessageUploadFileInput(control, source);
-    if (input instanceof HTMLInputElement && input.dataset.cc98RebuildMessageUploadSync !== "true") {
-      input.dataset.cc98RebuildMessageUploadSync = "true";
-      input.addEventListener("change", scheduleSyncFromNative, true);
-    }
-  });
-
-  nativeInput.classList.add("cc98-rebuild-message-native-input");
-  if (originalButton instanceof HTMLElement) {
-    originalButton.classList.add("cc98-rebuild-message-native-send");
-  }
-  if (originalUploadButton instanceof HTMLElement) {
-    originalUploadButton.classList.add("cc98-rebuild-message-native-aux");
-  }
-  container.insertBefore(editor, nativeInput);
-  syncToNative();
-}
-
 function bindMessageTitleSync(source, heroTitle, heroTop) {
   messageTitleObserver?.disconnect();
   messageTitleObserver = null;
@@ -10185,7 +8154,6 @@ function bindMessageTitleSync(source, heroTitle, heroTop) {
       syncTitle();
       syncMessageReadAllProxy(source, heroTop);
       stabilizeNativeMessageSurfaces(source);
-      stabilizePrivateMessageEditor(source);
     }, delay);
   };
 
@@ -10207,7 +8175,6 @@ function bindMessageTitleSync(source, heroTitle, heroTop) {
   syncTitle();
   syncMessageReadAllProxy(source, heroTop);
   stabilizeNativeMessageSurfaces(source);
-  stabilizePrivateMessageEditor(source);
 }
 
 function renderSignInPage(app) {
@@ -10263,48 +8230,8 @@ function hasFreshCc98LoginSession() {
   }
 }
 
-function isCc98HomePage() {
-  try {
-    const url = new URL(location.href);
-    return /^(?:www\.)?cc98\.org$/i.test(url.hostname) && url.pathname.replace(/\/+$/, "") === "";
-  } catch {
-    return location.pathname.replace(/\/+$/, "") === "";
-  }
-}
-
-function markLoginHomeRefreshIntent() {
-  try {
-    sessionStorage.setItem(LOGIN_HOME_REFRESH_MARK_KEY, String(Date.now()));
-  } catch {
-    // Session storage may be unavailable; the normal redirect still works.
-  }
-}
-
-function consumeLoginHomeRefreshIntent() {
-  if (!isCc98HomePage()) {
-    return false;
-  }
-  let markedAt = NaN;
-  try {
-    markedAt = Number.parseInt(sessionStorage.getItem(LOGIN_HOME_REFRESH_MARK_KEY) || "", 10);
-    sessionStorage.removeItem(LOGIN_HOME_REFRESH_MARK_KEY);
-  } catch {
-    return false;
-  }
-  if (!Number.isFinite(markedAt) || Date.now() - markedAt > 20000) {
-    return false;
-  }
-  showLoadingOverlay("登录完成，正在刷新首页...");
-  window.setTimeout(() => {
-    location.reload();
-  }, 0);
-  return true;
-}
-
 function redirectToCc98Home() {
-  markLoginHomeRefreshIntent();
   if (location.href === "https://www.cc98.org/") {
-    consumeLoginHomeRefreshIntent();
     return;
   }
   location.assign("https://www.cc98.org/");
@@ -10742,7 +8669,6 @@ function stabilizeUserDescriptionSignatures(router) {
     article.classList.add("cc98-rebuild-profile-signature-content", "cc98-rebuild-signature-content");
     parseInlineUbbTextNodes(article);
     strengthenInlineTextStyles(article);
-    markInlineUbbStyleClasses(article);
     markInlineEmojiContainers(article);
     stabilizeEmojiRendering(article);
   });
@@ -13322,7 +11248,7 @@ function renderGeneric(app) {
 }
 
 function renderRebuiltUi() {
-  if (handleEditorSubmitIntermediatePage() || repairStaleEditorTopicRoute()) {
+  if (repairStaleEditorTopicRoute()) {
     return;
   }
   if (isRebuilding) {
@@ -13435,14 +11361,7 @@ function renderRebuiltUi() {
       app.append(fallback);
     }
 
-    const rootHost = document.querySelector("#root");
-    if (rootHost instanceof HTMLElement) {
-      rootHost.prepend(app);
-      document.documentElement.dataset.cc98ComfortAppRoot = "true";
-    } else {
-      document.body.prepend(app);
-      document.documentElement.removeAttribute("data-cc98-comfort-app-root");
-    }
+    document.body.prepend(app);
     stabilizeTopbarUserEntry(app);
     [120, 480, 1200, 2400, 4200, 6500].forEach((delay) => {
       setTimeout(() => stabilizeTopbarUserEntry(app), delay);
@@ -13471,7 +11390,6 @@ function renderRebuiltUi() {
     document.querySelector("#cc98-comfort-app")?.remove();
     document.documentElement.classList.remove("cc98-comfort-rebuild-active");
     document.documentElement.dataset.cc98ComfortRebuildReady = "false";
-    document.documentElement.removeAttribute("data-cc98-comfort-app-root");
     hideLoadingOverlay();
   } finally {
     isRebuilding = false;
@@ -13657,7 +11575,7 @@ function scheduleFiltering() {
 }
 
 function scheduleRebuild() {
-  if (handleEditorSubmitIntermediatePage() || repairStaleEditorTopicRoute()) {
+  if (repairStaleEditorTopicRoute()) {
     return;
   }
   if (handleTopicFirstPagePrevisitNavigation()) {
@@ -13674,7 +11592,7 @@ function scheduleRebuild() {
   rebuildQueued = true;
   requestAnimationFrame(() => {
     rebuildQueued = false;
-    if (handleEditorSubmitIntermediatePage() || repairStaleEditorTopicRoute()) {
+    if (repairStaleEditorTopicRoute()) {
       return;
     }
     if (handleTopicFirstPagePrevisitNavigation()) {
@@ -13912,7 +11830,7 @@ function patchHistoryNavigation() {
         markCurrentTopicReadLaterRead();
         scheduleFiltering();
         if (nextRouteKey !== beforeRouteKey) {
-          if (!handleEditorSubmitIntermediatePage() && !repairStaleEditorTopicRoute()) {
+          if (!repairStaleEditorTopicRoute()) {
             scheduleDelayedRebuilds();
           }
         } else {
@@ -13932,7 +11850,7 @@ function patchHistoryNavigation() {
     if (nextRouteKey !== previousRouteKey) {
       previousRouteKey = nextRouteKey;
       markCurrentTopicReadLaterRead();
-      if (!handleEditorSubmitIntermediatePage() && !repairStaleEditorTopicRoute()) {
+      if (!repairStaleEditorTopicRoute()) {
         scheduleDelayedRebuilds();
       }
       return;
