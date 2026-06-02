@@ -4,7 +4,7 @@
 
 CC98 Reborn is a Chrome/Edge extension that rebuilds common CC98 pages into a cleaner reading interface while keeping the original site controls available whenever possible.
 
-Current pre-release version: `0.1.2`.
+Current pre-release version: `0.2.1`.
 
 ## Features
 
@@ -57,6 +57,14 @@ assets/
   icon32.png
   icon48.png
   icon128.png
+images/
+  CC98/
+  ac/
+  ac1/
+  tb/
+  ms/
+  em/
+  mahjong/
 src/
   content.js
   styles.css

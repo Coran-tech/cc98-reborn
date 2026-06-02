@@ -2,15 +2,36 @@
   "manifest_version": 3,
   "name": "CC98 Reborn",
   "description": "A refreshed reading and browsing interface for CC98.",
-  "version": "0.1.2",
+  "version": "0.2.1",
   "permissions": [
     "storage",
-    "downloads"
+    "downloads",
+    "cookies"
   ],
   "host_permissions": [
     "*://*.cc98.org/*",
     "*://cc98.org/*",
     "*://www-cc98-org-s.webvpn.zju.edu.cn/*"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "images/CC98/*",
+        "images/ac/*",
+        "images/ac1/*",
+        "images/tb/*",
+        "images/ms/*",
+        "images/em/*",
+        "images/mahjong/animal2017/*",
+        "images/mahjong/carton2017/*",
+        "images/mahjong/face2017/*"
+      ],
+      "matches": [
+        "*://*.cc98.org/*",
+        "*://cc98.org/*",
+        "*://www-cc98-org-s.webvpn.zju.edu.cn/*"
+      ]
+    }
   ],
   "content_scripts": [
     {
