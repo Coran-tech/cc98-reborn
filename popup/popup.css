@@ -7,95 +7,6 @@
   --border: #ddd4c5;
   --accent: #3f746d;
   --accent-soft: #dcebe7;
-  --input: #ffffff;
-}
-
-body[data-popup-theme="mist"] {
-  --bg: #f2f5f8;
-  --panel: #ffffff;
-  --text: #25313a;
-  --muted: #60717c;
-  --border: #d5e0e7;
-  --accent: #286f84;
-  --accent-soft: #dceef3;
-}
-
-body[data-popup-theme="sage"] {
-  --bg: #eef5ef;
-  --panel: #fbfdfb;
-  --text: #22342a;
-  --muted: #607466;
-  --border: #d1dfd5;
-  --accent: #39785a;
-  --accent-soft: #dcefe4;
-}
-
-body[data-popup-theme="lake"] {
-  --bg: #edf5f7;
-  --panel: #fbfdfe;
-  --text: #21313a;
-  --muted: #5d707a;
-  --border: #cfdfe6;
-  --accent: #2d7890;
-  --accent-soft: #dceef4;
-}
-
-body[data-popup-theme="rose"] {
-  --bg: #f7f1f4;
-  --panel: #fffafb;
-  --text: #352830;
-  --muted: #75636c;
-  --border: #e0cfd7;
-  --accent: #9a4968;
-  --accent-soft: #f1dfe7;
-}
-
-body[data-popup-theme="night"],
-body[data-popup-theme="graphite"],
-body[data-popup-theme="midnight"],
-body[data-popup-theme="wine"] {
-  color-scheme: dark;
-  --input: var(--panel);
-}
-
-body[data-popup-theme="night"] {
-  --bg: #15191d;
-  --panel: #20262b;
-  --text: #e8edf0;
-  --muted: #b4c0c6;
-  --border: #3d4850;
-  --accent: #8bc7bd;
-  --accent-soft: #283f3d;
-}
-
-body[data-popup-theme="graphite"] {
-  --bg: #151716;
-  --panel: #202421;
-  --text: #e7ede9;
-  --muted: #b5c1bb;
-  --border: #3b4740;
-  --accent: #9cc8b3;
-  --accent-soft: #263d34;
-}
-
-body[data-popup-theme="midnight"] {
-  --bg: #14171d;
-  --panel: #1f242c;
-  --text: #e7edf5;
-  --muted: #b3becb;
-  --border: #3c4654;
-  --accent: #9dbde8;
-  --accent-soft: #26354c;
-}
-
-body[data-popup-theme="wine"] {
-  --bg: #1a1518;
-  --panel: #241f22;
-  --text: #efe8ec;
-  --muted: #c7b5bd;
-  --border: #4a3c43;
-  --accent: #e1a3b5;
-  --accent-soft: #432b34;
 }
 
 * {
@@ -189,110 +100,6 @@ footer {
   color: var(--accent);
   font-weight: 600;
 }
-
-.theme-more-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.theme-more-toggle {
-  min-height: 30px;
-  flex: 0 0 auto;
-  border-radius: 999px;
-}
-
-.theme-more-toggle.is-active,
-.theme-more-toggle[aria-expanded="true"] {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-  color: var(--accent);
-  font-weight: 650;
-}
-
-.theme-current {
-  min-width: 0;
-  color: var(--muted);
-  font-size: 12px;
-  white-space: nowrap;
-}
-
-.theme-more-menu {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 7px;
-  margin-top: 8px;
-  padding: 8px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--panel) 88%, var(--accent-soft));
-}
-
-.theme-more-menu[hidden] {
-  display: none;
-}
-
-.theme-more-menu label {
-  cursor: pointer;
-}
-
-.theme-more-menu input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.theme-more-menu label > span {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  grid-template-areas:
-    "swatch title"
-    "swatch note";
-  column-gap: 8px;
-  min-height: 46px;
-  padding: 7px 8px;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  background: var(--input);
-  color: var(--text);
-}
-
-.theme-more-menu input:checked + span {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-  color: var(--accent);
-}
-
-.theme-more-menu strong {
-  grid-area: title;
-  font-size: 13px;
-  line-height: 1.2;
-}
-
-.theme-more-menu small {
-  grid-area: note;
-  color: var(--muted);
-  font-size: 11px;
-  line-height: 1.2;
-}
-
-.theme-swatch {
-  grid-area: swatch;
-  width: 22px;
-  height: 22px;
-  align-self: center;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: 999px;
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.3);
-}
-
-.theme-swatch-sage { background: linear-gradient(135deg, #eef5ef 0 50%, #39785a 50%); }
-.theme-swatch-lake { background: linear-gradient(135deg, #edf5f7 0 50%, #2d7890 50%); }
-.theme-swatch-rose { background: linear-gradient(135deg, #f7f1f4 0 50%, #9a4968 50%); }
-.theme-swatch-graphite { background: linear-gradient(135deg, #151716 0 50%, #9cc8b3 50%); }
-.theme-swatch-midnight { background: linear-gradient(135deg, #14171d 0 50%, #9dbde8 50%); }
-.theme-swatch-wine { background: linear-gradient(135deg, #1a1518 0 50%, #e1a3b5 50%); }
 
 .switch {
   position: relative;
@@ -404,7 +211,7 @@ select {
   width: 100%;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: var(--input);
+  background: #ffffff;
   color: var(--text);
   font: inherit;
   line-height: 1.45;
@@ -450,7 +257,7 @@ button {
   min-height: 32px;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: var(--input);
+  background: #ffffff;
   color: var(--text);
   cursor: pointer;
   font: inherit;

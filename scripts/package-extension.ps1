@@ -26,7 +26,6 @@ New-Item -ItemType Directory -Force -Path (Join-Path $stage "src") | Out-Null
 @(
   "manifest.json",
   "assets",
-  "images",
   "popup",
   "README.md",
   "README.zh-CN.md",
