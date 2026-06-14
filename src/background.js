@@ -1,8 +1,10 @@
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message?.type !== "CC98_REBORN_DOWNLOAD_FILE") {
-    return false;
-  }
+function isCc98Url(url) {
+  return /\.cc98\.org$/i.test(url.hostname)
+    || url.hostname === "cc98.org"
+    || url.hostname === "www-cc98-org-s.webvpn.zju.edu.cn";
+}
 
+function handleDownloadFile(message, sendResponse) {
   let url;
   try {
     url = new URL(message.url);
@@ -11,7 +13,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return false;
   }
 
-  if (!/\.cc98\.org$/i.test(url.hostname) && url.hostname !== "cc98.org") {
+  if (!isCc98Url(url)) {
     sendResponse({ ok: false, error: "unsupported-host" });
     return false;
   }
@@ -30,4 +32,12 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   });
 
   return true;
+}
+
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message?.type === "CC98_REBORN_DOWNLOAD_FILE") {
+    return handleDownloadFile(message, sendResponse);
+  }
+
+  return false;
 });
