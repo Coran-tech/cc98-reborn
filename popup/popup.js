@@ -62,6 +62,8 @@ const fields = {
   blockedTitleKeywords: document.querySelector("#blockedTitleKeywords"),
   blockedUserIds: document.querySelector("#blockedUserIds"),
   placeholderText: document.querySelector("#placeholderText"),
+  clearCookies: document.querySelector("#clearCookies"),
+  cookieStatus: document.querySelector("#cookieStatus"),
   reset: document.querySelector("#reset")
 };
 
@@ -175,6 +177,33 @@ function save() {
   chrome.storage.local.set({ [STORAGE_KEY]: settings });
 }
 
+function setCookieStatus(text) {
+  if (fields.cookieStatus) {
+    fields.cookieStatus.textContent = text;
+  }
+}
+
+function clearCc98Cookies() {
+  if (!window.confirm("确定清除 CC98 Cookie？这通常会让当前账号退出登录。")) {
+    return;
+  }
+  if (fields.clearCookies) {
+    fields.clearCookies.disabled = true;
+  }
+  setCookieStatus("正在清除 CC98 Cookie...");
+  chrome.runtime.sendMessage({ type: "CC98_REBORN_CLEAR_COOKIES" }, (response) => {
+    const error = chrome.runtime.lastError?.message;
+    if (fields.clearCookies) {
+      fields.clearCookies.disabled = false;
+    }
+    if (error || !response?.ok) {
+      setCookieStatus(`清除失败：${error || response?.error || "未知错误"}`);
+      return;
+    }
+    setCookieStatus(`已清除 ${response.removed || 0} / ${response.total || 0} 个 CC98 Cookie。刷新页面后生效。`);
+  });
+}
+
 function bind() {
   document.querySelectorAll("input, textarea, select").forEach((input) => {
     input.addEventListener("input", save);
@@ -205,6 +234,8 @@ function bind() {
     hydrate(DEFAULT_SETTINGS);
     chrome.storage.local.set({ [STORAGE_KEY]: DEFAULT_SETTINGS });
   });
+
+  fields.clearCookies?.addEventListener("click", clearCc98Cookies);
 }
 
 chrome.storage.local.get(STORAGE_KEY, (result) => {

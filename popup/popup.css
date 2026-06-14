@@ -441,6 +441,29 @@ select:focus {
   line-height: 1.45;
 }
 
+.danger-zone {
+  border-color: color-mix(in srgb, #b6473f 36%, var(--border));
+  background: color-mix(in srgb, var(--panel) 88%, #b6473f 6%);
+}
+
+.danger-button {
+  width: 100%;
+  border-color: color-mix(in srgb, #b6473f 58%, var(--border));
+  background: color-mix(in srgb, var(--input) 86%, #b6473f 10%);
+  color: #b6473f;
+  font-weight: 650;
+}
+
+.danger-button:hover {
+  border-color: #b6473f;
+  color: #b6473f;
+}
+
+.danger-button:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
 footer {
   display: flex;
   justify-content: flex-end;
