@@ -2,6 +2,27 @@
 
 All notable changes to CC98 Reborn are documented here.
 
+## 0.2.3 - 2026-06-16
+
+### Added
+
+- 新增帖子投票组件适配：投票区块会独立显示在正文中，并保留原站的选项勾选、投票和重置功能。
+- 新增插件更新检测：支持弹窗内手动检查、定时后台检查、扩展图标 `NEW` 标记，以及每次启动浏览器时仅展示一次的页面更新提醒。
+- 更新检测加入多来源回退，依次尝试 GitHub Release API、Release 列表、Latest 页面和镜像接口，降低单一接口返回 404 或 504 时的失败率。
+
+### Fixed
+
+- 修复关注用户和粉丝列表中点击用户名只改变地址、页面却没有刷新的问题。
+- 修复投票区块可能被误归入签名档的问题。
+- 修复弹窗更新入口位置、更新红点提示和发布页跳转行为。
+
+### Changed
+
+- 更新检查间隔设为 6 小时，并使用浏览器会话存储避免同一次浏览器运行期间重复弹出提醒。
+- 新增 `alarms` 权限，以及 GitHub Release 和更新镜像所需的主机权限。
+- Version bumped to `0.2.3`.
+- The release package was regenerated as `dist/cc98-reborn-0.2.3.zip`.
+
 ## 0.2.2 - 2026-06-14
 
 ### Fixed

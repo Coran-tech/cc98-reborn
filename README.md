@@ -14,6 +14,9 @@ Current pre-release version: `0.2.3`.
 - Image loading prewarm for posts, configurable image loading mask duration, and click-to-view large images with wheel zoom and drag pan.
 - Floor anchors for post links such as `#2`, with smooth scrolling in the rebuilt UI.
 - Search result rebuilding and keyword highlighting.
+- Native post polls are restyled while retaining the original vote and reset behavior.
+- Follow/follower profile links use full navigation so rebuilt user-center pages refresh reliably.
+- Built-in update checks provide manual checks, periodic background checks, a popup update indicator, and a once-per-browser-session page notice.
 - Blocking rules for boards, title keywords, and user IDs.
 - Original CC98 interactions are preserved by reusing native controls for editors, private messages, user center settings, upload buttons, and message sending.
 - Watermark code is currently dormant while official CC98 OAuth authorization is being prepared.
@@ -44,9 +47,11 @@ The extension requests:
 
 - `storage`: save local settings.
 - `downloads`: trigger CC98 file downloads from rebuilt post download buttons.
+- `alarms`: schedule periodic release checks.
 - CC98 host permissions: run the content script on CC98 and the common WebVPN domain.
+- GitHub Release and mirror host permissions: check whether a newer extension package is available.
 
-The release build does not upload post content, private messages, search terms, or settings to third-party services. See `PRIVACY.md`.
+The release build does not upload post content, private messages, search terms, or settings to third-party services. Update checks only request public release metadata. See `PRIVACY.md`.
 
 ## Project Structure
 
