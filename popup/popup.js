@@ -1,4 +1,5 @@
 const STORAGE_KEY = "cc98ComfortSettings";
+const RELEASES_PAGE_URL = "https://github.com/Coran-tech/cc98-reborn/releases";
 
 const DEFAULT_SETTINGS = {
   enabled: true,
@@ -58,17 +59,24 @@ const fields = {
   emojiScaleOutput: document.querySelector("#emojiScaleOutput"),
   imageLoadDuration: document.querySelector("#imageLoadDuration"),
   imageLoadDurationOutput: document.querySelector("#imageLoadDurationOutput"),
+  updateTopNotice: document.querySelector("#updateTopNotice"),
+  updateTopText: document.querySelector("#updateTopText"),
+  updateCard: document.querySelector(".update-card"),
+  updateStatus: document.querySelector("#updateStatus"),
+  updateCurrentVersion: document.querySelector("#updateCurrentVersion"),
+  updateLatestVersion: document.querySelector("#updateLatestVersion"),
+  updateCheck: document.querySelector("#updateCheck"),
+  updateOpen: document.querySelector("#updateOpen"),
   blockedBoards: document.querySelector("#blockedBoards"),
   blockedTitleKeywords: document.querySelector("#blockedTitleKeywords"),
   blockedUserIds: document.querySelector("#blockedUserIds"),
   placeholderText: document.querySelector("#placeholderText"),
-  clearCookies: document.querySelector("#clearCookies"),
-  cookieStatus: document.querySelector("#cookieStatus"),
   reset: document.querySelector("#reset")
 };
 
 let settings = { ...DEFAULT_SETTINGS };
 let isHydrating = false;
+let latestReleaseUrl = RELEASES_PAGE_URL;
 
 function readRadio(name) {
   return document.querySelector(`input[name="${name}"]:checked`)?.value ?? DEFAULT_SETTINGS[name];
@@ -107,6 +115,94 @@ function updateThemeDisplay() {
 
 function formatDuration(ms) {
   return `${(Number(ms) / 1000).toFixed(1)}s`;
+}
+
+function sendRuntimeMessage(message) {
+  return new Promise((resolve) => {
+    try {
+      chrome.runtime.sendMessage(message, (response) => {
+        if (chrome.runtime.lastError) {
+          resolve({ ok: false, error: chrome.runtime.lastError.message });
+          return;
+        }
+        resolve(response || { ok: false, error: "empty-response" });
+      });
+    } catch (error) {
+      resolve({ ok: false, error: error?.message || "send-failed" });
+    }
+  });
+}
+
+function formatUpdateTime(timestamp) {
+  const time = Number(timestamp);
+  if (!time) {
+    return "";
+  }
+  const date = new Date(time);
+  return `${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
+
+function setUpdateStatus(status = {}) {
+  const currentVersion = status.currentVersion || chrome.runtime.getManifest?.().version || "";
+  const latestVersion = status.latestVersion || "";
+  latestReleaseUrl = status.releaseUrl || RELEASES_PAGE_URL;
+  const checkedAt = formatUpdateTime(status.checkedAt);
+  let state = "idle";
+  let text = "\u5c1a\u672a\u68c0\u67e5\u66f4\u65b0";
+  if (status.checking) {
+    state = "checking";
+    text = "\u6b63\u5728\u68c0\u67e5\u66f4\u65b0\u2026";
+  } else if (status.hasUpdate) {
+    state = "available";
+    text = `\u53d1\u73b0\u65b0\u7248\u672c v${latestVersion}`;
+  } else if (status.ok) {
+    state = "current";
+    text = checkedAt ? `\u5df2\u662f\u6700\u65b0\u7248\u672c\u3000${checkedAt}` : "\u5df2\u662f\u6700\u65b0\u7248\u672c";
+  } else if (status.error) {
+    state = "error";
+    text = `\u68c0\u67e5\u5931\u8d25\uff1a${status.error}`;
+  }
+
+  if (fields.updateCard) {
+    fields.updateCard.dataset.state = state;
+  }
+  if (fields.updateStatus) {
+    fields.updateStatus.textContent = text;
+  }
+  if (fields.updateCurrentVersion) {
+    fields.updateCurrentVersion.textContent = currentVersion ? `\u5f53\u524d v${currentVersion}` : "";
+  }
+  if (fields.updateLatestVersion) {
+    fields.updateLatestVersion.textContent = latestVersion ? `\u6700\u65b0 v${latestVersion}` : "";
+  }
+  if (fields.updateOpen) {
+    fields.updateOpen.hidden = !status.hasUpdate;
+  }
+  if (fields.updateTopNotice) {
+    fields.updateTopNotice.hidden = !status.hasUpdate;
+  }
+  if (fields.updateTopText && status.hasUpdate) {
+    fields.updateTopText.textContent = latestVersion ? `\u53d1\u73b0\u65b0\u7248\u672c v${latestVersion}` : "\u53d1\u73b0\u65b0\u7248\u672c";
+  }
+}
+
+async function requestUpdateStatus(force = false) {
+  if (fields.updateCheck) {
+    fields.updateCheck.disabled = true;
+  }
+  setUpdateStatus({ checking: true, currentVersion: chrome.runtime.getManifest?.().version || "" });
+  const status = await sendRuntimeMessage({
+    type: force ? "CC98_REBORN_CHECK_UPDATE" : "CC98_REBORN_GET_UPDATE_STATUS",
+    force
+  });
+  setUpdateStatus(status);
+  if (!force && (!status?.checkedAt || Date.now() - Number(status.checkedAt) > 30 * 60 * 1000)) {
+    const freshStatus = await sendRuntimeMessage({ type: "CC98_REBORN_CHECK_UPDATE", force: false });
+    setUpdateStatus(freshStatus);
+  }
+  if (fields.updateCheck) {
+    fields.updateCheck.disabled = false;
+  }
 }
 
 function hydrate(nextSettings) {
@@ -177,33 +273,6 @@ function save() {
   chrome.storage.local.set({ [STORAGE_KEY]: settings });
 }
 
-function setCookieStatus(text) {
-  if (fields.cookieStatus) {
-    fields.cookieStatus.textContent = text;
-  }
-}
-
-function clearCc98Cookies() {
-  if (!window.confirm("确定清除 CC98 Cookie？这通常会让当前账号退出登录。")) {
-    return;
-  }
-  if (fields.clearCookies) {
-    fields.clearCookies.disabled = true;
-  }
-  setCookieStatus("正在清除 CC98 Cookie...");
-  chrome.runtime.sendMessage({ type: "CC98_REBORN_CLEAR_COOKIES" }, (response) => {
-    const error = chrome.runtime.lastError?.message;
-    if (fields.clearCookies) {
-      fields.clearCookies.disabled = false;
-    }
-    if (error || !response?.ok) {
-      setCookieStatus(`清除失败：${error || response?.error || "未知错误"}`);
-      return;
-    }
-    setCookieStatus(`已清除 ${response.removed || 0} / ${response.total || 0} 个 CC98 Cookie。刷新页面后生效。`);
-  });
-}
-
 function bind() {
   document.querySelectorAll("input, textarea, select").forEach((input) => {
     input.addEventListener("input", save);
@@ -220,6 +289,24 @@ function bind() {
     setThemeMenuOpen(false);
   });
 
+  fields.updateCheck?.addEventListener("click", () => {
+    requestUpdateStatus(true);
+  });
+
+  fields.updateOpen?.addEventListener("click", () => {
+    sendRuntimeMessage({
+      type: "CC98_REBORN_OPEN_RELEASES",
+      url: latestReleaseUrl || RELEASES_PAGE_URL
+    });
+  });
+
+  fields.updateTopNotice?.addEventListener("click", () => {
+    sendRuntimeMessage({
+      type: "CC98_REBORN_OPEN_RELEASES",
+      url: latestReleaseUrl || RELEASES_PAGE_URL
+    });
+  });
+
   document.addEventListener("click", (event) => {
     if (!fields.themeMoreMenu || fields.themeMoreMenu.hidden) {
       return;
@@ -234,11 +321,10 @@ function bind() {
     hydrate(DEFAULT_SETTINGS);
     chrome.storage.local.set({ [STORAGE_KEY]: DEFAULT_SETTINGS });
   });
-
-  fields.clearCookies?.addEventListener("click", clearCc98Cookies);
 }
 
 chrome.storage.local.get(STORAGE_KEY, (result) => {
   hydrate(result[STORAGE_KEY]);
   bind();
+  requestUpdateStatus(false);
 });

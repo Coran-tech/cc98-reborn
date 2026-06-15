@@ -2201,6 +2201,159 @@
   word-break: break-word;
 }
 
+:root.cc98-comfort .cc98-rebuild-post-body .cc98-rebuild-native-vote {
+  display: grid !important;
+  gap: 12px !important;
+  width: 100% !important;
+  margin: 0 0 1.2rem !important;
+  padding: 14px !important;
+  border: 1px solid color-mix(in srgb, var(--cc98-comfort-accent) 24%, var(--cc98-comfort-border)) !important;
+  border-radius: 14px !important;
+  background: color-mix(in srgb, var(--cc98-comfort-accent) 7%, var(--cc98-comfort-surface)) !important;
+  color: var(--cc98-comfort-text) !important;
+  box-sizing: border-box !important;
+  white-space: normal !important;
+  box-shadow: var(--cc98-comfort-shadow) !important;
+}
+
+:root.cc98-comfort[data-cc98-comfort-theme="night"] .cc98-rebuild-post-body .cc98-rebuild-native-vote {
+  background: color-mix(in srgb, var(--cc98-comfort-accent) 9%, #151b1f) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-post-body .cc98-rebuild-native-vote .vote-message {
+  min-height: 0 !important;
+  color: var(--cc98-comfort-muted) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-post-body .cc98-rebuild-native-vote .vote-items {
+  display: grid !important;
+  gap: 8px !important;
+  padding: 8px 0 10px !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--cc98-comfort-border) 78%, transparent) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-post-body .cc98-rebuild-native-vote .vote-items:last-of-type {
+  border-bottom: 0 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-post-body .cc98-rebuild-native-vote .vote-description,
+:root.cc98-comfort .cc98-rebuild-post-body .cc98-rebuild-native-vote .vote-bar,
+:root.cc98-comfort .cc98-rebuild-post-body .cc98-rebuild-native-vote .vote-info p {
+  margin: 0 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-post-body .cc98-rebuild-native-vote .vote-description {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  color: var(--cc98-comfort-text) !important;
+  font-weight: 700 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-post-body .cc98-rebuild-native-vote .vote-description input {
+  flex: 0 0 auto !important;
+  width: 16px !important;
+  height: 16px !important;
+  margin: 0 !important;
+  accent-color: var(--cc98-comfort-accent) !important;
+  cursor: pointer !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-post-body .cc98-rebuild-native-vote .vote-description input:disabled {
+  cursor: default !important;
+  opacity: 0.62 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-post-body .cc98-rebuild-native-vote .vote-description label {
+  color: var(--cc98-comfort-text) !important;
+  cursor: pointer !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-post-body .cc98-rebuild-native-vote .vote-bar {
+  display: grid !important;
+  grid-template-columns: minmax(9rem, 20rem) auto !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-post-body .cc98-rebuild-native-vote .vote-total {
+  display: block !important;
+  width: 100% !important;
+  height: 10px !important;
+  overflow: hidden !important;
+  border-radius: 999px !important;
+  background: color-mix(in srgb, var(--cc98-comfort-muted) 14%, var(--cc98-comfort-surface-2)) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-post-body .cc98-rebuild-native-vote .vote-current {
+  display: block !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  border-radius: inherit !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-post-body .cc98-rebuild-native-vote .vote-item-info {
+  color: var(--cc98-comfort-muted) !important;
+  font-size: 0.86rem !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-post-body .cc98-rebuild-native-vote .vote-info {
+  display: grid !important;
+  gap: 4px !important;
+  color: var(--cc98-comfort-muted) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-post-body .cc98-rebuild-native-vote .vote-info p {
+  color: var(--cc98-comfort-muted) !important;
+  font-size: 0.88rem !important;
+  line-height: 1.45 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-post-body .cc98-rebuild-native-vote .vote-buttons {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-post-body .cc98-rebuild-native-vote .vote-buttons button,
+:root.cc98-comfort .cc98-rebuild-post-body .cc98-rebuild-native-vote .cc98-rebuild-native-vote-button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 72px !important;
+  height: 32px !important;
+  padding: 0 14px !important;
+  border: 1px solid color-mix(in srgb, var(--cc98-comfort-accent) 28%, var(--cc98-comfort-border)) !important;
+  border-radius: 999px !important;
+  background: color-mix(in srgb, var(--cc98-comfort-accent) 14%, var(--cc98-comfort-surface)) !important;
+  color: var(--cc98-comfort-text) !important;
+  font-size: 0.9rem !important;
+  font-weight: 760 !important;
+  line-height: 1 !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-post-body .cc98-rebuild-native-vote .vote-buttons button:not(:disabled):hover {
+  border-color: var(--cc98-comfort-accent) !important;
+  background: color-mix(in srgb, var(--cc98-comfort-accent) 20%, var(--cc98-comfort-surface)) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-post-body .cc98-rebuild-native-vote .vote-buttons button:disabled {
+  opacity: 0.55 !important;
+  cursor: default !important;
+}
+
+@media (max-width: 640px) {
+  :root.cc98-comfort .cc98-rebuild-post-body .cc98-rebuild-native-vote .vote-bar {
+    grid-template-columns: 1fr !important;
+    align-items: start !important;
+  }
+}
+
 :root.cc98-comfort .cc98-rebuild-post-body :is(b, strong) {
   font-weight: 800;
 }
@@ -3288,6 +3441,93 @@
 :root.cc98-comfort .cc98-rebuild-toast-close:hover {
   background: var(--cc98-comfort-accent-2) !important;
   color: var(--cc98-comfort-accent) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-startup-update-notice {
+  position: fixed;
+  left: 18px;
+  bottom: 18px;
+  z-index: 2147483646;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  width: min(420px, calc(100vw - 36px));
+  padding: 13px 14px;
+  border: 1px solid color-mix(in srgb, #d44a4a 30%, var(--cc98-comfort-border));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--cc98-comfort-surface) 88%, #d44a4a 12%);
+  color: var(--cc98-comfort-text);
+  box-shadow: var(--cc98-comfort-shadow);
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+
+:root.cc98-comfort .cc98-rebuild-startup-update-notice.is-visible {
+  opacity: 0.98;
+  transform: translateY(0);
+}
+
+:root.cc98-comfort .cc98-rebuild-startup-update-notice.is-leaving {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+:root.cc98-comfort .cc98-rebuild-startup-update-content {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+:root.cc98-comfort .cc98-rebuild-startup-update-content strong {
+  color: var(--cc98-comfort-text);
+  font-size: 0.96rem;
+  line-height: 1.25;
+}
+
+:root.cc98-comfort .cc98-rebuild-startup-update-content span {
+  color: var(--cc98-comfort-muted);
+  font-size: 0.82rem;
+  line-height: 1.3;
+}
+
+:root.cc98-comfort .cc98-rebuild-startup-update-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+:root.cc98-comfort .cc98-rebuild-startup-update-actions button {
+  min-height: 30px !important;
+  border: 1px solid var(--cc98-comfort-border) !important;
+  border-radius: 999px !important;
+  padding: 0 11px !important;
+  background: var(--cc98-comfort-surface) !important;
+  color: var(--cc98-comfort-text) !important;
+  font-size: 0.82rem !important;
+  font-weight: 720 !important;
+  cursor: pointer !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-startup-update-actions .cc98-rebuild-startup-update-open {
+  border-color: color-mix(in srgb, #d44a4a 44%, var(--cc98-comfort-border)) !important;
+  background: color-mix(in srgb, #d44a4a 12%, var(--cc98-comfort-surface)) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-startup-update-actions button:hover {
+  border-color: var(--cc98-comfort-accent) !important;
+  color: var(--cc98-comfort-accent) !important;
+}
+
+@media (max-width: 640px) {
+  :root.cc98-comfort .cc98-rebuild-startup-update-notice {
+    grid-template-columns: 1fr;
+  }
+
+  :root.cc98-comfort .cc98-rebuild-startup-update-actions {
+    justify-content: flex-end;
+  }
 }
 
 :root.cc98-comfort .cc98-rebuild-post-footer {

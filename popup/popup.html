@@ -19,6 +19,11 @@
         </label>
       </header>
 
+      <button id="updateTopNotice" class="update-top-notice" type="button" hidden>
+        <span class="update-dot" aria-hidden="true"></span>
+        <span id="updateTopText">&#21457;&#29616;&#26032;&#29256;&#26412;</span>
+      </button>
+
       <section class="group" aria-labelledby="theme-label">
         <div id="theme-label" class="label">主题</div>
         <div class="segmented" role="radiogroup" aria-labelledby="theme-label">
@@ -109,10 +114,17 @@
         </label>
       </section>
 
-      <section class="group danger-zone" aria-labelledby="cookie-tools-label">
-        <div id="cookie-tools-label" class="label">Cookie 工具</div>
-        <button id="clearCookies" class="danger-button" type="button">清除 CC98 Cookie</button>
-        <p id="cookieStatus" class="hint" aria-live="polite">只清除 CC98 登录相关 Cookie，不清除插件设置、草稿和稍后再看数据。</p>
+      <section class="group update-card" aria-labelledby="update-label">
+        <div id="update-label" class="label">&#26356;&#26032;&#26816;&#26597;</div>
+        <p id="updateStatus" class="update-status">&#27491;&#22312;&#35835;&#21462;&#29366;&#24577;&#8230;</p>
+        <div class="update-meta">
+          <span id="updateCurrentVersion"></span>
+          <span id="updateLatestVersion"></span>
+        </div>
+        <div class="update-actions">
+          <button id="updateCheck" type="button">&#31435;&#21363;&#26816;&#26597;</button>
+          <button id="updateOpen" class="update-open" type="button" hidden>&#25171;&#24320;&#21457;&#24067;&#39029;</button>
+        </div>
       </section>
 
       <footer>
