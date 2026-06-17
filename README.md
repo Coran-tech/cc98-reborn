@@ -4,7 +4,7 @@
 
 CC98 Reborn is a Chrome/Edge extension that rebuilds common CC98 pages into a cleaner reading interface while keeping the original site controls available whenever possible.
 
-Current pre-release version: `0.1.2`.
+Current pre-release version: `0.2.6`.
 
 ## Features
 
@@ -14,9 +14,15 @@ Current pre-release version: `0.1.2`.
 - Image loading prewarm for posts, configurable image loading mask duration, and click-to-view large images with wheel zoom and drag pan.
 - Floor anchors for post links such as `#2`, with smooth scrolling in the rebuilt UI.
 - Search result rebuilding and keyword highlighting.
+- Native post polls are restyled while retaining the original vote and reset behavior.
+- Follow/follower profile links use full navigation so rebuilt user-center pages refresh reliably.
+- Built-in update checks provide manual checks, periodic background checks, a popup update indicator, and a once-per-browser-session page notice.
+- The popup can clear CC98 cookies and local site data, then reload open CC98 tabs.
+- The popup about panel shows the current extension version, avatar, and author profile links.
+- Optional CC98 OpenID binding uses authorization code + PKCE, requests the CC98 API user-info scope, stores only a local identity summary, and enables the local floating watermark after binding.
 - Blocking rules for boards, title keywords, and user IDs.
 - Original CC98 interactions are preserved by reusing native controls for editors, private messages, user center settings, upload buttons, and message sending.
-- Watermark code is currently dormant while official CC98 OAuth authorization is being prepared.
+- The floating watermark uses the first eight characters of the bound CC98 `watermarkId` and is rendered locally on CC98 pages.
 
 ## Install Locally
 
@@ -44,9 +50,14 @@ The extension requests:
 
 - `storage`: save local settings.
 - `downloads`: trigger CC98 file downloads from rebuilt post download buttons.
+- `alarms`: schedule periodic release checks.
+- `browsingData`: clear CC98 cookies and local site data when the user explicitly clicks the cleanup button.
+- `identity`: run the CC98 OpenID authorization flow when the user explicitly binds an account.
 - CC98 host permissions: run the content script on CC98 and the common WebVPN domain.
+- CC98 OpenID/API host permissions: exchange the authorization code, request `cc98-api` / `read-user-info`, and read `https://api.cc98.org/me`.
+- GitHub Release and mirror host permissions: check whether a newer extension package is available.
 
-The release build does not upload post content, private messages, search terms, or settings to third-party services. See `PRIVACY.md`.
+The release build does not upload post content, private messages, search terms, or settings to third-party services. Update checks only request public release metadata. OpenID binding stores only a local identity summary and does not persist access tokens. The watermark is drawn locally from that stored summary. See `PRIVACY.md`.
 
 ## Project Structure
 
@@ -57,6 +68,14 @@ assets/
   icon32.png
   icon48.png
   icon128.png
+images/
+  CC98/
+  ac/
+  ac1/
+  tb/
+  ms/
+  em/
+  mahjong/
 src/
   content.js
   styles.css

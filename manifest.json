@@ -2,15 +2,44 @@
   "manifest_version": 3,
   "name": "CC98 Reborn",
   "description": "A refreshed reading and browsing interface for CC98.",
-  "version": "0.1.2",
+  "version": "0.2.6",
   "permissions": [
     "storage",
-    "downloads"
+    "downloads",
+    "alarms",
+    "browsingData",
+    "identity",
+    "activeTab"
   ],
   "host_permissions": [
     "*://*.cc98.org/*",
     "*://cc98.org/*",
-    "*://www-cc98-org-s.webvpn.zju.edu.cn/*"
+    "*://www-cc98-org-s.webvpn.zju.edu.cn/*",
+    "https://openid.cc98.org/*",
+    "https://api.cc98.org/*",
+    "https://api.github.com/repos/Coran-tech/cc98-reborn/releases*",
+    "https://github.com/Coran-tech/cc98-reborn/releases/*",
+    "https://gh-proxy.com/*"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "images/CC98/*",
+        "images/ac/*",
+        "images/ac1/*",
+        "images/tb/*",
+        "images/ms/*",
+        "images/em/*",
+        "images/mahjong/animal2017/*",
+        "images/mahjong/carton2017/*",
+        "images/mahjong/face2017/*"
+      ],
+      "matches": [
+        "*://*.cc98.org/*",
+        "*://cc98.org/*",
+        "*://www-cc98-org-s.webvpn.zju.edu.cn/*"
+      ]
+    }
   ],
   "content_scripts": [
     {
@@ -18,6 +47,24 @@
         "*://*.cc98.org/*",
         "*://cc98.org/*",
         "*://www-cc98-org-s.webvpn.zju.edu.cn/*"
+      ],
+      "exclude_matches": [
+        "https://openid.cc98.org/*"
+      ],
+      "js": [
+        "src/page-submit-monitor.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "*://*.cc98.org/*",
+        "*://cc98.org/*",
+        "*://www-cc98-org-s.webvpn.zju.edu.cn/*"
+      ],
+      "exclude_matches": [
+        "https://openid.cc98.org/*"
       ],
       "js": [
         "src/content.js"
