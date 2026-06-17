@@ -23,9 +23,11 @@ node -e "JSON.parse(require('fs').readFileSync('manifest.json','utf8')); console
 
 - `manifest.json`
 - `assets/`
+- `images/`
 - `popup/`
 - `src/background.js`
 - `src/content.js`
+- `src/page-submit-monitor.js`
 - `src/styles.css`
 - `README.md`
 - `README.zh-CN.md`

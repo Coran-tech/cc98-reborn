@@ -16,6 +16,11 @@ Network activity is limited to:
 - CC98 pages already visited by the user, for rebuilding the visible interface.
 - CC98 same-origin page reads used by optional page prewarming/search helpers.
 - CC98 file downloads triggered by the user.
+- Public GitHub Release metadata, with a release mirror as a fallback, for manual and periodic extension update checks.
+
+Update checks do not include post content, private messages, search terms, CC98 account data, or extension settings.
+
+The popup also includes an explicit cleanup button that clears CC98 cookies and local site data through the browser `browsingData` API. This action is user-triggered only.
 
 ## Disabled / Pending Features
 
