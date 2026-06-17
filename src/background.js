@@ -122,6 +122,90 @@ async function reloadCc98Tabs() {
   return reloaded;
 }
 
+function queryActiveTabs() {
+  return new Promise((resolve) => {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (chrome.runtime.lastError) {
+        resolve([]);
+        return;
+      }
+      resolve(Array.isArray(tabs) ? tabs : []);
+    });
+  });
+}
+
+function sendTabMessage(tabId, message) {
+  return new Promise((resolve) => {
+    if (!Number.isFinite(tabId)) {
+      resolve({ ok: false, error: "invalid-tab" });
+      return;
+    }
+    chrome.tabs.sendMessage(tabId, message, (response) => {
+      if (chrome.runtime.lastError) {
+        resolve({ ok: false, error: chrome.runtime.lastError.message || "tab-message-failed" });
+        return;
+      }
+      resolve(response || { ok: false, error: "empty-response" });
+    });
+  });
+}
+
+function dedupeTabs(tabs) {
+  const seen = new Set();
+  return tabs.filter((tab) => {
+    if (!Number.isFinite(tab?.id) || seen.has(tab.id)) {
+      return false;
+    }
+    seen.add(tab.id);
+    return true;
+  });
+}
+
+function isCc98WebPageTabUrl(value) {
+  try {
+    const url = new URL(value || "");
+    return /^(?:www\.)?cc98\.org$/i.test(url.hostname)
+      || url.hostname === "www-cc98-org-s.webvpn.zju.edu.cn";
+  } catch {
+    return false;
+  }
+}
+
+async function findCurrentCc98WebAccount() {
+  const tabs = dedupeTabs([
+    ...await queryActiveTabs(),
+    ...await queryCc98Tabs()
+  ]);
+  let fallback = null;
+  for (const tab of tabs) {
+    if (!isCc98WebPageTabUrl(tab.url)) {
+      continue;
+    }
+    // eslint-disable-next-line no-await-in-loop
+    const result = await sendTabMessage(tab.id, { type: "CC98_REBORN_GET_CURRENT_WEB_ACCOUNT" });
+    if (!result?.ok || !result.account) {
+      continue;
+    }
+    if (result.account.userId) {
+      return { ok: true, account: result.account, tabId: tab.id };
+    }
+    fallback = fallback || { ok: true, account: result.account, tabId: tab.id, warning: "uid-missing" };
+  }
+  return fallback || {
+    ok: false,
+    error: "未找到已登录且已加载插件的 CC98 标签页。请打开或刷新一个已登录的 CC98 页面后再绑定。"
+  };
+}
+
+async function exitCurrentCc98WebAccount() {
+  const found = await findCurrentCc98WebAccount();
+  if (!found?.ok || !Number.isFinite(found.tabId)) {
+    return found;
+  }
+  const result = await sendTabMessage(found.tabId, { type: "CC98_REBORN_EXIT_CURRENT_ACCOUNT" });
+  return result?.ok ? { ok: true, tabId: found.tabId } : result;
+}
+
 async function clearCc98SiteData() {
   const removed = await removeBrowsingData({
     origins: CC98_SITE_DATA_ORIGINS,
@@ -429,8 +513,8 @@ function pickProfileValue(profile, keys) {
 }
 
 function normalizeOpenIdBinding(profile, tokenPayload = {}) {
-  const userId = pickProfileValue(profile, ["id", "userId", "uid", "userID", "user_id", "cc98Id"]);
-  const userName = pickProfileValue(profile, ["name", "userName", "username", "nickName", "displayName"]);
+  const userId = pickProfileValue(profile, ["id", "userId", "uid", "userID", "user_id", "cc98Id", "cc98UserId", "cc98_user_id", "sub"]);
+  const userName = pickProfileValue(profile, ["name", "userName", "username", "nickName", "displayName", "preferred_username"]);
   const portraitUrl = pickProfileValue(profile, ["portraitUrl", "avatarUrl", "avatar", "picture", "headImg"]);
   const watermarkId = String(pickProfileValue(profile, ["watermarkId", "watermark_id", "watermark", "watermarkID"]) || "");
   return {
@@ -442,7 +526,7 @@ function normalizeOpenIdBinding(profile, tokenPayload = {}) {
     portraitUrl: portraitUrl === undefined ? "" : String(portraitUrl),
     watermarkIdPrefix: watermarkId ? watermarkId.slice(0, 8) : "",
     profileSource: profile._cc98RebornProfileSource || "api-me",
-    profileWarning: watermarkId ? "" : (profile._cc98RebornProfileWarning || "OpenID /me 未返回 watermarkId"),
+    profileWarning: watermarkId ? "" : (profile._cc98RebornProfileWarning || "OpenID /me \u672a\u8fd4\u56de watermarkId"),
     scope: tokenPayload.scope || CC98_OPENID_SCOPES.join(" "),
     boundAt: Date.now()
   };
@@ -460,8 +544,8 @@ function accountsReferToSameCc98User(left, right) {
   if (!left || !right) {
     return false;
   }
-  const leftId = normalizeAccountId(left.userId ?? left.id ?? left.uid ?? left.userID ?? left.cc98Id);
-  const rightId = normalizeAccountId(right.userId ?? right.id ?? right.uid ?? right.userID ?? right.cc98Id);
+  const leftId = normalizeAccountId(left.userId ?? left.id ?? left.uid ?? left.userID ?? left.cc98Id ?? left.cc98UserId ?? left.sub);
+  const rightId = normalizeAccountId(right.userId ?? right.id ?? right.uid ?? right.userID ?? right.cc98Id ?? right.cc98UserId ?? right.sub);
   if (leftId && rightId) {
     return leftId === rightId;
   }
@@ -471,16 +555,16 @@ function accountsReferToSameCc98User(left, right) {
 }
 
 function requireSameCc98UserId(binding, expectedAccount) {
-  const expectedId = normalizeAccountId(expectedAccount?.userId ?? expectedAccount?.id ?? expectedAccount?.uid ?? expectedAccount?.userID ?? expectedAccount?.cc98Id);
-  const actualId = normalizeAccountId(binding?.userId ?? binding?.id ?? binding?.uid ?? binding?.userID ?? binding?.cc98Id);
+  const expectedId = normalizeAccountId(expectedAccount?.userId ?? expectedAccount?.id ?? expectedAccount?.uid ?? expectedAccount?.userID ?? expectedAccount?.cc98Id ?? expectedAccount?.cc98UserId);
+  const actualId = normalizeAccountId(binding?.userId ?? binding?.id ?? binding?.uid ?? binding?.userID ?? binding?.cc98Id ?? binding?.cc98UserId);
   if (!expectedId) {
-    throw new Error("无法确认当前 CC98 网页账号 UID，请先刷新已登录的 CC98 页面后再绑定。");
+    throw new Error("\u65e0\u6cd5\u786e\u8ba4\u5f53\u524d CC98 \u7f51\u9875\u8d26\u53f7 UID\uff0c\u8bf7\u5148\u5237\u65b0\u5df2\u767b\u5f55\u7684 CC98 \u9875\u9762\u540e\u518d\u7ed1\u5b9a\u3002");
   }
   if (!actualId) {
-    throw new Error("OpenID /me 未返回 UID，无法验证是否为同一账号。");
+    throw new Error("OpenID /me \u672a\u8fd4\u56de UID\uff0c\u65e0\u6cd5\u9a8c\u8bc1\u662f\u5426\u4e3a\u540c\u4e00\u8d26\u53f7\u3002");
   }
   if (actualId !== expectedId) {
-    throw new Error(`OpenID 授权账号与当前 CC98 网页账号不一致：UID ${actualId} / ${expectedId}`);
+    throw new Error(`OpenID \u6388\u6743\u8d26\u53f7\u4e0e\u5f53\u524d CC98 \u7f51\u9875\u8d26\u53f7\u4e0d\u4e00\u81f4\uff1aUID ${actualId} / ${expectedId}`);
   }
 }
 
@@ -529,7 +613,7 @@ async function loginWithCc98OpenId(expectedAccount = null) {
   }
   if (expectedAccount) {
     binding.matchedWebAccount = {
-      userId: normalizeAccountId(expectedAccount.userId ?? expectedAccount.id ?? expectedAccount.uid ?? expectedAccount.userID ?? expectedAccount.cc98Id),
+      userId: normalizeAccountId(expectedAccount.userId ?? expectedAccount.id ?? expectedAccount.uid ?? expectedAccount.userID ?? expectedAccount.cc98Id ?? expectedAccount.cc98UserId),
       userName: String(expectedAccount.userName ?? expectedAccount.name ?? expectedAccount.username ?? expectedAccount.nickName ?? expectedAccount.displayName ?? "").trim(),
       matchedAt: Date.now()
     };
@@ -783,6 +867,16 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
   if (message?.type === "CC98_REBORN_OPENID_GET_STATE") {
     getOpenIdBinding().then(sendResponse);
+    return true;
+  }
+
+  if (message?.type === "CC98_REBORN_FIND_CURRENT_WEB_ACCOUNT") {
+    findCurrentCc98WebAccount().then(sendResponse);
+    return true;
+  }
+
+  if (message?.type === "CC98_REBORN_EXIT_CURRENT_WEB_ACCOUNT") {
+    exitCurrentCc98WebAccount().then(sendResponse);
     return true;
   }
 

@@ -273,7 +273,7 @@ function setOpenIdUi(result = {}) {
     fields.openidStatus.dataset.state = result.error ? "error" : (isBound ? "bound" : "idle");
     fields.openidStatus.textContent = result.error
       ? `\u7ed1\u5b9a\u5931\u8d25\uff1a${result.error}`
-      : (isBound ? `已绑定 ${binding.userName || "CC98 用户"} · 使用本地数据` : "\u672a\u7ed1\u5b9a\u3002\u7ed1\u5b9a\u540e\u7531\u6269\u5c55\u901a\u8fc7 OpenID \u8bfb\u53d6 /me\uff0c\u4e0d\u4f9d\u8d56\u7f51\u9875\u767b\u5f55\u6001\u3002");
+      : (isBound ? `\u5df2\u7ed1\u5b9a ${binding.userName || "CC98 \u7528\u6237"} \u00b7 \u4f7f\u7528\u672c\u5730\u6570\u636e` : "\u672a\u7ed1\u5b9a\u3002\u7ed1\u5b9a\u540e\u7531\u6269\u5c55\u901a\u8fc7 OpenID \u8bfb\u53d6 /me\uff0c\u4e0d\u4f9d\u8d56\u7f51\u9875\u767b\u5f55\u6001\u3002");
   }
   if (fields.openidMeta) {
     fields.openidMeta.hidden = !isBound;
@@ -282,7 +282,7 @@ function setOpenIdUi(result = {}) {
       const items = [
         binding.userId ? `UID ${binding.userId}` : "",
         binding.watermarkIdPrefix ? `\u6c34\u5370 ${binding.watermarkIdPrefix}` : "",
-        binding.storageMode === "local-readonly" ? "使用本地数据" : "",
+        binding.storageMode === "local-readonly" ? "\u4f7f\u7528\u672c\u5730\u6570\u636e" : "",
         binding.profileSource === "openid-userinfo" ? "\u57fa\u7840\u7ed1\u5b9a" : "",
         binding.profileWarning ? binding.profileWarning : "",
         binding.boundAt ? `\u7ed1\u5b9a ${formatDateTime(binding.boundAt)}` : ""
@@ -321,26 +321,26 @@ async function bindOpenId() {
   }
   if (fields.openidStatus) {
     fields.openidStatus.dataset.state = "pending";
-    fields.openidStatus.textContent = "正在确认当前 CC98 网页账号…";
+    fields.openidStatus.textContent = "\u6b63\u5728\u786e\u8ba4\u5f53\u524d CC98 \u7f51\u9875\u8d26\u53f7\u2026";
   }
-  const accountResult = await sendActiveTabMessage({ type: "CC98_REBORN_GET_CURRENT_WEB_ACCOUNT" });
+  const accountResult = await sendRuntimeMessage({ type: "CC98_REBORN_FIND_CURRENT_WEB_ACCOUNT" });
   if (!accountResult?.ok || !accountResult.account) {
     setOpenIdUi({
       ok: false,
-      error: "请先打开已登录的 CC98 页面，再绑定同一账号的 OpenID。"
+      error: accountResult?.error || "\u8bf7\u5148\u6253\u5f00\u5df2\u767b\u5f55\u7684 CC98 \u9875\u9762\uff0c\u518d\u7ed1\u5b9a\u540c\u4e00\u8d26\u53f7\u7684 OpenID\u3002"
     });
     return;
   }
   if (!accountResult.account.userId) {
     setOpenIdUi({
       ok: false,
-      error: "当前 CC98 页面未能读取到 UID，请刷新页面后再绑定。"
+      error: "\u5f53\u524d CC98 \u9875\u9762\u672a\u80fd\u8bfb\u53d6\u5230 UID\uff0c\u8bf7\u5237\u65b0\u9875\u9762\u540e\u518d\u7ed1\u5b9a\u3002"
     });
     return;
   }
   if (fields.openidStatus) {
     fields.openidStatus.dataset.state = "pending";
-    fields.openidStatus.textContent = "正在打开 CC98 OpenID 授权…";
+    fields.openidStatus.textContent = "\u6b63\u5728\u6253\u5f00 CC98 OpenID \u6388\u6743\u2026";
   }
   const result = await sendRuntimeMessage({
     type: "CC98_REBORN_OPENID_LOGIN",
@@ -361,20 +361,20 @@ async function exitCurrentAccount() {
   }
   if (fields.openidStatus) {
     fields.openidStatus.dataset.state = "pending";
-    fields.openidStatus.textContent = "正在退出当前 CC98 网页账号…";
+    fields.openidStatus.textContent = "\u6b63\u5728\u9000\u51fa\u5f53\u524d CC98 \u7f51\u9875\u8d26\u53f7\u2026";
   }
-  const result = await sendActiveTabMessage({ type: "CC98_REBORN_EXIT_CURRENT_ACCOUNT" });
+  const result = await sendRuntimeMessage({ type: "CC98_REBORN_EXIT_CURRENT_WEB_ACCOUNT" });
   if (result?.ok) {
     if (fields.openidStatus) {
       fields.openidStatus.dataset.state = "pending";
-      fields.openidStatus.textContent = "已发起退出，页面将跳转到登录页。";
+      fields.openidStatus.textContent = "\u5df2\u53d1\u8d77\u9000\u51fa\uff0c\u9875\u9762\u5c06\u8df3\u8f6c\u5230\u767b\u5f55\u9875\u3002";
     }
     window.setTimeout(() => window.close(), 450);
     return;
   }
   if (fields.openidStatus) {
     fields.openidStatus.dataset.state = "error";
-    fields.openidStatus.textContent = `退出失败：${result?.error || "请先切换到已登录的 CC98 页面。"}`;
+    fields.openidStatus.textContent = `\u9000\u51fa\u5931\u8d25\uff1a${result?.error || "\u8bf7\u5148\u6253\u5f00\u5df2\u767b\u5f55\u7684 CC98 \u9875\u9762\u3002"}`;
   }
   if (fields.openidExitAccount) {
     fields.openidExitAccount.disabled = false;

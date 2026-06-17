@@ -8476,13 +8476,72 @@ function parseStoredJsonLoose(value) {
   return null;
 }
 
+function parseJwtPayloadLoose(token) {
+  const value = String(token ?? "").trim();
+  const part = value.split(".")[1];
+  if (!part) {
+    return null;
+  }
+  try {
+    const normalized = part.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+    const binary = atob(padded);
+    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes));
+  } catch {
+    return null;
+  }
+}
+
+function collectStoredCc98UserCandidates() {
+  const candidates = [];
+  const add = (value) => {
+    if (value && typeof value === "object" && !candidates.includes(value)) {
+      candidates.push(value);
+    }
+  };
+  try {
+    [
+      "userInfo",
+      "currentUser",
+      "current_user",
+      "profile",
+      "me",
+      "loginUser",
+      "access_token",
+      "id_token"
+    ].forEach((key) => {
+      const raw = localStorage.getItem(key);
+      add(parseStoredJsonLoose(raw));
+      add(parseJwtPayloadLoose(raw));
+    });
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index) || "";
+      if (!/(?:user|profile|me|token|login|account|auth)/i.test(key)) {
+        continue;
+      }
+      const raw = localStorage.getItem(key);
+      add(parseStoredJsonLoose(raw));
+      add(parseJwtPayloadLoose(raw));
+    }
+  } catch {
+    // Local storage access is best-effort.
+  }
+  return candidates;
+}
+
 function getStoredCc98UserInfo() {
   try {
-    const parsed = parseStoredJsonLoose(localStorage.getItem("userInfo"));
-    if (!parsed || typeof parsed !== "object") {
-      return null;
+    const candidates = collectStoredCc98UserCandidates();
+    for (const parsed of candidates) {
+      const profile = parsed?.user || parsed?.currentUser || parsed?.profile || parsed?.data || parsed?.me || parsed;
+      const id = readFirstObjectValueDeep(profile, ["id", "userId", "uid", "userID", "user_id", "cc98Id", "cc98UserId", "cc98_user_id", "sub"]);
+      const name = readFirstObjectValueDeep(profile, ["name", "userName", "username", "nickName", "nickname", "displayName", "preferred_username"]);
+      if (id || name) {
+        return profile;
+      }
     }
-    return parsed.user || parsed.currentUser || parsed.profile || parsed.data || parsed;
+    return null;
   } catch {
     return null;
   }
@@ -8501,6 +8560,45 @@ function readFirstObjectValue(source, keys) {
   return "";
 }
 
+function normalizeObjectKey(key) {
+  return String(key || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function readFirstObjectValueDeep(source, keys, depth = 0, seen = new Set()) {
+  if (!source || typeof source !== "object" || depth > 5 || seen.has(source)) {
+    return "";
+  }
+  seen.add(source);
+  const normalizedKeys = new Set(keys.map(normalizeObjectKey));
+  for (const [key, value] of Object.entries(source)) {
+    if (normalizedKeys.has(normalizeObjectKey(key)) && value !== undefined && value !== null && String(value).trim()) {
+      return String(value).trim();
+    }
+  }
+  for (const key of ["user", "currentUser", "current_user", "profile", "data", "me", "result", "value"]) {
+    const value = readFirstObjectValueDeep(source[key], keys, depth + 1, seen);
+    if (value) {
+      return value;
+    }
+  }
+  if (Array.isArray(source)) {
+    for (const item of source) {
+      const value = readFirstObjectValueDeep(item, keys, depth + 1, seen);
+      if (value) {
+        return value;
+      }
+    }
+    return "";
+  }
+  for (const value of Object.values(source)) {
+    const found = readFirstObjectValueDeep(value, keys, depth + 1, seen);
+    if (found) {
+      return found;
+    }
+  }
+  return "";
+}
+
 function normalizeCc98AccountId(value) {
   return String(value ?? "").trim();
 }
@@ -8511,15 +8609,19 @@ function normalizeCc98AccountName(value) {
 
 function isLikelyGuestAccountName(value) {
   const text = cleanupPostText(value);
-  return !text || text === "个人" || text === "个人中心" || text === "登录" || text === "注册";
+  return !text
+    || text === "\u4e2a\u4eba"
+    || text === "\u4e2a\u4eba\u4e2d\u5fc3"
+    || text === "\u767b\u5f55"
+    || text === "\u6ce8\u518c";
 }
 
 function accountsReferToSameCc98User(left, right) {
   if (!left || !right) {
     return false;
   }
-  const leftId = normalizeCc98AccountId(left.userId ?? left.id ?? left.uid ?? left.userID ?? left.cc98Id);
-  const rightId = normalizeCc98AccountId(right.userId ?? right.id ?? right.uid ?? right.userID ?? right.cc98Id);
+  const leftId = normalizeCc98AccountId(left.userId ?? left.id ?? left.uid ?? left.userID ?? left.cc98Id ?? left.cc98UserId ?? left.sub);
+  const rightId = normalizeCc98AccountId(right.userId ?? right.id ?? right.uid ?? right.userID ?? right.cc98Id ?? right.cc98UserId ?? right.sub);
   if (leftId && rightId) {
     return leftId === rightId;
   }
@@ -8529,15 +8631,40 @@ function accountsReferToSameCc98User(left, right) {
 }
 
 function accountsHaveSameCc98UserId(left, right) {
-  const leftId = normalizeCc98AccountId(left?.userId ?? left?.id ?? left?.uid ?? left?.userID ?? left?.cc98Id);
-  const rightId = normalizeCc98AccountId(right?.userId ?? right?.id ?? right?.uid ?? right?.userID ?? right?.cc98Id);
+  const leftId = normalizeCc98AccountId(left?.userId ?? left?.id ?? left?.uid ?? left?.userID ?? left?.cc98Id ?? left?.cc98UserId ?? left?.sub);
+  const rightId = normalizeCc98AccountId(right?.userId ?? right?.id ?? right?.uid ?? right?.userID ?? right?.cc98Id ?? right?.cc98UserId ?? right?.sub);
   return Boolean(leftId && rightId && leftId === rightId);
+}
+
+function getCc98AccountId(source) {
+  return normalizeCc98AccountId(source?.userId ?? source?.id ?? source?.uid ?? source?.userID ?? source?.cc98Id ?? source?.cc98UserId ?? source?.sub);
+}
+
+function bindingMatchesOrIsIndeterminate(binding, account) {
+  if (!binding || !account) {
+    return false;
+  }
+  const bindingId = getCc98AccountId(binding);
+  const accountId = getCc98AccountId(account);
+  if (bindingId && accountId) {
+    return bindingId === accountId;
+  }
+  if (!accountId) {
+    return accountsReferToSameCc98User(binding, account);
+  }
+  return accountsReferToSameCc98User(binding, account);
+}
+
+function bindingClearlyMismatchesWebAccount(binding, account) {
+  const bindingId = getCc98AccountId(binding);
+  const accountId = getCc98AccountId(account);
+  return Boolean(bindingId && accountId && bindingId !== accountId);
 }
 
 function getCurrentCc98WebAccount() {
   const info = getStoredCc98UserInfo();
-  const storedUserId = readFirstObjectValue(info, ["id", "userId", "uid", "userID", "user_id", "cc98Id"]);
-  const storedUserName = readFirstObjectValue(info, ["name", "userName", "username", "nickName", "nickname", "displayName"]);
+  const storedUserId = readFirstObjectValueDeep(info, ["id", "userId", "uid", "userID", "user_id", "cc98Id", "cc98UserId", "cc98_user_id", "sub"]);
+  const storedUserName = readFirstObjectValueDeep(info, ["name", "userName", "username", "nickName", "nickname", "displayName", "preferred_username"]);
   const topbarName = cleanupPostText(document.querySelector(
     ".topBarUserName, .cc98-rebuild-native-user-name-link, .topBarUserInfo [class*='UserName'], .topBarUserInfo [class*='userName']"
   )?.textContent || "");
@@ -8596,7 +8723,7 @@ async function syncOpenIdBindingWithWebAccount() {
   }
   const account = getCurrentCc98WebAccount();
   if (account) {
-    if (!accountsHaveSameCc98UserId(binding, account)) {
+    if (bindingClearlyMismatchesWebAccount(binding, account)) {
       await clearOpenIdBindingForCc98Logout();
       markOpenIdBindPromptAfterLogin();
       scheduleOpenIdBindPromptAfterLogin();
@@ -8670,7 +8797,7 @@ async function bindOpenIdForCurrentWebAccount(prompt, account) {
     exitButton.disabled = true;
   }
   if (status) {
-    status.textContent = "正在打开 CC98 OpenID 授权窗口...";
+    status.textContent = "\u6b63\u5728\u6253\u5f00 CC98 OpenID \u6388\u6743\u7a97\u53e3...";
     status.dataset.state = "pending";
   }
   const result = await sendExtensionMessage({
@@ -8680,7 +8807,7 @@ async function bindOpenIdForCurrentWebAccount(prompt, account) {
   if (result?.ok && result.binding?.bound) {
     clearOpenIdBindPromptMark();
     if (status) {
-      status.textContent = "绑定完成。";
+      status.textContent = "\u7ed1\u5b9a\u5b8c\u6210\u3002";
       status.dataset.state = "success";
     }
     ensureSecurityWatermark({ force: true });
@@ -8694,7 +8821,7 @@ async function bindOpenIdForCurrentWebAccount(prompt, account) {
     exitButton.disabled = false;
   }
   if (status) {
-    status.textContent = `绑定失败：${result?.error || "OpenID 授权未完成"}`;
+    status.textContent = `\u7ed1\u5b9a\u5931\u8d25\uff1a${result?.error || "OpenID \u6388\u6743\u672a\u5b8c\u6210"}`;
     status.dataset.state = "error";
   }
 }
@@ -8705,7 +8832,7 @@ async function exitCurrentCc98AccountFromOpenIdPrompt(prompt) {
     button.disabled = true;
   });
   if (status) {
-    status.textContent = "正在退出此账号...";
+    status.textContent = "\u6b63\u5728\u9000\u51fa\u6b64\u8d26\u53f7...";
     status.dataset.state = "pending";
   }
   clearOpenIdBindPromptMark();
@@ -8731,12 +8858,12 @@ async function maybeShowOpenIdBindPromptAfterLogin() {
     return;
   }
   const binding = await readOpenIdBindingStateFromStorage();
-  if (binding && accountsHaveSameCc98UserId(binding, account)) {
+  if (binding && bindingMatchesOrIsIndeterminate(binding, account)) {
     clearOpenIdBindPromptMark();
     document.querySelector(".cc98-rebuild-openid-bind-overlay")?.remove();
     return;
   }
-  if (binding && !accountsHaveSameCc98UserId(binding, account)) {
+  if (binding && bindingClearlyMismatchesWebAccount(binding, account)) {
     await clearOpenIdBindingForCc98Logout();
   }
   if (document.querySelector(".cc98-rebuild-openid-bind-overlay")) {
@@ -8747,28 +8874,28 @@ async function maybeShowOpenIdBindPromptAfterLogin() {
   const dialog = createElement("section", "cc98-rebuild-openid-bind-dialog");
   dialog.setAttribute("role", "dialog");
   dialog.setAttribute("aria-modal", "true");
-  dialog.setAttribute("aria-label", "绑定 CC98 OpenID");
-  const title = createElement("h2", "", "绑定 CC98 OpenID");
-  const accountLabel = account.userName || (account.userId ? `UID ${account.userId}` : "当前账号");
-  const message = createElement("p", "", `当前网页账号：${accountLabel}。根据论坛制度，请使用同一个 CC98 账号完成 OpenID 授权；扩展会以 UID 校验账号一致性。`);
+  dialog.setAttribute("aria-label", "\u7ed1\u5b9a CC98 OpenID");
+  const title = createElement("h2", "", "\u7ed1\u5b9a CC98 OpenID");
+  const accountLabel = account.userName || (account.userId ? `UID ${account.userId}` : "\u5f53\u524d\u8d26\u53f7");
+  const message = createElement("p", "", `\u5f53\u524d\u7f51\u9875\u8d26\u53f7\uff1a${accountLabel}\u3002\u6839\u636e\u8bba\u575b\u5236\u5ea6\uff0c\u8bf7\u4f7f\u7528\u540c\u4e00\u4e2a CC98 \u8d26\u53f7\u5b8c\u6210 OpenID \u6388\u6743\uff1b\u6269\u5c55\u4f1a\u4ee5 UID \u6821\u9a8c\u8d26\u53f7\u4e00\u81f4\u6027\u3002`);
   const status = createElement("p", "cc98-rebuild-openid-bind-status", "");
   const actions = createElement("div", "cc98-rebuild-openid-bind-actions");
-  const bindButton = createButton("cc98-rebuild-openid-bind-primary", "绑定同一账号", (event) => {
+  const bindButton = createButton("cc98-rebuild-openid-bind-primary", "\u7ed1\u5b9a\u540c\u4e00\u8d26\u53f7", (event) => {
     event.preventDefault();
     event.stopPropagation();
     bindOpenIdForCurrentWebAccount(overlay, account);
   });
-  const exitButton = createButton("cc98-rebuild-openid-bind-exit", "退出此账号", (event) => {
+  const exitButton = createButton("cc98-rebuild-openid-bind-exit", "\u9000\u51fa\u6b64\u8d26\u53f7", (event) => {
     event.preventDefault();
     event.stopPropagation();
     exitCurrentCc98AccountFromOpenIdPrompt(overlay);
   });
   if (!account.userId) {
     bindButton.disabled = true;
-    status.textContent = "当前页面未能读取到 UID，请刷新 CC98 页面后再绑定。";
+    status.textContent = "\u5f53\u524d\u9875\u9762\u672a\u80fd\u8bfb\u53d6\u5230 UID\uff0c\u8bf7\u5237\u65b0 CC98 \u9875\u9762\u540e\u518d\u7ed1\u5b9a\u3002";
     status.dataset.state = "error";
   } else if (!hadPromptMark) {
-    status.textContent = "未完成绑定前，页面会保持遮罩状态。";
+    status.textContent = "\u672a\u5b8c\u6210\u7ed1\u5b9a\u524d\uff0c\u9875\u9762\u4f1a\u4fdd\u6301\u906e\u7f69\u72b6\u6001\u3002";
   }
   actions.append(exitButton, bindButton);
   dialog.append(title, message, status, actions);
@@ -8790,12 +8917,12 @@ function scheduleOpenIdBindPromptAfterLogin() {
 
 function getStoredCc98UserName() {
   const info = getStoredCc98UserInfo();
-  return readFirstObjectValue(info, ["name", "userName", "username", "nickName", "nickname"]) || "个人中心";
+  return readFirstObjectValueDeep(info, ["name", "userName", "username", "nickName", "nickname", "displayName", "preferred_username"]) || "\u4e2a\u4eba\u4e2d\u5fc3";
 }
 
 function getStoredCc98UserAvatar() {
   const info = getStoredCc98UserInfo();
-  const avatar = readFirstObjectValue(info, ["portraitUrl", "portrait", "avatarUrl", "avatar", "photoUrl", "faceUrl", "face"]);
+  const avatar = readFirstObjectValueDeep(info, ["portraitUrl", "portrait", "avatarUrl", "avatar", "photoUrl", "faceUrl", "face", "picture"]);
   return avatar ? makeAbsoluteCc98Url(avatar) : "";
 }
 
