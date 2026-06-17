@@ -2,6 +2,40 @@
 
 All notable changes to CC98 Reborn are documented here.
 
+## 0.2.5 - 2026-06-17
+
+### Fixed
+
+- Tightened CC98 login redirect detection so stale local login tokens no longer cause premature homepage redirects or repeated `/logOn` refresh loops.
+- Cleared pending logout redirects when a new login attempt starts, reducing cases where a successful login is immediately pulled back to the login page.
+- Bound OpenID state to the active CC98 web account: logout now clears binding, and mismatched OpenID/web accounts are rejected instead of updating the watermark binding.
+- Forced logged-in pages to remain under a blurred binding overlay until a same-UID OpenID binding is completed.
+- Redirected accidental `https://www.cc98.org/null` login landings back to the CC98 homepage before showing the OpenID binding requirement.
+- Required UID-level consistency for manual popup OpenID binding; pages that cannot expose the current CC98 UID are rejected instead of opening authorization.
+
+### Changed
+
+- Adjusted the watermark to use smaller static gray text at 5% opacity, with periodic position changes instead of continuous movement.
+- Popup OpenID state now labels the stored verified binding summary as local data; it remains read-only from the extension UI.
+
+### Temporary
+
+- Restored the popup OpenID binding entry and switched the watermark experiment back to extension-owned OpenID `/me` reading instead of webpage-session `/me` probing.
+
+### Added
+
+- 新增 CC98 OpenID 本地绑定：通过授权码 + PKCE 登录，请求 `cc98-api` 和 `read-user-info` scope，读取 `https://api.cc98.org/me` 后只保存 UID、用户名、水印前八位等绑定摘要。
+- 插件弹窗新增 OpenID 绑定卡片，支持绑定状态展示和解除绑定。
+- OpenID 绑定后启用全站本地浮动水印；水印内容使用 `/me` 返回的 `watermarkId` 前八位，解绑后立即停用。
+- 适配 CC98 登录中心的密码登录页面，保留原始登录表单、通行密钥入口和 CSRF 提交逻辑。
+
+### Changed
+
+- 新增 `identity` 权限，以及 `openid.cc98.org`、`api.cc98.org` 主机权限，用于官方 OpenID 授权和 `/me` 信息读取。
+- OpenID `/me` 请求遇到 5xx 时会短暂重试，并回退到 OpenID `userinfo` 完成基础绑定，避免直接显示 `me: HTTP 500`。
+- 登录中心 `openid.cc98.org` 不再注入重构内容脚本，避免影响授权页原生表单、复选框、下拉菜单和通行密钥控件。
+- 页面登录态 `/me` 仅在与 OpenID 绑定身份一致时用于补齐水印；账号不一致时会提示并拒绝写入水印。
+
 ## 0.2.4 - 2026-06-17
 
 ### Added

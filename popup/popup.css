@@ -351,6 +351,68 @@ footer {
   font-weight: 650;
 }
 
+.openid-card {
+  display: grid;
+  gap: 8px;
+}
+
+.openid-status {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.openid-status[data-state="pending"],
+.openid-status[data-state="bound"] {
+  color: var(--accent);
+  font-weight: 650;
+}
+
+.openid-status[data-state="error"] {
+  color: #b15a42;
+  font-weight: 650;
+}
+
+.openid-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.openid-meta[hidden] {
+  display: none;
+}
+
+.openid-meta span {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.openid-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.openid-actions:has(#openidLogout[hidden]) {
+  grid-template-columns: 1fr;
+}
+
+.openid-actions button[hidden] {
+  display: none;
+}
+
+.secondary-action {
+  background: transparent;
+  color: var(--muted);
+}
+
 .site-data-card {
   display: grid;
   gap: 8px;

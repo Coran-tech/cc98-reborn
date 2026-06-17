@@ -1,10 +1,13 @@
 const STORAGE_KEY = "cc98ComfortSettings";
 const PINNED_BOARDS_STORAGE_KEY = "cc98RebornPinnedBoards:v1";
 const READ_LATER_STORAGE_KEY = "cc98RebornReadLater:v1";
+const OPENID_BINDING_STORAGE_KEY = "cc98RebornOpenIdBinding:v1";
 const READ_LATER_ROUTE_HASH = "#cc98-reborn-read-later";
-const EXTENSION_VERSION = "0.2.4";
+const EXTENSION_VERSION = "0.2.5";
 const LOGIN_REDIRECT_MARK_KEY = "cc98RebornLoginRedirectStartedAt";
+const LOGIN_REDIRECT_SNAPSHOT_KEY = "cc98RebornLoginRedirectSnapshot";
 const LOGIN_HOME_REFRESH_MARK_KEY = "cc98RebornLoginHomeRefreshPendingAt";
+const OPENID_BIND_PROMPT_AFTER_LOGIN_KEY = "cc98RebornOpenIdBindPromptAfterLoginAt";
 const LOGOUT_REDIRECT_MARK_KEY = "cc98RebornLogoutRedirectStartedAt";
 const FIRST_PAGE_PREVISIT_PENDING_KEY = "cc98RebornFirstPagePrevisitPending";
 const FIRST_PAGE_PREVISIT_DONE_PREFIX = "cc98RebornFirstPagePrevisitDone:";
@@ -26,8 +29,8 @@ const EDITOR_TOPIC_SUBMIT_RELOAD_TTL = 30000;
 const EDITOR_SUBMIT_FORCE_REFRESH_DELAY = 500;
 const EDITOR_DRAFT_STORAGE_PREFIX = "cc98RebornDraft:v1:";
 const EXTERNAL_AI_SEARCH_REQUIRES_EXPLICIT_CONSENT = true;
-// Disabled until the official CC98 OAuth authorization flow is wired.
-const WATERMARK_FEATURE_ENABLED = false;
+// Watermark source: the extension's own CC98 OpenID binding summary.
+const WATERMARK_FEATURE_ENABLED = true;
 const WATERMARK_CACHE_TTL = 30 * 60 * 1000;
 const WATERMARK_DIRECTION_INTERVAL = 3600;
 const WATERMARK_REVALIDATE_INTERVAL = 5 * 60 * 1000;
@@ -217,6 +220,8 @@ let legacyColorPickerObserver = null;
 let legacyColorPickerInterval = null;
 let loginRedirectWatcherTimer = null;
 let topbarAuthRedirectBound = false;
+let openIdBindPromptTimer = null;
+let logoutRedirectTimers = [];
 let searchPageEmptyRecheckTimer = null;
 let routeFollowupTimers = [];
 let searchPageRouteKey = "";
@@ -250,7 +255,6 @@ let securityWatermarkObserver = null;
 let securityWatermarkCode = "";
 let securityWatermarkCachedCode = "";
 let securityWatermarkCachedAt = 0;
-let securityWatermarkBridgeListenerBound = false;
 let securityWatermarkOffsetX = 0;
 let securityWatermarkOffsetY = 0;
 let securityWatermarkLastFrameAt = 0;
@@ -392,6 +396,8 @@ function applySettings(settings) {
     return;
   }
 
+  scheduleOpenIdBindPromptAfterLogin();
+  syncOpenIdBindingWithWebAccount();
   scheduleFiltering();
   stabilizeEmojiRendering(document);
   scheduleRebuild();
@@ -3305,54 +3311,9 @@ function extractSecurityWatermarkCodeFromValue(value, depth = 0) {
   return "";
 }
 
-function getStoredSecurityWatermarkCode() {
-  try {
-    const preferredKeys = ["userInfo", "currentUser", "me", "profile"];
-    for (const key of preferredKeys) {
-      const code = extractSecurityWatermarkCodeFromValue(localStorage.getItem(key));
-      if (code) {
-        return code;
-      }
-    }
-    for (let index = 0; index < localStorage.length; index += 1) {
-      const key = localStorage.key(index) || "";
-      if (!/(watermark|userinfo|currentuser|profile|me|user)/i.test(key)) {
-        continue;
-      }
-      const code = extractSecurityWatermarkCodeFromValue(localStorage.getItem(key));
-      if (code) {
-        return code;
-      }
-    }
-  } catch {
-    return "";
-  }
-  return "";
-}
-
-function handleSecurityWatermarkBridgeMessage(event) {
-  if (event.source !== window || event.data?.source !== "CC98_REBORN_WATERMARK_BRIDGE") {
-    return;
-  }
-  const code = rememberSecurityWatermarkCode(event.data?.code);
-  if (code) {
-    startSecurityWatermark(code);
-  }
-}
-
-function bindSecurityWatermarkBridgeListener() {
-  if (securityWatermarkBridgeListenerBound) {
-    return;
-  }
-  securityWatermarkBridgeListenerBound = true;
-  window.addEventListener("message", handleSecurityWatermarkBridgeMessage);
-}
-
 function injectSecurityWatermarkPageBridge() {
-  if (!WATERMARK_FEATURE_ENABLED) {
-    return;
-  }
-  bindSecurityWatermarkBridgeListener();
+  // OpenID binding is read from extension storage. Do not accept page-side
+  // bridge messages as a watermark source.
 }
 
 function readCachedSecurityWatermarkCode() {
@@ -3384,18 +3345,41 @@ function rememberSecurityWatermarkCode(code) {
   return normalized;
 }
 
-function getSecurityWatermarkCode({ force = false } = {}) {
-  if (!force) {
+function readOpenIdBindingSecurityWatermarkCode() {
+  return new Promise((resolve) => {
+    try {
+      if (!globalThis.chrome?.storage?.local?.get) {
+        resolve("");
+        return;
+      }
+      globalThis.chrome.storage.local.get(OPENID_BINDING_STORAGE_KEY, (result) => {
+        if (globalThis.chrome.runtime?.lastError) {
+          resolve("");
+          return;
+        }
+        const binding = result?.[OPENID_BINDING_STORAGE_KEY];
+        const code = normalizeSecurityWatermarkCode(binding?.watermarkIdPrefix || "");
+        resolve(binding?.bound && code ? code : "");
+      });
+    } catch {
+      resolve("");
+    }
+  });
+}
+
+async function getSecurityWatermarkCode(options = {}) {
+  if (!options.force) {
     const cached = readCachedSecurityWatermarkCode();
-    if (cached && hasFreshCc98LoginSession()) {
-      return Promise.resolve(cached);
+    if (cached) {
+      return cached;
     }
   }
-  const storedCode = rememberSecurityWatermarkCode(getStoredSecurityWatermarkCode());
-  if (storedCode) {
-    return Promise.resolve(storedCode);
+  const openIdCode = await readOpenIdBindingSecurityWatermarkCode();
+  if (openIdCode) {
+    return rememberSecurityWatermarkCode(openIdCode);
   }
-  return Promise.resolve(readCachedSecurityWatermarkCode());
+  clearCachedSecurityWatermarkCode();
+  return "";
 }
 
 function getSecurityWatermarkParent() {
@@ -3490,18 +3474,28 @@ function resizeSecurityWatermarkCanvas() {
     canvas.height = pixelHeight;
   }
   canvas.dataset.pixelRatio = String(ratio);
+  requestSecurityWatermarkRedraw();
 }
 
 function chooseSecurityWatermarkDirection() {
-  const angle = Math.random() * Math.PI * 2;
-  const speed = 18 + Math.random() * 18;
-  securityWatermarkDirection = {
-    x: Math.cos(angle) * speed,
-    y: Math.sin(angle) * speed
-  };
+  const tileX = 192;
+  const tileY = 128;
+  securityWatermarkOffsetX = Math.random() * tileX;
+  securityWatermarkOffsetY = Math.random() * tileY;
+  requestSecurityWatermarkRedraw();
 }
 
-function drawSecurityWatermarkFrame(frameAt = performance.now()) {
+function requestSecurityWatermarkRedraw() {
+  if (securityWatermarkAnimationFrame) {
+    return;
+  }
+  securityWatermarkAnimationFrame = requestAnimationFrame(() => {
+    securityWatermarkAnimationFrame = 0;
+    drawSecurityWatermarkFrame();
+  });
+}
+
+function drawSecurityWatermarkFrame() {
   const canvas = securityWatermarkCanvas;
   const code = normalizeSecurityWatermarkCode(securityWatermarkCode);
   if (!(canvas instanceof HTMLCanvasElement) || !code || !canvas.isConnected) {
@@ -3516,15 +3510,8 @@ function drawSecurityWatermarkFrame(frameAt = performance.now()) {
   const ratio = Number(canvas.dataset.pixelRatio || window.devicePixelRatio || 1) || 1;
   const width = canvas.width / ratio;
   const height = canvas.height / ratio;
-  const delta = securityWatermarkLastFrameAt
-    ? Math.min(0.08, Math.max(0, (frameAt - securityWatermarkLastFrameAt) / 1000))
-    : 0;
-  securityWatermarkLastFrameAt = frameAt;
-  securityWatermarkOffsetX += securityWatermarkDirection.x * delta;
-  securityWatermarkOffsetY += securityWatermarkDirection.y * delta;
-
-  const tileX = 224;
-  const tileY = 154;
+  const tileX = 192;
+  const tileY = 128;
   const offsetX = ((securityWatermarkOffsetX % tileX) + tileX) % tileX;
   const offsetY = ((securityWatermarkOffsetY % tileY) + tileY) % tileY;
   const margin = Math.max(width, height);
@@ -3535,26 +3522,22 @@ function drawSecurityWatermarkFrame(frameAt = performance.now()) {
   ctx.translate(width / 2, height / 2);
   ctx.rotate(-Math.PI / 7);
   ctx.translate(-width / 2, -height / 2);
-  ctx.font = "700 22px Arial, Helvetica, sans-serif";
+  ctx.font = "650 14px Arial, Helvetica, sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.shadowColor = "rgba(0, 0, 0, 0.34)";
-  ctx.shadowBlur = 4;
-  ctx.fillStyle = "rgba(255, 255, 255, 0.42)";
+  ctx.shadowColor = "transparent";
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = "rgba(128, 128, 128, 0.05)";
   for (let y = -margin + offsetY; y < height + margin; y += tileY) {
     for (let x = -margin + offsetX; x < width + margin; x += tileX) {
       ctx.fillText(code, x, y);
     }
   }
   ctx.restore();
-  securityWatermarkAnimationFrame = requestAnimationFrame(drawSecurityWatermarkFrame);
 }
 
 function startSecurityWatermarkAnimation() {
-  if (!securityWatermarkAnimationFrame) {
-    securityWatermarkLastFrameAt = 0;
-    securityWatermarkAnimationFrame = requestAnimationFrame(drawSecurityWatermarkFrame);
-  }
+  requestSecurityWatermarkRedraw();
   if (!securityWatermarkDirectionTimer) {
     chooseSecurityWatermarkDirection();
     securityWatermarkDirectionTimer = window.setInterval(chooseSecurityWatermarkDirection, WATERMARK_DIRECTION_INTERVAL);
@@ -7972,6 +7955,259 @@ function readFirstObjectValue(source, keys) {
   return "";
 }
 
+function normalizeCc98AccountId(value) {
+  return String(value ?? "").trim();
+}
+
+function normalizeCc98AccountName(value) {
+  return String(value ?? "").trim().toLowerCase();
+}
+
+function isLikelyGuestAccountName(value) {
+  const text = cleanupPostText(value);
+  return !text || text === "个人" || text === "个人中心" || text === "登录" || text === "注册";
+}
+
+function accountsReferToSameCc98User(left, right) {
+  if (!left || !right) {
+    return false;
+  }
+  const leftId = normalizeCc98AccountId(left.userId ?? left.id ?? left.uid ?? left.userID ?? left.cc98Id);
+  const rightId = normalizeCc98AccountId(right.userId ?? right.id ?? right.uid ?? right.userID ?? right.cc98Id);
+  if (leftId && rightId) {
+    return leftId === rightId;
+  }
+  const leftName = normalizeCc98AccountName(left.userName ?? left.name ?? left.username ?? left.nickName ?? left.displayName);
+  const rightName = normalizeCc98AccountName(right.userName ?? right.name ?? right.username ?? right.nickName ?? right.displayName);
+  return Boolean(leftName && rightName && leftName === rightName);
+}
+
+function accountsHaveSameCc98UserId(left, right) {
+  const leftId = normalizeCc98AccountId(left?.userId ?? left?.id ?? left?.uid ?? left?.userID ?? left?.cc98Id);
+  const rightId = normalizeCc98AccountId(right?.userId ?? right?.id ?? right?.uid ?? right?.userID ?? right?.cc98Id);
+  return Boolean(leftId && rightId && leftId === rightId);
+}
+
+function getCurrentCc98WebAccount() {
+  const info = getStoredCc98UserInfo();
+  const storedUserId = readFirstObjectValue(info, ["id", "userId", "uid", "userID", "user_id", "cc98Id"]);
+  const storedUserName = readFirstObjectValue(info, ["name", "userName", "username", "nickName", "nickname", "displayName"]);
+  const topbarName = cleanupPostText(document.querySelector(
+    ".topBarUserName, .cc98-rebuild-native-user-name-link, .topBarUserInfo [class*='UserName'], .topBarUserInfo [class*='userName']"
+  )?.textContent || "");
+  const userId = normalizeCc98AccountId(storedUserId);
+  const userName = cleanupPostText(storedUserName || topbarName);
+  const hasGuestLink = Boolean(document.querySelector(
+    ".topBarUserInfo a[href*='/logOn'], .topBarUserInfo a[href*='/logon'], .cc98-rebuild-guest-user-entry a[href*='/logOn'], .cc98-rebuild-guest-user-entry a[href*='/logon']"
+  ));
+  if (hasGuestLink && !userId && isLikelyGuestAccountName(userName)) {
+    return null;
+  }
+  if (!userId && isLikelyGuestAccountName(userName) && !hasFreshCc98LoginSession()) {
+    return null;
+  }
+  if (!userId && !userName) {
+    return null;
+  }
+  return {
+    userId,
+    userName: isLikelyGuestAccountName(userName) ? "" : userName
+  };
+}
+
+function hasVisibleCc98GuestLoginEntry() {
+  return [...document.querySelectorAll(
+    ".topBarUserInfo a[href*='/logOn'], .topBarUserInfo a[href*='/logon'], .topBarText a[href*='/logOn'], .topBarText a[href*='/logon'], .cc98-rebuild-guest-user-entry a[href*='/logOn'], .cc98-rebuild-guest-user-entry a[href*='/logon']"
+  )].some((node) => node instanceof HTMLElement && getComputedStyle(node).display !== "none");
+}
+
+function readOpenIdBindingStateFromStorage() {
+  return new Promise((resolve) => {
+    try {
+      if (!globalThis.chrome?.storage?.local?.get) {
+        resolve(null);
+        return;
+      }
+      globalThis.chrome.storage.local.get(OPENID_BINDING_STORAGE_KEY, (result) => {
+        if (globalThis.chrome.runtime?.lastError) {
+          resolve(null);
+          return;
+        }
+        const binding = result?.[OPENID_BINDING_STORAGE_KEY];
+        resolve(binding?.bound ? binding : null);
+      });
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+async function syncOpenIdBindingWithWebAccount() {
+  const binding = await readOpenIdBindingStateFromStorage();
+  if (!binding) {
+    scheduleOpenIdBindPromptAfterLogin();
+    return;
+  }
+  const account = getCurrentCc98WebAccount();
+  if (account) {
+    if (!accountsHaveSameCc98UserId(binding, account)) {
+      await clearOpenIdBindingForCc98Logout();
+      markOpenIdBindPromptAfterLogin();
+      scheduleOpenIdBindPromptAfterLogin();
+    }
+    return;
+  }
+  if (hasVisibleCc98GuestLoginEntry()) {
+    await clearOpenIdBindingForCc98Logout();
+  }
+}
+
+async function clearOpenIdBindingForCc98Logout() {
+  clearCachedSecurityWatermarkCode();
+  stopSecurityWatermark();
+  try {
+    const result = await sendExtensionMessage({ type: "CC98_REBORN_OPENID_LOGOUT", reason: "cc98-web-logout" });
+    if (result?.ok) {
+      return;
+    }
+    globalThis.chrome?.storage?.local?.remove?.(OPENID_BINDING_STORAGE_KEY);
+  } catch {
+    try {
+      globalThis.chrome?.storage?.local?.remove?.(OPENID_BINDING_STORAGE_KEY);
+    } catch {
+      // Storage cleanup is best-effort during native logout navigation.
+    }
+  }
+}
+
+function markOpenIdBindPromptAfterLogin() {
+  try {
+    sessionStorage.setItem(OPENID_BIND_PROMPT_AFTER_LOGIN_KEY, String(Date.now()));
+  } catch {
+    // The prompt is a convenience; login redirect still works without it.
+  }
+}
+
+function consumeOpenIdBindPromptMark() {
+  try {
+    const markedAt = Number.parseInt(sessionStorage.getItem(OPENID_BIND_PROMPT_AFTER_LOGIN_KEY) || "", 10);
+    if (!Number.isFinite(markedAt) || Date.now() - markedAt > 120000) {
+      sessionStorage.removeItem(OPENID_BIND_PROMPT_AFTER_LOGIN_KEY);
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function clearOpenIdBindPromptMark() {
+  try {
+    sessionStorage.removeItem(OPENID_BIND_PROMPT_AFTER_LOGIN_KEY);
+  } catch {
+    // No-op.
+  }
+}
+
+function dismissOpenIdBindPrompt(prompt) {
+  prompt?.remove?.();
+}
+
+async function bindOpenIdForCurrentWebAccount(prompt, account) {
+  const status = prompt?.querySelector?.(".cc98-rebuild-openid-bind-status");
+  const bindButton = prompt?.querySelector?.(".cc98-rebuild-openid-bind-primary");
+  if (bindButton) {
+    bindButton.disabled = true;
+  }
+  if (status) {
+    status.textContent = "正在打开 CC98 OpenID 授权窗口...";
+    status.dataset.state = "pending";
+  }
+  const result = await sendExtensionMessage({
+    type: "CC98_REBORN_OPENID_LOGIN",
+    expectedAccount: account
+  });
+  if (result?.ok && result.binding?.bound) {
+    clearOpenIdBindPromptMark();
+    if (status) {
+      status.textContent = "绑定完成。";
+      status.dataset.state = "success";
+    }
+    ensureSecurityWatermark({ force: true });
+    window.setTimeout(() => dismissOpenIdBindPrompt(prompt), 450);
+    return;
+  }
+  if (bindButton) {
+    bindButton.disabled = false;
+  }
+  if (status) {
+    status.textContent = `绑定失败：${result?.error || "OpenID 授权未完成"}`;
+    status.dataset.state = "error";
+  }
+}
+
+async function maybeShowOpenIdBindPromptAfterLogin() {
+  if (!document.body || isCc98LoginPath() || isOpenIdLoginCenterPage()) {
+    return;
+  }
+  const hadPromptMark = consumeOpenIdBindPromptMark();
+  const account = getCurrentCc98WebAccount();
+  if (!account) {
+    return;
+  }
+  const binding = await readOpenIdBindingStateFromStorage();
+  if (binding && accountsHaveSameCc98UserId(binding, account)) {
+    clearOpenIdBindPromptMark();
+    document.querySelector(".cc98-rebuild-openid-bind-overlay")?.remove();
+    return;
+  }
+  if (binding && !accountsHaveSameCc98UserId(binding, account)) {
+    await clearOpenIdBindingForCc98Logout();
+  }
+  if (document.querySelector(".cc98-rebuild-openid-bind-overlay")) {
+    return;
+  }
+
+  const overlay = createElement("div", "cc98-rebuild-openid-bind-overlay");
+  const dialog = createElement("section", "cc98-rebuild-openid-bind-dialog");
+  dialog.setAttribute("role", "dialog");
+  dialog.setAttribute("aria-modal", "true");
+  dialog.setAttribute("aria-label", "绑定 CC98 OpenID");
+  const title = createElement("h2", "", "绑定 CC98 OpenID");
+  const accountLabel = account.userName || (account.userId ? `UID ${account.userId}` : "当前账号");
+  const message = createElement("p", "", `当前网页账号：${accountLabel}。根据论坛制度，请使用同一个 CC98 账号完成 OpenID 授权；扩展会以 UID 校验账号一致性。`);
+  const status = createElement("p", "cc98-rebuild-openid-bind-status", "");
+  const actions = createElement("div", "cc98-rebuild-openid-bind-actions");
+  const bindButton = createButton("cc98-rebuild-openid-bind-primary", "绑定同一账号", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    bindOpenIdForCurrentWebAccount(overlay, account);
+  });
+  if (!account.userId) {
+    bindButton.disabled = true;
+    status.textContent = "当前页面未能读取到 UID，请刷新 CC98 页面后再绑定。";
+    status.dataset.state = "error";
+  } else if (!hadPromptMark) {
+    status.textContent = "未完成绑定前，页面会保持遮罩状态。";
+  }
+  actions.append(bindButton);
+  dialog.append(title, message, status, actions);
+  overlay.append(dialog);
+  document.body.append(overlay);
+}
+
+function scheduleOpenIdBindPromptAfterLogin() {
+  if (openIdBindPromptTimer) {
+    window.clearTimeout(openIdBindPromptTimer);
+  }
+  [350, 1200, 2600, 5200].forEach((delay) => {
+    window.setTimeout(maybeShowOpenIdBindPromptAfterLogin, delay);
+  });
+  openIdBindPromptTimer = window.setTimeout(() => {
+    openIdBindPromptTimer = null;
+  }, 5600);
+}
+
 function getStoredCc98UserName() {
   const info = getStoredCc98UserInfo();
   return readFirstObjectValue(info, ["name", "userName", "username", "nickName", "nickname"]) || "个人中心";
@@ -11812,7 +12048,43 @@ function renderSignInPage(app) {
   app.append(source);
 }
 
+function isOpenIdLoginCenterPage() {
+  try {
+    return location.hostname === "openid.cc98.org"
+      && /\/(?:Account|PassKey)\/LogOn/i.test(location.pathname);
+  } catch {
+    return false;
+  }
+}
+
+function getOpenIdLoginSource() {
+  if (!isOpenIdLoginCenterPage()) {
+    return null;
+  }
+  const form = document.querySelector('form[action*="/Account/LogOn"], form[action*="/PassKey/LogOn"]');
+  return form?.closest(".container.body-content")
+    || form?.closest(".col-12, [class*='col-']")
+    || document.querySelector(".container.body-content");
+}
+
+function prepareOpenIdLoginSource(source) {
+  if (!(source instanceof HTMLElement)) {
+    return;
+  }
+  document.documentElement.dataset.cc98RebuildOpenidLogin = "true";
+  source.classList.add("cc98-rebuild-openid-login");
+}
+
 function renderLoginPage(app) {
+  const openIdLogin = getOpenIdLoginSource();
+  if (openIdLogin) {
+    const layout = createElement("section", "cc98-rebuild-openid-login-layout");
+    layout.append(createElement("h1", "cc98-rebuild-login-title", "登录到 CC98"));
+    prepareOpenIdLoginSource(openIdLogin);
+    app.append(layout);
+    return;
+  }
+
   const login = document.querySelector(".login");
 
   if (!login) {
@@ -11841,6 +12113,64 @@ function hasFreshCc98LoginSession() {
     return Number.isFinite(expiration) && expiration * 1000 > Date.now();
   } catch {
     return false;
+  }
+}
+
+function readCc98LoginStorageValue(key) {
+  try {
+    return String(localStorage.getItem(key) || "");
+  } catch {
+    return "";
+  }
+}
+
+function getCc98LoginSessionSnapshot() {
+  return {
+    fresh: hasFreshCc98LoginSession(),
+    refreshTokenExpiration: readCc98LoginStorageValue("refresh_token_expirationTime"),
+    refreshToken: readCc98LoginStorageValue("refresh_token"),
+    accessToken: readCc98LoginStorageValue("access_token"),
+    userInfo: readCc98LoginStorageValue("userInfo")
+  };
+}
+
+function hasCc98LoginSessionChangedSince(snapshot) {
+  const current = getCc98LoginSessionSnapshot();
+  if (!current.fresh) {
+    return false;
+  }
+  if (!snapshot || !snapshot.fresh) {
+    return true;
+  }
+  return current.refreshTokenExpiration !== snapshot.refreshTokenExpiration
+    || current.refreshToken !== snapshot.refreshToken
+    || current.accessToken !== snapshot.accessToken
+    || current.userInfo !== snapshot.userInfo;
+}
+
+function readLoginRedirectSnapshot() {
+  try {
+    const raw = sessionStorage.getItem(LOGIN_REDIRECT_SNAPSHOT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeLoginRedirectSnapshot(snapshot) {
+  try {
+    sessionStorage.setItem(LOGIN_REDIRECT_SNAPSHOT_KEY, JSON.stringify(snapshot || getCc98LoginSessionSnapshot()));
+  } catch {
+    // Snapshot is only used to avoid stale-token redirects.
+  }
+}
+
+function clearLoginRedirectIntent() {
+  try {
+    sessionStorage.removeItem(LOGIN_REDIRECT_MARK_KEY);
+    sessionStorage.removeItem(LOGIN_REDIRECT_SNAPSHOT_KEY);
+  } catch {
+    // No-op.
   }
 }
 
@@ -11875,6 +12205,7 @@ function consumeLoginHomeRefreshIntent() {
   if (!Number.isFinite(markedAt) || Date.now() - markedAt > 20000) {
     return false;
   }
+  markOpenIdBindPromptAfterLogin();
   showLoadingOverlay("登录完成，正在刷新首页...");
   window.setTimeout(() => {
     location.reload();
@@ -11883,6 +12214,7 @@ function consumeLoginHomeRefreshIntent() {
 }
 
 function redirectToCc98Home() {
+  clearLogoutRedirectIntent();
   markLoginHomeRefreshIntent();
   if (location.href === "https://www.cc98.org/") {
     consumeLoginHomeRefreshIntent();
@@ -11899,6 +12231,24 @@ function isCc98LoginPath() {
   }
 }
 
+function isCc98NullRedirectPage() {
+  try {
+    const url = new URL(location.href);
+    return /^(?:www\.)?cc98\.org$/i.test(url.hostname) && url.pathname.replace(/\/+$/, "").toLowerCase() === "/null";
+  } catch {
+    return /\/null\/?$/i.test(location.href);
+  }
+}
+
+function redirectNullPageToHome() {
+  if (!isCc98NullRedirectPage()) {
+    return false;
+  }
+  markOpenIdBindPromptAfterLogin();
+  location.replace("https://www.cc98.org/");
+  return true;
+}
+
 function redirectToCc98Login() {
   if (location.hostname === "www.cc98.org" && isCc98LoginPath()) {
     return;
@@ -11912,6 +12262,16 @@ function markLogoutRedirectIntent() {
   } catch {
     // Session storage may be unavailable; timed redirects below still run.
   }
+}
+
+function clearLogoutRedirectIntent() {
+  try {
+    sessionStorage.removeItem(LOGOUT_REDIRECT_MARK_KEY);
+  } catch {
+    // No-op.
+  }
+  logoutRedirectTimers.forEach((timer) => window.clearTimeout(timer));
+  logoutRedirectTimers = [];
 }
 
 function hasRecentLogoutRedirectIntent() {
@@ -11945,11 +12305,11 @@ function enforceRecentLogoutRedirectIntent() {
 }
 
 function scheduleLogoutRedirect() {
+  clearLogoutRedirectIntent();
   markLogoutRedirectIntent();
+  clearOpenIdBindingForCc98Logout();
   window.setTimeout(clearLikelyCc98LoginState, 80);
-  [650, 1500, 3000, 5200].forEach((delay) => {
-    window.setTimeout(redirectToCc98Login, delay);
-  });
+  logoutRedirectTimers = [650, 1500, 3000, 5200].map((delay) => window.setTimeout(redirectToCc98Login, delay));
 }
 
 function clearLoginRedirectWatcher() {
@@ -11959,16 +12319,24 @@ function clearLoginRedirectWatcher() {
   }
 }
 
-function startLoginRedirectWatcher() {
-  if (hasFreshCc98LoginSession()) {
-    redirectToCc98Home();
-    return;
-  }
-  const startedAt = Date.now();
+function startLoginRedirectWatcher(snapshot = readLoginRedirectSnapshot()) {
+  clearLogoutRedirectIntent();
+  const startedAt = (() => {
+    try {
+      const markedAt = Number.parseInt(sessionStorage.getItem(LOGIN_REDIRECT_MARK_KEY) || "", 10);
+      return Number.isFinite(markedAt) ? markedAt : Date.now();
+    } catch {
+      return Date.now();
+    }
+  })();
   try {
     sessionStorage.setItem(LOGIN_REDIRECT_MARK_KEY, String(startedAt));
   } catch {
     // Session storage can be unavailable in restricted contexts; polling still works.
+  }
+  if (!snapshot) {
+    snapshot = getCc98LoginSessionSnapshot();
+    writeLoginRedirectSnapshot(snapshot);
   }
   clearLoginRedirectWatcher();
   loginRedirectWatcherTimer = window.setInterval(() => {
@@ -11982,23 +12350,37 @@ function startLoginRedirectWatcher() {
     const effectiveStart = Number.isFinite(markedAt) ? markedAt : startedAt;
     if (Date.now() - effectiveStart > 30000) {
       clearLoginRedirectWatcher();
-      try {
-        sessionStorage.removeItem(LOGIN_REDIRECT_MARK_KEY);
-      } catch {
-        // Ignore storage cleanup failures.
-      }
+      clearLoginRedirectIntent();
       return;
     }
-    if (hasFreshCc98LoginSession()) {
+    if (hasCc98LoginSessionChangedSince(snapshot)) {
       clearLoginRedirectWatcher();
-      try {
-        sessionStorage.removeItem(LOGIN_REDIRECT_MARK_KEY);
-      } catch {
-        // Ignore storage cleanup failures.
-      }
+      clearLoginRedirectIntent();
       redirectToCc98Home();
     }
   }, 250);
+}
+
+function armLoginRedirectWatcher() {
+  clearLogoutRedirectIntent();
+  let markedAt = NaN;
+  try {
+    markedAt = Number.parseInt(sessionStorage.getItem(LOGIN_REDIRECT_MARK_KEY) || "", 10);
+  } catch {
+    markedAt = NaN;
+  }
+  if (Number.isFinite(markedAt) && Date.now() - markedAt <= 1200) {
+    return;
+  }
+  const snapshot = getCc98LoginSessionSnapshot();
+  try {
+    sessionStorage.setItem(LOGIN_REDIRECT_MARK_KEY, String(Date.now()));
+  } catch {
+    // No-op.
+  }
+  writeLoginRedirectSnapshot(snapshot);
+  window.setTimeout(() => startLoginRedirectWatcher(snapshot), 120);
+  window.setTimeout(() => startLoginRedirectWatcher(snapshot), 650);
 }
 
 function bindLoginRedirect(login) {
@@ -12008,11 +12390,8 @@ function bindLoginRedirect(login) {
   login.dataset.cc98LoginRedirectBound = "true";
   const form = login.querySelector("form");
   const submitButton = login.querySelector("button[type='submit']");
-  const armRedirect = () => {
-    window.setTimeout(startLoginRedirectWatcher, 0);
-  };
-  form?.addEventListener("submit", armRedirect, true);
-  submitButton?.addEventListener("click", armRedirect, true);
+  form?.addEventListener("submit", armLoginRedirectWatcher, true);
+  submitButton?.addEventListener("click", armLoginRedirectWatcher, true);
 
   try {
     const markedAt = Number.parseInt(sessionStorage.getItem(LOGIN_REDIRECT_MARK_KEY) || "", 10);
@@ -15074,6 +15453,7 @@ function renderRebuiltUi() {
     bindPostDownloadButtons(app);
 
     const kind = getPageKind();
+    document.documentElement.removeAttribute("data-cc98-rebuild-openid-login");
     if (kind !== "message") {
       messageTitleObserver?.disconnect();
       messageTitleObserver = null;
@@ -15081,26 +15461,29 @@ function renderRebuiltUi() {
     app.dataset.pageKind = kind;
     app.dataset.homeHotOnly = String(Boolean(lastSettings.homeHotOnly && kind === "home"));
 
-    const nav = createElement("header", "cc98-rebuild-topbar");
-    const brand = createLink("cc98-rebuild-brand", "CC98 Reborn", "https://www.cc98.org/");
-    brand.setAttribute("aria-label", "返回 CC98 首页");
-    nav.append(brand);
-    const navLinks = createElement("nav", "cc98-rebuild-nav");
-    [
-      ["首页", "https://www.cc98.org/"],
-      ["版面", "https://www.cc98.org/boardList"],
-      ["新帖", "https://www.cc98.org/newTopics"],
-      ["关注", "https://www.cc98.org/focus"],
-      ["精选", "https://www.cc98.org/recommendedTopics"],
-      ["\u7a0d\u540e\u518d\u770b", getReadLaterPageHref()]
-    ].forEach(([label, href]) => navLinks.append(createLink("", label, href)));
-    nav.append(navLinks);
-    nav.append(createRebuiltSearchForm(preservedSearchState));
-    const actions = createElement("div", "cc98-rebuild-actions");
-    actions.append(createButton("cc98-rebuild-icon-button", "刷新", () => location.reload()));
-    actions.append(renderTopbarUserEntry());
-    nav.append(actions);
-    app.append(nav);
+    const useNativeOpenIdChrome = kind === "login" && isOpenIdLoginCenterPage();
+    if (!useNativeOpenIdChrome) {
+      const nav = createElement("header", "cc98-rebuild-topbar");
+      const brand = createLink("cc98-rebuild-brand", "CC98 Reborn", "https://www.cc98.org/");
+      brand.setAttribute("aria-label", "返回 CC98 首页");
+      nav.append(brand);
+      const navLinks = createElement("nav", "cc98-rebuild-nav");
+      [
+        ["首页", "https://www.cc98.org/"],
+        ["版面", "https://www.cc98.org/boardList"],
+        ["新帖", "https://www.cc98.org/newTopics"],
+        ["关注", "https://www.cc98.org/focus"],
+        ["精选", "https://www.cc98.org/recommendedTopics"],
+        ["\u7a0d\u540e\u518d\u770b", getReadLaterPageHref()]
+      ].forEach(([label, href]) => navLinks.append(createLink("", label, href)));
+      nav.append(navLinks);
+      nav.append(createRebuiltSearchForm(preservedSearchState));
+      const actions = createElement("div", "cc98-rebuild-actions");
+      actions.append(createButton("cc98-rebuild-icon-button", "刷新", () => location.reload()));
+      actions.append(renderTopbarUserEntry());
+      nav.append(actions);
+      app.append(nav);
+    }
 
     if (!["board", "userCenter", "message", "signin", "login", "error"].includes(kind) && !(kind === "home" && lastSettings.homeHotOnly)) {
       const hero = createElement("section", "cc98-rebuild-hero");
@@ -15594,8 +15977,8 @@ function ensureObserver() {
         return node instanceof Element
           && !node.closest?.("#cc98-comfort-app")
           && (
-            node.matches?.(".topBarRight, .topBarUserInfo, .topBarUserCenter, .topBarUserCenter-mainPage, .topBarMessageDetails, .topBarMessageDetails-mainPage, .focus-topic, .card-topic, .board-postItem-body, .createTopic, #sendTopicInfo, article, [class*='floor'], [class*='post'], [class*='reply']")
-            || Boolean(node.querySelector?.(".topBarRight, .topBarUserInfo, .topBarUserCenter, .topBarUserCenter-mainPage, .topBarMessageDetails, .topBarMessageDetails-mainPage, .focus-topic, .card-topic, .board-postItem-body, .createTopic, #sendTopicInfo, article, [class*='floor'], [class*='post'], [class*='reply']"))
+            node.matches?.(".topBarRight, .topBarUserInfo, .topBarUserCenter, .topBarUserCenter-mainPage, .topBarMessageDetails, .topBarMessageDetails-mainPage, .focus-topic, .card-topic, .board-postItem-body, .createTopic, #sendTopicInfo, .container.body-content, form[action*='/Account/LogOn'], form[action*='/PassKey/LogOn'], article, [class*='floor'], [class*='post'], [class*='reply']")
+            || Boolean(node.querySelector?.(".topBarRight, .topBarUserInfo, .topBarUserCenter, .topBarUserCenter-mainPage, .topBarMessageDetails, .topBarMessageDetails-mainPage, .focus-topic, .card-topic, .board-postItem-body, .createTopic, #sendTopicInfo, .container.body-content, form[action*='/Account/LogOn'], form[action*='/PassKey/LogOn'], article, [class*='floor'], [class*='post'], [class*='reply']"))
           );
       });
     });
@@ -15677,11 +16060,20 @@ function ensureHeadObserver() {
 }
 
 chrome.storage.onChanged.addListener((changes, areaName) => {
-  if (areaName !== "local" || !changes[STORAGE_KEY]) {
+  if (areaName !== "local") {
     return;
   }
 
-  applySettings(changes[STORAGE_KEY].newValue);
+  if (changes[OPENID_BINDING_STORAGE_KEY]) {
+    clearCachedSecurityWatermarkCode();
+    ensureSecurityWatermark({ force: true });
+    syncOpenIdBindingWithWebAccount();
+    scheduleOpenIdBindPromptAfterLogin();
+  }
+
+  if (changes[STORAGE_KEY]) {
+    applySettings(changes[STORAGE_KEY].newValue);
+  }
 });
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
@@ -15690,21 +16082,33 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
+  if (message?.type === "CC98_REBORN_GET_CURRENT_WEB_ACCOUNT") {
+    sendResponse({ ok: true, account: getCurrentCc98WebAccount() });
+    return true;
+  }
+
   return false;
 });
 
 function bootNormalPage() {
+  if (redirectNullPageToHome()) {
+    return;
+  }
   bindPageEditorSubmitResultMonitor();
   restoreEditorSubmitOverlayAfterReload();
   injectSecurityWatermarkPageBridge();
   ensureSecurityWatermark();
   enforceRecentLogoutRedirectIntent();
   bindGlobalTopbarAuthRedirects();
+  scheduleOpenIdBindPromptAfterLogin();
+  syncOpenIdBindingWithWebAccount();
   document.addEventListener("DOMContentLoaded", () => {
     injectSecurityWatermarkPageBridge();
     ensureSecurityWatermark();
     enforceRecentLogoutRedirectIntent();
     bindGlobalTopbarAuthRedirects();
+    scheduleOpenIdBindPromptAfterLogin();
+    syncOpenIdBindingWithWebAccount();
     ensureLegacyColorPickerSuppressor();
     bindGlobalEditorColorInterceptor();
     ensureHeadObserver();
@@ -15728,6 +16132,8 @@ function bootNormalPage() {
   ensureObserver();
   ensureNativeAntUiStabilizer();
   patchHistoryNavigation();
+  scheduleOpenIdBindPromptAfterLogin();
+  syncOpenIdBindingWithWebAccount();
   scheduleFiltering();
   scheduleRebuild();
   setTimeout(scheduleRebuild, 600);

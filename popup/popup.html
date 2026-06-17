@@ -128,6 +128,16 @@
         </label>
       </section>
 
+      <section class="group openid-card" aria-labelledby="openid-label">
+        <div id="openid-label" class="label">CC98 OpenID</div>
+        <p id="openidStatus" class="openid-status">正在读取绑定状态…</p>
+        <div id="openidMeta" class="openid-meta" hidden></div>
+        <div class="openid-actions">
+          <button id="openidBind" type="button">绑定 CC98</button>
+          <button id="openidLogout" class="secondary-action" type="button" hidden>解除绑定</button>
+        </div>
+      </section>
+
       <section class="group site-data-card" aria-labelledby="site-data-label">
         <div id="site-data-label" class="label">账号与站点数据</div>
         <p id="clearCc98DataStatus" class="site-data-status">用于刷新十大；同时会抹掉本地存储的稍后再看、版面置顶与草稿等数据，请谨慎。</p>

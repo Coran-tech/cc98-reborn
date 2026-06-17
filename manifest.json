@@ -2,17 +2,21 @@
   "manifest_version": 3,
   "name": "CC98 Reborn",
   "description": "A refreshed reading and browsing interface for CC98.",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "permissions": [
     "storage",
     "downloads",
     "alarms",
-    "browsingData"
+    "browsingData",
+    "identity",
+    "activeTab"
   ],
   "host_permissions": [
     "*://*.cc98.org/*",
     "*://cc98.org/*",
     "*://www-cc98-org-s.webvpn.zju.edu.cn/*",
+    "https://openid.cc98.org/*",
+    "https://api.cc98.org/*",
     "https://api.github.com/repos/Coran-tech/cc98-reborn/releases*",
     "https://github.com/Coran-tech/cc98-reborn/releases/*",
     "https://gh-proxy.com/*"
@@ -44,6 +48,9 @@
         "*://cc98.org/*",
         "*://www-cc98-org-s.webvpn.zju.edu.cn/*"
       ],
+      "exclude_matches": [
+        "https://openid.cc98.org/*"
+      ],
       "js": [
         "src/page-submit-monitor.js"
       ],
@@ -55,6 +62,9 @@
         "*://*.cc98.org/*",
         "*://cc98.org/*",
         "*://www-cc98-org-s.webvpn.zju.edu.cn/*"
+      ],
+      "exclude_matches": [
+        "https://openid.cc98.org/*"
       ],
       "js": [
         "src/content.js"

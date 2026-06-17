@@ -70,6 +70,10 @@ const fields = {
   updateLatestVersion: document.querySelector("#updateLatestVersion"),
   updateCheck: document.querySelector("#updateCheck"),
   updateOpen: document.querySelector("#updateOpen"),
+  openidStatus: document.querySelector("#openidStatus"),
+  openidMeta: document.querySelector("#openidMeta"),
+  openidBind: document.querySelector("#openidBind"),
+  openidLogout: document.querySelector("#openidLogout"),
   clearCc98Data: document.querySelector("#clearCc98Data"),
   clearCc98DataStatus: document.querySelector("#clearCc98DataStatus"),
   blockedBoards: document.querySelector("#blockedBoards"),
@@ -153,6 +157,33 @@ function sendRuntimeMessage(message) {
   });
 }
 
+function sendActiveTabMessage(message) {
+  return new Promise((resolve) => {
+    try {
+      chrome.tabs?.query?.({ active: true, currentWindow: true }, (tabs) => {
+        if (chrome.runtime.lastError) {
+          resolve({ ok: false, error: chrome.runtime.lastError.message });
+          return;
+        }
+        const tabId = tabs?.[0]?.id;
+        if (!tabId) {
+          resolve({ ok: false, error: "no-active-tab" });
+          return;
+        }
+        chrome.tabs.sendMessage(tabId, message, (response) => {
+          if (chrome.runtime.lastError) {
+            resolve({ ok: false, error: chrome.runtime.lastError.message });
+            return;
+          }
+          resolve(response || { ok: false, error: "empty-response" });
+        });
+      });
+    } catch (error) {
+      resolve({ ok: false, error: error?.message || "send-tab-message-failed" });
+    }
+  });
+}
+
 function formatUpdateTime(timestamp) {
   const time = Number(timestamp);
   if (!time) {
@@ -160,6 +191,15 @@ function formatUpdateTime(timestamp) {
   }
   const date = new Date(time);
   return `${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
+
+function formatDateTime(timestamp) {
+  const time = Number(timestamp);
+  if (!time) {
+    return "";
+  }
+  const date = new Date(time);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
 function setUpdateStatus(status = {}) {
@@ -223,6 +263,91 @@ async function requestUpdateStatus(force = false) {
   if (fields.updateCheck) {
     fields.updateCheck.disabled = false;
   }
+}
+
+function setOpenIdUi(result = {}) {
+  const binding = result.binding;
+  const isBound = Boolean(result.ok && binding?.bound);
+  if (fields.openidStatus) {
+    fields.openidStatus.dataset.state = result.error ? "error" : (isBound ? "bound" : "idle");
+    fields.openidStatus.textContent = result.error
+      ? `\u7ed1\u5b9a\u5931\u8d25\uff1a${result.error}`
+      : (isBound ? `已绑定 ${binding.userName || "CC98 用户"} · 使用本地数据` : "\u672a\u7ed1\u5b9a\u3002\u7ed1\u5b9a\u540e\u7531\u6269\u5c55\u901a\u8fc7 OpenID \u8bfb\u53d6 /me\uff0c\u4e0d\u4f9d\u8d56\u7f51\u9875\u767b\u5f55\u6001\u3002");
+  }
+  if (fields.openidMeta) {
+    fields.openidMeta.hidden = !isBound;
+    fields.openidMeta.innerHTML = "";
+    if (isBound) {
+      const items = [
+        binding.userId ? `UID ${binding.userId}` : "",
+        binding.watermarkIdPrefix ? `\u6c34\u5370 ${binding.watermarkIdPrefix}` : "",
+        binding.storageMode === "local-readonly" ? "使用本地数据" : "",
+        binding.profileSource === "openid-userinfo" ? "\u57fa\u7840\u7ed1\u5b9a" : "",
+        binding.profileWarning ? binding.profileWarning : "",
+        binding.boundAt ? `\u7ed1\u5b9a ${formatDateTime(binding.boundAt)}` : ""
+      ].filter(Boolean);
+      items.forEach((text) => {
+        const item = document.createElement("span");
+        item.textContent = text;
+        fields.openidMeta.append(item);
+      });
+    }
+  }
+  if (fields.openidBind) {
+    fields.openidBind.hidden = isBound;
+    fields.openidBind.disabled = false;
+  }
+  if (fields.openidLogout) {
+    fields.openidLogout.hidden = !isBound;
+    fields.openidLogout.disabled = false;
+  }
+}
+
+async function requestOpenIdState() {
+  const result = await sendRuntimeMessage({ type: "CC98_REBORN_OPENID_GET_STATE" });
+  setOpenIdUi(result);
+}
+
+async function bindOpenId() {
+  if (fields.openidBind) {
+    fields.openidBind.disabled = true;
+  }
+  if (fields.openidStatus) {
+    fields.openidStatus.dataset.state = "pending";
+    fields.openidStatus.textContent = "正在确认当前 CC98 网页账号…";
+  }
+  const accountResult = await sendActiveTabMessage({ type: "CC98_REBORN_GET_CURRENT_WEB_ACCOUNT" });
+  if (!accountResult?.ok || !accountResult.account) {
+    setOpenIdUi({
+      ok: false,
+      error: "请先打开已登录的 CC98 页面，再绑定同一账号的 OpenID。"
+    });
+    return;
+  }
+  if (!accountResult.account.userId) {
+    setOpenIdUi({
+      ok: false,
+      error: "当前 CC98 页面未能读取到 UID，请刷新页面后再绑定。"
+    });
+    return;
+  }
+  if (fields.openidStatus) {
+    fields.openidStatus.dataset.state = "pending";
+    fields.openidStatus.textContent = "正在打开 CC98 OpenID 授权…";
+  }
+  const result = await sendRuntimeMessage({
+    type: "CC98_REBORN_OPENID_LOGIN",
+    expectedAccount: accountResult.account
+  });
+  setOpenIdUi(result);
+}
+
+async function logoutOpenId() {
+  if (fields.openidLogout) {
+    fields.openidLogout.disabled = true;
+  }
+  const result = await sendRuntimeMessage({ type: "CC98_REBORN_OPENID_LOGOUT" });
+  setOpenIdUi(result);
 }
 
 function setClearCc98DataStatus(text, state = "idle") {
@@ -360,6 +485,14 @@ function bind() {
     });
   });
 
+  fields.openidBind?.addEventListener("click", () => {
+    bindOpenId();
+  });
+
+  fields.openidLogout?.addEventListener("click", () => {
+    logoutOpenId();
+  });
+
   fields.clearCc98Data?.addEventListener("click", () => {
     clearCc98SiteData();
   });
@@ -396,5 +529,6 @@ chrome.storage.local.get(STORAGE_KEY, (result) => {
   hydrateAboutVersion();
   hydrate(result[STORAGE_KEY]);
   bind();
+  requestOpenIdState();
   requestUpdateStatus(false);
 });

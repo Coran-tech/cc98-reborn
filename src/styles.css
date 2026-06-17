@@ -3520,6 +3520,90 @@
   color: var(--cc98-comfort-accent) !important;
 }
 
+:root.cc98-comfort .cc98-rebuild-openid-bind-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483646;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: color-mix(in srgb, var(--cc98-comfort-bg) 62%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-bind-dialog {
+  width: min(440px, calc(100vw - 48px));
+  padding: 22px;
+  border: 1px solid color-mix(in srgb, var(--cc98-comfort-accent) 36%, var(--cc98-comfort-border));
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--cc98-comfort-surface) 94%, var(--cc98-comfort-accent-2));
+  color: var(--cc98-comfort-text);
+  box-shadow: var(--cc98-comfort-shadow);
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-bind-dialog h2 {
+  margin: 0 0 10px;
+  color: var(--cc98-comfort-text);
+  font-size: 1.35rem;
+  line-height: 1.25;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-bind-dialog p {
+  margin: 0;
+  color: var(--cc98-comfort-muted);
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-bind-status {
+  min-height: 1.6em;
+  margin-top: 10px !important;
+  color: var(--cc98-comfort-muted) !important;
+  font-size: 0.86rem !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-bind-status[data-state="error"] {
+  color: #d65d5d !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-bind-status[data-state="success"] {
+  color: var(--cc98-comfort-accent) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-bind-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-bind-actions button {
+  min-height: 36px !important;
+  border: 1px solid var(--cc98-comfort-border) !important;
+  border-radius: 999px !important;
+  padding: 0 16px !important;
+  background: var(--cc98-comfort-surface) !important;
+  color: var(--cc98-comfort-text) !important;
+  font-size: 0.9rem !important;
+  font-weight: 760 !important;
+  cursor: pointer !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-bind-actions .cc98-rebuild-openid-bind-primary {
+  border-color: color-mix(in srgb, var(--cc98-comfort-accent) 58%, var(--cc98-comfort-border)) !important;
+  background: color-mix(in srgb, var(--cc98-comfort-accent) 18%, var(--cc98-comfort-surface)) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-bind-actions button:hover {
+  border-color: var(--cc98-comfort-accent) !important;
+  color: var(--cc98-comfort-accent) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-bind-actions button:disabled {
+  cursor: wait !important;
+  opacity: 0.62;
+}
+
 @media (max-width: 640px) {
   :root.cc98-comfort .cc98-rebuild-startup-update-notice {
     grid-template-columns: 1fr;
@@ -9241,6 +9325,272 @@
 :root.cc98-comfort .cc98-rebuild-native-login .login-message a {
   color: var(--cc98-comfort-link) !important;
   font-weight: 760 !important;
+}
+
+:root.cc98-comfort[data-cc98-rebuild-openid-login="true"] body {
+  padding-top: 0 !important;
+}
+
+:root.cc98-comfort[data-cc98-rebuild-openid-login="true"] body > .navbar {
+  position: sticky !important;
+  top: 12px !important;
+  z-index: 1000 !important;
+  width: min(1180px, calc(100vw - 32px)) !important;
+  margin: 12px auto 0 !important;
+  border: 1px solid var(--cc98-comfort-border) !important;
+  border-radius: 16px !important;
+  background: color-mix(in srgb, var(--cc98-comfort-surface) 86%, transparent) !important;
+  color: var(--cc98-comfort-text) !important;
+  box-shadow: var(--cc98-comfort-shadow) !important;
+}
+
+:root.cc98-comfort[data-cc98-rebuild-openid-login="true"] body > .navbar .container {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+:root.cc98-comfort[data-cc98-rebuild-openid-login="true"] body > .navbar :is(.navbar-brand, .nav-link) {
+  color: var(--cc98-comfort-text) !important;
+  font-weight: 760 !important;
+}
+
+:root.cc98-comfort[data-cc98-rebuild-openid-login="true"] body > .navbar .nav-link:hover,
+:root.cc98-comfort[data-cc98-rebuild-openid-login="true"] body > .navbar .nav-link:focus-visible {
+  color: var(--cc98-comfort-accent) !important;
+}
+
+:root.cc98-comfort[data-cc98-rebuild-openid-login="true"] body > .navbar .dropdown-menu {
+  border: 1px solid var(--cc98-comfort-border) !important;
+  border-radius: 12px !important;
+  background: var(--cc98-comfort-surface) !important;
+  box-shadow: var(--cc98-comfort-shadow) !important;
+  padding: 6px !important;
+}
+
+:root.cc98-comfort[data-cc98-rebuild-openid-login="true"] body > .navbar .dropdown-item {
+  border-radius: 8px !important;
+  color: var(--cc98-comfort-text) !important;
+}
+
+:root.cc98-comfort[data-cc98-rebuild-openid-login="true"] body > .navbar .dropdown-item:hover,
+:root.cc98-comfort[data-cc98-rebuild-openid-login="true"] body > .navbar .dropdown-item:focus-visible {
+  background: color-mix(in srgb, var(--cc98-comfort-accent) 14%, transparent) !important;
+  color: var(--cc98-comfort-accent) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-login-layout {
+  width: min(720px, 100%);
+  display: grid;
+  justify-items: center;
+  gap: 28px;
+  margin: 0 auto;
+  padding: 58px 0 24px;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-login {
+  width: min(620px, 100%) !important;
+  max-width: 100% !important;
+  margin: 0 auto !important;
+  padding: 28px !important;
+  border: 1px solid var(--cc98-comfort-border) !important;
+  border-radius: 18px !important;
+  background: color-mix(in srgb, var(--cc98-comfort-surface) 84%, transparent) !important;
+  color: var(--cc98-comfort-text) !important;
+  box-shadow: var(--cc98-comfort-shadow) !important;
+}
+
+:root.cc98-comfort[data-cc98-rebuild-openid-login="true"] body > .container.body-content.cc98-rebuild-openid-login {
+  margin: -16px auto 56px !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-login :is(.row, [class*="col-"]) {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: block !important;
+  flex: none !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-login img[src*="logo"] {
+  display: none !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-login h4 {
+  margin: 0 0 18px !important;
+  color: var(--cc98-comfort-muted) !important;
+  font-size: 1.04rem !important;
+  font-weight: 760 !important;
+  line-height: 1.45 !important;
+  text-align: center !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-login hr {
+  height: 1px !important;
+  margin: 18px 0 !important;
+  border: 0 !important;
+  background: var(--cc98-comfort-border) !important;
+  opacity: 1 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-login .nav-pills {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 14px 0 18px !important;
+  padding: 4px !important;
+  border: 1px solid var(--cc98-comfort-border) !important;
+  border-radius: 14px !important;
+  background: var(--cc98-comfort-surface-2) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-login .nav-item {
+  min-width: 0;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-login .nav-link {
+  width: 100% !important;
+  min-height: 40px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 0 !important;
+  border-radius: 10px !important;
+  background: transparent !important;
+  color: var(--cc98-comfort-muted) !important;
+  padding: 0 12px !important;
+  font-size: 0.94rem !important;
+  font-weight: 760 !important;
+  text-align: center !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-login .nav-link.active {
+  background: var(--cc98-comfort-accent) !important;
+  color: var(--cc98-comfort-bg) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-login .alert {
+  margin: 0 0 18px !important;
+  border: 1px solid color-mix(in srgb, #d6a33d 46%, var(--cc98-comfort-border)) !important;
+  border-radius: 12px !important;
+  background: color-mix(in srgb, #d6a33d 12%, var(--cc98-comfort-surface)) !important;
+  color: var(--cc98-comfort-text) !important;
+  padding: 12px 14px !important;
+  font-size: 0.9rem !important;
+  line-height: 1.65 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-login .alert a {
+  color: var(--cc98-comfort-link) !important;
+  font-weight: 760 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-login form {
+  display: grid !important;
+  gap: 16px !important;
+  margin: 0 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-login .mb-3 {
+  margin: 0 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-login .form-label {
+  display: block !important;
+  margin: 0 0 7px !important;
+  color: var(--cc98-comfort-text) !important;
+  font-size: 0.95rem !important;
+  font-weight: 800 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-login :is(.form-control, .form-select) {
+  width: 100% !important;
+  min-height: 48px !important;
+  border: 1px solid var(--cc98-comfort-border) !important;
+  border-radius: 10px !important;
+  background-color: var(--cc98-comfort-surface-2) !important;
+  color: var(--cc98-comfort-text) !important;
+  padding: 0 14px !important;
+  font-size: 1rem !important;
+  box-shadow: none !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-login :is(.form-control, .form-select):focus {
+  border-color: var(--cc98-comfort-accent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cc98-comfort-accent) 18%, transparent) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-login .form-text,
+:root.cc98-comfort .cc98-rebuild-openid-login .text-danger {
+  margin-top: 6px !important;
+  color: var(--cc98-comfort-muted) !important;
+  font-size: 0.82rem !important;
+  line-height: 1.55 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-login .form-check {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-height: 26px !important;
+  padding: 0 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-login .form-check-input {
+  width: 18px !important;
+  height: 18px !important;
+  margin: 0 !important;
+  border-color: var(--cc98-comfort-border) !important;
+  background-color: var(--cc98-comfort-surface-2) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-login .form-check-input:checked {
+  border-color: var(--cc98-comfort-accent) !important;
+  background-color: var(--cc98-comfort-accent) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-login .form-check-label {
+  margin: 0 !important;
+  color: var(--cc98-comfort-text) !important;
+  font-weight: 720 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-login .text-center {
+  display: flex !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-login .btn {
+  min-width: 132px !important;
+  min-height: 44px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 999px !important;
+  padding: 0 20px !important;
+  font-size: 0.98rem !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  box-shadow: none !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-login .btn-primary {
+  border: 1px solid var(--cc98-comfort-accent) !important;
+  background: var(--cc98-comfort-accent) !important;
+  color: var(--cc98-comfort-bg) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-login .btn-secondary {
+  border: 1px solid var(--cc98-comfort-border) !important;
+  background: var(--cc98-comfort-surface-2) !important;
+  color: var(--cc98-comfort-text) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-openid-login footer,
+:root.cc98-comfort .cc98-rebuild-openid-login > hr:last-of-type {
+  display: none !important;
 }
 
 @media (max-width: 900px) {
