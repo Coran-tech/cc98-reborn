@@ -100,32 +100,10 @@
         </label>
       </section>
 
-      <section class="group">
-        <label class="textarea">
-          <span>屏蔽版面</span>
-          <textarea id="blockedBoards" rows="3" placeholder="每行一个版面名或版面 ID，例如：似水流年"></textarea>
-        </label>
-      </section>
-
-      <section class="group">
-        <label class="textarea">
-          <span>标题关键词</span>
-          <textarea id="blockedTitleKeywords" rows="3" placeholder="每行一个关键词，例如：测试"></textarea>
-        </label>
-      </section>
-
-      <section class="group">
-        <label class="textarea">
-          <span>UID 黑名单</span>
-          <textarea id="blockedUserIds" rows="3" placeholder="每行一个 UID，例如：795406"></textarea>
-        </label>
-      </section>
-
-      <section class="group">
-        <label class="textarea">
-          <span>占位符文案</span>
-          <input id="placeholderText" type="text" placeholder="已根据你的屏蔽规则折叠一条内容">
-        </label>
+      <section class="group blacklist-card" aria-labelledby="blacklist-label">
+        <div id="blacklist-label" class="label">黑名单列表</div>
+        <p id="blacklistSummary" class="blacklist-summary">按用户 ID、标题关键词和版面规则折叠内容。</p>
+        <button id="openBlacklist" type="button">打开黑名单列表</button>
       </section>
 
       <section class="group openid-card" aria-labelledby="openid-label">

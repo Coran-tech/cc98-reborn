@@ -4,7 +4,8 @@ const READ_LATER_STORAGE_KEY = "cc98RebornReadLater:v1";
 const OPENID_BINDING_STORAGE_KEY = "cc98RebornOpenIdBinding:v1";
 const SEARCH_SORT_STORAGE_KEY = "cc98RebornSearchSort:v1";
 const READ_LATER_ROUTE_HASH = "#cc98-reborn-read-later";
-const EXTENSION_VERSION = "0.2.6";
+const BLACKLIST_ROUTE_HASH = "#cc98-reborn-blacklist";
+const EXTENSION_VERSION = "0.2.7";
 const LOGIN_REDIRECT_MARK_KEY = "cc98RebornLoginRedirectStartedAt";
 const LOGIN_REDIRECT_SNAPSHOT_KEY = "cc98RebornLoginRedirectSnapshot";
 const LOGIN_HOME_REFRESH_MARK_KEY = "cc98RebornLoginHomeRefreshPendingAt";
@@ -29,6 +30,8 @@ const EDITOR_TOPIC_SUBMIT_RELOAD_KEY_PREFIX = "cc98RebornEditorTopicSubmitReload
 const EDITOR_TOPIC_SUBMIT_RELOAD_TTL = 30000;
 const EDITOR_SUBMIT_FORCE_REFRESH_DELAY = 500;
 const EDITOR_DRAFT_STORAGE_PREFIX = "cc98RebornDraft:v1:";
+const BLACKLIST_PAGE_REVEAL_PREFIX = "cc98RebornBlacklistPageReveal:";
+const BLACKLIST_ITEM_REVEAL_PREFIX = "cc98RebornBlacklistItemReveal:";
 const EXTERNAL_AI_SEARCH_REQUIRES_EXPLICIT_CONSENT = true;
 // Watermark source: the extension's own CC98 OpenID binding summary.
 const WATERMARK_FEATURE_ENABLED = true;
@@ -169,7 +172,12 @@ const BLOCKABLE_SELECTORS = [
   ".specialOfferRow",
   ".card-recommendation-topic-container-item",
   ".boardContent",
-  ".noImgBoardContent"
+  ".noImgBoardContent",
+  ".user-post",
+  ".user-center-myfollowings-user",
+  ".user-center-myfollowers-user",
+  ".message-message-person",
+  "[id^='contact_']"
 ].join(",");
 
 let lastSettings = null;
@@ -229,6 +237,7 @@ let searchPageRouteKey = "";
 let searchPageRouteFirstSeenAt = 0;
 let readLaterSearchQuery = "";
 let readLaterPage = 1;
+let blacklistFilterType = "all";
 let editorSubmitIntermediateTimer = null;
 let editorDraftAutosaveTimers = new WeakMap();
 const originalPosterIdentityPrefetches = new Map();
@@ -241,6 +250,7 @@ const proxyControlSyncTimers = new WeakMap();
 const searchSuggestionCache = new Map();
 const homeHotRankingStates = new Map();
 const postAwardDeltaCache = new Map();
+const blacklistRevealScopes = new Set();
 let searchSuggestionLastFetchAt = 0;
 let searchSuggestionSequence = 0;
 let aiSearchSuggestionLastFetchAt = 0;
@@ -425,6 +435,134 @@ function parseList(value) {
     .filter(Boolean);
 }
 
+function normalizeBlockedUserId(value) {
+  return cleanupPostText(value)
+    .replace(/^(?:uid|用户\s*uid|id|用户\s*id)\s*[:：]?\s*/i, "")
+    .trim();
+}
+
+function normalizeBlockedUid(value) {
+  const text = normalizeBlockedUserId(value);
+  return /^\d+$/.test(text) ? text : "";
+}
+
+function normalizeUserIdentityText(value) {
+  return normalizeBlockedUserId(value).toLowerCase();
+}
+
+function getBlacklistRules(settings = lastSettings) {
+  return {
+    boards: parseList(settings?.blockedBoards),
+    titleKeywords: parseList(settings?.blockedTitleKeywords),
+    userIds: [...new Set(parseList(settings?.blockedUserIds).map(normalizeBlockedUserId).filter(Boolean))],
+    placeholderText: String(settings?.placeholderText || DEFAULT_SETTINGS.placeholderText).trim() || DEFAULT_SETTINGS.placeholderText
+  };
+}
+
+function hasBlacklistRules(settings = lastSettings) {
+  const rules = getBlacklistRules(settings);
+  return rules.boards.length > 0 || rules.titleKeywords.length > 0 || rules.userIds.length > 0;
+}
+
+function userRuleMatchesIdentity(rule, identity = {}) {
+  const normalizedRule = normalizeUserIdentityText(rule);
+  if (!normalizedRule) {
+    return false;
+  }
+  const textValues = [
+    identity.id,
+    identity.user,
+    ...(identity.ids || []),
+    ...(identity.users || [])
+  ].map(normalizeUserIdentityText).filter(Boolean);
+  if (textValues.includes(normalizedRule)) {
+    return true;
+  }
+  const uidRule = normalizeBlockedUid(rule);
+  if (!uidRule) {
+    return false;
+  }
+  const uidValues = [
+    identity.uid,
+    ...(identity.uids || [])
+  ].map(normalizeBlockedUid).filter(Boolean);
+  return uidValues.includes(uidRule);
+}
+
+function getUserBlockReason(identity = {}, settings = lastSettings) {
+  const matched = getBlacklistRules(settings).userIds.find((rule) => userRuleMatchesIdentity(rule, identity));
+  if (!matched) {
+    return "";
+  }
+  return normalizeBlockedUid(matched) ? `UID：${matched}` : `用户 ID：${matched}`;
+}
+
+function isUserIdBlocked(identity, settings = lastSettings) {
+  const normalized = normalizeBlockedUserId(identity);
+  return Boolean(normalized && getUserBlockReason({ id: normalized, uid: normalized }, settings));
+}
+
+function getBlockedUserReason(identity) {
+  return getUserBlockReason(typeof identity === "object" ? identity : { id: identity, uid: identity });
+}
+
+function writeSettingsPatch(patch) {
+  const next = normalizeSettings({
+    ...(lastSettings || DEFAULT_SETTINGS),
+    ...patch
+  });
+  lastSettings = next;
+  try {
+    chrome.storage.local.set({ [STORAGE_KEY]: next });
+  } catch {
+    // Storage may be unavailable on local file previews; keep the in-memory state.
+  }
+  scheduleFiltering();
+  scheduleRebuild();
+}
+
+function writeBlacklistRules(rules) {
+  writeSettingsPatch({
+    blockedBoards: (rules.boards || []).map((item) => String(item).trim()).filter(Boolean).join("\n"),
+    blockedTitleKeywords: (rules.titleKeywords || []).map((item) => String(item).trim()).filter(Boolean).join("\n"),
+    blockedUserIds: [...new Set((rules.userIds || []).map(normalizeBlockedUserId).filter(Boolean))].join("\n"),
+    placeholderText: String(rules.placeholderText || DEFAULT_SETTINGS.placeholderText).trim() || DEFAULT_SETTINGS.placeholderText
+  });
+}
+
+function getBlacklistRevealStorageKey(prefix, id = "") {
+  return `${prefix}${getRoutePageKey()}:${String(id || "").trim()}`;
+}
+
+function isBlacklistRevealed(prefix, id = "") {
+  return blacklistRevealScopes.has(getBlacklistRevealStorageKey(prefix, id));
+}
+
+function revealBlacklistScope(prefix, id = "") {
+  blacklistRevealScopes.add(getBlacklistRevealStorageKey(prefix, id));
+}
+
+function getBlacklistItemRevealId(item) {
+  return [
+    item?.type || "",
+    item?.id || "",
+    item?.href || "",
+    item?.uid || ""
+  ].filter(Boolean).join(":");
+}
+
+function isBlacklistItemRevealed(item) {
+  const id = getBlacklistItemRevealId(item);
+  return Boolean(id && isBlacklistRevealed(BLACKLIST_ITEM_REVEAL_PREFIX, id));
+}
+
+function revealBlacklistItem(item) {
+  const id = getBlacklistItemRevealId(item);
+  if (id) {
+    revealBlacklistScope(BLACKLIST_ITEM_REVEAL_PREFIX, id);
+  }
+}
+
 function normalizeText(value) {
   return String(value ?? "")
     .replace(/[【】[\]\s]/g, "")
@@ -462,14 +600,63 @@ function getTitleText(item) {
 }
 
 function getUserIds(item) {
-  const ids = [];
-  item.querySelectorAll('a[href*="/user/id/"]').forEach((link) => {
-    const match = link.href.match(/\/user\/id\/(\d+)/);
-    if (match) {
-      ids.push(match[1]);
+  const collectLinkIds = (selectors) => {
+    const ids = [];
+    item.querySelectorAll(selectors.join(",")).forEach((link) => {
+      const match = link.href?.match?.(/\/user\/id\/(\d+)/);
+      if (match) {
+        ids.push(match[1]);
+      }
+    });
+    return ids;
+  };
+  const primaryIds = collectLinkIds([
+    ".focus-topic-left[href*='/user/id/']",
+    ".card-topic-userName[href*='/user/id/']",
+    ".board-postItem-userName[href*='/user/id/']",
+    ".board-postItem-userName a[href*='/user/id/']"
+  ]);
+  const ids = primaryIds.length ? primaryIds : collectLinkIds(['a[href*="/user/id/"]']);
+  const idMatch = String(item.id || "").match(/(?:^|_)(\d{3,})(?:$|_)/);
+  if (idMatch) {
+    ids.push(idMatch[1]);
+  }
+  ["data-user-id", "data-uid", "data-author-id"].forEach((attr) => {
+    const value = item.getAttribute?.(attr);
+    const uid = normalizeBlockedUid(value);
+    if (uid) {
+      ids.push(uid);
     }
   });
   return [...new Set(ids)];
+}
+
+function getUserIdentityTexts(item) {
+  const collectTexts = (selectors) => {
+    const texts = [];
+    item.querySelectorAll(selectors.join(",")).forEach((node) => {
+      const text = cleanupPostText(node.textContent);
+      if (text) {
+        texts.push(text);
+      }
+    });
+    return [...new Set(texts.map(normalizeBlockedUserId).filter(Boolean))];
+  };
+  const primarySelectors = [
+    ".focus-topic-left[href*='/user/']",
+    ".card-topic-userName[href*='/user/']",
+    ".board-postItem-userName[href*='/user/']",
+    ".board-postItem-userName a[href*='/user/']",
+    ".message-message-pName"
+  ];
+  const primary = collectTexts(primarySelectors);
+  if (primary.length) {
+    return primary;
+  }
+  return collectTexts([
+    "a[href*='/user/id/']",
+    "a[href*='/user/name/']"
+  ]);
 }
 
 function getFirstText(root, selector) {
@@ -554,6 +741,34 @@ function buildTopicFloorHref(topicId, floor, origin = location.origin, search = 
   return `${origin}/topic/${topicId}${suffix}${search || ""}#${floor}`;
 }
 
+function getTopicPathTarget(pathname = "") {
+  const match = String(pathname || "").match(/\/topic\/(\d+)(?:\/(\d+))?\/?$/i);
+  if (!match) {
+    return null;
+  }
+  const page = Number(match[2] || 1);
+  return {
+    topicId: match[1],
+    page: Number.isFinite(page) && page > 0 ? page : 1
+  };
+}
+
+function resolveTopicHashFloorForUrl(url) {
+  const rawFloor = getFloorFromHash(url?.hash || "");
+  if (!rawFloor) {
+    return null;
+  }
+  const target = getTopicPathTarget(url?.pathname || "");
+  const targetPage = target?.page || getTopicPageInfo()?.current || 1;
+  if (targetPage > 1 && rawFloor <= 10) {
+    const absoluteFloor = (targetPage - 1) * 10 + rawFloor;
+    if (getRebuiltPostCardByFloor(absoluteFloor)) {
+      return absoluteFloor;
+    }
+  }
+  return rawFloor;
+}
+
 function getQuotedOriginalFloorFromText(text) {
   const normalized = cleanupPostText(text);
   const match = normalized.match(/\u4ee5\u4e0b\u662f\u5f15\u7528\s*(\d{1,5})\s*\u697c/)
@@ -636,20 +851,27 @@ function getSameTopicFloorFromLink(link) {
     return null;
   }
 
-  const floor = getFloorFromHash(url.hash);
   const pageInfo = getTopicPageInfo();
-  if (!floor || !pageInfo) {
+  if (!pageInfo) {
     return null;
   }
 
-  const targetTopic = url.pathname.match(/\/topic\/(\d+)(?:\/\d+)?$/i)?.[1];
+  const target = getTopicPathTarget(url.pathname);
+  const targetTopic = target?.topicId || "";
   if (targetTopic && targetTopic !== pageInfo.topicId) {
     return null;
   }
   if (!targetTopic && (url.origin !== location.origin || url.pathname !== location.pathname || url.search !== location.search)) {
     return null;
   }
+  if (target?.page && target.page !== pageInfo.current) {
+    return null;
+  }
 
+  const floor = resolveTopicHashFloorForUrl(url);
+  if (!floor) {
+    return null;
+  }
   return getRebuiltPostCardByFloor(floor) ? floor : null;
 }
 
@@ -702,7 +924,7 @@ function bindRebuiltFloorLinks(app) {
 }
 
 function scrollToCurrentRebuiltHash() {
-  const floor = getFloorFromHash(location.hash);
+  const floor = resolveTopicHashFloorForUrl(new URL(location.href));
   if (!floor) {
     return;
   }
@@ -1046,7 +1268,9 @@ function triggerOriginalControl(control) {
   if (!(control instanceof HTMLElement)) {
     return;
   }
-  const target = control.querySelector("i, span, button, a, [role='button']") || control;
+  const target = control.matches("button, a, [role='button']")
+    ? control
+    : (control.querySelector("button, a, [role='button'], i, span") || control);
   const rect = control.getBoundingClientRect();
   const eventInit = {
     bubbles: true,
@@ -1409,13 +1633,79 @@ function enforceVoteGroupMutualExclusion(action) {
   setVoteActionVisual(group.dislike, displayKind === "dislike");
 }
 
+function configureFollowProxyAction(proxy, action) {
+  if (!(proxy instanceof HTMLElement) || !isFollowPostAction(action)) {
+    return;
+  }
+  const currentText = cleanupPostText(proxy.textContent || action.control?.textContent || "");
+  const text = currentText || cleanupPostText(action.displayText || action.text || "");
+  const followed = /^(?:\u53d6\u5173|\u53d6\u6d88\u5173\u6ce8)$/.test(text);
+  proxy.classList.add("cc98-rebuild-post-follow-action");
+  proxy.dataset.followSymbol = followed ? "\u2212" : "+";
+  proxy.dataset.followLabel = followed ? "\u53d6\u6d88\u5173\u6ce8" : "\u5173\u6ce8";
+  proxy.setAttribute("aria-label", followed ? "\u53d6\u6d88\u5173\u6ce8\u6b64\u7528\u6237" : "\u5173\u6ce8\u6b64\u7528\u6237");
+}
+
+function renderNativeFollowControl(action) {
+  if (!(action?.control instanceof HTMLElement) || !isFollowPostAction(action)) {
+    return renderProxyControl(action);
+  }
+
+  const control = action.control;
+  rememberReparentedNativeNode(control);
+  control.classList.add(
+    "cc98-rebuild-mini-action",
+    "cc98-rebuild-post-follow-action",
+    "cc98-rebuild-native-post-follow-action"
+  );
+  if (control instanceof HTMLButtonElement) {
+    control.type = "button";
+  }
+  configureFollowProxyAction(control, action);
+  if (control.dataset.cc98RebuildPostFollowBound !== "true") {
+    control.dataset.cc98RebuildPostFollowBound = "true";
+    control.addEventListener("click", () => {
+      control.classList.add("is-pending");
+      [120, 420, 900].forEach((delay) => {
+        window.setTimeout(() => configureFollowProxyAction(control, { ...action, text: control.textContent || action.text }), delay);
+      });
+      [260, 700, 1400, 2400].forEach((delay) => {
+        window.setTimeout(scheduleDelayedRebuilds, delay);
+      });
+      scheduleNativeAntUiStabilize();
+    }, false);
+  }
+  return control;
+}
+
+function setProxyControlDisplayText(proxy, text, kind = "", scoreDelta = NaN) {
+  if (!(proxy instanceof HTMLElement)) {
+    return;
+  }
+  const value = String(text ?? "");
+  const deltaMatch = kind === "score" ? value.match(/([+-]\d+)\s*$/) : null;
+  if (deltaMatch && Number.isFinite(scoreDelta) && scoreDelta !== 0) {
+    const delta = deltaMatch[1];
+    const prefix = value.slice(0, deltaMatch.index);
+    const suffix = value.slice(deltaMatch.index + delta.length);
+    const deltaNode = createElement("span", "cc98-rebuild-action-delta", delta);
+    deltaNode.dataset.awardDelta = scoreDelta > 0 ? "positive" : "negative";
+    proxy.replaceChildren(
+      document.createTextNode(prefix),
+      deltaNode,
+      document.createTextNode(suffix)
+    );
+    return;
+  }
+  proxy.textContent = value;
+}
+
 function syncProxyControlDisplay(proxy, action) {
   const nativeText = getTopicFavoriteDisplayText(action)
     || action.displayText
     || getActionText(action.control)
     || action.text;
   const text = getVoteActionSyncedText(action, nativeText);
-  proxy.textContent = text;
   const normalized = text.replace(/\s+\d+$/, "");
   proxy.dataset.actionType = normalized;
   const kind = getActionVoteKind(action) || getPostActionKind(action.control, text);
@@ -1424,6 +1714,15 @@ function syncProxyControlDisplay(proxy, action) {
   } else {
     delete proxy.dataset.actionKind;
   }
+  const scoreDelta = Number.isFinite(action.awardDelta)
+    ? action.awardDelta
+    : (kind === "score" ? Number(text.match(/([+-]\d+)/)?.[1]) : NaN);
+  if (kind === "score" && Number.isFinite(scoreDelta)) {
+    proxy.dataset.awardDelta = scoreDelta > 0 ? "positive" : (scoreDelta < 0 ? "negative" : "zero");
+  } else {
+    delete proxy.dataset.awardDelta;
+  }
+  setProxyControlDisplayText(proxy, text, kind, scoreDelta);
   const isVoteAction = kind === "like" || kind === "dislike";
   const isActive = isVoteAction && isVoteActionVisuallyActive(action);
   proxy.classList.toggle("is-active", Boolean(isActive));
@@ -1434,6 +1733,7 @@ function syncProxyControlDisplay(proxy, action) {
     setNativeVoteControlVisual(action.control, kind, isActive);
     enforceVoteGroupMutualExclusion(action);
   }
+  configureFollowProxyAction(proxy, action);
 }
 
 function applyOptimisticPostActionState(button, action) {
@@ -1642,7 +1942,7 @@ async function ensureStartupUpdateNotice() {
 }
 
 function renderProxyControl(action) {
-  if (action.href && action.href !== "#") {
+  if (action.href && action.href !== "#" && !isFollowPostAction(action)) {
     return createLink("cc98-rebuild-mini-action", action.text, action.href);
   }
   let lastActivatedAt = 0;
@@ -1653,6 +1953,7 @@ function renderProxyControl(action) {
     const now = Date.now();
     const actionKind = getPostActionKind(action.control, action.text);
     const isVoteAction = actionKind === "like" || actionKind === "dislike";
+    const isFollowAction = isFollowPostAction(action);
     const activationGap = isVoteAction ? 180 : 420;
     if (now - lastActivatedAt < activationGap) {
       return;
@@ -1692,6 +1993,10 @@ function renderProxyControl(action) {
         copyTextToClipboard(location.href).finally(() => {
           showRebuiltTransientToast(button, "\u590d\u5236\u6210\u529f");
         });
+      }
+      if (isFollowAction) {
+        window.setTimeout(scheduleDelayedRebuilds, 700);
+        window.setTimeout(scheduleDelayedRebuilds, 1600);
       }
     }
     if (isNativeOverlayAction) {
@@ -1752,6 +2057,26 @@ function isReadLaterRoute(url = location.href) {
 
 function getReadLaterPageHref() {
   return `${location.origin}/${READ_LATER_ROUTE_HASH}`;
+}
+
+function isPublicUserProfilePage(url = location.href) {
+  try {
+    return /^\/user\/(?:id|name)\//i.test(new URL(url, location.href).pathname);
+  } catch {
+    return /^\/user\/(?:id|name)\//i.test(location.pathname);
+  }
+}
+
+function isBlacklistRoute(url = location.href) {
+  try {
+    return new URL(url, location.href).hash === BLACKLIST_ROUTE_HASH;
+  } catch {
+    return location.hash === BLACKLIST_ROUTE_HASH;
+  }
+}
+
+function getBlacklistPageHref() {
+  return `${location.origin}/${BLACKLIST_ROUTE_HASH}`;
 }
 
 function getRoutePageKey(url = location.href) {
@@ -3936,6 +4261,9 @@ function startPostLazyFallbackPrewarm() {
 }
 
 function getPageKind() {
+  if (isBlacklistRoute()) {
+    return "blacklist";
+  }
   if (isReadLaterRoute()) {
     return "readLater";
   }
@@ -4006,6 +4334,7 @@ function getPageTitle() {
     error: getFirstText(document, ".errorText") || document.title.replace(" - CC98论坛", "") || "出错了",
     message: "消息",
     readLater: "\u7a0d\u540e\u518d\u770b",
+    blacklist: "黑名单",
     topics: topicTitle,
     search: "搜索结果",
     boardSearch: "版面搜索结果",
@@ -7408,6 +7737,34 @@ function collectPostActions(post) {
   return actions.slice(0, 10);
 }
 
+function isFollowPostAction(action) {
+  const text = cleanupPostText(action?.text || action?.control?.textContent || "");
+  return /^(?:\u5173\u6ce8|\u53d6\u5173|\u53d6\u6d88\u5173\u6ce8)$/.test(text);
+}
+
+function isCurrentWebUserPostItem(item) {
+  const uid = normalizeCc98AccountId(item?.uid || "");
+  if (!uid) {
+    return false;
+  }
+  return uid === getCc98AccountId(getStoredCc98UserInfo());
+}
+
+function hasTopicLockedNotice() {
+  const root = document.querySelector("#root") || document.body;
+  if (!root) {
+    return false;
+  }
+  return [...root.querySelectorAll("div, p, span")]
+    .some((node) => {
+      if (!(node instanceof HTMLElement) || node.closest("#cc98-comfort-app")) {
+        return false;
+      }
+      const text = cleanupPostText(node.textContent);
+      return text === "\u8be5\u5e16\u5df2\u88ab\u9501\u5b9a" || text.includes("\u8be5\u5e16\u5df2\u88ab\u9501\u5b9a");
+    });
+}
+
 function hasRenderablePostContent(contentNode) {
   if (!contentNode) {
     return false;
@@ -7698,6 +8055,7 @@ function applyAwardDeltaValueToActions(actions, delta) {
     const label = cleanupPostText(action.text).replace(/\s+[+-]?\d+\s*$/, "");
     if (label === "\u8bc4\u5206" || label.includes("\u8bc4\u5206")) {
       action.displayText = `\u8bc4\u5206 ${formatAwardDelta(delta)}`;
+      action.awardDelta = Number(delta) || 0;
     }
   });
   return actions;
@@ -7804,6 +8162,8 @@ function getPostItems() {
     const publishedAt = cleanupPostText(post.innerText).match(/发表于\s+([0-9:-]+\s+[0-9:]+)/)?.[1] ?? "";
     const editInfo = getPostEditInfo(post);
     const actions = collectPostActions(post);
+    const followAction = actions.find(isFollowPostAction) || null;
+    const visibleActions = actions.filter((action) => !isFollowPostAction(action));
     const isHot = isHotPostNode(post);
     const floorNumber = getPostFloorNumber(post, index);
     const id = post.id || post.getAttribute("data-id") || `floor-${floorNumber}-${text.slice(0, 24)}`;
@@ -7838,7 +8198,9 @@ function getPostItems() {
       publishedAt,
       editedAt: editInfo.editedAt,
       editedBy: editInfo.editor,
-      actions,
+      actions: visibleActions,
+      followAction,
+      isCurrentUser: Boolean(uidMatch?.[1] && uidMatch[1] === getCc98AccountId(getStoredCc98UserInfo())),
       isHot
     };
   }).filter((item) => item && (item.text.length > 0 || item.content?.querySelector("img") || item.voteContent));
@@ -7998,6 +8360,8 @@ function getHomeSections() {
     const items = [...section.querySelectorAll(".mainPageListRow")].map((row) => {
       const titleLink = getFirstLink(row, ".mainPageListTitle a");
       const boardLink = getFirstLink(row, '.mainPageListBoardName a[href*="/board/"]');
+      const userLink = getFirstLink(row, 'a[href*="/user/id/"]');
+      const uidMatch = userLink?.href?.match(/\/user\/id\/(\d+)/i);
       const parsedMeta = parseTopicMetaText(row.textContent);
       return {
         type: "topic",
@@ -8005,7 +8369,8 @@ function getHomeSections() {
         href: titleLink?.href ?? "",
         board: boardLink?.text?.replace(/[【】[\]]/g, "") ?? "",
         boardHref: boardLink?.href ?? "",
-        user: parsedMeta.hasDetails ? parsedMeta.author : "",
+        user: userLink?.text || (parsedMeta.hasDetails ? parsedMeta.author : ""),
+        uid: uidMatch?.[1] ?? "",
         meta: parsedMeta.hasDetails ? parsedMeta.meta : "",
         hoverMeta: parsedMeta.hasDetails ? parsedMeta.hoverMeta : "",
         replyCount: parsedMeta.hasDetails ? parsedMeta.replyCount : ""
@@ -8252,6 +8617,7 @@ function getBoardTopicItems() {
         .filter((item) => item.text);
       const userLink = getFirstLink(row, '.board-postItem-userName[href*="/user/"], .board-postItem-userName a[href*="/user/"]');
       const userText = userLink?.text || getFirstText(row, ".board-postItem-userName");
+      const uidMatch = userLink?.href?.match(/\/user\/id\/(\d+)/i);
       const tags = [...row.querySelectorAll(".board-postItem-tags .ant-tag")].map((tag) => tag.textContent?.trim() ?? "").filter(Boolean);
       const lastReplyLink = row.querySelector('.board-postItem-lastReply')?.closest("a");
       const lastReplySpans = [...row.querySelectorAll(".board-postItem-lastReply span")].map((span) => span.textContent?.trim() ?? "").filter(Boolean);
@@ -8263,6 +8629,7 @@ function getBoardTopicItems() {
         href: titleLink.href,
         user: userText,
         userHref: userLink?.href ?? "",
+        uid: uidMatch?.[1] ?? "",
         viewCount: tags[0] ?? "",
         replyCount: tags[1] ?? "",
         lastReplyUser: lastReplySpans[0] ?? "",
@@ -8352,6 +8719,9 @@ function attachNativeTopbarDropdowns(nativeEntry) {
     const existingDropdown = nativeEntry.querySelector(selector);
     if (existingDropdown && !existingDropdown.classList.contains("cc98-rebuild-forced-topbar-menu")) {
       normalizeDropdown(existingDropdown);
+      if (baseClass === "topBarUserCenter") {
+        augmentTopbarUserMenu(existingDropdown);
+      }
       return;
     }
     const dropdown = [...document.querySelectorAll(selector)]
@@ -8360,6 +8730,9 @@ function attachNativeTopbarDropdowns(nativeEntry) {
       rememberReparentedNativeNode(dropdown);
       dropdown.classList.add(baseClass);
       normalizeDropdown(dropdown);
+      if (baseClass === "topBarUserCenter") {
+        augmentTopbarUserMenu(dropdown);
+      }
       if (existingDropdown) {
         existingDropdown.replaceWith(dropdown);
       } else {
@@ -8369,6 +8742,30 @@ function attachNativeTopbarDropdowns(nativeEntry) {
   });
 }
 
+function augmentTopbarUserMenu(menu) {
+  if (!(menu instanceof HTMLElement)) {
+    return menu;
+  }
+  const list = menu.querySelector("ul") || menu;
+  const existingText = cleanupPostText(list.textContent);
+  [
+    ["/usercenter/myhistory", "\u6d4f\u89c8\u8bb0\u5f55"],
+    ["/usercenter/myfavorites/order/0/group/0/1", "\u6211\u7684\u6536\u85cf"]
+  ].forEach(([href, text]) => {
+    if (existingText.includes(text) || list.querySelector(`a[href*="${href}"]`)) {
+      return;
+    }
+    const link = document.createElement("a");
+    link.href = makeAbsoluteCc98Url(href);
+    link.classList.add("cc98-rebuild-topbar-extra-link");
+    const item = document.createElement("li");
+    item.textContent = text;
+    link.append(item);
+    list.append(link);
+  });
+  return menu;
+}
+
 function createForcedTopbarUserMenu() {
   const menu = createElement("div", "topBarUserCenter cc98-rebuild-forced-topbar-menu");
   const source = [...document.querySelectorAll(".topBarUserCenter, .topBarUserCenter-mainPage")]
@@ -8376,7 +8773,7 @@ function createForcedTopbarUserMenu() {
   if (source instanceof HTMLElement) {
     rememberReparentedNativeNode(source);
     source.classList.add("topBarUserCenter");
-    return source;
+    return augmentTopbarUserMenu(source);
   }
 
   const list = document.createElement("ul");
@@ -8397,7 +8794,7 @@ function createForcedTopbarUserMenu() {
   logout.dataset.cc98ForcedLogout = "true";
   list.append(logout);
   menu.append(list);
-  return menu;
+  return augmentTopbarUserMenu(menu);
 }
 
 function isLogoutMenuText(text) {
@@ -9086,9 +9483,7 @@ function shouldBlockRebuiltItem(item) {
     return "";
   }
 
-  const blockedBoards = parseList(lastSettings.blockedBoards);
-  const blockedKeywords = parseList(lastSettings.blockedTitleKeywords);
-  const blockedUserIds = parseList(lastSettings.blockedUserIds).map((uid) => uid.replace(/\D/g, "")).filter(Boolean);
+  const { boards: blockedBoards, titleKeywords: blockedKeywords, userIds: blockedUserIds } = getBlacklistRules(lastSettings);
   const matchedBoard = blockedBoards.find((rule) => item.board && normalizeText(item.board).includes(normalizeText(rule)));
   if (matchedBoard) {
     return `版面：${matchedBoard}`;
@@ -9097,16 +9492,29 @@ function shouldBlockRebuiltItem(item) {
   if (matchedKeyword) {
     return `关键词：${matchedKeyword}`;
   }
-  const matchedUid = blockedUserIds.find((uid) => item.uid === uid);
-  if (matchedUid) {
-    return `UID：${matchedUid}`;
+  const matchedUserRule = blockedUserIds.find((rule) => userRuleMatchesIdentity(rule, {
+    id: item.user,
+    user: item.user,
+    uid: item.uid
+  }));
+  if (matchedUserRule) {
+    return normalizeBlockedUid(matchedUserRule) ? `UID：${matchedUserRule}` : `用户 ID：${matchedUserRule}`;
   }
   return "";
 }
 
-function renderBlockedPlaceholder(reason) {
+function renderBlockedPlaceholder(reason, options = {}) {
   const placeholder = createElement("article", "cc98-rebuild-card cc98-rebuild-blocked");
   placeholder.append(createElement("div", "cc98-rebuild-card-title", `${lastSettings.placeholderText} · ${reason}`));
+  if (typeof options.onReveal === "function") {
+    const actions = createElement("div", "cc98-rebuild-blocked-actions");
+    actions.append(createButton("cc98-rebuild-mini-action", "显示", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      options.onReveal();
+    }));
+    placeholder.append(actions);
+  }
   return placeholder;
 }
 
@@ -9148,8 +9556,13 @@ function createReadLaterCardButton(item) {
 
 function renderTopicCard(item) {
   const reason = shouldBlockRebuiltItem(item);
-  if (reason) {
-    return renderBlockedPlaceholder(reason);
+  if (reason && !isBlacklistItemRevealed(item)) {
+    return renderBlockedPlaceholder(reason, {
+      onReveal: () => {
+        revealBlacklistItem(item);
+        scheduleRebuild();
+      }
+    });
   }
 
   const card = createElement("article", "cc98-rebuild-card");
@@ -9277,6 +9690,16 @@ function renderPostVoteContent(voteContent) {
 }
 
 function renderPostCard(item) {
+  const blockReason = shouldBlockRebuiltItem(item);
+  if (blockReason && !isBlacklistItemRevealed(item)) {
+    return renderBlockedPlaceholder(blockReason, {
+      onReveal: () => {
+        revealBlacklistItem(item);
+        scheduleRebuild();
+      }
+    });
+  }
+
   const card = createElement("article", "cc98-rebuild-card cc98-rebuild-post");
   card.dataset.itemKey = `post:${item.id}`;
   card.classList.toggle("cc98-rebuild-hot-post", Boolean(item.isHot));
@@ -9322,6 +9745,9 @@ function renderPostCard(item) {
   }
   if (item.isOriginalPoster) {
     userLine.append(createElement("span", "cc98-rebuild-op-badge", "\u697c\u4e3b"));
+  }
+  if (item.followAction && !item.isCurrentUser) {
+    userLine.append(renderNativeFollowControl(item.followAction));
   }
   byline.append(userLine);
   if (item.isHot) {
@@ -9571,8 +9997,13 @@ function renderBoardPager(position = "top") {
 
 function renderBoardTopicCard(item) {
   const reason = shouldBlockRebuiltItem(item);
-  if (reason) {
-    return renderBlockedPlaceholder(reason);
+  if (reason && !isBlacklistItemRevealed(item)) {
+    return renderBlockedPlaceholder(reason, {
+      onReveal: () => {
+        revealBlacklistItem(item);
+        scheduleRebuild();
+      }
+    });
   }
   const card = createElement("article", "cc98-rebuild-card cc98-rebuild-board-topic");
   if (item.isPinned) {
@@ -9638,7 +10069,7 @@ function renderBoardPage(app) {
       aside.append(item);
     });
     if (data.followAction) {
-      aside.append(renderProxyControl(data.followAction));
+      aside.append(renderNativeFollowControl(data.followAction));
     }
     summary.append(aside);
   }
@@ -9707,6 +10138,26 @@ function restoreNativeNode(node) {
       button.classList.remove("cc98-rebuild-native-vote-button");
     });
   }
+  if (node.classList?.contains("cc98-rebuild-native-post-follow-action")) {
+    node.classList.remove(
+      "cc98-rebuild-mini-action",
+      "cc98-rebuild-post-follow-action",
+      "cc98-rebuild-native-post-follow-action",
+      "is-pending",
+      "is-pressing"
+    );
+    delete node.dataset.followSymbol;
+    delete node.dataset.followLabel;
+  }
+  if (node.classList?.contains("cc98-rebuild-native-user-nav")) {
+    node.querySelectorAll?.(".cc98-rebuild-blacklist-nav-entry").forEach((entry) => {
+      const parent = entry.parentElement;
+      entry.remove();
+      if (parent instanceof HTMLLIElement && !cleanupPostText(parent.textContent) && !parent.children.length) {
+        parent.remove();
+      }
+    });
+  }
   node.classList.remove(
     "cc98-rebuild-native-editor",
     "cc98-rebuild-native-reply",
@@ -9736,7 +10187,7 @@ function restoreNativeNode(node) {
 }
 
 function restoreReparentedNativeNodes(app) {
-  app?.querySelectorAll?.(".createTopic.cc98-rebuild-native-editor, #sendTopicInfo.cc98-rebuild-native-reply, .user-center-navigation.cc98-rebuild-native-user-nav, .user-center-router.cc98-rebuild-native-user-router, .cc98-rebuild-native-user-entry, .cc98-rebuild-native-message, .cc98-rebuild-native-signin, .cc98-rebuild-native-login, .cc98-rebuild-native-login-announcement, .vote-content.cc98-rebuild-native-vote")
+  app?.querySelectorAll?.(".createTopic.cc98-rebuild-native-editor, #sendTopicInfo.cc98-rebuild-native-reply, .user-center-navigation.cc98-rebuild-native-user-nav, .user-center-router.cc98-rebuild-native-user-router, .cc98-rebuild-native-user-entry, .cc98-rebuild-native-message, .cc98-rebuild-native-signin, .cc98-rebuild-native-login, .cc98-rebuild-native-login-announcement, .vote-content.cc98-rebuild-native-vote, .cc98-rebuild-native-post-follow-action")
     .forEach((node) => restoreNativeNode(node));
 }
 
@@ -13176,16 +13627,123 @@ function stabilizeUserCenterSearchButtons(router) {
   });
 }
 
+function normalizeProfileAccountStateText(value) {
+  return cleanupPostText(value)
+    .replace(/^\uD83D\uDEAB\s*/, "")
+    .trim();
+}
+
+function isProfileAccountStateText(value) {
+  return /^\u8be5\u8d26\u53f7/.test(normalizeProfileAccountStateText(value));
+}
+
+function collectProfileAccountStateMessages(router) {
+  const grid = router.querySelector(".user-profile #userGenderAndBirthday");
+  if (!(grid instanceof HTMLElement)) {
+    return [];
+  }
+
+  const entries = [];
+  const seen = new Set();
+  const addEntry = (text, source) => {
+    const normalized = normalizeProfileAccountStateText(text);
+    if (!normalized || !isProfileAccountStateText(normalized) || seen.has(normalized)) {
+      return;
+    }
+    seen.add(normalized);
+    entries.push({ text: normalized, source });
+  };
+
+  grid.querySelectorAll("span").forEach((node) => {
+    if (!(node instanceof HTMLElement)) {
+      return;
+    }
+    if (node.closest(".user-description, .signature, .cc98-rebuild-signature-content, .cc98-rebuild-profile-badge-panel")) {
+      return;
+    }
+    addEntry(node.textContent, node);
+  });
+
+  [...grid.childNodes].forEach((node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      addEntry(node.nodeValue, node);
+    }
+  });
+
+  return entries;
+}
+
+function hideProfileAccountStateSource(entry) {
+  const source = entry?.source;
+  if (source instanceof HTMLElement) {
+    source.classList.add("cc98-rebuild-profile-account-state-source");
+    source.toggleAttribute("hidden", true);
+    source.setAttribute("aria-hidden", "true");
+    source.style.setProperty("display", "none", "important");
+    const grid = source.closest("#userGenderAndBirthday");
+    const parent = source.parentElement;
+    if (
+      grid instanceof HTMLElement
+      && parent instanceof HTMLElement
+      && parent.parentElement === grid
+      && normalizeProfileAccountStateText(parent.textContent) === entry.text
+    ) {
+      parent.classList.add("cc98-rebuild-profile-account-state-source");
+      parent.toggleAttribute("hidden", true);
+      parent.setAttribute("aria-hidden", "true");
+      parent.style.setProperty("display", "none", "important");
+    }
+    return;
+  }
+  if (source?.nodeType === Node.TEXT_NODE) {
+    source.nodeValue = "";
+  }
+}
+
+function resetProfileBadgeInlineHiding(badge) {
+  [
+    "display",
+    "width",
+    "height",
+    "min-width",
+    "min-height",
+    "max-height",
+    "padding",
+    "margin",
+    "border",
+    "overflow"
+  ].forEach((property) => badge.style.removeProperty(property));
+}
+
+function updateProfileBadgeLayoutState(badge) {
+  const count = [...badge.children].filter((item) => {
+    if (!(item instanceof HTMLElement)) {
+      return false;
+    }
+    if (item.hidden || item.classList.contains("cc98-rebuild-profile-account-state-source")) {
+      return false;
+    }
+    return Boolean(cleanupPostText(item.textContent));
+  }).length;
+  badge.dataset.cc98BadgeCount = String(count);
+  badge.classList.toggle("cc98-rebuild-profile-badge-single", count === 1);
+  badge.classList.toggle("cc98-rebuild-profile-badge-multiple", count > 1);
+}
+
 function stabilizeUserProfileBadges(router, avatar) {
   const badge = router.querySelector(".user-badge");
   if (!(badge instanceof HTMLElement)) {
     return;
   }
 
-  const hasBadgeContent = Boolean(cleanupPostText(badge.textContent));
+  const accountStateMessages = collectProfileAccountStateMessages(router);
+  badge.querySelectorAll(".cc98-rebuild-profile-badge-account-state").forEach((item) => item.remove());
+  const hasBadgeContent = Boolean(cleanupPostText(badge.textContent) || accountStateMessages.length);
   if (!hasBadgeContent && badge.parentElement?.classList.contains("user-avatar")) {
     badge.classList.remove("cc98-rebuild-profile-badge-panel");
+    badge.classList.remove("cc98-rebuild-profile-badge-single", "cc98-rebuild-profile-badge-multiple");
     badge.classList.add("cc98-rebuild-profile-badge-empty");
+    delete badge.dataset.cc98BadgeCount;
     badge.toggleAttribute("hidden", true);
     badge.setAttribute("aria-hidden", "true");
     badge.style.setProperty("display", "none", "important");
@@ -13204,12 +13762,14 @@ function stabilizeUserProfileBadges(router, avatar) {
   badge.toggleAttribute("hidden", !hasBadgeContent);
   badge.setAttribute("aria-hidden", hasBadgeContent ? "false" : "true");
   if (!hasBadgeContent) {
+    badge.classList.remove("cc98-rebuild-profile-badge-single", "cc98-rebuild-profile-badge-multiple");
+    delete badge.dataset.cc98BadgeCount;
     badge.style.setProperty("display", "none", "important");
     return;
   }
 
   badge.removeAttribute("hidden");
-  badge.style.removeProperty("display");
+  resetProfileBadgeInlineHiding(badge);
   badge.setAttribute("aria-label", "\u7528\u6237\u5934\u8854");
   [...badge.children].forEach((item) => {
     if (!(item instanceof HTMLElement)) {
@@ -13232,6 +13792,20 @@ function stabilizeUserProfileBadges(router, avatar) {
       }
     });
   });
+  accountStateMessages.forEach((entry) => {
+    hideProfileAccountStateSource(entry);
+    const item = createElement(
+      "span",
+      "cc98-rebuild-profile-badge-item cc98-rebuild-profile-badge-item-colored cc98-rebuild-profile-badge-account-state",
+      `\uD83D\uDEAB ${entry.text}`
+    );
+    const color = entry.source instanceof HTMLElement ? entry.source.style.color : "";
+    if (color) {
+      item.style.setProperty("color", color, "important");
+    }
+    badge.append(item);
+  });
+  updateProfileBadgeLayoutState(badge);
 
   if (avatar instanceof HTMLElement) {
     const messageAction = avatar.querySelector(".cc98-rebuild-profile-message-action");
@@ -14002,14 +14576,116 @@ function renderBoardSearch(app) {
   app.append(feed);
 }
 
+function getProfileUserIdText() {
+  const node = document.querySelector(".user-profile #userId p:first-child, #userId p:first-child");
+  if (node) {
+    const directText = [...node.childNodes]
+      .filter((child) => child.nodeType === Node.TEXT_NODE)
+      .map((child) => child.nodeValue || "")
+      .join("")
+      .trim();
+    if (directText) {
+      return directText;
+    }
+  }
+  return cleanupPostText(document.querySelector(
+    ".user-profile [class*='userName'], .user-avatar + p, h1, h2"
+  )?.textContent || "");
+}
+
+function getCurrentProfilePageBlockedInfo() {
+  const uid = location.pathname.match(/\/user\/id\/(\d+)/i)?.[1] || "";
+  const userIdText = getProfileUserIdText();
+  const reason = getUserBlockReason({
+    id: userIdText,
+    user: userIdText,
+    uid
+  });
+  if (!reason) {
+    return null;
+  }
+  return {
+    uid,
+    name: userIdText,
+    role: "本页用户",
+    reason
+  };
+}
+
+function getCurrentTopicBlockedAuthorInfo(postItems = null) {
+  if (getPageKind() !== "post") {
+    return null;
+  }
+  const items = postItems || getPostItems();
+  const author = items.find((item) => item.uid && (item.isOriginalPoster || Number(item.index) === 1))
+    || items.find((item) => item.uid && Number(item.index) === 1);
+  const reason = getUserBlockReason({
+    id: author?.user,
+    user: author?.user,
+    uid: author?.uid
+  });
+  if (!reason) {
+    return null;
+  }
+  return {
+    uid: author.uid,
+    name: author.user,
+    role: "本页作者",
+    reason
+  };
+}
+
+function getCurrentPageBlockedInfo(postItems = null) {
+  if (isBlacklistRoute()) {
+    return null;
+  }
+  return getCurrentProfilePageBlockedInfo() || getCurrentTopicBlockedAuthorInfo(postItems);
+}
+
+function isCurrentBlockedPageRevealed(info) {
+  const key = info?.uid || info?.name || info?.reason || "";
+  return Boolean(key && isBlacklistRevealed(BLACKLIST_PAGE_REVEAL_PREFIX, key));
+}
+
+function renderBlockedPageGate(app, info) {
+  const section = createElement("section", "cc98-rebuild-blocked-page");
+  section.append(createElement("p", "cc98-rebuild-kicker", "Blacklist"));
+  section.append(createElement("h1", "", `${info.role}在你的黑名单内`));
+  const detail = [info.reason, info.name, info.uid ? `UID ${info.uid}` : ""].filter(Boolean).join(" · ");
+  section.append(createElement("p", "cc98-rebuild-card-meta", detail || "已根据你的黑名单规则隐藏本页内容。"));
+  const actions = createElement("div", "cc98-rebuild-blocked-page-actions");
+  actions.append(createButton("cc98-rebuild-action", "查看内容", () => {
+    revealBlacklistScope(BLACKLIST_PAGE_REVEAL_PREFIX, info.uid || info.name || info.reason || "");
+    scheduleRebuild();
+  }));
+  actions.append(createLink("cc98-rebuild-action", "管理黑名单", getBlacklistPageHref()));
+  section.append(actions);
+  app.append(section);
+}
+
 function renderPost(app) {
+  const postItems = getPostItems();
+  const blockedPageInfo = getCurrentPageBlockedInfo(postItems);
+  if (blockedPageInfo && !isCurrentBlockedPageRevealed(blockedPageInfo)) {
+    renderBlockedPageGate(app, blockedPageInfo);
+    return;
+  }
+
   const topPager = renderPostPager();
   if (topPager) {
     app.append(topPager);
   }
+  if (hasTopicLockedNotice()) {
+    const lockedCard = createElement("section", "cc98-rebuild-topic-locked-card", "\ud83d\udd12 \u672c\u5e16\u5df2\u88ab\u9501\u5b9a");
+    app.append(lockedCard);
+  }
   const feed = createElement("section", "cc98-rebuild-feed cc98-rebuild-post-feed");
   feed.dataset.feedKind = "post";
-  getPostItems().forEach((item) => {
+  postItems.forEach((item, index) => {
+    const previous = postItems[index - 1];
+    if (previous?.isHot && !item.isHot) {
+      feed.append(createElement("div", "cc98-rebuild-hot-divider"));
+    }
     const card = renderPostCard(item);
     card.dataset.itemKey = `post:${item.id}`;
     feed.append(card);
@@ -14082,15 +14758,126 @@ function renderBoards(app) {
   });
 }
 
+function showEmbeddedBlacklistPanel(router, panel, app, navSource) {
+  if (!(router instanceof HTMLElement) || !(panel instanceof HTMLElement)) {
+    navigateToRebuiltHref(getBlacklistPageHref());
+    return;
+  }
+  router.hidden = true;
+  panel.hidden = false;
+  navSource?.querySelectorAll?.(".cc98-rebuild-blacklist-nav-entry").forEach((entry) => {
+    entry.classList.add("is-active");
+  });
+  const title = app?.querySelector?.(".cc98-rebuild-user-hero h1");
+  if (title) {
+    title.textContent = "黑名单";
+  }
+}
+
+function hideEmbeddedBlacklistPanel(router, panel, app) {
+  if (router instanceof HTMLElement) {
+    router.hidden = false;
+  }
+  if (panel instanceof HTMLElement) {
+    panel.hidden = true;
+  }
+  panel?.closest?.(".cc98-rebuild-user-layout")?.querySelectorAll?.(".cc98-rebuild-blacklist-nav-entry").forEach((entry) => {
+    entry.classList.remove("is-active");
+  });
+  updateUserCenterHero(app);
+}
+
+function createBlacklistNavLink(router = null, panel = null, app = null, navSource = null) {
+  const link = createElement("a", "fa fa-ban cc98-rebuild-blacklist-nav-entry");
+  link.href = getBlacklistPageHref();
+  const label = createElement("span", "center-nav-item", "黑名单");
+  link.append(label);
+  link.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    showEmbeddedBlacklistPanel(router, panel, app, navSource);
+  });
+  return link;
+}
+
+function injectBlacklistUserNavEntry(navSource, router = null, panel = null, app = null) {
+  if (!(navSource instanceof HTMLElement) || navSource.querySelector(".cc98-rebuild-blacklist-nav-entry")) {
+    return;
+  }
+  const link = createBlacklistNavLink(router, panel, app, navSource);
+  const controls = [...navSource.querySelectorAll("a, button, li, div")]
+    .filter((node) => node instanceof HTMLElement);
+  const target = [...controls].reverse().find((node) => {
+    const text = cleanupPostText(node.textContent);
+    return /我的粉丝|粉丝|我的关注/.test(text);
+  });
+  const targetContainer = target?.closest?.("li") || target;
+  if (targetContainer instanceof HTMLLIElement && targetContainer.parentElement) {
+    const li = document.createElement("li");
+    li.className = "cc98-rebuild-blacklist-nav-row";
+    li.append(link);
+    targetContainer.after(li);
+    return;
+  }
+  if (targetContainer instanceof HTMLElement && targetContainer.parentElement) {
+    link.classList.add("cc98-rebuild-blacklist-nav-separated");
+    targetContainer.after(link);
+    return;
+  }
+  const list = navSource.querySelector("ul");
+  if (list) {
+    const li = document.createElement("li");
+    li.className = "cc98-rebuild-blacklist-nav-row";
+    li.append(link);
+    list.append(li);
+    return;
+  }
+  link.classList.add("cc98-rebuild-blacklist-nav-separated");
+  navSource.append(link);
+}
+
+function createEmbeddedBlacklistPanel() {
+  const panel = createElement("section", "cc98-rebuild-native-user-router cc98-rebuild-user-blacklist-panel");
+  panel.hidden = true;
+  renderBlacklistPage(panel, { embedded: true });
+  return panel;
+}
+
 function renderUserCenter(app) {
+  const blockedPageInfo = getCurrentPageBlockedInfo();
+  if (blockedPageInfo && !isCurrentBlockedPageRevealed(blockedPageInfo)) {
+    renderBlockedPageGate(app, blockedPageInfo);
+    return;
+  }
+
   const navSource = document.querySelector(".user-center-navigation");
   const router = document.querySelector(".user-center-router");
   const activeTitle = getUserCenterActiveTitle();
+  const isPublicProfile = isPublicUserProfilePage();
 
   const hero = createElement("section", "cc98-rebuild-user-hero");
   hero.append(createElement("p", "cc98-rebuild-kicker", "User Center"));
   hero.append(createElement("h1", "", activeTitle));
   app.append(hero);
+
+  if (isPublicProfile) {
+    const layout = createElement("div", "cc98-rebuild-user-layout cc98-rebuild-user-layout-public");
+    if (router instanceof HTMLElement) {
+      rememberReparentedNativeNode(router);
+      router.classList.add("cc98-rebuild-native-user-router");
+      bindNativeUserCenterStabilizer(router);
+      layout.append(router);
+      app.append(layout);
+      return;
+    }
+    const data = getUserCenterData();
+    const main = createElement("section", "cc98-rebuild-section");
+    main.append(createElement("h2", "", data.heading));
+    data.summary.forEach((line) => main.append(createElement("p", "cc98-rebuild-card-meta", line)));
+    layout.append(main);
+    app.append(layout);
+    return;
+  }
 
   if (!navSource || !router) {
     const data = getUserCenterData();
@@ -14110,7 +14897,11 @@ function renderUserCenter(app) {
       });
       main.append(actionGrid);
     }
-    layout.append(nav, main);
+    const panel = createEmbeddedBlacklistPanel();
+    nav.append(createBlacklistNavLink(main, panel, app, nav));
+    const host = createElement("div", "cc98-rebuild-user-router-host");
+    host.append(main, panel);
+    layout.append(nav, host);
     app.append(layout);
     return;
   }
@@ -14120,12 +14911,20 @@ function renderUserCenter(app) {
   rememberReparentedNativeNode(router);
   navSource.classList.add("cc98-rebuild-native-user-nav");
   router.classList.add("cc98-rebuild-native-user-router");
+  const panel = createEmbeddedBlacklistPanel();
+  injectBlacklistUserNavEntry(navSource, router, panel, app);
   bindNativeUserCenterStabilizer(router);
-  navSource.addEventListener("click", () => {
+  navSource.addEventListener("click", (event) => {
+    if (event.target?.closest?.(".cc98-rebuild-blacklist-nav-entry")) {
+      return;
+    }
+    hideEmbeddedBlacklistPanel(router, panel, app);
     window.setTimeout(() => updateUserCenterHero(app), 120);
     window.setTimeout(() => updateUserCenterHero(app), 600);
   });
-  layout.append(navSource, router);
+  const host = createElement("div", "cc98-rebuild-user-router-host");
+  host.append(router, panel);
+  layout.append(navSource, host);
   app.append(layout);
 }
 
@@ -16062,6 +16861,178 @@ function renderReadLaterPage(app) {
   app.append(section);
 }
 
+function getBlacklistGroups() {
+  const rules = getBlacklistRules(lastSettings);
+  return [
+    {
+      key: "users",
+      title: "用户 ID 黑名单",
+      description: "按用户 ID 文本严格匹配；历史纯数字规则会继续按 UID 兼容匹配。",
+      values: rules.userIds,
+      placeholder: "输入用户 ID，例如 Coran"
+    },
+    {
+      key: "keywords",
+      title: "标题关键词",
+      description: "匹配主题标题中的关键词。",
+      values: rules.titleKeywords,
+      placeholder: "输入标题关键词"
+    },
+    {
+      key: "boards",
+      title: "屏蔽版面",
+      description: "匹配版面名称或版面 ID。",
+      values: rules.boards,
+      placeholder: "输入版面名或版面 ID"
+    }
+  ];
+}
+
+function updateBlacklistGroup(key, values) {
+  const rules = getBlacklistRules(lastSettings);
+  const normalizedValues = [...new Set((values || []).map((value) => String(value).trim()).filter(Boolean))];
+  if (key === "users") {
+    rules.userIds = normalizedValues.map(normalizeBlockedUserId).filter(Boolean);
+  } else if (key === "keywords") {
+    rules.titleKeywords = normalizedValues;
+  } else if (key === "boards") {
+    rules.boards = normalizedValues;
+  }
+  writeBlacklistRules(rules);
+}
+
+function addBlacklistValue(key, value, anchor) {
+  const raw = String(value || "").trim();
+  const nextValue = key === "users" ? normalizeBlockedUserId(raw) : raw;
+  if (!nextValue) {
+    showRebuiltTransientToast(anchor, key === "users" ? "请输入有效用户 ID" : "请输入有效规则");
+    return false;
+  }
+  const group = getBlacklistGroups().find((item) => item.key === key);
+  const values = group?.values || [];
+  if (values.includes(nextValue)) {
+    showRebuiltTransientToast(anchor, "规则已存在");
+    return false;
+  }
+  updateBlacklistGroup(key, [nextValue, ...values]);
+  showRebuiltTransientToast(anchor, "已加入黑名单");
+  return true;
+}
+
+function removeBlacklistValue(key, value) {
+  const group = getBlacklistGroups().find((item) => item.key === key);
+  updateBlacklistGroup(key, (group?.values || []).filter((item) => item !== value));
+}
+
+function getBlacklistVisibleGroups() {
+  const groups = getBlacklistGroups();
+  return blacklistFilterType === "all" ? groups : groups.filter((group) => group.key === blacklistFilterType);
+}
+
+function renderBlacklistTabs(section) {
+  const tabs = createElement("div", "cc98-rebuild-blacklist-tabs");
+  [
+    ["all", "全部"],
+    ["users", "UID"],
+    ["keywords", "标题"],
+    ["boards", "版面"]
+  ].forEach(([key, label]) => {
+    const button = createButton("cc98-rebuild-mini-action", label, () => {
+      blacklistFilterType = key;
+      scheduleRebuild();
+    });
+    button.type = "button";
+    button.classList.toggle("is-active", blacklistFilterType === key);
+    tabs.append(button);
+  });
+  section.append(tabs);
+}
+
+function renderBlacklistGroup(group) {
+  const card = createElement("article", "cc98-rebuild-card cc98-rebuild-blacklist-group");
+  const head = createElement("div", "cc98-rebuild-card-top cc98-rebuild-blacklist-group-head");
+  head.append(createElement("strong", "cc98-rebuild-blacklist-group-title", group.title));
+  head.append(createElement("span", "cc98-rebuild-muted", `${group.values.length} 条`));
+  card.append(head);
+  card.append(createElement("p", "cc98-rebuild-card-meta", group.description));
+
+  const form = createElement("form", "cc98-rebuild-blacklist-form");
+  const input = createElement("input", "");
+  input.type = group.key === "users" ? "text" : "search";
+  input.inputMode = "text";
+  input.placeholder = group.placeholder;
+  input.autocomplete = "off";
+  const submit = createElement("button", "cc98-rebuild-search-submit", "加入");
+  submit.type = "submit";
+  form.append(input, submit);
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (addBlacklistValue(group.key, input.value, submit)) {
+      input.value = "";
+    }
+  });
+  card.append(form);
+
+  const list = createElement("div", "cc98-rebuild-blacklist-list");
+  if (!group.values.length) {
+    list.append(createElement("p", "cc98-rebuild-card-meta", "暂无规则。"));
+  } else {
+    group.values.forEach((value) => {
+      const row = createElement("div", "cc98-rebuild-blacklist-item");
+      row.append(createElement("span", "cc98-rebuild-blacklist-value", value));
+      row.append(createButton("cc98-rebuild-mini-action cc98-rebuild-blacklist-delete", "删除", () => {
+        removeBlacklistValue(group.key, value);
+      }));
+      list.append(row);
+    });
+  }
+  card.append(list);
+  return card;
+}
+
+function renderBlacklistPlaceholderEditor(section) {
+  const rules = getBlacklistRules(lastSettings);
+  const card = createElement("article", "cc98-rebuild-card cc98-rebuild-blacklist-placeholder");
+  card.append(createElement("strong", "cc98-rebuild-blacklist-group-title", "折叠占位文案"));
+  const form = createElement("form", "cc98-rebuild-blacklist-form");
+  const input = createElement("input", "");
+  input.type = "text";
+  input.value = rules.placeholderText;
+  input.placeholder = DEFAULT_SETTINGS.placeholderText;
+  const submit = createElement("button", "cc98-rebuild-search-submit", "保存");
+  submit.type = "submit";
+  form.append(input, submit);
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    writeBlacklistRules({
+      ...getBlacklistRules(lastSettings),
+      placeholderText: input.value
+    });
+    showRebuiltTransientToast(submit, "已保存");
+  });
+  card.append(form);
+  section.append(card);
+}
+
+function renderBlacklistPage(app, options = {}) {
+  const section = createElement("section", "cc98-rebuild-section cc98-rebuild-blacklist-page");
+  const heading = createElement("div", "cc98-rebuild-section-heading cc98-rebuild-read-later-heading");
+  heading.append(createElement("h2", "", "黑名单列表"));
+  if (!options.embedded) {
+    const actions = createElement("div", "cc98-rebuild-read-later-actions");
+    actions.append(createLink("cc98-rebuild-action", "返回个人中心", `${location.origin}/usercenter`));
+    heading.append(actions);
+  }
+  section.append(heading);
+  section.append(createElement("p", "cc98-rebuild-card-meta", "规则仅存储在本地。用户 ID 黑名单按文本精确匹配；纯数字旧规则会继续按 UID 兼容匹配。"));
+  renderBlacklistTabs(section);
+  renderBlacklistPlaceholderEditor(section);
+  const list = createElement("div", "cc98-rebuild-blacklist-groups");
+  getBlacklistVisibleGroups().forEach((group) => list.append(renderBlacklistGroup(group)));
+  section.append(list);
+  app.append(section);
+}
+
 function getErrorPageData() {
   const source = document.querySelector(".errorState");
   const rawTitle = getFirstText(document, ".errorTitle") || "糟糕！好像出错了";
@@ -16198,7 +17169,7 @@ function renderRebuiltUi() {
       app.append(nav);
     }
 
-    if (!["board", "userCenter", "message", "signin", "login", "error"].includes(kind) && !(kind === "home" && lastSettings.homeHotOnly)) {
+    if (!["board", "userCenter", "message", "signin", "login", "error", "blacklist"].includes(kind) && !(kind === "home" && lastSettings.homeHotOnly)) {
       const hero = createElement("section", "cc98-rebuild-hero");
       hero.append(createElement("p", "cc98-rebuild-kicker", `Reborn View · v${EXTENSION_VERSION}`));
       hero.append(createElement("h1", "", getPageTitle()));
@@ -16223,6 +17194,8 @@ function renderRebuiltUi() {
       renderMessagePage(app);
     } else if (kind === "readLater") {
       renderReadLaterPage(app);
+    } else if (kind === "blacklist") {
+      renderBlacklistPage(app);
     } else if (kind === "boardSearch") {
       renderBoardSearch(app);
     } else if (kind === "topics" || kind === "search") {
@@ -16235,7 +17208,7 @@ function renderRebuiltUi() {
       renderGeneric(app);
     }
 
-    if (!["login", "error"].includes(kind) && app.children.length <= 2) {
+    if (!["login", "error", "blacklist"].includes(kind) && !app.querySelector(".cc98-rebuild-blocked-page") && app.children.length <= 2) {
       const fallback = createElement("section", "cc98-rebuild-section");
       fallback.append(createElement("h2", "", "正在等待页面内容"));
       fallback.append(createElement("p", "cc98-rebuild-card-meta", "CC98 原页面还没有加载出可抽取内容。稍后会自动更新，也可以点击刷新。"));
@@ -16288,12 +17261,11 @@ function renderRebuiltUi() {
 }
 
 function getBlockReason(item, settings) {
-  const blockedBoards = parseList(settings.blockedBoards);
-  const blockedKeywords = parseList(settings.blockedTitleKeywords);
-  const blockedUserIds = parseList(settings.blockedUserIds).map((uid) => uid.replace(/\D/g, "")).filter(Boolean);
+  const { boards: blockedBoards, titleKeywords: blockedKeywords, userIds: blockedUserIds } = getBlacklistRules(settings);
   const boardInfo = getBoardInfo(item);
   const title = getTitleText(item);
   const userIds = getUserIds(item);
+  const userIdentityTexts = getUserIdentityTexts(item);
 
   const matchedBoard = blockedBoards.find((rule) => {
     const normalizedRule = normalizeText(rule);
@@ -16308,9 +17280,13 @@ function getBlockReason(item, settings) {
     return `关键词：${matchedKeyword}`;
   }
 
-  const matchedUid = blockedUserIds.find((uid) => userIds.includes(uid));
-  if (matchedUid) {
-    return `UID：${matchedUid}`;
+  const matchedUserRule = blockedUserIds.find((rule) => userRuleMatchesIdentity(rule, {
+    ids: userIdentityTexts,
+    users: userIdentityTexts,
+    uids: userIds
+  }));
+  if (matchedUserRule) {
+    return normalizeBlockedUid(matchedUserRule) ? `UID：${matchedUserRule}` : `用户 ID：${matchedUserRule}`;
   }
 
   return "";
@@ -16426,11 +17402,7 @@ function runFiltering() {
     return;
   }
 
-  const hasRules = parseList(lastSettings.blockedBoards).length > 0
-    || parseList(lastSettings.blockedTitleKeywords).length > 0
-    || parseList(lastSettings.blockedUserIds).length > 0;
-
-  if (!hasRules) {
+  if (!hasBlacklistRules(lastSettings)) {
     isFiltering = false;
     return;
   }
@@ -16557,7 +17529,7 @@ function syncRebuiltContent() {
     updateUserCenterHero(app);
     return;
   }
-  if (getPageKind() === "readLater") {
+  if (getPageKind() === "readLater" || getPageKind() === "blacklist") {
     return;
   }
   if (!feed) {
@@ -16607,6 +17579,7 @@ function syncRebuiltContent() {
     getPostItems().forEach((item) => {
       appendUniqueCard(feed, `post:${item.id}`, renderPostCard(item));
     });
+    setupRebuiltImagePlaceholders(app);
     return;
   }
 
@@ -16769,7 +17742,7 @@ function patchHistoryNavigation() {
     scheduleSync();
   });
   window.addEventListener("hashchange", () => {
-    if (isReadLaterRoute() || document.querySelector("#cc98-comfort-app")?.dataset.pageKind === "readLater") {
+    if (isReadLaterRoute() || isBlacklistRoute() || ["readLater", "blacklist"].includes(document.querySelector("#cc98-comfort-app")?.dataset.pageKind)) {
       scheduleDelayedRebuilds();
       return;
     }

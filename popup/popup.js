@@ -1,5 +1,6 @@
 const STORAGE_KEY = "cc98ComfortSettings";
 const RELEASES_PAGE_URL = "https://github.com/Coran-tech/cc98-reborn/releases";
+const BLACKLIST_PAGE_URL = "https://www.cc98.org/#cc98-reborn-blacklist";
 
 const DEFAULT_SETTINGS = {
   enabled: true,
@@ -77,10 +78,8 @@ const fields = {
   openidLogout: document.querySelector("#openidLogout"),
   clearCc98Data: document.querySelector("#clearCc98Data"),
   clearCc98DataStatus: document.querySelector("#clearCc98DataStatus"),
-  blockedBoards: document.querySelector("#blockedBoards"),
-  blockedTitleKeywords: document.querySelector("#blockedTitleKeywords"),
-  blockedUserIds: document.querySelector("#blockedUserIds"),
-  placeholderText: document.querySelector("#placeholderText"),
+  blacklistSummary: document.querySelector("#blacklistSummary"),
+  openBlacklist: document.querySelector("#openBlacklist"),
   reset: document.querySelector("#reset")
 };
 
@@ -140,6 +139,51 @@ function updateThemeDisplay() {
 
 function formatDuration(ms) {
   return `${(Number(ms) / 1000).toFixed(1)}s`;
+}
+
+function parseList(value) {
+  return String(value ?? "")
+    .split(/[\n,，;；]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function updateBlacklistSummary() {
+  if (!fields.blacklistSummary) {
+    return;
+  }
+  const boardCount = parseList(settings.blockedBoards).length;
+  const keywordCount = parseList(settings.blockedTitleKeywords).length;
+  const userCount = parseList(settings.blockedUserIds).length;
+  fields.blacklistSummary.textContent = `当前 ${userCount} 个用户 ID、${keywordCount} 个标题关键词、${boardCount} 个版面规则。`;
+}
+
+function openBlacklistPage() {
+  const openUrl = (url) => {
+    try {
+      chrome.tabs?.create?.({ url });
+      window.close();
+    } catch {
+      location.href = url;
+    }
+  };
+  try {
+    chrome.tabs?.query?.({ active: true, currentWindow: true }, (tabs) => {
+      const activeUrl = tabs?.[0]?.url || "";
+      try {
+        const parsed = new URL(activeUrl);
+        if (/cc98\.org$/i.test(parsed.hostname) || parsed.hostname.endsWith(".cc98.org") || parsed.hostname.includes("cc98-org-s.webvpn.zju.edu.cn")) {
+          openUrl(`${parsed.origin}/#cc98-reborn-blacklist`);
+          return;
+        }
+      } catch {
+        // Fall through to the canonical CC98 URL.
+      }
+      openUrl(BLACKLIST_PAGE_URL);
+    });
+  } catch {
+    openUrl(BLACKLIST_PAGE_URL);
+  }
 }
 
 function sendRuntimeMessage(message) {
@@ -438,10 +482,7 @@ function hydrate(nextSettings) {
   fields.emojiScaleOutput.value = `${settings.emojiScale}%`;
   fields.imageLoadDuration.value = settings.imageLoadDuration;
   fields.imageLoadDurationOutput.value = formatDuration(settings.imageLoadDuration);
-  fields.blockedBoards.value = settings.blockedBoards;
-  fields.blockedTitleKeywords.value = settings.blockedTitleKeywords;
-  fields.blockedUserIds.value = settings.blockedUserIds;
-  fields.placeholderText.value = settings.placeholderText;
+  updateBlacklistSummary();
 
   isHydrating = false;
 }
@@ -471,10 +512,10 @@ function collect() {
     aiSearchSuggestApiKey: settings.aiSearchSuggestApiKey || DEFAULT_SETTINGS.aiSearchSuggestApiKey,
     externalAiSearchConsent: false,
     advancedFuzzySearch: false,
-    blockedBoards: fields.blockedBoards.value,
-    blockedTitleKeywords: fields.blockedTitleKeywords.value,
-    blockedUserIds: fields.blockedUserIds.value,
-    placeholderText: fields.placeholderText.value
+    blockedBoards: settings.blockedBoards || "",
+    blockedTitleKeywords: settings.blockedTitleKeywords || "",
+    blockedUserIds: settings.blockedUserIds || "",
+    placeholderText: settings.placeholderText || DEFAULT_SETTINGS.placeholderText
   };
 }
 
@@ -488,6 +529,7 @@ function save() {
   fields.emojiScaleOutput.value = `${settings.emojiScale}%`;
   fields.imageLoadDurationOutput.value = formatDuration(settings.imageLoadDuration);
   updateThemeDisplay();
+  updateBlacklistSummary();
   chrome.storage.local.set({ [STORAGE_KEY]: settings });
 }
 
@@ -544,6 +586,10 @@ function bind() {
 
   fields.clearCc98Data?.addEventListener("click", () => {
     clearCc98SiteData();
+  });
+
+  fields.openBlacklist?.addEventListener("click", () => {
+    openBlacklistPage();
   });
 
   document.addEventListener("click", (event) => {

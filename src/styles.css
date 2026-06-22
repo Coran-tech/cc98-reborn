@@ -867,7 +867,7 @@
 }
 
 :root.cc98-comfort .cc98-rebuild-shell {
-  width: min(1180px, calc(100vw - 32px));
+  width: min(1240px, calc(100vw - 32px));
   margin: 0 auto;
   padding: 18px 0 48px;
   color: var(--cc98-comfort-text);
@@ -1392,6 +1392,10 @@
   color: var(--cc98-comfort-text) !important;
 }
 
+:root.cc98-comfort .cc98-rebuild-native-user-entry :is(.topBarUserCenter, .topBarUserCenter-mainPage) ul {
+  min-width: 9.5rem !important;
+}
+
 :root.cc98-comfort[data-cc98-comfort-theme="night"] .cc98-rebuild-native-user-entry :is(.topBarUserCenter, .topBarUserCenter-mainPage, .topBarMessageDetails, .topBarMessageDetails-mainPage) ul {
   background: var(--cc98-comfort-surface) !important;
 }
@@ -1503,6 +1507,12 @@
   padding: 48px 4px 30px;
 }
 
+:root.cc98-comfort .cc98-rebuild-shell[data-page-kind="post"] .cc98-rebuild-hero {
+  width: min(920px, 100%);
+  margin-inline: auto;
+  padding-inline: 0;
+}
+
 :root.cc98-comfort .cc98-rebuild-kicker {
   margin: 0 0 8px;
   color: var(--cc98-comfort-accent) !important;
@@ -1582,6 +1592,11 @@
 
 :root.cc98-comfort .cc98-rebuild-feed {
   width: min(760px, 100%);
+}
+
+:root.cc98-comfort .cc98-rebuild-post-feed {
+  width: min(920px, 100%);
+  margin-inline: auto;
 }
 
 :root.cc98-comfort .cc98-rebuild-empty-state {
@@ -2073,6 +2088,26 @@
   padding: 18px;
 }
 
+:root.cc98-comfort .cc98-rebuild-topic-locked-card {
+  width: min(920px, 100%);
+  margin: 0 auto 12px;
+  padding: 12px 16px;
+  border: 1px solid color-mix(in srgb, #ef4444 62%, var(--cc98-comfort-border));
+  border-radius: 14px;
+  background: color-mix(in srgb, #ef4444 18%, var(--cc98-comfort-surface));
+  color: #b91c1c !important;
+  font-size: 0.96rem !important;
+  font-weight: 780;
+  line-height: 1.35;
+  box-shadow: var(--cc98-comfort-shadow);
+}
+
+:root.cc98-comfort[data-cc98-comfort-tone="dark"] .cc98-rebuild-topic-locked-card {
+  border-color: color-mix(in srgb, #fb7185 54%, var(--cc98-comfort-border));
+  background: color-mix(in srgb, #7f1d1d 46%, var(--cc98-comfort-surface));
+  color: #fecaca !important;
+}
+
 :root.cc98-comfort .cc98-rebuild-post.cc98-rebuild-hot-highlight {
   border-color: color-mix(in srgb, #b45309 40%, var(--cc98-comfort-border)) !important;
   background: color-mix(in srgb, #f5d36f 26%, var(--cc98-comfort-surface)) !important;
@@ -2081,6 +2116,18 @@
 :root.cc98-comfort[data-cc98-comfort-tone="dark"] .cc98-rebuild-post.cc98-rebuild-hot-highlight {
   border-color: color-mix(in srgb, #ef4444 34%, var(--cc98-comfort-border)) !important;
   background: color-mix(in srgb, #7f1d1d 34%, var(--cc98-comfort-surface)) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-hot-divider {
+  height: 1px;
+  margin: 6px 8px;
+  border: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--cc98-comfort-accent) 48%, var(--cc98-comfort-border)),
+    transparent
+  );
 }
 
 :root.cc98-comfort .cc98-rebuild-floor-anchor {
@@ -3264,13 +3311,21 @@
 }
 
 :root.cc98-comfort .cc98-rebuild-award-positive {
-  color: var(--cc98-comfort-success, #579b6b) !important;
+  color: #16a34a !important;
   font-weight: 720;
 }
 
+:root.cc98-comfort[data-cc98-comfort-tone="dark"] .cc98-rebuild-award-positive {
+  color: #86efac !important;
+}
+
 :root.cc98-comfort .cc98-rebuild-award-negative {
-  color: var(--cc98-comfort-danger, #d26b6b) !important;
+  color: #dc2626 !important;
   font-weight: 720;
+}
+
+:root.cc98-comfort[data-cc98-comfort-tone="dark"] .cc98-rebuild-award-negative {
+  color: #fca5a5 !important;
 }
 
 :root.cc98-comfort .cc98-rebuild-signature {
@@ -3452,12 +3507,14 @@
 }
 
 :root.cc98-comfort .cc98-rebuild-pager {
-  width: min(760px, 100%);
+  width: min(920px, 100%);
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 8px;
   margin: 0 auto 12px;
+  overflow-x: auto;
+  scrollbar-width: thin;
 }
 
 :root.cc98-comfort .cc98-rebuild-post-feed + .cc98-rebuild-pager {
@@ -3474,6 +3531,7 @@
 :root.cc98-comfort .cc98-rebuild-page-gap,
 :root.cc98-comfort .cc98-rebuild-page-jump button,
 :root.cc98-comfort .cc98-rebuild-pager-action {
+  flex: 0 0 auto;
   min-height: 30px;
   display: inline-flex;
   align-items: center;
@@ -3486,6 +3544,7 @@
   font-size: 0.82rem !important;
   line-height: 1 !important;
   text-decoration: none;
+  white-space: nowrap !important;
 }
 
 :root.cc98-comfort button.cc98-rebuild-page-link:disabled {
@@ -3522,7 +3581,7 @@
 
 :root.cc98-comfort .cc98-rebuild-pager-action {
   width: auto !important;
-  min-width: 92px !important;
+  min-width: 110px !important;
   margin-left: 0 !important;
 }
 
@@ -3906,6 +3965,96 @@
   padding: 0 10px !important;
 }
 
+:root.cc98-comfort .cc98-rebuild-mini-action[data-action-kind="like"]::before {
+  content: "\25B2";
+  margin-right: 5px;
+  font-size: 0.72em;
+  line-height: 1;
+}
+
+:root.cc98-comfort .cc98-rebuild-mini-action[data-action-kind="dislike"]::before {
+  content: "\25BC";
+  margin-right: 5px;
+  font-size: 0.72em;
+  line-height: 1;
+}
+
+:root.cc98-comfort .cc98-rebuild-action-delta {
+  margin-left: 2px;
+  font-weight: 820;
+  font-variant-numeric: tabular-nums;
+}
+
+:root.cc98-comfort .cc98-rebuild-action-delta[data-award-delta="positive"] {
+  color: #16a34a !important;
+}
+
+:root.cc98-comfort[data-cc98-comfort-tone="dark"] .cc98-rebuild-action-delta[data-award-delta="positive"] {
+  color: #86efac !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-action-delta[data-award-delta="negative"] {
+  color: #dc2626 !important;
+}
+
+:root.cc98-comfort[data-cc98-comfort-tone="dark"] .cc98-rebuild-action-delta[data-award-delta="negative"] {
+  color: #fca5a5 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-post-user-line .cc98-rebuild-post-follow-action {
+  flex: 0 0 auto;
+  width: 24px !important;
+  min-width: 24px !important;
+  max-width: 24px !important;
+  height: 24px !important;
+  min-height: 24px !important;
+  padding: 0 !important;
+  border-radius: 8px !important;
+  font-size: 0 !important;
+  overflow: hidden !important;
+  transition: width 160ms ease, max-width 160ms ease, min-width 160ms ease, background 120ms ease, border-color 120ms ease, color 120ms ease !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-post-user-line .cc98-rebuild-post-follow-action::before {
+  content: attr(data-follow-symbol);
+  font-size: 0.92rem !important;
+  line-height: 1 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-post-user-line .cc98-rebuild-post-follow-action::after {
+  content: attr(data-follow-label);
+  width: 0;
+  max-width: 0;
+  opacity: 0;
+  margin-left: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 0.78rem !important;
+  line-height: 1 !important;
+  transition: max-width 160ms ease, opacity 120ms ease, margin-left 160ms ease;
+}
+
+:root.cc98-comfort .cc98-rebuild-post-user-line .cc98-rebuild-post-follow-action:hover,
+:root.cc98-comfort .cc98-rebuild-post-user-line .cc98-rebuild-post-follow-action:focus-visible {
+  width: auto !important;
+  min-width: 72px !important;
+  max-width: 112px !important;
+  padding: 0 8px !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-post-user-line .cc98-rebuild-post-follow-action:hover::before,
+:root.cc98-comfort .cc98-rebuild-post-user-line .cc98-rebuild-post-follow-action:focus-visible::before {
+  display: none;
+}
+
+:root.cc98-comfort .cc98-rebuild-post-user-line .cc98-rebuild-post-follow-action:hover::after,
+:root.cc98-comfort .cc98-rebuild-post-user-line .cc98-rebuild-post-follow-action:focus-visible::after {
+  width: auto;
+  max-width: 88px;
+  opacity: 1;
+  margin-left: 0;
+}
+
 :root.cc98-comfort .cc98-rebuild-mini-action:hover,
 :root.cc98-comfort .cc98-rebuild-mini-action:focus-visible {
   border-color: color-mix(in srgb, var(--cc98-comfort-accent) 42%, var(--cc98-comfort-border)) !important;
@@ -4072,6 +4221,140 @@
   color: var(--cc98-comfort-muted) !important;
   font-size: 0.86rem !important;
   font-variant-numeric: tabular-nums;
+}
+
+:root.cc98-comfort .cc98-rebuild-blacklist-page {
+  width: min(920px, 100%);
+}
+
+:root.cc98-comfort .cc98-rebuild-blacklist-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0;
+}
+
+:root.cc98-comfort .cc98-rebuild-blacklist-placeholder {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+:root.cc98-comfort .cc98-rebuild-blacklist-groups {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+:root.cc98-comfort .cc98-rebuild-blacklist-group {
+  display: grid;
+  gap: 10px;
+}
+
+:root.cc98-comfort .cc98-rebuild-blacklist-group-head {
+  justify-content: space-between;
+}
+
+:root.cc98-comfort .cc98-rebuild-blacklist-group-title {
+  color: var(--cc98-comfort-text) !important;
+  font-size: 0.98rem !important;
+  font-weight: 760 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-blacklist-form {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+:root.cc98-comfort .cc98-rebuild-blacklist-form input {
+  min-width: 0;
+  height: 40px;
+  padding: 0 13px;
+  border: 1px solid var(--cc98-comfort-border) !important;
+  border-radius: 12px !important;
+  background: color-mix(in srgb, var(--cc98-comfort-surface) 78%, var(--cc98-comfort-bg)) !important;
+  color: var(--cc98-comfort-text) !important;
+  font: inherit;
+}
+
+:root.cc98-comfort .cc98-rebuild-blacklist-form input:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--cc98-comfort-accent) 56%, var(--cc98-comfort-border)) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cc98-comfort-accent) 16%, transparent);
+}
+
+:root.cc98-comfort .cc98-rebuild-blacklist-form .cc98-rebuild-search-submit {
+  min-width: 72px;
+  height: 40px;
+  border-radius: 12px !important;
+  background: color-mix(in srgb, var(--cc98-comfort-accent-2) 70%, var(--cc98-comfort-surface)) !important;
+  color: var(--cc98-comfort-text) !important;
+  font-size: 0.9rem !important;
+  font-weight: 720;
+}
+
+:root.cc98-comfort .cc98-rebuild-blacklist-list {
+  display: grid;
+  gap: 8px;
+}
+
+:root.cc98-comfort .cc98-rebuild-blacklist-item {
+  min-height: 38px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid color-mix(in srgb, var(--cc98-comfort-border) 74%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--cc98-comfort-surface-2) 76%, transparent);
+}
+
+:root.cc98-comfort .cc98-rebuild-blacklist-value {
+  min-width: 0;
+  color: var(--cc98-comfort-text) !important;
+  font-size: 0.92rem !important;
+  overflow-wrap: anywhere;
+}
+
+:root.cc98-comfort .cc98-rebuild-blacklist-delete {
+  color: #b6473f !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-blacklist-nav-entry {
+  width: 100%;
+}
+
+:root.cc98-comfort .cc98-rebuild-blocked-actions,
+:root.cc98-comfort .cc98-rebuild-blocked-page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+:root.cc98-comfort .cc98-rebuild-blocked-page {
+  width: min(760px, 100%);
+  display: grid;
+  gap: 12px;
+  margin: 28px auto;
+  padding: 34px;
+  border: 1px dashed color-mix(in srgb, #b6473f 48%, var(--cc98-comfort-border));
+  border-radius: var(--cc98-comfort-radius-lg);
+  background: color-mix(in srgb, #b6473f 9%, var(--cc98-comfort-surface));
+  box-shadow: var(--cc98-comfort-shadow);
+}
+
+:root.cc98-comfort .cc98-rebuild-blocked-page h1 {
+  margin: 0;
+  color: var(--cc98-comfort-text) !important;
+  font-size: clamp(1.6rem, 4vw, 3rem) !important;
+  line-height: 1.1 !important;
+  font-weight: 820 !important;
 }
 
 :root.cc98-comfort .cc98-rebuild-editor-hero,
@@ -5736,6 +6019,11 @@
   align-items: start;
 }
 
+:root.cc98-comfort .cc98-rebuild-user-layout-public {
+  width: min(820px, 100%);
+  grid-template-columns: minmax(0, 1fr);
+}
+
 :root.cc98-comfort .cc98-rebuild-user-hero {
   width: min(1040px, 100%);
   display: grid;
@@ -5756,7 +6044,8 @@
 :root.cc98-comfort .cc98-rebuild-user-nav,
 :root.cc98-comfort .cc98-rebuild-native-user-nav,
 :root.cc98-comfort .cc98-rebuild-native-user-router,
-:root.cc98-comfort .cc98-rebuild-user-layout > .cc98-rebuild-section {
+:root.cc98-comfort .cc98-rebuild-user-layout > .cc98-rebuild-section,
+:root.cc98-comfort .cc98-rebuild-user-router-host > .cc98-rebuild-section {
   padding: 14px;
   border: 1px solid var(--cc98-comfort-border);
   border-radius: 14px;
@@ -5770,6 +6059,19 @@
   display: flex !important;
   flex-direction: column;
   align-items: stretch;
+  max-height: calc(100vh - 96px);
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+:root.cc98-comfort .cc98-rebuild-user-router-host {
+  min-width: 0;
+  display: grid;
+}
+
+:root.cc98-comfort .cc98-rebuild-user-router-host > [hidden],
+:root.cc98-comfort .cc98-rebuild-user-blacklist-panel[hidden] {
+  display: none !important;
 }
 
 :root.cc98-comfort .cc98-rebuild-native-user-nav ul {
@@ -5838,17 +6140,40 @@
 
 :root.cc98-comfort .cc98-rebuild-native-user-nav .center-nav-item,
 :root.cc98-comfort .cc98-rebuild-native-user-nav .top-button-text {
-  width: 100%;
+  width: fit-content;
+  max-width: calc(100% - 4px);
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
   padding: 0 10px;
   border-radius: 8px;
   background: transparent !important;
   color: inherit !important;
   font-size: 0.9rem !important;
+  overflow-wrap: anywhere;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-nav .cc98-rebuild-blacklist-nav-row,
+:root.cc98-comfort .cc98-rebuild-native-user-nav .cc98-rebuild-blacklist-nav-separated {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--cc98-comfort-border);
 }
 
 :root.cc98-comfort .cc98-rebuild-native-user-nav a:hover,
-:root.cc98-comfort .cc98-rebuild-native-user-nav button:hover,
+:root.cc98-comfort .cc98-rebuild-native-user-nav button:hover {
+  color: var(--cc98-comfort-accent) !important;
+}
+
 :root.cc98-comfort .cc98-rebuild-native-user-nav .user-center-navigation-active {
+  background: transparent !important;
+  color: var(--cc98-comfort-accent) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-nav a:hover .center-nav-item,
+:root.cc98-comfort .cc98-rebuild-native-user-nav button:hover .top-button-text,
+:root.cc98-comfort .cc98-rebuild-native-user-nav .user-center-navigation-active .center-nav-item,
+:root.cc98-comfort .cc98-rebuild-native-user-nav .cc98-rebuild-blacklist-nav-entry.is-active .center-nav-item {
   background: var(--cc98-comfort-accent-2) !important;
   color: var(--cc98-comfort-accent) !important;
 }
@@ -6824,8 +7149,9 @@
   max-height: var(--cc98-profile-avatar-height, min(360px, 42vh)) !important;
   display: flex !important;
   flex-wrap: wrap !important;
-  align-content: flex-start !important;
-  align-items: flex-start !important;
+  justify-content: center !important;
+  align-content: center !important;
+  align-items: center !important;
   gap: 8px !important;
   margin: 0 !important;
   padding: 12px !important;
@@ -6847,6 +7173,7 @@
 :root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-badge-panel .cc98-rebuild-profile-badge-item {
   min-height: 28px !important;
   display: inline-flex !important;
+  flex-wrap: wrap !important;
   align-items: center !important;
   gap: 5px !important;
   margin: 0 !important;
@@ -6858,12 +7185,22 @@
   font-size: 0.82rem !important;
   line-height: 1.2 !important;
   font-weight: 740 !important;
-  white-space: nowrap !important;
+  max-width: 100% !important;
+  justify-content: center !important;
+  text-align: center !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
 }
 
 :root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-badge-panel .cc98-rebuild-profile-badge-item-colored {
   border-color: color-mix(in srgb, currentColor 28%, var(--cc98-comfort-border)) !important;
   background: color-mix(in srgb, currentColor 8%, var(--cc98-comfort-surface)) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-badge-panel .cc98-rebuild-profile-badge-account-state {
+  border-color: color-mix(in srgb, var(--cc98-comfort-danger) 34%, var(--cc98-comfort-border)) !important;
+  background: color-mix(in srgb, var(--cc98-comfort-danger) 10%, var(--cc98-comfort-surface)) !important;
+  color: var(--cc98-comfort-danger) !important;
 }
 
 :root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-badge-panel :is(a, span) {
@@ -6877,6 +7214,26 @@
 :root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-badge-panel a {
   color: var(--cc98-comfort-link) !important;
   font-weight: 780 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-badge-panel[data-cc98-badge-count="1"] {
+  padding: 18px !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-badge-panel[data-cc98-badge-count="1"] .cc98-rebuild-profile-badge-item {
+  min-height: 48px !important;
+  padding: 0 18px !important;
+  border-radius: 14px !important;
+  font-size: 1rem !important;
+  line-height: 1.35 !important;
+  font-weight: 820 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-badge-panel[data-cc98-badge-count="1"] .cc98-rebuild-profile-badge-item :is(a, span),
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-badge-panel[data-cc98-badge-count="1"] .cc98-rebuild-profile-badge-item {
+  white-space: normal !important;
+  text-align: center !important;
+  justify-content: center !important;
 }
 
 :root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-inline-action,
@@ -6954,7 +7311,8 @@
 :root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-badge-panel:empty,
 :root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-badge-panel[hidden],
 :root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-badge-empty,
-:root.cc98-comfort .cc98-rebuild-native-user-router .user-avatar > .user-badge:empty {
+:root.cc98-comfort .cc98-rebuild-native-user-router .user-avatar > .user-badge:empty,
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-account-state-source {
   display: none !important;
   width: 0 !important;
   min-width: 0 !important;
