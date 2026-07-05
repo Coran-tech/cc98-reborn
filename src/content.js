@@ -5,7 +5,11 @@ const OPENID_BINDING_STORAGE_KEY = "cc98RebornOpenIdBinding:v1";
 const SEARCH_SORT_STORAGE_KEY = "cc98RebornSearchSort:v1";
 const READ_LATER_ROUTE_HASH = "#cc98-reborn-read-later";
 const BLACKLIST_ROUTE_HASH = "#cc98-reborn-blacklist";
+<<<<<<< Updated upstream
 const EXTENSION_VERSION = "0.2.8.3";
+=======
+const EXTENSION_VERSION = "0.2.8.4";
+>>>>>>> Stashed changes
 const LOGIN_REDIRECT_MARK_KEY = "cc98RebornLoginRedirectStartedAt";
 const LOGIN_REDIRECT_SNAPSHOT_KEY = "cc98RebornLoginRedirectSnapshot";
 const LOGIN_HOME_REFRESH_MARK_KEY = "cc98RebornLoginHomeRefreshPendingAt";
@@ -38,6 +42,13 @@ const WATERMARK_FEATURE_ENABLED = true;
 const WATERMARK_CACHE_TTL = 30 * 60 * 1000;
 const WATERMARK_DIRECTION_INTERVAL = 3600;
 const WATERMARK_REVALIDATE_INTERVAL = 5 * 60 * 1000;
+const REPLY_REBORN_TAIL_LEGACY_BRAND_UBB = "[color=#eb2f96]C[/color][color=#de2f9d]C[/color][color=#d02fa3]9[/color][color=#c32faa]8[/color] [color=#b52fb0]R[/color][color=#a82eb7]e[/color][color=#9a2ebd]b[/color][color=#8d2ec4]o[/color][color=#7f2eca]r[/color][color=#722ed1]n[/color]";
+const REPLY_REBORN_TAIL_BRAND_UBB = `[url=https://www.cc98.org/topic/6521472]${REPLY_REBORN_TAIL_LEGACY_BRAND_UBB}[/url]`;
+const REPLY_REBORN_TAIL_MARKER = "\u2014\u2014\u6765\u81ea\u300c[url=https://www.cc98.org/topic/6521472]";
+const REPLY_REBORN_TAIL_LEGACY_MARKER = "\u2014\u2014\u6765\u81ea\u300c[color=#eb2f96]C[/color]";
+const REPLY_REBORN_TAIL_UBB = `[align=right]\u2014\u2014\u6765\u81ea\u300c${REPLY_REBORN_TAIL_BRAND_UBB}\u300d[/align]`;
+const REPLY_REBORN_TAIL_LEGACY_RIGHT_UBB = `[right]\u2014\u2014\u6765\u81ea\u300c${REPLY_REBORN_TAIL_LEGACY_BRAND_UBB}\u300d\uff0c[/right]`;
+const REPLY_REBORN_TAIL_LEGACY_ALIGN_UBB = `[align=right]\u2014\u2014\u6765\u81ea\u300c${REPLY_REBORN_TAIL_LEGACY_BRAND_UBB}\u300d\uff0c[/align]`;
 
 const DEFAULT_SETTINGS = {
   enabled: true,
@@ -53,6 +64,10 @@ const DEFAULT_SETTINGS = {
   previsitFirstPageForTopicImages: false,
   openLinksInNewTab: false,
   sideTopbar: false,
+<<<<<<< Updated upstream
+=======
+  replyRebornTail: false,
+>>>>>>> Stashed changes
   minimalMode: false,
   homeHotOnly: false,
   softenAvatars: true,
@@ -223,6 +238,10 @@ let imageViewerItems = [];
 let imageViewerIndex = -1;
 let nativePostSubmitRefreshTimers = [];
 let editorSubmitHardRefreshTimers = [];
+<<<<<<< Updated upstream
+=======
+let editorSubmitOverlayReleaseTimer = null;
+>>>>>>> Stashed changes
 let editorSubmitResultMonitorBound = false;
 let editorSubmitOverlayAwaitingRebuild = false;
 let editorColorPopoverSequence = 0;
@@ -252,6 +271,10 @@ let normalPageBooted = false;
 let webVpnBootProbeStarted = false;
 let webVpnNakedRouteGuardBound = false;
 let openLinksInNewTabGuardBound = false;
+<<<<<<< Updated upstream
+=======
+let rebornReplyTailSubmitGuardBound = false;
+>>>>>>> Stashed changes
 let privateMessageEmojiDismissBound = false;
 const originalPosterIdentityPrefetches = new Map();
 const neutralizedLinks = new WeakMap();
@@ -351,6 +374,10 @@ function normalizeSettings(settings = {}) {
     previsitFirstPageForTopicImages: Boolean(settings.previsitFirstPageForTopicImages),
     openLinksInNewTab: Boolean(settings.openLinksInNewTab),
     sideTopbar: Boolean(settings.sideTopbar),
+<<<<<<< Updated upstream
+=======
+    replyRebornTail: Boolean(settings.replyRebornTail),
+>>>>>>> Stashed changes
     aiSearchSuggestProvider: ["openai", "deepseek"].includes(settings.aiSearchSuggestProvider)
       ? settings.aiSearchSuggestProvider
       : DEFAULT_SETTINGS.aiSearchSuggestProvider,
@@ -3021,8 +3048,18 @@ function clearEditorSubmitIntent() {
   nativePostSubmitRefreshTimers = [];
   editorSubmitHardRefreshTimers.forEach((timer) => window.clearTimeout(timer));
   editorSubmitHardRefreshTimers = [];
+<<<<<<< Updated upstream
   if (document.documentElement.dataset.cc98ComfortOriginalPrewarming !== "true" && !firstPagePrevisitInProgress) {
     hideLoadingOverlay();
+=======
+  if (editorSubmitOverlayReleaseTimer) {
+    window.clearTimeout(editorSubmitOverlayReleaseTimer);
+    editorSubmitOverlayReleaseTimer = null;
+  }
+  if (document.documentElement.dataset.cc98ComfortOriginalPrewarming !== "true" && !firstPagePrevisitInProgress) {
+    editorSubmitOverlayAwaitingRebuild = false;
+    hideLoadingOverlay({ force: true });
+>>>>>>> Stashed changes
   }
 }
 
@@ -3437,9 +3474,48 @@ function restoreEditorSubmitOverlayAfterReload() {
   showLoadingOverlay(context.isEdit
     ? "\u4fee\u6539\u5df2\u63d0\u4ea4\uff0c\u6b63\u5728\u5237\u65b0\u5e16\u5b50..."
     : "\u63d0\u4ea4\u5df2\u5b8c\u6210\uff0c\u6b63\u5728\u5237\u65b0\u5e16\u5b50...");
+<<<<<<< Updated upstream
   return true;
 }
 
+=======
+  scheduleEditorSubmitOverlayRelease();
+  return true;
+}
+
+function releaseEditorSubmitOverlayOnTopic(options = {}) {
+  const context = readEditorSubmitContext();
+  if (!context || !hasRecentEditorSubmitIntent(90000) || !getTopicRouteInfo()) {
+    return false;
+  }
+  const canRelease = options.force
+    || pageHasNativeTopicContent()
+    || Boolean(document.querySelector("#cc98-comfort-app[data-page-kind='post']"));
+  if (!canRelease) {
+    return false;
+  }
+  clearNativeEditorDraftByKey(context.draftKey);
+  resetReleasedNativeEditors();
+  removeEditorSubmitRecoveryCacheBust();
+  editorSubmitOverlayAwaitingRebuild = false;
+  clearEditorSubmitIntent();
+  hideLoadingOverlay({ force: true });
+  scheduleRebuild();
+  scheduleSync();
+  return true;
+}
+
+function scheduleEditorSubmitOverlayRelease(delay = 1800) {
+  if (editorSubmitOverlayReleaseTimer) {
+    window.clearTimeout(editorSubmitOverlayReleaseTimer);
+  }
+  editorSubmitOverlayReleaseTimer = window.setTimeout(() => {
+    editorSubmitOverlayReleaseTimer = null;
+    releaseEditorSubmitOverlayOnTopic({ force: true });
+  }, delay);
+}
+
+>>>>>>> Stashed changes
 function forceReloadEditorSubmitErrorPage() {
   const context = readEditorSubmitContext();
   if (!context || !hasRecentEditorSubmitIntent(90000) || !isNativeErrorPage()) {
@@ -11142,6 +11218,10 @@ function beginNativeEditorSubmitTransaction(editor, control, context = {}) {
     && Date.now() - startedAt < 2500) {
     return false;
   }
+<<<<<<< Updated upstream
+=======
+  appendRebornReplyTailIfNeeded(editor);
+>>>>>>> Stashed changes
   const payload = getNativeEditorSubmitContext(context);
   const transactionStartedAt = Date.now();
   editor.dataset.cc98SubmitTransactionActive = "true";
@@ -11160,6 +11240,72 @@ function beginNativeEditorSubmitTransaction(editor, control, context = {}) {
   return true;
 }
 
+<<<<<<< Updated upstream
+=======
+function appendRebornReplyTailIfNeeded(editor) {
+  if (!lastSettings?.replyRebornTail || !(editor instanceof HTMLElement)) {
+    return false;
+  }
+  if (getNativeEditorDraftKind(editor) !== "reply") {
+    return false;
+  }
+  const textarea = getNativeEditorTextarea(editor);
+  if (!(textarea instanceof HTMLTextAreaElement)) {
+    return false;
+  }
+  const value = String(textarea.value || "");
+  if (!value.trim()) {
+    return false;
+  }
+  if (value.includes(REPLY_REBORN_TAIL_MARKER)) {
+    return false;
+  }
+  if (value.includes(REPLY_REBORN_TAIL_LEGACY_MARKER)) {
+    const upgradedValue = value
+      .replace(REPLY_REBORN_TAIL_LEGACY_RIGHT_UBB, REPLY_REBORN_TAIL_UBB)
+      .replace(REPLY_REBORN_TAIL_LEGACY_ALIGN_UBB, REPLY_REBORN_TAIL_UBB);
+    if (upgradedValue !== value) {
+      setNativeMessageInputValue(textarea, upgradedValue);
+      return true;
+    }
+    return false;
+  }
+  const separator = value.endsWith("\n") ? "" : "\n";
+  setNativeMessageInputValue(textarea, `${value}${separator}${REPLY_REBORN_TAIL_UBB}`);
+  return true;
+}
+
+function getRebornReplyTailEditorFromTarget(target) {
+  const control = target?.closest?.("#post-topic-button, button, input[type='button'], input[type='submit'], .button, .ant-btn, [role='button']");
+  if (!(control instanceof HTMLElement) || !isLikelyEditorSubmitControl(control)) {
+    return null;
+  }
+  const editor = control.closest("#sendTopicInfo");
+  return editor instanceof HTMLElement ? editor : null;
+}
+
+function ensureRebornReplyTailSubmitGuard() {
+  if (rebornReplyTailSubmitGuardBound) {
+    return;
+  }
+  rebornReplyTailSubmitGuardBound = true;
+  const handleSubmitPointer = (event) => {
+    const editor = getRebornReplyTailEditorFromTarget(event.target);
+    if (editor) {
+      appendRebornReplyTailIfNeeded(editor);
+    }
+  };
+  document.addEventListener("pointerdown", handleSubmitPointer, true);
+  document.addEventListener("click", handleSubmitPointer, true);
+  document.addEventListener("submit", (event) => {
+    const editor = event.target?.closest?.("#sendTopicInfo");
+    if (editor instanceof HTMLElement) {
+      appendRebornReplyTailIfNeeded(editor);
+    }
+  }, true);
+}
+
+>>>>>>> Stashed changes
 function isNativeEditorInsideReactRoot(editor) {
   return Boolean(editor?.closest?.("#root"));
 }
@@ -13404,6 +13550,10 @@ function bindNativeEditorStabilizer(editor) {
     const context = getNativeEditorSubmitContext({ editor });
     const submitControl = findNativeEditorSubmitControl(editor, event.submitter);
     if (!(submitControl instanceof HTMLElement)) {
+<<<<<<< Updated upstream
+=======
+      appendRebornReplyTailIfNeeded(editor);
+>>>>>>> Stashed changes
       markEditorSubmitIntent(context);
       schedulePostSubmitPageRefresh(context);
       return;
@@ -19287,6 +19437,10 @@ function bootNormalPage() {
     return;
   }
   bindPageEditorSubmitResultMonitor();
+<<<<<<< Updated upstream
+=======
+  ensureRebornReplyTailSubmitGuard();
+>>>>>>> Stashed changes
   restoreEditorSubmitOverlayAfterReload();
   injectSecurityWatermarkPageBridge();
   ensureSecurityWatermark();
@@ -19301,6 +19455,10 @@ function bootNormalPage() {
     enforceRecentLogoutRedirectIntent();
     bindGlobalTopbarAuthRedirects();
     bindWebVpnNakedRouteGuard();
+<<<<<<< Updated upstream
+=======
+    ensureRebornReplyTailSubmitGuard();
+>>>>>>> Stashed changes
     scheduleOpenIdBindPromptAfterLogin();
     syncOpenIdBindingWithWebAccount();
     ensureLegacyColorPickerSuppressor();
@@ -19327,6 +19485,10 @@ function bootNormalPage() {
   ensureNativeAntUiStabilizer();
   patchHistoryNavigation();
   bindWebVpnNakedRouteGuard();
+<<<<<<< Updated upstream
+=======
+  ensureRebornReplyTailSubmitGuard();
+>>>>>>> Stashed changes
   scheduleOpenIdBindPromptAfterLogin();
   syncOpenIdBindingWithWebAccount();
   scheduleFiltering();

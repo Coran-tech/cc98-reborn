@@ -16,6 +16,10 @@ const DEFAULT_SETTINGS = {
   previsitFirstPageForTopicImages: false,
   openLinksInNewTab: false,
   sideTopbar: false,
+<<<<<<< Updated upstream
+=======
+  replyRebornTail: false,
+>>>>>>> Stashed changes
   minimalMode: false,
   homeHotOnly: false,
   softenAvatars: true,
@@ -61,6 +65,10 @@ const fields = {
   previsitFirstPageForTopicImages: document.querySelector("#previsitFirstPageForTopicImages"),
   openLinksInNewTab: document.querySelector("#openLinksInNewTab"),
   sideTopbar: document.querySelector("#sideTopbar"),
+<<<<<<< Updated upstream
+=======
+  replyRebornTail: document.querySelector("#replyRebornTail"),
+>>>>>>> Stashed changes
   fontScale: document.querySelector("#fontScale"),
   fontScaleOutput: document.querySelector("#fontScaleOutput"),
   emojiScale: document.querySelector("#emojiScale"),
@@ -480,6 +488,10 @@ function hydrate(nextSettings) {
   fields.previsitFirstPageForTopicImages.checked = settings.previsitFirstPageForTopicImages;
   fields.openLinksInNewTab.checked = settings.openLinksInNewTab;
   fields.sideTopbar.checked = settings.sideTopbar;
+<<<<<<< Updated upstream
+=======
+  fields.replyRebornTail.checked = settings.replyRebornTail;
+>>>>>>> Stashed changes
   writeRadio("theme", settings.theme);
   updateThemeDisplay();
   fields.fontScale.value = settings.fontScale;
@@ -508,6 +520,10 @@ function collect() {
     previsitFirstPageForTopicImages: fields.previsitFirstPageForTopicImages.checked,
     openLinksInNewTab: fields.openLinksInNewTab.checked,
     sideTopbar: fields.sideTopbar.checked,
+<<<<<<< Updated upstream
+=======
+    replyRebornTail: fields.replyRebornTail.checked,
+>>>>>>> Stashed changes
     minimalMode: DEFAULT_SETTINGS.minimalMode,
     homeHotOnly: fields.homeHotOnly.checked,
     softenAvatars: DEFAULT_SETTINGS.softenAvatars,
