@@ -13,11 +13,30 @@
           <h1>CC98 Reborn</h1>
           <p>舒适阅读设置</p>
         </div>
-        <label class="switch" title="启用或停用美化">
-          <input id="enabled" type="checkbox">
-          <span></span>
-        </label>
+        <div class="header-actions">
+          <button id="aboutToggle" class="about-toggle" type="button" aria-expanded="false" aria-controls="aboutPopover" title="关于 CC98 Reborn">ℹ️</button>
+          <div id="aboutPopover" class="about-popover" role="dialog" aria-label="关于 CC98 Reborn" hidden>
+            <p class="about-version">当前版本 <strong id="aboutVersion"></strong></p>
+            <div class="about-author">
+              <img src="../images/avatar/avatar.jpg" alt="" class="about-avatar">
+              <strong>Coran</strong>
+            </div>
+            <div class="about-links">
+              <a href="https://www.cc98.org/user/id/795406" target="_blank" rel="noopener noreferrer">CC98 主页</a>
+              <a href="https://github.com/Coran-tech" target="_blank" rel="noopener noreferrer">Github 主页</a>
+            </div>
+          </div>
+          <label class="switch" title="启用或停用美化">
+            <input id="enabled" type="checkbox">
+            <span></span>
+          </label>
+        </div>
       </header>
+
+      <button id="updateTopNotice" class="update-top-notice" type="button" hidden>
+        <span class="update-dot" aria-hidden="true"></span>
+        <span id="updateTopText">&#21457;&#29616;&#26032;&#29256;&#26412;</span>
+      </button>
 
       <section class="group" aria-labelledby="theme-label">
         <div id="theme-label" class="label">主题</div>
@@ -26,11 +45,44 @@
           <label><input type="radio" name="theme" value="mist"><span>清雾</span></label>
           <label><input type="radio" name="theme" value="night"><span>夜读</span></label>
         </div>
+        <div class="theme-more-row">
+          <button id="themeMoreToggle" class="theme-more-toggle" type="button" aria-expanded="false" aria-controls="themeMoreMenu">更多……</button>
+          <span id="themeMoreCurrent" class="theme-current" aria-live="polite"></span>
+        </div>
+        <div id="themeMoreMenu" class="theme-more-menu" role="radiogroup" aria-label="更多配色方案" hidden>
+          <label>
+            <input type="radio" name="theme" value="sage">
+            <span><i class="theme-swatch theme-swatch-sage"></i><strong>竹影</strong><small>清绿低饱和</small></span>
+          </label>
+          <label>
+            <input type="radio" name="theme" value="lake">
+            <span><i class="theme-swatch theme-swatch-lake"></i><strong>湖蓝</strong><small>清爽冷色</small></span>
+          </label>
+          <label>
+            <input type="radio" name="theme" value="rose">
+            <span><i class="theme-swatch theme-swatch-rose"></i><strong>蔷薇</strong><small>柔和暖粉</small></span>
+          </label>
+          <label>
+            <input type="radio" name="theme" value="graphite">
+            <span><i class="theme-swatch theme-swatch-graphite"></i><strong>石墨</strong><small>中性暗色</small></span>
+          </label>
+          <label>
+            <input type="radio" name="theme" value="midnight">
+            <span><i class="theme-swatch theme-swatch-midnight"></i><strong>星夜</strong><small>深色冷调</small></span>
+          </label>
+          <label>
+            <input type="radio" name="theme" value="wine">
+            <span><i class="theme-swatch theme-swatch-wine"></i><strong>绛夜</strong><small>深色暖调</small></span>
+          </label>
+        </div>
       </section>
 
       <section class="checks">
         <label><input id="homeHotOnly" type="checkbox"><span>&#39318;&#39029;&#21482;&#20445;&#30041;&#21313;&#22823;</span></label>
         <label><input id="previsitFirstPageForTopicImages" type="checkbox"><span>&#39044;&#28909;&#31532;&#19968;&#39029;&#65288;&#26356;&#22909;&#22320;&#35782;&#21035;&#27004;&#20027;&#65289;</span></label>
+        <label><input id="openLinksInNewTab" type="checkbox"><span>&#38142;&#25509;&#22312;&#26032;&#39029;&#38754;&#25171;&#24320;</span></label>
+        <label><input id="sideTopbar" type="checkbox"><span>&#24038;&#20391;&#25928;&#29575;&#26639;</span></label>
+        <label><input id="replyRebornTail" type="checkbox"><span>&#22238;&#22797;&#26102;&#28155;&#21152;&#23567;&#23614;&#24052;</span></label>
       </section>
 
       <section class="group">
@@ -51,32 +103,40 @@
         </label>
       </section>
 
-      <section class="group">
-        <label class="textarea">
-          <span>屏蔽版面</span>
-          <textarea id="blockedBoards" rows="3" placeholder="每行一个版面名或版面 ID，例如：似水流年"></textarea>
-        </label>
+      <section class="group blacklist-card" aria-labelledby="blacklist-label">
+        <div id="blacklist-label" class="label">黑名单列表</div>
+        <p id="blacklistSummary" class="blacklist-summary">按用户 ID、标题关键词和版面规则折叠内容。</p>
+        <button id="openBlacklist" type="button">打开黑名单列表</button>
       </section>
 
-      <section class="group">
-        <label class="textarea">
-          <span>标题关键词</span>
-          <textarea id="blockedTitleKeywords" rows="3" placeholder="每行一个关键词，例如：测试"></textarea>
-        </label>
+      <section class="group openid-card" aria-labelledby="openid-label">
+        <div id="openid-label" class="label">CC98 OpenID</div>
+        <p id="openidStatus" class="openid-status">正在读取绑定状态…</p>
+        <div id="openidMeta" class="openid-meta" hidden></div>
+        <div class="openid-actions">
+          <button id="openidBind" type="button">绑定 CC98</button>
+          <button id="openidExitAccount" class="secondary-action" type="button">退出此账号</button>
+          <button id="openidLogout" class="secondary-action" type="button" hidden>解除绑定</button>
+        </div>
       </section>
 
-      <section class="group">
-        <label class="textarea">
-          <span>UID 黑名单</span>
-          <textarea id="blockedUserIds" rows="3" placeholder="每行一个 UID，例如：795406"></textarea>
-        </label>
+      <section class="group site-data-card" aria-labelledby="site-data-label">
+        <div id="site-data-label" class="label">账号与站点数据</div>
+        <p id="clearCc98DataStatus" class="site-data-status">用于刷新十大；同时会抹掉本地存储的稍后再看、版面置顶与草稿等数据，请谨慎。</p>
+        <button id="clearCc98Data" class="danger-action" type="button">清除 CC98 Cookie</button>
       </section>
 
-      <section class="group">
-        <label class="textarea">
-          <span>占位符文案</span>
-          <input id="placeholderText" type="text" placeholder="已根据你的屏蔽规则折叠一条内容">
-        </label>
+      <section class="group update-card" aria-labelledby="update-label">
+        <div id="update-label" class="label">&#26356;&#26032;&#26816;&#26597;</div>
+        <p id="updateStatus" class="update-status">&#27491;&#22312;&#35835;&#21462;&#29366;&#24577;&#8230;</p>
+        <div class="update-meta">
+          <span id="updateCurrentVersion"></span>
+          <span id="updateLatestVersion"></span>
+        </div>
+        <div class="update-actions">
+          <button id="updateCheck" type="button">&#31435;&#21363;&#26816;&#26597;</button>
+          <button id="updateOpen" class="update-open" type="button" hidden>&#25171;&#24320;&#21457;&#24067;&#39029;</button>
+        </div>
       </section>
 
       <footer>
