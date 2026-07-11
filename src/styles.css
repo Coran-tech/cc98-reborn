@@ -3394,6 +3394,50 @@
   color: var(--cc98-comfort-link) !important;
 }
 
+:root.cc98-comfort #cc98-comfort-app .cc98-rebuild-post-body .cc98-rebuild-markdown-post {
+  position: relative !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  margin: 1rem 0 !important;
+  padding: 18px 16px 14px !important;
+  overflow: visible !important;
+  border: 1px solid var(--cc98-comfort-border) !important;
+  border-radius: 10px !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  color: var(--cc98-comfort-text) !important;
+}
+
+:root.cc98-comfort #cc98-comfort-app .cc98-rebuild-post-body .cc98-rebuild-markdown-post::before {
+  content: "Markdown";
+  position: absolute;
+  top: -0.72em;
+  left: 14px;
+  z-index: 1;
+  padding: 0 8px;
+  background: var(--cc98-comfort-surface);
+  color: var(--cc98-comfort-accent);
+  font-size: 0.72rem;
+  font-weight: 820;
+  line-height: 1.35;
+  letter-spacing: 0;
+}
+
+:root.cc98-comfort #cc98-comfort-app .cc98-rebuild-post-body .cc98-rebuild-markdown-post :is(div, span, p, section, article, ul, ol, li, table, thead, tbody, tr, td, th) {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  color: inherit !important;
+}
+
+:root.cc98-comfort #cc98-comfort-app .cc98-rebuild-post-body .cc98-rebuild-markdown-post :is(pre, code),
+:root.cc98-comfort #cc98-comfort-app .cc98-rebuild-post-body .cc98-rebuild-markdown-post :is(pre, code) * {
+  background: var(--cc98-comfort-surface-2) !important;
+  background-color: var(--cc98-comfort-surface-2) !important;
+  color: var(--cc98-comfort-text) !important;
+}
+
 :root.cc98-comfort .cc98-rebuild-post-body code {
   padding: 0.12em 0.36em !important;
   border-radius: 6px !important;
@@ -4280,11 +4324,11 @@
   gap: 14px;
   width: min(420px, calc(100vw - 36px));
   padding: 13px 14px;
-  border: 1px solid color-mix(in srgb, #ffffff 24%, transparent);
+  border: 1px solid color-mix(in srgb, #ffffff 20%, transparent);
   border-radius: 14px;
-  background: #c93636;
+  background: color-mix(in srgb, #b94b47 82%, var(--cc98-comfort-surface) 18%);
   color: #ffffff;
-  box-shadow: 0 18px 44px rgba(74, 12, 12, 0.34);
+  box-shadow: 0 18px 44px rgba(74, 20, 20, 0.24);
   opacity: 0;
   transform: translateY(14px);
   transition: opacity 220ms ease, transform 220ms ease;
@@ -4304,6 +4348,15 @@
   display: grid;
   gap: 3px;
   min-width: 0;
+  background: transparent !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-startup-update-content *,
+:root.cc98-comfort .cc98-rebuild-startup-update-actions *,
+:root.cc98-comfort .cc98-rebuild-startup-update-notice :is(strong, span) {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
 }
 
 :root.cc98-comfort .cc98-rebuild-startup-update-content strong {

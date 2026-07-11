@@ -4,7 +4,7 @@
 
 CC98 Reborn 是一个面向 Chrome / Edge 的 CC98 论坛界面重构插件。它会在浏览器本地重建常用页面的阅读和操作界面，同时尽量复用原站已有控件，保证发帖、回复、上传、评分、私信、收藏等功能仍由原站逻辑处理。
 
-当前预发布版本：`0.2.8.5`。
+当前预发布版本：`0.2.8.6`。
 
 ## 主要功能
 
@@ -57,7 +57,7 @@ https://github.com/Coran-tech/cc98-reborn/releases
 生成的发布包位于：
 
 ```text
-dist/cc98-reborn-0.2.7.zip
+dist/cc98-reborn-0.2.8.6.zip
 ```
 
 发布包包含运行所需文件：
@@ -93,6 +93,7 @@ dist/cc98-reborn-0.2.7.zip
 ```powershell
 node --check .\src\content.js
 node --check .\src\background.js
+node --check .\src\page-submit-monitor.js
 node --check .\popup\popup.js
 node -e "JSON.parse(require('fs').readFileSync('manifest.json','utf8')); console.log('manifest ok')"
 ```

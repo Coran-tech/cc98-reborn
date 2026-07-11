@@ -4,7 +4,7 @@
 
 CC98 Reborn is a Chrome/Edge extension that rebuilds common CC98 pages into a cleaner reading interface while keeping the original site controls available whenever possible.
 
-Current pre-release version: `0.2.8.5`.
+Current pre-release version: `0.2.8.6`.
 
 ## Features
 
@@ -34,15 +34,23 @@ Current pre-release version: `0.2.8.5`.
 
 ## Settings
 
-The popup currently exposes the settings intended for the first pre-release:
+The popup currently exposes:
 
 - Enable or disable CC98 Reborn.
-- Select a visual theme.
+- Select a visual theme, including the additional light and dark color schemes.
 - Show only hot topics on the home page.
+- Prewarm the first topic page for better original-poster and hot-comment detection.
+- Open ordinary forum links in a new tab.
+- Switch the top navigation to the left-side efficiency bar.
+- Add the optional CC98 Reborn tail to replies; this is enabled by default.
 - Adjust font size.
+- Adjust emoji size.
 - Adjust image loading duration.
 - Set board, title keyword, and UID blocking rules.
 - Customize blocked-content placeholder text.
+- Bind, unbind, or exit the current CC98 OpenID account and view the local watermark identity summary.
+- Clear CC98 cookies and local site data after explicit confirmation.
+- Check for updates, open the release page, and view extension/author information.
 
 ## Permissions
 
@@ -80,7 +88,7 @@ src/
   content.js
   styles.css
   background.js
-  watermark-bridge.js
+  page-submit-monitor.js
 popup/
   popup.html
   popup.css
@@ -101,7 +109,7 @@ For a GitHub pre-release:
 ```powershell
 node --check .\src\content.js
 node --check .\src\background.js
-node --check .\src\watermark-bridge.js
+node --check .\src\page-submit-monitor.js
 node --check .\popup\popup.js
 node -e "JSON.parse(require('fs').readFileSync('manifest.json','utf8')); console.log('manifest ok')"
 ```
@@ -114,7 +122,7 @@ node -e "JSON.parse(require('fs').readFileSync('manifest.json','utf8')); console
 
 4. Upload `dist/cc98-reborn-<version>.zip` as a Chrome Web Store package or GitHub Release asset.
 
-The release zip intentionally excludes the dormant `src/watermark-bridge.js` file until official OAuth support is enabled.
+The OpenID authorization and watermark flow is active in the release build. The background service worker performs authorization code + PKCE, validates the bound UID against the current CC98 web account, stores only the local identity summary, and supplies the watermark prefix to the content script.
 
 ## Notes
 

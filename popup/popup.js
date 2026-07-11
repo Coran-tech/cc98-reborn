@@ -16,7 +16,7 @@ const DEFAULT_SETTINGS = {
   previsitFirstPageForTopicImages: false,
   openLinksInNewTab: false,
   sideTopbar: false,
-  replyRebornTail: false,
+  replyRebornTail: true,
   minimalMode: false,
   homeHotOnly: false,
   softenAvatars: true,

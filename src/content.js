@@ -5,7 +5,7 @@ const OPENID_BINDING_STORAGE_KEY = "cc98RebornOpenIdBinding:v1";
 const SEARCH_SORT_STORAGE_KEY = "cc98RebornSearchSort:v1";
 const READ_LATER_ROUTE_HASH = "#cc98-reborn-read-later";
 const BLACKLIST_ROUTE_HASH = "#cc98-reborn-blacklist";
-const EXTENSION_VERSION = "0.2.8.5";
+const EXTENSION_VERSION = "0.2.8.6";
 const LOGIN_REDIRECT_MARK_KEY = "cc98RebornLoginRedirectStartedAt";
 const LOGIN_REDIRECT_SNAPSHOT_KEY = "cc98RebornLoginRedirectSnapshot";
 const LOGIN_HOME_REFRESH_MARK_KEY = "cc98RebornLoginHomeRefreshPendingAt";
@@ -60,7 +60,7 @@ const DEFAULT_SETTINGS = {
   previsitFirstPageForTopicImages: false,
   openLinksInNewTab: false,
   sideTopbar: false,
-  replyRebornTail: false,
+  replyRebornTail: true,
   minimalMode: false,
   homeHotOnly: false,
   softenAvatars: true,
@@ -218,6 +218,7 @@ let loadingOverlayFailsafeTimer = null;
 let loadingOverlayAutoHideTimer = null;
 let loadingOverlayStartedAt = 0;
 let loadingOverlaySoft = false;
+let nativeLazyScrollOverlayDepth = 0;
 let userCenterPendingRebuildTimer = null;
 let messageTitleObserver = null;
 let nativeAntUiObserver = null;
@@ -365,7 +366,7 @@ function normalizeSettings(settings = {}) {
     previsitFirstPageForTopicImages: Boolean(settings.previsitFirstPageForTopicImages),
     openLinksInNewTab: Boolean(settings.openLinksInNewTab),
     sideTopbar: Boolean(settings.sideTopbar),
-    replyRebornTail: Boolean(settings.replyRebornTail),
+    replyRebornTail: Boolean(settings.replyRebornTail ?? DEFAULT_SETTINGS.replyRebornTail),
     aiSearchSuggestProvider: ["openai", "deepseek"].includes(settings.aiSearchSuggestProvider)
       ? settings.aiSearchSuggestProvider
       : DEFAULT_SETTINGS.aiSearchSuggestProvider,
@@ -4110,34 +4111,42 @@ async function prewarmNativeLazyMedia() {
     const root = document.querySelector("#root");
     const originalScrollPositions = captureNativeScrollPositions();
     document.documentElement.dataset.cc98ComfortPrewarming = "true";
+    beginNativeLazyScrollOverlay();
 
     try {
       await wait(120);
       const media = sortNodesByDocumentPosition([...document.querySelectorAll([
         "#root .reply-content .substance img",
         "#root .reply-content .substance [style*='url(']",
+        "#root .reply-content .substance .hiddenImage",
         "#root .signature img",
         "#root .signature [style*='url(']",
+        "#root .signature .hiddenImage",
         "#root article img",
-        "#root article [style*='url(']"
+        "#root article [style*='url(']",
+        "#root article .hiddenImage"
       ].join(","))])
         .filter((node) => node instanceof Element && !node.closest("#cc98-comfort-app"));
 
       [...root?.querySelectorAll("img") ?? []].forEach(eagerNativeImage);
+      triggerOriginalDeferredImagesForPrewarm(root);
       getNativeScrollTargets().forEach((target) => scrollNativeTargetTo(target, 0));
       dispatchNativeLazySignals();
-      await wait(90);
+      await wait(120);
 
       for (const node of media) {
         node.scrollIntoView?.({ block: "center", inline: "nearest" });
         if (node instanceof HTMLImageElement) {
           eagerNativeImage(node);
+        } else if (isDeferredPostImageControl(node)) {
+          triggerOriginalControl(node);
         }
         dispatchNativeLazySignals();
         await wait(70);
       }
 
       root?.scrollTo?.({ top: root.scrollHeight, left: 0, behavior: "auto" });
+      triggerOriginalDeferredImagesForPrewarm(root);
       dispatchNativeLazySignals();
       await wait(180);
 
@@ -4146,14 +4155,26 @@ async function prewarmNativeLazyMedia() {
         .map((image) => waitForNativeImage(image)));
       lazyPrewarmedPageKey = pageKey;
     } finally {
-      restoreNativeScrollPositions(originalScrollPositions);
-      dispatchNativeLazySignals();
-      delete document.documentElement.dataset.cc98ComfortPrewarming;
-      lazyPrewarmPromise = null;
+      try {
+        restoreNativeScrollPositions(originalScrollPositions);
+        dispatchNativeLazySignals();
+      } finally {
+        delete document.documentElement.dataset.cc98ComfortPrewarming;
+        endNativeLazyScrollOverlay();
+        lazyPrewarmPromise = null;
+      }
     }
   })();
 
   return lazyPrewarmPromise;
+}
+
+function triggerOriginalDeferredImagesForPrewarm(root = document) {
+  getDeferredImageControls(root)
+    .filter((control) => control instanceof HTMLElement && !control.closest("#cc98-comfort-app"))
+    .forEach((control) => {
+      triggerOriginalControl(control);
+    });
 }
 
 function getNativeScrollTargets() {
@@ -4237,32 +4258,43 @@ async function scrollOriginalPageForLazyMedia(duration = 2100, shouldStop = () =
   const durationMs = clampNumber(duration, 800, 8000, DEFAULT_SETTINGS.imageLoadDuration);
   const steps = Math.max(6, Math.min(40, Math.round(durationMs / 120)));
   const delay = Math.max(40, Math.round(durationMs / steps));
-  getNativeScrollTargets().forEach((target) => scrollNativeTargetTo(target, 0));
-  dispatchNativeLazySignals();
-  await wait(80);
+  beginNativeLazyScrollOverlay();
+  try {
+    getNativeScrollTargets().forEach((target) => {
+      scrollNativeTargetTo(target, 0);
+    });
+    dispatchNativeLazySignals();
+    await wait(80);
 
-  for (let step = 1; step <= steps; step += 1) {
+    for (let step = 1; step <= steps; step += 1) {
+      if (shouldStop()) {
+        return;
+      }
+      maintainNativeLazyScrollOverlay();
+      const progress = step / steps;
+      getNativeScrollTargets().forEach((target) => {
+        scrollNativeTargetTo(target, getScrollTargetMaxTop(target) * progress);
+      });
+      document.querySelectorAll("img").forEach(eagerNativeImage);
+      dispatchNativeLazySignals();
+      await wait(delay);
+    }
+
     if (shouldStop()) {
       return;
     }
-    const progress = step / steps;
+    maintainNativeLazyScrollOverlay();
     getNativeScrollTargets().forEach((target) => {
-      scrollNativeTargetTo(target, getScrollTargetMaxTop(target) * progress);
+      scrollNativeTargetTo(target, getScrollTargetMaxTop(target));
     });
     document.querySelectorAll("img").forEach(eagerNativeImage);
     dispatchNativeLazySignals();
-    await wait(delay);
+    await wait(180);
+  } finally {
+    endNativeLazyScrollOverlay({
+      keepVisible: document.documentElement.dataset.cc98ComfortOriginalPrewarming === "true"
+    });
   }
-
-  if (shouldStop()) {
-    return;
-  }
-  getNativeScrollTargets().forEach((target) => {
-    scrollNativeTargetTo(target, getScrollTargetMaxTop(target));
-  });
-  document.querySelectorAll("img").forEach(eagerNativeImage);
-  dispatchNativeLazySignals();
-  await wait(180);
 }
 
 function collectSnapshotMedia(root) {
@@ -4748,6 +4780,35 @@ function isDismissibleLoadingOverlay() {
   return loadingOverlaySoft || (isWebVpnHost() && !editorSubmitOverlayAwaitingRebuild);
 }
 
+function beginNativeLazyScrollOverlay() {
+  nativeLazyScrollOverlayDepth += 1;
+  document.documentElement.dataset.cc98ComfortNativeLazyScrolling = "true";
+  showLoadingOverlay("\u6b63\u5728\u52a0\u8f7d\u5e16\u5b50\u56fe\u7247...", { allowUserCenter: true });
+}
+
+function maintainNativeLazyScrollOverlay() {
+  if (nativeLazyScrollOverlayDepth < 1) {
+    return;
+  }
+  if (!loadingOverlayActive) {
+    showLoadingOverlay("\u6b63\u5728\u52a0\u8f7d\u5e16\u5b50\u56fe\u7247...", { allowUserCenter: true });
+    return;
+  }
+  ensureLoadingOverlayElement();
+}
+
+function endNativeLazyScrollOverlay(options = {}) {
+  nativeLazyScrollOverlayDepth = Math.max(0, nativeLazyScrollOverlayDepth - 1);
+  if (nativeLazyScrollOverlayDepth > 0) {
+    maintainNativeLazyScrollOverlay();
+    return;
+  }
+  delete document.documentElement.dataset.cc98ComfortNativeLazyScrolling;
+  if (!options.keepVisible && !editorSubmitOverlayAwaitingRebuild) {
+    hideLoadingOverlay({ force: true, releaseNativeLazyScroll: true });
+  }
+}
+
 function clearUserCenterStaleLoadingOverlay(kind = getPageKind()) {
   const isUserCenter = kind === "userCenter" || isUserCenterRoutePath();
   if (!isUserCenter || editorSubmitOverlayAwaitingRebuild) {
@@ -4924,6 +4985,10 @@ function showLoadingOverlay(message = "\u6b63\u5728\u52a0\u8f7d\u5e16\u5b50\u56f
 }
 
 function hideLoadingOverlay(options = {}) {
+  if (nativeLazyScrollOverlayDepth > 0 && !options.releaseNativeLazyScroll) {
+    maintainNativeLazyScrollOverlay();
+    return;
+  }
   if (editorSubmitOverlayAwaitingRebuild && !options.force) {
     if (loadingOverlayActive) {
       ensureLoadingOverlayElement();
@@ -4991,10 +5056,14 @@ function withTimeout(promise, timeout, label) {
 function shouldPrewarmOriginalBeforeRebuild() {
   return lastSettings?.enabled
     && lastSettings.rebuildUi
-    && !isWebVpnHost()
     && getPageKind() === "post"
     && !isNativeErrorPage()
     && lazyPrewarmedPageKey !== getLazyPrewarmPageKey();
+}
+
+function getOriginalPagePrewarmDuration() {
+  const configured = clampNumber(lastSettings?.imageLoadDuration, 800, 8000, DEFAULT_SETTINGS.imageLoadDuration);
+  return isWebVpnHost() ? Math.min(configured, 3200) : configured;
 }
 
 function startOriginalPagePrewarm() {
@@ -5005,13 +5074,14 @@ function startOriginalPagePrewarm() {
 
   originalPagePrewarmPageKey = pageKey;
   const root = document.documentElement;
-  showLoadingOverlay();
   document.querySelector("#cc98-comfort-app")?.remove();
   root.classList.remove("cc98-comfort", "cc98-comfort-rebuild-active");
   root.dataset.cc98ComfortRebuildReady = "false";
   root.dataset.cc98ComfortOriginalPrewarming = "true";
+  showLoadingOverlay();
 
-  const timeoutMs = clampNumber(lastSettings?.imageLoadDuration, 800, 8000, DEFAULT_SETTINGS.imageLoadDuration) + 3500;
+  const prewarmDuration = getOriginalPagePrewarmDuration();
+  const timeoutMs = prewarmDuration + (isWebVpnHost() ? 3000 : 3500);
   let prewarmAborted = false;
   const prewarmWork = (async () => {
     await waitForDomReady();
@@ -5022,7 +5092,7 @@ function startOriginalPagePrewarm() {
     if (prewarmAborted) {
       return;
     }
-    await scrollOriginalPageForLazyMedia(lastSettings.imageLoadDuration, () => prewarmAborted);
+    await scrollOriginalPageForLazyMedia(prewarmDuration, () => prewarmAborted);
     if (prewarmAborted) {
       return;
     }
@@ -7796,6 +7866,34 @@ function forceLegacyQuoteStyle(node) {
   node.style.setProperty("color", "var(--cc98-comfort-text, rgb(229, 236, 242))", "important");
 }
 
+function isMarkdownPostNode(node) {
+  return node instanceof Element
+    && (node.classList.contains("cc98-rebuild-markdown-post")
+      || Boolean(node.closest(".cc98-rebuild-markdown-post")));
+}
+
+function markMarkdownPostContent(node) {
+  if (!(node instanceof HTMLElement)) {
+    return;
+  }
+  node.classList.add("cc98-rebuild-markdown-post");
+  node.dataset.cc98ContentMode = "markdown";
+}
+
+function stripMarkdownInlineBackgrounds(root) {
+  if (!(root instanceof HTMLElement)) {
+    return;
+  }
+  [root, ...(root.querySelectorAll?.("[style]") ?? [])].forEach((node) => {
+    if (!(node instanceof HTMLElement) || node.matches("pre, code") || node.closest("pre, code")) {
+      return;
+    }
+    node.style.setProperty("background", "transparent", "important");
+    node.style.setProperty("background-color", "transparent", "important");
+    node.style.setProperty("background-image", "none", "important");
+  });
+}
+
 function isForcedLegacyQuoteNode(node) {
   if (!(node instanceof HTMLElement) || !node.classList.contains("cc98-rebuild-legacy-quote")) {
     return false;
@@ -7809,6 +7907,9 @@ function forceLegacyQuotesInRebuiltRoot(root = document) {
   const candidates = new Set();
   const addCandidates = (scope) => {
     if (!(scope instanceof Element)) {
+      return;
+    }
+    if (isMarkdownPostNode(scope)) {
       return;
     }
     if (scope.matches(".cc98-rebuild-post-body") || Boolean(scope.closest(".cc98-rebuild-post-body"))) {
@@ -7835,7 +7936,7 @@ function forceLegacyQuotesInRebuiltRoot(root = document) {
 
   let changed = 0;
   candidates.forEach((node) => {
-    if (!(node instanceof HTMLElement) || isForcedLegacyQuoteNode(node)) {
+    if (!(node instanceof HTMLElement) || isForcedLegacyQuoteNode(node) || isMarkdownPostNode(node)) {
       return;
     }
     const style = node.getAttribute("style") || "";
@@ -7875,7 +7976,7 @@ function rewriteLegacyQuoteInlineStyles(root) {
     ...(root.querySelectorAll?.("[style]") ?? [])
   ];
   styledNodes.forEach((node) => {
-    if (!(node instanceof HTMLElement)) {
+    if (!(node instanceof HTMLElement) || isMarkdownPostNode(node)) {
       return;
     }
     const style = node.getAttribute("style") || "";
@@ -7895,7 +7996,7 @@ function rewriteLegacyQuoteInlineStyles(root) {
 
 function stabilizePostQuoteBlocks(root) {
   root.querySelectorAll?.("div").forEach((node) => {
-    if (!(node instanceof HTMLElement)) {
+    if (!(node instanceof HTMLElement) || isMarkdownPostNode(node)) {
       return;
     }
     const style = node.getAttribute("style") || "";
@@ -7929,8 +8030,12 @@ function hasRenderedPostContent(root) {
     || Boolean(root.querySelector("img, video, audio, source, iframe, .aplayer, .cc98-rebuild-audio-player, .cc98-rebuild-content-video, .cc98-rebuild-restored-media, a[href], blockquote, pre, code"));
 }
 
-function sanitizeClonedPostContent(contentNode) {
+function sanitizeClonedPostContent(contentNode, options = {}) {
   const clone = contentNode.cloneNode(true);
+  if (options.markdown) {
+    markMarkdownPostContent(clone);
+    stripMarkdownInlineBackgrounds(clone);
+  }
   removeDecorativeFrameImages(clone);
   removePostChromeNodes(clone);
   restoreDeferredImageControls(contentNode, clone);
@@ -7964,8 +8069,10 @@ function sanitizePostContent(contentNode) {
   const markdownPreview = getMarkdownPreviewContentNode(contentNode);
 
   if (markdownPreview) {
-    const markdownClone = sanitizeClonedPostContent(markdownPreview);
+    const markdownClone = sanitizeClonedPostContent(markdownPreview, { markdown: true });
     if (markdownClone) {
+      markMarkdownPostContent(markdownClone);
+      stripMarkdownInlineBackgrounds(markdownClone);
       ensurePostMediaCoverage(markdownClone, originalMediaSources);
       stabilizeEmojiRendering(markdownClone);
       return markdownClone;
