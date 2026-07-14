@@ -4,7 +4,7 @@
 
 CC98 Reborn is a Chrome/Edge extension that rebuilds common CC98 pages into a cleaner reading interface while keeping the original site controls available whenever possible.
 
-Current pre-release version: `0.2.8.6`.
+Current pre-release version: `0.2.9`.
 
 ## Features
 
@@ -22,6 +22,8 @@ Current pre-release version: `0.2.8.6`.
 - Optional CC98 OpenID binding uses authorization code + PKCE, requests the CC98 API user-info scope, stores only a local identity summary, and enables the local floating watermark after binding.
 - Blocking rules for boards, title keywords, and user IDs.
 - Original CC98 interactions are preserved by reusing native controls for editors, private messages, user center settings, upload buttons, and message sending.
+- The original Markdown editor is theme-matched and includes an immediate local transition preview while the official preview waits for IME input to settle.
+- The rebuilt user menu combines message and account links, with a dedicated compact rail menu in left-side efficiency mode.
 - The floating watermark uses the first eight characters of the bound CC98 `watermarkId` and is rendered locally on CC98 pages.
 
 ## Install Locally
@@ -41,8 +43,8 @@ The popup currently exposes:
 - Show only hot topics on the home page.
 - Prewarm the first topic page for better original-poster and hot-comment detection.
 - Open ordinary forum links in a new tab.
-- Switch the top navigation to the left-side efficiency bar.
-- Add the optional CC98 Reborn tail to replies; this is enabled by default.
+- Switch the top navigation to the experimental left-side efficiency bar.
+- Add the experimental CC98 Reborn tail to replies; this is enabled by default.
 - Adjust font size.
 - Adjust emoji size.
 - Adjust image loading duration.

@@ -678,6 +678,19 @@ footer {
   font-size: 13px;
 }
 
+.checks .experimental-note {
+  color: #c58a00;
+  font-size: 10px;
+  font-weight: 720;
+  line-height: 1;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+body:is([data-popup-theme="night"], [data-popup-theme="graphite"], [data-popup-theme="midnight"], [data-popup-theme="wine"]) .checks .experimental-note {
+  color: #ffd666;
+}
+
 .checkline {
   display: flex;
   gap: 8px;

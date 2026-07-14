@@ -5,7 +5,7 @@ const OPENID_BINDING_STORAGE_KEY = "cc98RebornOpenIdBinding:v1";
 const SEARCH_SORT_STORAGE_KEY = "cc98RebornSearchSort:v1";
 const READ_LATER_ROUTE_HASH = "#cc98-reborn-read-later";
 const BLACKLIST_ROUTE_HASH = "#cc98-reborn-blacklist";
-const EXTENSION_VERSION = "0.2.8.6";
+const EXTENSION_VERSION = "0.2.9";
 const LOGIN_REDIRECT_MARK_KEY = "cc98RebornLoginRedirectStartedAt";
 const LOGIN_REDIRECT_SNAPSHOT_KEY = "cc98RebornLoginRedirectSnapshot";
 const LOGIN_HOME_REFRESH_MARK_KEY = "cc98RebornLoginHomeRefreshPendingAt";
@@ -272,8 +272,11 @@ const originalPosterIdentityPrefetches = new Map();
 const neutralizedLinks = new WeakMap();
 const reparentedNativeNodes = new WeakMap();
 const nativeEditorStabilizers = new WeakSet();
+const markdownEditorInputStates = new WeakMap();
+const markdownEditorLocalPreviews = new WeakMap();
 const nativeUserCenterStabilizers = new WeakSet();
 const nativeTopbarUserStabilizers = new WeakSet();
+const nativeTopbarMenuCloseTimers = new WeakMap();
 const proxyControlSyncTimers = new WeakMap();
 const searchSuggestionCache = new Map();
 const homeHotRankingStates = new Map();
@@ -9971,16 +9974,136 @@ function createSideTopbarMergedButton(label, dataset = {}) {
   return button;
 }
 
+function getTopbarMergedProfile(nativeEntry) {
+  const avatarNode = nativeEntry?.querySelector?.(".topBarUserImg img, .topBarUserInfo img, img[class*='avatar' i], img[class*='portrait' i]");
+  const avatar = makeAbsoluteCc98Url(
+    avatarNode?.currentSrc
+      || avatarNode?.getAttribute?.("src")
+      || avatarNode?.src
+      || getStoredCc98UserAvatar()
+      || ""
+  );
+  const visibleName = cleanupPostText(nativeEntry?.querySelector?.(
+    ".topBarUserName, .cc98-rebuild-native-user-name-link, [class*='UserName'], [class*='userName']"
+  )?.textContent || "");
+  const candidateName = isLikelyGuestAccountName(visibleName) ? getStoredCc98UserName() : visibleName;
+  const name = isLikelyGuestAccountName(candidateName) ? "CC98 用户" : cleanupPostText(candidateName);
+  return {
+    avatar,
+    name: name || "CC98 用户"
+  };
+}
+
+function createSideTopbarMergedProfile(nativeEntry, profile) {
+  const link = createElement("a", "cc98-rebuild-side-topbar-profile");
+  link.href = buildCc98RouteHref("/usercenter");
+  link.setAttribute("aria-label", `进入 ${profile.name} 的个人中心`);
+  const avatar = createElement("span", "cc98-rebuild-side-topbar-profile-avatar");
+  if (profile.avatar) {
+    const image = document.createElement("img");
+    image.src = profile.avatar;
+    image.alt = "";
+    avatar.append(image);
+  } else {
+    avatar.textContent = profile.name.slice(0, 1).toUpperCase();
+  }
+  link.append(avatar, createElement("strong", "cc98-rebuild-side-topbar-profile-name", profile.name));
+  return link;
+}
+
+function createSideRailUserProfile(profile) {
+  const link = createElement("a", "cc98-rebuild-side-rail-profile");
+  link.href = buildCc98RouteHref("/usercenter");
+  link.setAttribute("aria-label", `进入 ${profile.name} 的个人中心`);
+  const avatar = createElement("span", "cc98-rebuild-side-rail-profile-avatar");
+  if (profile.avatar) {
+    const image = document.createElement("img");
+    image.src = profile.avatar;
+    image.alt = "";
+    avatar.append(image);
+  } else {
+    avatar.textContent = profile.name.slice(0, 1).toUpperCase();
+  }
+  const text = createElement("span", "cc98-rebuild-side-rail-profile-text");
+  text.append(
+    createElement("strong", "cc98-rebuild-side-rail-profile-name", profile.name),
+    createElement("small", "", "CC98 账号")
+  );
+  link.append(avatar, text);
+  return link;
+}
+
+function bindSideTopbarMergedMenuHover(nativeEntry, menu) {
+  if (!(nativeEntry instanceof HTMLElement) || !(menu instanceof HTMLElement)) {
+    return;
+  }
+
+  const cancelClose = () => {
+    const timer = nativeTopbarMenuCloseTimers.get(nativeEntry);
+    if (timer) {
+      window.clearTimeout(timer);
+      nativeTopbarMenuCloseTimers.delete(nativeEntry);
+    }
+  };
+  const setMenusHidden = (hidden) => {
+    nativeEntry.querySelectorAll(".cc98-rebuild-side-topbar-menu, .cc98-rebuild-side-rail-menu").forEach((node) => {
+      node.setAttribute("aria-hidden", hidden ? "true" : "false");
+    });
+  };
+  const holdOpen = () => {
+    cancelClose();
+    nativeEntry.classList.add("cc98-rebuild-side-menu-open");
+    setMenusHidden(false);
+  };
+  const scheduleClose = (respectFocus = false) => {
+    cancelClose();
+    const timer = window.setTimeout(() => {
+      nativeTopbarMenuCloseTimers.delete(nativeEntry);
+      const menus = [...nativeEntry.querySelectorAll(".cc98-rebuild-side-topbar-menu, .cc98-rebuild-side-rail-menu")]
+        .filter((node) => node instanceof HTMLElement);
+      const pointerInside = nativeEntry.matches(":hover") || menus.some((node) => node.matches(":hover"));
+      const focused = nativeEntry.contains(document.activeElement);
+      if (pointerInside || (respectFocus && focused)) {
+        holdOpen();
+        return;
+      }
+      if (focused && document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+      nativeEntry.classList.remove("cc98-rebuild-side-menu-open");
+      setMenusHidden(true);
+    }, 360);
+    nativeTopbarMenuCloseTimers.set(nativeEntry, timer);
+  };
+
+  if (nativeEntry.dataset.cc98MergedMenuHoverBound !== "true") {
+    nativeEntry.dataset.cc98MergedMenuHoverBound = "true";
+    nativeEntry.addEventListener("pointerenter", holdOpen);
+    nativeEntry.addEventListener("pointerleave", () => scheduleClose(false));
+    nativeEntry.addEventListener("focusin", holdOpen);
+    nativeEntry.addEventListener("focusout", () => scheduleClose(true));
+  }
+  if (menu.dataset.cc98HoverLockBound !== "true") {
+    menu.dataset.cc98HoverLockBound = "true";
+    menu.addEventListener("pointerenter", holdOpen);
+    menu.addEventListener("pointermove", holdOpen, { passive: true });
+    menu.addEventListener("pointerleave", () => scheduleClose(false));
+  }
+  setMenusHidden(true);
+}
+
 function ensureSideTopbarMergedMenu(nativeEntry) {
   if (!(nativeEntry instanceof HTMLElement)) {
     return;
   }
   const sourceMenus = nativeEntry.querySelectorAll(".topBarUserCenter, .topBarUserCenter-mainPage, .topBarMessageDetails, .topBarMessageDetails-mainPage");
   const existing = nativeEntry.querySelector(".cc98-rebuild-side-topbar-menu");
+  const existingSideRail = nativeEntry.querySelector(".cc98-rebuild-side-rail-menu");
   if (nativeEntry.classList.contains("cc98-rebuild-guest-user-entry")) {
     nativeEntry.classList.remove("cc98-rebuild-side-menu-ready");
     sourceMenus.forEach((node) => node.classList?.remove("cc98-rebuild-side-topbar-source"));
     existing?.remove();
+    existingSideRail?.remove();
     return;
   }
 
@@ -9989,6 +10112,9 @@ function ensureSideTopbarMergedMenu(nativeEntry) {
   const menu = existing instanceof HTMLElement
     ? existing
     : createElement("div", "cc98-rebuild-side-topbar-menu");
+  const sideRailMenu = existingSideRail instanceof HTMLElement
+    ? existingSideRail
+    : createElement("div", "cc98-rebuild-side-rail-menu");
   const messageItems = [
     ["/message/response", getTopbarMenuTextByHref("/message/response", "\u56de\u590d\u6211\u7684"), getTopbarMessageCountByHref("/message/response")],
     ["/message/attme", getTopbarMenuTextByHref("/message/attme", "@ \u6211\u7684"), getTopbarMessageCountByHref("/message/attme")],
@@ -10001,23 +10127,48 @@ function ensureSideTopbarMergedMenu(nativeEntry) {
     ["/usercenter/myhistory", "\u6d4f\u89c8\u8bb0\u5f55"],
     ["/usercenter/myfavorites/order/0/group/0/1", "\u6211\u7684\u6536\u85cf"]
   ];
-  const signature = JSON.stringify({ messageItems, userItems });
+  const profile = getTopbarMergedProfile(nativeEntry);
+  const signature = JSON.stringify({ messageItems, userItems, profile });
   if (menu.dataset.cc98MergedMenuSignature !== signature) {
-    const messageSection = createElement("div", "cc98-rebuild-side-topbar-menu-section");
-    const userSection = createElement("div", "cc98-rebuild-side-topbar-menu-section");
+    const profileHeader = createSideTopbarMergedProfile(nativeEntry, profile);
+    const itemGrid = createElement("div", "cc98-rebuild-side-topbar-menu-grid");
     messageItems.forEach(([href, label, count]) => {
-      messageSection.append(createSideTopbarMergedLink({ href, label, count, kind: "message" }));
+      itemGrid.append(createSideTopbarMergedLink({ href, label, count, kind: "message" }));
     });
     userItems.forEach(([href, label]) => {
-      userSection.append(createSideTopbarMergedLink({ href, label, kind: "user" }));
+      itemGrid.append(createSideTopbarMergedLink({ href, label, kind: "user" }));
     });
-    userSection.append(createSideTopbarMergedButton("\u9000\u51fa\u767b\u5f55", { cc98ForcedLogout: "true" }));
-    menu.replaceChildren(messageSection, userSection);
+    const logout = createSideTopbarMergedButton("\u9000\u51fa\u767b\u5f55", { cc98ForcedLogout: "true" });
+    logout.classList.add("cc98-rebuild-side-topbar-menu-logout");
+    menu.replaceChildren(profileHeader, itemGrid, logout);
     menu.dataset.cc98MergedMenuSignature = signature;
+  }
+  if (sideRailMenu.dataset.cc98MergedMenuSignature !== signature) {
+    const profileHeader = createSideRailUserProfile(profile);
+    const itemList = createElement("div", "cc98-rebuild-side-rail-menu-list");
+    messageItems.forEach(([href, label, count]) => {
+      const link = createSideTopbarMergedLink({ href, label, count, kind: "message" });
+      link.classList.add("cc98-rebuild-side-rail-menu-item");
+      itemList.append(link);
+    });
+    userItems.forEach(([href, label]) => {
+      const link = createSideTopbarMergedLink({ href, label, kind: "user" });
+      link.classList.add("cc98-rebuild-side-rail-menu-item");
+      itemList.append(link);
+    });
+    const logout = createSideTopbarMergedButton("\u9000\u51fa\u767b\u5f55", { cc98ForcedLogout: "true" });
+    logout.classList.add("cc98-rebuild-side-rail-menu-item", "cc98-rebuild-side-rail-menu-logout");
+    sideRailMenu.replaceChildren(profileHeader, itemList, logout);
+    sideRailMenu.dataset.cc98MergedMenuSignature = signature;
   }
   if (!existing) {
     nativeEntry.append(menu);
   }
+  if (!existingSideRail) {
+    nativeEntry.append(sideRailMenu);
+  }
+  bindSideTopbarMergedMenuHover(nativeEntry, menu);
+  bindSideTopbarMergedMenuHover(nativeEntry, sideRailMenu);
 }
 
 function isLogoutMenuText(text) {
@@ -10605,8 +10756,8 @@ function prepareNativeTopbarUserEntry(nativeEntry) {
           return;
         }
       }
-      const link = event.target?.closest?.(".messageTopBar[href], .topBarMessage a[href], .topBarUserCenter a[href], .topBarUserCenter-mainPage a[href], .topBarMessageDetails a[href], .topBarMessageDetails-mainPage a[href], .cc98-rebuild-side-topbar-menu a[href]");
-      const menuItem = event.target?.closest?.(".topBarUserCenter li, .topBarUserCenter-mainPage li, .topBarUserCenter a, .topBarUserCenter-mainPage a, .cc98-rebuild-side-topbar-menu li, .cc98-rebuild-side-topbar-menu a, .cc98-rebuild-side-topbar-menu button");
+      const link = event.target?.closest?.(".messageTopBar[href], .topBarMessage a[href], .topBarUserCenter a[href], .topBarUserCenter-mainPage a[href], .topBarMessageDetails a[href], .topBarMessageDetails-mainPage a[href], .cc98-rebuild-side-topbar-menu a[href], .cc98-rebuild-side-rail-menu a[href]");
+      const menuItem = event.target?.closest?.(".topBarUserCenter li, .topBarUserCenter-mainPage li, .topBarUserCenter a, .topBarUserCenter-mainPage a, .cc98-rebuild-side-topbar-menu li, .cc98-rebuild-side-topbar-menu a, .cc98-rebuild-side-topbar-menu button, .cc98-rebuild-side-rail-menu a, .cc98-rebuild-side-rail-menu button");
       const forcedLogout = event.target?.closest?.("[data-cc98-forced-logout='true']");
       const isLogoutAction = Boolean(forcedLogout)
         || (menuItem instanceof HTMLElement && isLogoutMenuText(menuItem.textContent));
@@ -10699,7 +10850,7 @@ function renderTopbarUserEntry() {
   if (hasFreshCc98LoginSession()) {
     return createForcedTopbarUserEntry();
   }
-  const fallback = createLink("cc98-rebuild-user-fallback", "个人", buildCc98RouteHref("/usercenter"));
+  const fallback = createLink("cc98-rebuild-user-fallback cc98-rebuild-user-fallback-nav", "个人中心", buildCc98RouteHref("/usercenter"));
   fallback.setAttribute("aria-label", "个人中心");
   return fallback;
 }
@@ -11429,6 +11580,10 @@ function isEditorAuxiliarySubmitControl(control) {
   if (!(control instanceof HTMLElement)) {
     return true;
   }
+  if (control.matches("#post-topic-changeMode, .changeEditor, .cc98-rebuild-markdown-entry")
+    || Boolean(control.closest(".react-mde"))) {
+    return true;
+  }
   if (control.matches("button.fa-check, button.fa-remove, button.fa-times, button[class*='fa-check'], button[class*='fa-remove'], button[class*='fa-times'], button[data-cc98-editor-label]")) {
     return true;
   }
@@ -11705,8 +11860,20 @@ function labelEditorToolbarButtonsWithUnicode(editor) {
   });
 }
 
-function hideMarkdownEditorEntrances(editor) {
-  editor.querySelectorAll("#post-topic-changeMode, .changeEditor, button, a, [role='button']").forEach((control) => {
+function stabilizeMarkdownEditor(editor) {
+  if (!(editor instanceof HTMLElement)) {
+    return;
+  }
+  const markdownEditor = editor.querySelector(".react-mde");
+  if (!markdownEditor || markdownEditor.querySelector(".mde-preview, .mde-preview-content")) {
+    removeLocalMarkdownPreview(editor);
+  }
+  editor.classList.toggle("cc98-rebuild-markdown-editor-active", Boolean(markdownEditor));
+  editor.dataset.cc98EditorMode = markdownEditor ? "markdown" : "ubb";
+  editor.querySelectorAll("#post-topic-changeMode, .changeEditor, .cc98-rebuild-markdown-entry").forEach((control) => {
+    if (!(control instanceof HTMLElement)) {
+      return;
+    }
     const signature = [
       control.id,
       control.className,
@@ -11718,9 +11885,366 @@ function hideMarkdownEditorEntrances(editor) {
       return;
     }
     control.classList.add("cc98-rebuild-markdown-entry");
-    control.hidden = true;
-    control.style.setProperty("display", "none", "important");
+    control.hidden = false;
+    control.style.removeProperty("display");
+    control.setAttribute("role", "button");
+    control.tabIndex = 0;
+    const label = cleanupPostText(control.textContent) || (markdownEditor ? "切换到UBB编辑器" : "切换到Markdown编辑器");
+    control.setAttribute("aria-label", label);
+    control.title = label;
+    control.dataset.cc98EditorTargetMode = /ubb/i.test(label) ? "ubb" : "markdown";
+    const parent = control.parentElement;
+    const contentHeading = control.closest(".createTopicContent");
+    if (contentHeading instanceof HTMLElement) {
+      const hint = [...contentHeading.children].find((child) => {
+        if (!(child instanceof HTMLElement)
+          || child === control
+          || child.classList.contains("createTopicListName")
+          || child.classList.contains("ubb-editor")) {
+          return false;
+        }
+        return /\u63d0\u793a|CC98|\u5fae\u4fe1\u5c0f\u7a0b\u5e8f|\u89c6\u9891/i.test(cleanupPostText(child.textContent));
+      });
+      if (hint instanceof HTMLElement) {
+        contentHeading.classList.add("cc98-rebuild-editor-heading-with-switch");
+        hint.classList.add("cc98-rebuild-editor-heading-hint");
+      }
+    }
+    if (parent instanceof HTMLElement && parent.classList.contains("row")) {
+      parent.classList.add("cc98-rebuild-editor-mode-switch-row");
+    }
   });
+}
+
+function getMarkdownEditorInputState(editor) {
+  let state = markdownEditorInputStates.get(editor);
+  if (!state) {
+    state = {
+      composing: false,
+      lastActivityAt: 0
+    };
+    markdownEditorInputStates.set(editor, state);
+  }
+  return state;
+}
+
+function isMarkdownEditorTextEvent(event) {
+  const target = event?.target;
+  return target instanceof Element && Boolean(target.closest(".react-mde .mde-text"));
+}
+
+function bindMarkdownEditorInputTracking(editor) {
+  if (!(editor instanceof HTMLElement) || editor.dataset.cc98MarkdownInputTrackingBound === "true") {
+    return;
+  }
+  editor.dataset.cc98MarkdownInputTrackingBound = "true";
+  const markActivity = (event, composing = null) => {
+    if (!isMarkdownEditorTextEvent(event)) {
+      return;
+    }
+    const state = getMarkdownEditorInputState(editor);
+    if (typeof composing === "boolean") {
+      state.composing = composing;
+    } else if (typeof event.isComposing === "boolean" && event.isComposing) {
+      state.composing = true;
+    }
+    state.lastActivityAt = Date.now();
+  };
+  editor.addEventListener("compositionstart", (event) => markActivity(event, true), true);
+  editor.addEventListener("compositionupdate", (event) => markActivity(event, true), true);
+  editor.addEventListener("compositionend", (event) => markActivity(event, false), true);
+  editor.addEventListener("beforeinput", (event) => markActivity(event), true);
+  editor.addEventListener("input", (event) => markActivity(event, Boolean(event.isComposing)), true);
+  editor.addEventListener("focusout", (event) => {
+    if (!isMarkdownEditorTextEvent(event)) {
+      return;
+    }
+    const state = getMarkdownEditorInputState(editor);
+    if (state.composing) {
+      state.lastActivityAt = Date.now();
+      window.setTimeout(() => {
+        const active = document.activeElement;
+        if (!(active instanceof Element) || !active.closest(".react-mde .mde-text")) {
+          state.composing = false;
+          state.lastActivityAt = Date.now();
+        }
+      }, 0);
+    }
+  }, true);
+}
+
+function waitForMarkdownEditorInputToSettle(editor, options = {}) {
+  const quietPeriod = Math.max(80, Number(options.quietPeriod) || 120);
+  const timeout = Math.max(quietPeriod, Number(options.timeout) || 1200);
+  const startedAt = Date.now();
+  return new Promise((resolve) => {
+    const check = () => {
+      const state = getMarkdownEditorInputState(editor);
+      const now = Date.now();
+      const quietFor = state.lastActivityAt ? now - state.lastActivityAt : quietPeriod;
+      if ((!state.composing && quietFor >= quietPeriod) || now - startedAt >= timeout) {
+        window.requestAnimationFrame(() => window.requestAnimationFrame(resolve));
+        return;
+      }
+      window.setTimeout(check, 24);
+    };
+    check();
+  });
+}
+
+function getMarkdownEditorVisibleText(editor) {
+  const content = editor?.querySelector?.(".react-mde .public-DraftEditor-content");
+  if (!(content instanceof HTMLElement)) {
+    return "";
+  }
+  const blocks = [...content.querySelectorAll("[data-block='true']")]
+    .filter((block) => block instanceof HTMLElement);
+  const text = blocks.length
+    ? blocks.map((block) => block.innerText || block.textContent || "").join("\n")
+    : content.innerText || content.textContent || "";
+  return text.replace(/\u200b/g, "").replace(/\u00a0/g, " ").replace(/\r\n?/g, "\n");
+}
+
+function appendLocalMarkdownInline(target, source) {
+  const text = String(source ?? "");
+  const pattern = /(`([^`\n]+)`|\*\*([^*\n]+)\*\*|__([^_\n]+)__|~~([^~\n]+)~~|\[([^\]\n]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)|\*([^*\n]+)\*|_([^_\n]+)_)/g;
+  let cursor = 0;
+  let match;
+  const appendText = (value) => {
+    if (value) {
+      target.append(document.createTextNode(value));
+    }
+  };
+  while ((match = pattern.exec(text))) {
+    appendText(text.slice(cursor, match.index));
+    let node = null;
+    if (match[2] !== undefined) {
+      node = createElement("code", "", match[2]);
+    } else if (match[3] !== undefined || match[4] !== undefined) {
+      node = createElement("strong", "", match[3] ?? match[4]);
+    } else if (match[5] !== undefined) {
+      node = createElement("del", "", match[5]);
+    } else if (match[6] !== undefined && match[7] !== undefined) {
+      try {
+        const url = new URL(match[7], location.href);
+        if (/^https?:$/i.test(url.protocol)) {
+          node = createLink("", match[6], url.href);
+        }
+      } catch {
+        node = null;
+      }
+      if (!node) {
+        appendText(match[0]);
+      }
+    } else if (match[8] !== undefined || match[9] !== undefined) {
+      node = createElement("em", "", match[8] ?? match[9]);
+    }
+    if (node) {
+      target.append(node);
+    }
+    cursor = match.index + match[0].length;
+  }
+  appendText(text.slice(cursor));
+}
+
+function buildLocalMarkdownPreview(text) {
+  const article = createElement("article", "cc98-rebuild-markdown-local-preview-content");
+  const lines = String(text ?? "").split("\n");
+  let paragraphLines = [];
+  let codeLines = [];
+  let inCode = false;
+  const flushParagraph = () => {
+    if (!paragraphLines.length) {
+      return;
+    }
+    const paragraph = document.createElement("p");
+    paragraphLines.forEach((line, index) => {
+      if (index) {
+        paragraph.append(document.createElement("br"));
+      }
+      appendLocalMarkdownInline(paragraph, line);
+    });
+    article.append(paragraph);
+    paragraphLines = [];
+  };
+  const flushCode = () => {
+    const pre = document.createElement("pre");
+    pre.append(createElement("code", "", codeLines.join("\n")));
+    article.append(pre);
+    codeLines = [];
+  };
+  lines.forEach((line) => {
+    if (/^\s*```/.test(line)) {
+      flushParagraph();
+      if (inCode) {
+        flushCode();
+      }
+      inCode = !inCode;
+      return;
+    }
+    if (inCode) {
+      codeLines.push(line);
+      return;
+    }
+    if (!line.trim()) {
+      flushParagraph();
+      return;
+    }
+    const heading = line.match(/^\s*(#{1,6})\s+(.+)$/);
+    if (heading) {
+      flushParagraph();
+      const node = document.createElement(`h${heading[1].length}`);
+      appendLocalMarkdownInline(node, heading[2]);
+      article.append(node);
+      return;
+    }
+    if (/^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/.test(line)) {
+      flushParagraph();
+      article.append(document.createElement("hr"));
+      return;
+    }
+    const quote = line.match(/^\s*>\s?(.*)$/);
+    if (quote) {
+      flushParagraph();
+      const node = document.createElement("blockquote");
+      appendLocalMarkdownInline(node, quote[1]);
+      article.append(node);
+      return;
+    }
+    const list = line.match(/^\s*(?:[-+*]|(\d+)\.)\s+(.+)$/);
+    if (list) {
+      flushParagraph();
+      const node = createElement("div", "cc98-rebuild-markdown-local-list-line");
+      node.append(createElement("span", "cc98-rebuild-markdown-local-list-marker", list[1] ? `${list[1]}.` : "•"));
+      const value = createElement("span");
+      appendLocalMarkdownInline(value, list[2]);
+      node.append(value);
+      article.append(node);
+      return;
+    }
+    paragraphLines.push(line);
+  });
+  if (inCode || codeLines.length) {
+    flushParagraph();
+    flushCode();
+  } else {
+    flushParagraph();
+  }
+  if (!article.children.length) {
+    article.append(createElement("p", "cc98-rebuild-muted", "暂无可预览内容"));
+  }
+  return article;
+}
+
+function removeLocalMarkdownPreview(editor) {
+  const preview = markdownEditorLocalPreviews.get(editor);
+  if (!(preview instanceof HTMLElement)) {
+    return;
+  }
+  preview.__cc98PreviewObserver?.disconnect?.();
+  if (preview.__cc98PreviewTimeout) {
+    window.clearTimeout(preview.__cc98PreviewTimeout);
+  }
+  preview.remove();
+  markdownEditorLocalPreviews.delete(editor);
+}
+
+function showLocalMarkdownPreview(editor) {
+  const markdownEditor = editor?.querySelector?.(".react-mde");
+  const sourceSurface = markdownEditor?.querySelector?.(".mde-text");
+  if (!(markdownEditor instanceof HTMLElement) || !(sourceSurface instanceof HTMLElement)) {
+    return null;
+  }
+  const rect = sourceSurface.getBoundingClientRect();
+  if (rect.width < 1 || rect.height < 1) {
+    return null;
+  }
+  let preview = markdownEditorLocalPreviews.get(editor);
+  if (!(preview instanceof HTMLElement)) {
+    preview = createElement("section", "cc98-rebuild-markdown-local-preview");
+    preview.setAttribute("aria-live", "polite");
+    preview.append(createElement("div", "cc98-rebuild-markdown-local-preview-label", "本地预览"));
+    document.body.append(preview);
+    markdownEditorLocalPreviews.set(editor, preview);
+    const observer = new MutationObserver(() => {
+      if (markdownEditor.querySelector(".mde-preview, .mde-preview-content")) {
+        window.requestAnimationFrame(() => removeLocalMarkdownPreview(editor));
+      }
+    });
+    observer.observe(markdownEditor, { childList: true, subtree: true });
+    preview.__cc98PreviewObserver = observer;
+  }
+  preview.querySelector(".cc98-rebuild-markdown-local-preview-content")?.remove();
+  preview.append(buildLocalMarkdownPreview(getMarkdownEditorVisibleText(editor)));
+  const left = Math.max(8, rect.left);
+  const top = Math.max(8, rect.top);
+  const width = Math.max(1, Math.min(rect.width, window.innerWidth - left - 8));
+  const height = Math.max(1, Math.min(rect.height, window.innerHeight - top - 8));
+  preview.style.setProperty("left", `${left}px`, "important");
+  preview.style.setProperty("top", `${top}px`, "important");
+  preview.style.setProperty("width", `${width}px`, "important");
+  preview.style.setProperty("height", `${height}px`, "important");
+  if (preview.__cc98PreviewTimeout) {
+    window.clearTimeout(preview.__cc98PreviewTimeout);
+  }
+  preview.__cc98PreviewTimeout = window.setTimeout(() => removeLocalMarkdownPreview(editor), 3000);
+  return preview;
+}
+
+function getMarkdownPreviewTabControl(target) {
+  if (!(target instanceof Element)) {
+    return null;
+  }
+  const control = target.closest(".react-mde .mde-tabs button");
+  if (!(control instanceof HTMLButtonElement)) {
+    return null;
+  }
+  const label = cleanupPostText(control.textContent);
+  return /^(?:preview|预览)$/i.test(label) ? control : null;
+}
+
+function blurMarkdownEditorBeforePreview(editor, target) {
+  const control = getMarkdownPreviewTabControl(target);
+  if (!(control instanceof HTMLButtonElement) || control.classList.contains("selected")) {
+    return false;
+  }
+  showLocalMarkdownPreview(editor);
+  const active = document.activeElement;
+  if (active instanceof HTMLElement && active.closest(".react-mde .mde-text")) {
+    active.blur();
+  }
+  return true;
+}
+
+function deferMarkdownPreviewUntilInputSettles(editor, event) {
+  const control = getMarkdownPreviewTabControl(event?.target);
+  if (!(control instanceof HTMLButtonElement)
+    || control.classList.contains("selected")
+    || control.dataset.cc98PreviewInputSettled === "true") {
+    return false;
+  }
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation?.();
+  if (control.dataset.cc98PreviewInputPending === "true") {
+    return true;
+  }
+  control.dataset.cc98PreviewInputPending = "true";
+  blurMarkdownEditorBeforePreview(editor, control);
+  waitForMarkdownEditorInputToSettle(editor).then(() => {
+    delete control.dataset.cc98PreviewInputPending;
+    if (!control.isConnected || control.classList.contains("selected")) {
+      removeLocalMarkdownPreview(editor);
+      return;
+    }
+    showLocalMarkdownPreview(editor);
+    control.dataset.cc98PreviewInputSettled = "true";
+    control.click();
+    window.setTimeout(() => {
+      delete control.dataset.cc98PreviewInputSettled;
+    }, 0);
+  });
+  return true;
 }
 
 function getNativeEditorPassthroughControl(target) {
@@ -13509,7 +14033,9 @@ function stabilizeEditorPreviewFormatting(editor) {
   const shouldRenderUbbPreview = hasInlineUbbFormatting(sourceText);
   const sourceHash = shouldRenderUbbPreview ? String(sourceText.length) + ":" + sourceText.slice(0, 96) + ":" + sourceText.slice(-96) : "";
   editor.querySelectorAll(previewSelectors).forEach((preview) => {
-    if (shouldRenderUbbPreview && preview instanceof HTMLElement && preview.dataset.cc98UbbPreviewSource !== sourceHash) {
+    const isMarkdownPreview = preview.matches?.(".mde-preview-content, .markdown-preview")
+      || Boolean(preview.closest?.(".react-mde, .markdown-editor"));
+    if (!isMarkdownPreview && shouldRenderUbbPreview && preview instanceof HTMLElement && preview.dataset.cc98UbbPreviewSource !== sourceHash) {
       preview.dataset.cc98UbbPreviewSource = sourceHash;
       preview.replaceChildren(buildNativeEditorUbbPreview(sourceText));
     }
@@ -13660,13 +14186,13 @@ function stabilizeNativeEditor(editor) {
   ensureNativeEditorDraftControls(editor);
   labelEditorToolbarButtons(editor);
   labelEditorToolbarButtonsWithUnicode(editor);
-  hideMarkdownEditorEntrances(editor);
+  stabilizeMarkdownEditor(editor);
   stabilizeEditorFontSizeButton(editor);
   stabilizeEditorColorButton(editor);
   stabilizeEditorTagDropdown(editor);
   stabilizeEditorEmojiImages(editor);
   stabilizeEditorPreviewFormatting(editor);
-  editor.querySelectorAll(".ubb-editor, .markdown-editor, .for-container, .for-editor, .for-toolbar, .for-preview, .editor-preview, .CodeMirror, textarea")
+  editor.querySelectorAll(".ubb-editor, .react-mde, .mde-header, .mde-text, .mde-preview, .mde-preview-content, .markdown-editor, .for-container, .for-editor, .for-toolbar, .for-preview, .editor-preview, .CodeMirror, textarea")
     .forEach((node) => node.classList.add("cc98-rebuild-editor-surface"));
 }
 
@@ -13738,7 +14264,21 @@ function bindNativeEditorStabilizer(editor) {
     return;
   }
   nativeEditorStabilizers.add(editor);
+  bindMarkdownEditorInputTracking(editor);
+  editor.addEventListener("keydown", (event) => {
+    if (!/^(?:Enter| )$/.test(event.key)) {
+      return;
+    }
+    const control = event.target?.closest?.("#post-topic-changeMode, .changeEditor, .cc98-rebuild-markdown-entry");
+    if (!(control instanceof HTMLElement)) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    control.click();
+  }, true);
   editor.addEventListener("pointerdown", (event) => {
+    blurMarkdownEditorBeforePreview(editor, event.target);
     if (event.target?.closest?.(".cc98-rebuild-message-emoji-panel")) {
       return;
     }
@@ -13782,6 +14322,9 @@ function bindNativeEditorStabilizer(editor) {
     openEditorColorPicker(colorButton, editor);
   }, true);
   editor.addEventListener("click", (event) => {
+    if (deferMarkdownPreviewUntilInputSettles(editor, event)) {
+      return;
+    }
     const submitControl = event.target?.closest?.("#post-topic-button, button, input[type='button'], input[type='submit'], .button, .ant-btn, [role='button']");
     if (isNativePostSubmitEditor(editor) && isLikelyEditorSubmitControl(event.target)) {
       const context = getNativeEditorSubmitContext({ editor });
@@ -18955,6 +19498,28 @@ function renderGeneric(app) {
   app.append(section);
 }
 
+function refreshRebuiltFromLoadedNativeContent(button) {
+  if (isRebuilding || !lastSettings?.enabled || !lastSettings.rebuildUi) {
+    return;
+  }
+  const scrollPosition = captureImageViewerScrollPosition();
+  if (button instanceof HTMLButtonElement) {
+    button.disabled = true;
+    button.setAttribute("aria-busy", "true");
+    button.textContent = "同步中";
+  }
+
+  renderRebuiltUi();
+  const restore = () => restoreImageViewerScrollPosition(scrollPosition);
+  requestAnimationFrame(restore);
+  [80, 220].forEach((delay) => {
+    window.setTimeout(() => {
+      syncRebuiltContent();
+      restore();
+    }, delay);
+  });
+}
+
 function renderRebuiltUi() {
   if (isRebuilding) {
     return;
@@ -19031,7 +19596,14 @@ function renderRebuiltUi() {
       ].forEach(([label, href]) => navLinks.append(createLink("", label, href)));
       nav.append(navLinks);
       const searchForm = createRebuiltSearchForm(preservedSearchState);
-      searchForm.append(createButton("cc98-rebuild-icon-button cc98-rebuild-refresh-button", "刷新", () => location.reload()));
+      const refreshButton = createButton(
+        "cc98-rebuild-icon-button cc98-rebuild-refresh-button",
+        "刷新",
+        (event) => refreshRebuiltFromLoadedNativeContent(event.currentTarget)
+      );
+      refreshButton.title = "同步原页面已加载内容";
+      refreshButton.setAttribute("aria-label", "同步原页面已加载内容");
+      searchForm.append(refreshButton);
       nav.append(searchForm);
       const actions = createElement("div", "cc98-rebuild-actions");
       actions.append(renderTopbarUserEntry());
