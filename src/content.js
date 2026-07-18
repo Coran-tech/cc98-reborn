@@ -5,7 +5,7 @@ const OPENID_BINDING_STORAGE_KEY = "cc98RebornOpenIdBinding:v1";
 const SEARCH_SORT_STORAGE_KEY = "cc98RebornSearchSort:v1";
 const READ_LATER_ROUTE_HASH = "#cc98-reborn-read-later";
 const BLACKLIST_ROUTE_HASH = "#cc98-reborn-blacklist";
-const EXTENSION_VERSION = "0.2.9";
+const EXTENSION_VERSION = "0.2.10";
 const LOGIN_REDIRECT_MARK_KEY = "cc98RebornLoginRedirectStartedAt";
 const LOGIN_REDIRECT_SNAPSHOT_KEY = "cc98RebornLoginRedirectSnapshot";
 const LOGIN_HOME_REFRESH_MARK_KEY = "cc98RebornLoginHomeRefreshPendingAt";
@@ -193,6 +193,8 @@ const BLOCKABLE_SELECTORS = [
 let lastSettings = null;
 let observer = null;
 let headObserver = null;
+let rebuiltAppPresenceWatchdog = null;
+let publicProfileTopbarRecoveryTimer = null;
 let filterQueued = false;
 let isFiltering = false;
 let rebuildQueued = false;
@@ -206,6 +208,9 @@ let lastAutoLoadAt = 0;
 let lastSyncScheduledAt = 0;
 let lazyPrewarmPromise = null;
 let lazyPrewarmedPageKey = "";
+let homeAvatarPrewarmPromise = null;
+let homeAvatarPrewarmedPageKey = "";
+let lastKnownTopbarAvatarUrl = "";
 let prewarmedSnapshotPageKey = "";
 let prewarmedPostSnapshots = [];
 let originalPagePrewarmPromise = null;
@@ -256,6 +261,8 @@ let searchPageRouteKey = "";
 let searchPageRouteFirstSeenAt = 0;
 let readLaterSearchQuery = "";
 let readLaterPage = 1;
+let readLaterSidebarSearchQuery = "";
+let readLaterSidebarPage = 1;
 let readLaterItemsCache = null;
 let readLaterStorageHydratedKey = "";
 let readLaterStorageHydratingKey = "";
@@ -452,6 +459,7 @@ function applySettings(settings) {
   scheduleRebuild();
   applyNativeSkinPolicy();
   ensureObserver();
+  ensureRebuiltAppPresenceWatchdog();
   ensureHeadObserver();
   ensureNativeAntUiStabilizer();
   scheduleNativeAntUiStabilize();
@@ -718,8 +726,9 @@ function getFirstLink(root, selector) {
   if (!link) {
     return null;
   }
+  const externalHref = getWebVpnExternalProxyDirectHref(link);
   return {
-    href: normalizeHref(link.getAttribute("href") || link.href || "#"),
+    href: normalizeHref(externalHref || link.getAttribute("href") || link.href || "#"),
     text: link.textContent?.trim() ?? ""
   };
 }
@@ -738,6 +747,10 @@ function createElement(tagName, className, text) {
 function getLinkNewTabHref(link) {
   if (!(link instanceof HTMLAnchorElement)) {
     return "";
+  }
+  const externalHref = repairWebVpnExternalProxyLink(link);
+  if (externalHref) {
+    return externalHref;
   }
   const rawHref = String(link.getAttribute("href") || link.href || "").trim();
   if (!rawHref || rawHref === "#" || /^(?:javascript|mailto|tel):/i.test(rawHref)) {
@@ -789,12 +802,9 @@ function bindOpenLinksInNewTabGuard() {
 function createLink(className, text, href) {
   const link = createElement("a", className, text || href || "打开");
   link.href = makeAbsoluteCc98Url(href || "#");
+  repairWebVpnExternalProxyLink(link);
   const normalizedHref = link.href || String(href || "");
-  const isCc98Link = href && (
-    normalizedHref.startsWith(location.origin)
-    || normalizedHref.includes("cc98.org")
-    || /(?:^|\/\/)[^/]*\.?webvpn\.zju\.edu\.cn(?:[/:]|$)/i.test(normalizedHref)
-  );
+  const isCc98Link = Boolean(href && isCc98InternalNavigationHref(normalizedHref));
   const forceNewTab = shouldForceLinkNewTab(link, normalizedHref);
   if (href && href !== "#" && (!isCc98Link || forceNewTab)) {
     link.target = "_blank";
@@ -2231,6 +2241,13 @@ function getCc98RoutePathFromHref(href) {
       return `${url.pathname}${url.search}${url.hash}`;
     }
     if (isWebVpnHost(url.hostname)) {
+      const proxyPrefix = getWebVpnProxyPrefixFromUrl(url.href);
+      const cc98Prefix = getCurrentWebVpnCc98Prefix();
+      if (proxyPrefix
+        && cc98Prefix
+        && normalizeWebVpnProxyPrefix(proxyPrefix) !== normalizeWebVpnProxyPrefix(cc98Prefix)) {
+        return "";
+      }
       const match = url.pathname.match(/\/(?:boardList|boardlist|newTopics|recommendedTopics|searchBoard|usercenter|topic|board|focus|search|user|message|editor|signin|logOn)(?:\/[^?#]*)?(?=$|[?#])/i);
       if (match) {
         return `${match[0]}${url.search}${url.hash}`;
@@ -2250,6 +2267,10 @@ function getCurrentCc98RoutePath() {
 
 function getWebVpnPrefixCacheKey() {
   return `cc98RebornWebVpnPrefix:${location.origin}`;
+}
+
+function getConfirmedWebVpnPrefixCacheKey() {
+  return `cc98RebornConfirmedWebVpnPrefix:${location.origin}`;
 }
 
 function cacheWebVpnCc98Prefix(prefix) {
@@ -2277,6 +2298,37 @@ function getCachedWebVpnCc98Prefix() {
   }
 }
 
+function getConfirmedWebVpnCc98Prefix() {
+  if (!isWebVpnHost()) {
+    return "";
+  }
+  try {
+    return sessionStorage.getItem(getConfirmedWebVpnPrefixCacheKey())
+      || localStorage.getItem(getConfirmedWebVpnPrefixCacheKey())
+      || "";
+  } catch {
+    return "";
+  }
+}
+
+function confirmCurrentWebVpnCc98Prefix() {
+  if (!isWebVpnHost() || !isLikelyCc98Document(document)) {
+    return "";
+  }
+  const prefix = getWebVpnProxyPrefixFromUrl(location.href) || getCachedWebVpnCc98Prefix();
+  if (!prefix) {
+    return "";
+  }
+  try {
+    sessionStorage.setItem(getConfirmedWebVpnPrefixCacheKey(), prefix);
+    localStorage.setItem(getConfirmedWebVpnPrefixCacheKey(), prefix);
+  } catch {
+    // Prefix confirmation is best-effort.
+  }
+  cacheWebVpnCc98Prefix(prefix);
+  return prefix;
+}
+
 function getWebVpnProxyPrefixFromUrl(value) {
   try {
     const url = new URL(value, location.href);
@@ -2296,6 +2348,11 @@ function getCurrentWebVpnCc98Prefix() {
   }
   const currentProxyPrefix = getWebVpnProxyPrefixFromUrl(location.href);
   if (currentProxyPrefix) {
+    const confirmedPrefix = getConfirmedWebVpnCc98Prefix();
+    if (confirmedPrefix
+      && normalizeWebVpnProxyPrefix(currentProxyPrefix) !== normalizeWebVpnProxyPrefix(confirmedPrefix)) {
+      return confirmedPrefix;
+    }
     cacheWebVpnCc98Prefix(currentProxyPrefix);
     return currentProxyPrefix;
   }
@@ -2340,6 +2397,284 @@ function getCurrentWebVpnCc98Prefix() {
     }
   }
   return getCachedWebVpnCc98Prefix();
+}
+
+function normalizeWebVpnProxyPrefix(prefix) {
+  return String(prefix || "").replace(/\/+$/, "").toLowerCase();
+}
+
+function getWebVpnExternalOriginCacheKey() {
+  return `cc98RebornWebVpnExternalOrigins:${location.origin}`;
+}
+
+function readWebVpnExternalOriginCache() {
+  try {
+    const value = JSON.parse(sessionStorage.getItem(getWebVpnExternalOriginCacheKey()) || "{}");
+    return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  } catch {
+    return {};
+  }
+}
+
+function rememberWebVpnExternalOrigin(proxyPrefix, directHref) {
+  try {
+    const proxyUrl = new URL(proxyPrefix, location.href);
+    const directUrl = new URL(directHref);
+    if (isWebVpnHost(directUrl.hostname) || isDirectCc98Host(directUrl.hostname)) {
+      return;
+    }
+    const normalizedPrefix = normalizeWebVpnProxyPrefix(proxyUrl.href);
+    if (!normalizedPrefix) {
+      return;
+    }
+    const cache = readWebVpnExternalOriginCache();
+    cache[normalizedPrefix] = directUrl.origin;
+    sessionStorage.setItem(getWebVpnExternalOriginCacheKey(), JSON.stringify(cache));
+  } catch {
+    // External-link recovery remains best-effort when storage is unavailable.
+  }
+}
+
+function getDirectExternalUrlCandidate(value) {
+  const match = String(value || "").match(/https?:\/\/[^\s<>"'`]+/i);
+  if (!match) {
+    return "";
+  }
+  const candidate = match[0].replace(/[\])}>.,;!?\uff0c\u3002\uff1b\uff01\uff1f\u3011\u3009\u300b]+$/g, "");
+  try {
+    const url = new URL(candidate);
+    if (!/^https?:$/i.test(url.protocol)
+      || isWebVpnHost(url.hostname)
+      || isDirectCc98Host(url.hostname)) {
+      return "";
+    }
+    return url.href;
+  } catch {
+    return "";
+  }
+}
+
+function getWebVpnExternalProxyDirectHref(link) {
+  if (!isWebVpnHost() || !(link instanceof HTMLAnchorElement)) {
+    return "";
+  }
+  const rememberedHref = getDirectExternalUrlCandidate(link.dataset.cc98ExternalHref || "");
+  if (rememberedHref) {
+    return rememberedHref;
+  }
+  const rawHref = String(link.getAttribute("href") || link.href || "").trim();
+  let proxiedUrl;
+  try {
+    proxiedUrl = new URL(rawHref, location.href);
+  } catch {
+    return "";
+  }
+  if (!isWebVpnHost(proxiedUrl.hostname)) {
+    return "";
+  }
+  const proxyPrefix = getWebVpnProxyPrefixFromUrl(proxiedUrl.href);
+  const cc98Prefix = getCurrentWebVpnCc98Prefix();
+  if (!proxyPrefix
+    || (cc98Prefix && normalizeWebVpnProxyPrefix(proxyPrefix) === normalizeWebVpnProxyPrefix(cc98Prefix))) {
+    return "";
+  }
+
+  const candidates = [
+    link.getAttribute("data-original-href"),
+    link.getAttribute("data-original"),
+    link.getAttribute("data-url"),
+    link.getAttribute("data-href"),
+    link.getAttribute("title"),
+    link.getAttribute("aria-label"),
+    link.textContent
+  ];
+  const directHref = candidates.map(getDirectExternalUrlCandidate).find(Boolean) || "";
+  if (directHref) {
+    try {
+      const proxyUrl = new URL(proxyPrefix);
+      const directUrl = new URL(directHref);
+      const suffixPath = proxiedUrl.pathname.slice(proxyUrl.pathname.length) || "/";
+      if (decodeURIComponent(suffixPath) === decodeURIComponent(directUrl.pathname)) {
+        rememberWebVpnExternalOrigin(proxyPrefix, directHref);
+      }
+    } catch {
+      // The visible URL still safely repairs this link even if it cannot seed the host cache.
+    }
+    return directHref;
+  }
+
+  try {
+    const normalizedPrefix = normalizeWebVpnProxyPrefix(proxyPrefix);
+    const origin = readWebVpnExternalOriginCache()[normalizedPrefix];
+    if (!origin) {
+      return "";
+    }
+    const proxyUrl = new URL(proxyPrefix);
+    const directUrl = new URL(origin);
+    directUrl.pathname = proxiedUrl.pathname.slice(proxyUrl.pathname.length) || "/";
+    directUrl.search = proxiedUrl.search;
+    directUrl.hash = proxiedUrl.hash;
+    return directUrl.href;
+  } catch {
+    return "";
+  }
+}
+
+function repairWebVpnExternalProxyLink(link) {
+  const directHref = getWebVpnExternalProxyDirectHref(link);
+  if (!directHref || !(link instanceof HTMLAnchorElement)) {
+    return "";
+  }
+  link.dataset.cc98ExternalHref = directHref;
+  link.setAttribute("href", directHref);
+  link.target = "_blank";
+  link.rel = "noreferrer";
+  return directHref;
+}
+
+function repairWebVpnExternalProxyLinks(root = document) {
+  if (!isWebVpnHost() || !root?.querySelectorAll) {
+    return;
+  }
+  const links = root instanceof HTMLAnchorElement ? [root] : [];
+  links.push(...root.querySelectorAll("a[href]"));
+  links.forEach((link) => repairWebVpnExternalProxyLink(link));
+}
+
+function isCc98InternalNavigationHref(href) {
+  try {
+    const url = new URL(href, location.href);
+    if (isDirectCc98Host(url.hostname)) {
+      return true;
+    }
+    if (!isWebVpnHost(url.hostname)) {
+      return false;
+    }
+    if (isKnownCc98WebVpnHost(url.hostname)) {
+      return true;
+    }
+    const proxyPrefix = getWebVpnProxyPrefixFromUrl(url.href);
+    const cc98Prefix = getCurrentWebVpnCc98Prefix();
+    if (proxyPrefix && cc98Prefix) {
+      return normalizeWebVpnProxyPrefix(proxyPrefix) === normalizeWebVpnProxyPrefix(cc98Prefix);
+    }
+    return isCc98RoutePath(url.pathname);
+  } catch {
+    return false;
+  }
+}
+
+function getCurrentWebVpnProxySuffix(currentUrl, proxyPrefix) {
+  try {
+    const url = currentUrl instanceof URL ? currentUrl : new URL(currentUrl, location.href);
+    const prefixUrl = new URL(proxyPrefix, location.href);
+    return url.pathname.slice(prefixUrl.pathname.length) || "/";
+  } catch {
+    return "";
+  }
+}
+
+function getCurrentDocumentDirectExternalHref() {
+  if (!isWebVpnHost()) {
+    return "";
+  }
+  const currentProxyPrefix = getWebVpnProxyPrefixFromUrl(location.href);
+  if (!currentProxyPrefix) {
+    return "";
+  }
+  let currentUrl;
+  try {
+    currentUrl = new URL(location.href);
+  } catch {
+    return "";
+  }
+  const suffixPath = getCurrentWebVpnProxySuffix(currentUrl, currentProxyPrefix);
+  const candidateValues = [
+    document.querySelector('link[rel="canonical"]')?.getAttribute("href"),
+    document.querySelector('meta[property="og:url"]')?.getAttribute("content"),
+    document.querySelector('meta[name="twitter:url"]')?.getAttribute("content"),
+    document.querySelector('meta[itemprop="url"]')?.getAttribute("content"),
+    document.querySelector('base[href]')?.getAttribute("href")
+  ];
+  for (const value of candidateValues) {
+    const directHref = getDirectExternalUrlCandidate(value);
+    if (!directHref) {
+      continue;
+    }
+    try {
+      const directUrl = new URL(directHref);
+      if (decodeURIComponent(directUrl.pathname) !== decodeURIComponent(suffixPath)) {
+        continue;
+      }
+      rememberWebVpnExternalOrigin(currentProxyPrefix, directHref);
+      directUrl.search = currentUrl.search || directUrl.search;
+      directUrl.hash = currentUrl.hash || directUrl.hash;
+      return directUrl.href;
+    } catch {
+      // Try the next page metadata candidate.
+    }
+  }
+
+  const cachedOrigin = readWebVpnExternalOriginCache()[normalizeWebVpnProxyPrefix(currentProxyPrefix)];
+  let inferredOrigin = cachedOrigin || "";
+  if (!inferredOrigin) {
+    const siteName = cleanupPostText(document.querySelector('meta[property="og:site_name"]')?.getAttribute("content"));
+    const octolyticsHost = cleanupPostText(document.querySelector('meta[name="octolytics-host"]')?.getAttribute("content"));
+    const hasGitHubChrome = Boolean(document.querySelector('meta[name="route-pattern"], meta[name="github-keyboard-shortcuts"]'));
+    if (/^github$/i.test(siteName) || /github\.com$/i.test(octolyticsHost) || hasGitHubChrome) {
+      inferredOrigin = "https://github.com";
+    }
+  }
+  if (!inferredOrigin) {
+    return "";
+  }
+  try {
+    const directUrl = new URL(inferredOrigin);
+    directUrl.pathname = suffixPath;
+    directUrl.search = currentUrl.search;
+    directUrl.hash = currentUrl.hash;
+    const directHref = directUrl.href;
+    rememberWebVpnExternalOrigin(currentProxyPrefix, directHref);
+    return directHref;
+  } catch {
+    return "";
+  }
+}
+
+function isCurrentWebVpnExternalProxyPage() {
+  if (!isWebVpnHost()) {
+    return false;
+  }
+  const currentPrefix = getWebVpnProxyPrefixFromUrl(location.href);
+  if (!currentPrefix) {
+    return false;
+  }
+  const confirmedPrefix = getConfirmedWebVpnCc98Prefix();
+  if (confirmedPrefix
+    && normalizeWebVpnProxyPrefix(currentPrefix) !== normalizeWebVpnProxyPrefix(confirmedPrefix)) {
+    return true;
+  }
+  return Boolean(getCurrentDocumentDirectExternalHref());
+}
+
+function redirectCurrentWebVpnExternalPage() {
+  if (!isCurrentWebVpnExternalProxyPage()) {
+    return false;
+  }
+  const directHref = getCurrentDocumentDirectExternalHref();
+  if (!directHref) {
+    return false;
+  }
+  document.documentElement.dataset.cc98RebornExternalRedirect = "true";
+  editorSubmitOverlayAwaitingRebuild = false;
+  hideLoadingOverlay({ force: true, releaseNativeLazyScroll: true });
+  stopSecurityWatermark();
+  try {
+    location.replace(directHref);
+  } catch {
+    location.href = directHref;
+  }
+  return true;
 }
 
 function isUsableCc98WebVpnRouteUrl(url) {
@@ -2505,6 +2840,10 @@ function getReadLaterPageHref() {
 }
 
 function isPublicUserProfilePage(url = location.href) {
+  const cc98RoutePath = getCc98RoutePathFromHref(url);
+  if (/^\/user\/(?:id|name)\//i.test(cc98RoutePath)) {
+    return true;
+  }
   try {
     return /^\/user\/(?:id|name)\//i.test(new URL(url, location.href).pathname);
   } catch {
@@ -2608,17 +2947,26 @@ function bindWebVpnNakedRouteGuard() {
   rewriteWebVpnNakedRouteLinks(document);
   [0, 80, 180, 360, 700, 1200, 2000].forEach((delay) => {
     window.setTimeout(() => {
+      if (redirectCurrentWebVpnExternalPage()) {
+        return;
+      }
       rewriteWebVpnNakedRouteLinks(document);
       enforceCurrentWebVpnNakedRouteRedirect();
     }, delay);
   });
   window.addEventListener("load", () => {
+    if (redirectCurrentWebVpnExternalPage()) {
+      return;
+    }
     if (loadingOverlayActive && /WebVPN/i.test(loadingOverlayMessage) && !editorSubmitOverlayAwaitingRebuild) {
       hideLoadingOverlay({ force: true });
       scheduleSync();
     }
   }, { once: true });
   const linkObserver = new MutationObserver((records) => {
+    if (redirectCurrentWebVpnExternalPage()) {
+      return;
+    }
     records.forEach((record) => {
       record.addedNodes.forEach((node) => {
         if (node instanceof Element) {
@@ -2628,12 +2976,32 @@ function bindWebVpnNakedRouteGuard() {
     });
   });
   linkObserver.observe(document.documentElement || document, { childList: true, subtree: true });
+  window.addEventListener("click", (event) => {
+    if (!isWebVpnHost() || event.button !== 0) {
+      return;
+    }
+    const link = event.target?.closest?.("a[href]");
+    if (!(link instanceof HTMLAnchorElement)) {
+      return;
+    }
+    const directHref = repairWebVpnExternalProxyLink(link);
+    if (!directHref) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    window.open(directHref, "_blank", "noopener,noreferrer");
+  }, true);
   document.addEventListener("click", (event) => {
     if (!isWebVpnHost()) {
       return;
     }
     const link = event.target?.closest?.("a[href]");
     if (!(link instanceof HTMLAnchorElement)) {
+      return;
+    }
+    if (repairWebVpnExternalProxyLink(link)) {
       return;
     }
     const rawHref = link.getAttribute("href") || link.href || "";
@@ -2668,6 +3036,9 @@ function rewriteWebVpnNakedRouteLinks(root = document) {
   }
   links.push(...root.querySelectorAll("a[href]"));
   links.forEach((link) => {
+    if (repairWebVpnExternalProxyLink(link)) {
+      return;
+    }
     const rawHref = link.getAttribute("href") || link.href || "";
     const fixedHref = repairWebVpnNakedCc98Href(rawHref);
     if (!fixedHref) {
@@ -2880,6 +3251,7 @@ function hydrateReadLaterStorage(options = {}) {
     if (JSON.stringify(storedItems) !== JSON.stringify(merged)) {
       globalThis.chrome.storage.local.set({ [storageKey]: merged });
     }
+    syncReadLaterUi();
     scheduleSync();
     if (isReadLaterRoute()) {
       scheduleRebuild();
@@ -2910,6 +3282,7 @@ function writeReadLaterItemsToExtensionCache(items) {
   } catch {
     // Extension storage may be unavailable on local previews; keep in-memory and legacy cache.
   }
+  syncReadLaterUi();
 }
 
 function readReadLaterItems() {
@@ -4731,8 +5104,76 @@ function getUserCenterNativeShell() {
   };
 }
 
+function getPublicUserProfileNativeShell() {
+  const nativeRoot = document.querySelector("#root");
+  const router = nativeRoot?.querySelector?.(".user-center-router")
+    || [...document.querySelectorAll(".user-center-router")]
+      .find((node) => node instanceof HTMLElement && !node.closest("#cc98-comfort-app"))
+    || null;
+  return {
+    router,
+    exact: router?.querySelector?.(".user-center-exact") || null,
+    profile: router?.querySelector?.(".user-profile") || null,
+    activities: router?.querySelector?.(".user-activities") || null
+  };
+}
+
+function isPublicUserProfileNativeShellReady() {
+  if (!isPublicUserProfilePage()) {
+    return true;
+  }
+  const { router, exact, profile, activities } = getPublicUserProfileNativeShell();
+  if (!(router instanceof HTMLElement)
+    || !(exact instanceof HTMLElement)
+    || !(profile instanceof HTMLElement)
+    || !(activities instanceof HTMLElement)) {
+    return false;
+  }
+  const hasProfile = Boolean(
+    cleanupPostText(profile.textContent)
+    && exact.querySelector(".user-avatar img, .user-avatar-img")
+  );
+  const hasActivities = Boolean(activities.querySelector(".user-posts"));
+  return hasProfile && hasActivities;
+}
+
+function eagerUserCenterImages(root = document) {
+  if (!root?.querySelectorAll) {
+    return [];
+  }
+  const images = [...root.querySelectorAll("img")]
+    .filter((image) => image instanceof HTMLImageElement);
+  images.forEach((image) => {
+    const source = [
+      "data-src",
+      "data-original",
+      "data-url",
+      "data-avatar",
+      "data-portrait",
+      "data-original-src",
+      "data-lazy-src",
+      "data-actualsrc"
+    ].map((attribute) => image.getAttribute(attribute)).find(Boolean)
+      || image.getAttribute("src")
+      || image.currentSrc
+      || image.src
+      || "";
+    const resolved = makeWebVpnCc98ResourceUrl(source);
+    if (resolved && image.getAttribute("src") !== resolved) {
+      image.src = resolved;
+    }
+    image.removeAttribute("srcset");
+    image.loading = "eager";
+    image.decoding = "async";
+  });
+  return images;
+}
+
 function isUserCenterNativeShellReady() {
-  if (!isUserCenterRoutePath() || isPublicUserProfilePage()) {
+  if (isPublicUserProfilePage()) {
+    return isPublicUserProfileNativeShellReady();
+  }
+  if (!isUserCenterRoutePath()) {
     return true;
   }
   const { navSource, router } = getUserCenterNativeShell();
@@ -4766,7 +5207,7 @@ function isUserCenterNativeShellReady() {
 }
 
 function isUserCenterPendingNativeLoad() {
-  return isUserCenterRoutePath() && !isPublicUserProfilePage() && !isUserCenterNativeShellReady();
+  return (isUserCenterRoutePath() || isPublicUserProfilePage()) && !isUserCenterNativeShellReady();
 }
 
 function scheduleUserCenterPendingRebuild() {
@@ -4781,6 +5222,21 @@ function scheduleUserCenterPendingRebuild() {
 
 function isDismissibleLoadingOverlay() {
   return loadingOverlaySoft || (isWebVpnHost() && !editorSubmitOverlayAwaitingRebuild);
+}
+
+function clearPublicUserProfileLoadingOverlay() {
+  if (!isPublicUserProfilePage()) {
+    return false;
+  }
+  nativeLazyScrollOverlayDepth = 0;
+  firstPagePrevisitInProgress = false;
+  editorSubmitOverlayAwaitingRebuild = false;
+  delete document.documentElement.dataset.cc98ComfortNativeLazyScrolling;
+  delete document.documentElement.dataset.cc98ComfortOriginalPrewarming;
+  delete document.documentElement.dataset.cc98ComfortPrewarming;
+  removeSessionItem(FIRST_PAGE_PREVISIT_PENDING_KEY);
+  hideLoadingOverlay({ force: true, releaseNativeLazyScroll: true });
+  return true;
 }
 
 function beginNativeLazyScrollOverlay() {
@@ -4813,9 +5269,16 @@ function endNativeLazyScrollOverlay(options = {}) {
 }
 
 function clearUserCenterStaleLoadingOverlay(kind = getPageKind()) {
-  const isUserCenter = kind === "userCenter" || isUserCenterRoutePath();
-  if (!isUserCenter || editorSubmitOverlayAwaitingRebuild) {
+  const isUserCenter = kind === "userCenter" || isUserCenterRoutePath() || isPublicUserProfilePage();
+  if (!isUserCenter) {
     return false;
+  }
+  nativeLazyScrollOverlayDepth = 0;
+  delete document.documentElement.dataset.cc98ComfortNativeLazyScrolling;
+  if (editorSubmitOverlayAwaitingRebuild || hasRecentEditorSubmitIntent(90000)) {
+    editorSubmitOverlayAwaitingRebuild = false;
+    clearEditorSubmitIntent();
+    resetReleasedNativeEditors();
   }
   firstPagePrevisitInProgress = false;
   removeSessionItem(FIRST_PAGE_PREVISIT_PENDING_KEY);
@@ -4827,7 +5290,7 @@ function clearUserCenterStaleLoadingOverlay(kind = getPageKind()) {
     scheduleUserCenterPendingRebuild();
     return true;
   }
-  hideLoadingOverlay({ force: true });
+  hideLoadingOverlay({ force: true, releaseNativeLazyScroll: true });
   return true;
 }
 
@@ -4913,7 +5376,10 @@ function ensureLoadingOverlayElement() {
 }
 
 function showLoadingOverlay(message = "\u6b63\u5728\u52a0\u8f7d\u5e16\u5b50\u56fe\u7247...", options = {}) {
-  if (!options.allowUserCenter && !editorSubmitOverlayAwaitingRebuild && clearUserCenterStaleLoadingOverlay(getPageKind())) {
+  if (clearPublicUserProfileLoadingOverlay()) {
+    return;
+  }
+  if (!options.allowUserCenter && clearUserCenterStaleLoadingOverlay(getPageKind())) {
     return;
   }
   const nextSoft = isSoftLoadingOverlayMessage(message)
@@ -4951,9 +5417,23 @@ function showLoadingOverlay(message = "\u6b63\u5728\u52a0\u8f7d\u5e16\u5b50\u56f
   }
   if (!loadingOverlayWatchdog) {
     loadingOverlayWatchdog = setInterval(() => {
-      if (loadingOverlayActive) {
-        ensureLoadingOverlayElement();
+      if (!loadingOverlayActive) {
+        return;
       }
+      if (isUserCenterRoutePath()
+        && !isPublicUserProfilePage()
+        && !editorSubmitOverlayAwaitingRebuild
+        && isUserCenterNativeShellReady()) {
+        nativeLazyScrollOverlayDepth = 0;
+        delete document.documentElement.dataset.cc98ComfortNativeLazyScrolling;
+        hideLoadingOverlay({ force: true, releaseNativeLazyScroll: true });
+        const app = document.querySelector("#cc98-comfort-app[data-cc98-user-center-pending='true']");
+        if (app) {
+          scheduleRebuild();
+        }
+        return;
+      }
+      ensureLoadingOverlayElement();
     }, 120);
   }
   if (!loadingOverlayFailsafeTimer) {
@@ -5062,6 +5542,175 @@ function shouldPrewarmOriginalBeforeRebuild() {
     && getPageKind() === "post"
     && !isNativeErrorPage()
     && lazyPrewarmedPageKey !== getLazyPrewarmPageKey();
+}
+
+function shouldPrewarmHomeAvatarBeforeRebuild() {
+  if (!lastSettings?.enabled
+    || !lastSettings.rebuildUi
+    || getPageKind() !== "home"
+    || isNativeErrorPage()
+    || homeAvatarPrewarmedPageKey === getLazyPrewarmPageKey()) {
+    return false;
+  }
+  return isWebVpnHost() || hasFreshCc98LoginSession() || Boolean(document.querySelector(
+    ".topBarUserImg img, .topBarUserName, .topBarRight:not(:has(a[href*='/logOn']))"
+  ));
+}
+
+function getNativeHomeAvatarImages() {
+  return [...document.querySelectorAll([
+    ".topBarUserImg img",
+    ".topBarUserInfo img",
+    ".topBarRight img[class*='avatar' i]",
+    ".topBarRight img[class*='portrait' i]",
+    ".mainPageListRow img",
+    ".focus-topic img",
+    ".card-topic img"
+  ].join(","))]
+    .filter((image) => image instanceof HTMLImageElement);
+}
+
+function getPreferredHomeAvatarUrl(image) {
+  if (!(image instanceof HTMLImageElement)) {
+    return "";
+  }
+  const lazyAttrs = [
+    "data-src",
+    "data-original",
+    "data-url",
+    "data-avatar",
+    "data-portrait",
+    "data-original-src",
+    "data-lazy-src",
+    "data-actualsrc"
+  ];
+  const lazyUrl = lazyAttrs.map((attr) => image.getAttribute(attr)).find(Boolean);
+  const sourceUrl = String(lazyUrl || image.getAttribute("src") || image.currentSrc || image.src || "").trim();
+  const resolvedUrl = makeWebVpnCc98ResourceUrl(sourceUrl);
+  if (resolvedUrl && image.closest(".topBarUserImg, .topBarUserInfo, .topBarRight")) {
+    lastKnownTopbarAvatarUrl = resolvedUrl;
+  }
+  return resolvedUrl;
+}
+
+function makeWebVpnCc98ResourceUrl(value) {
+  const raw = String(value || "").trim();
+  if (!raw) {
+    return "";
+  }
+  if (isWebVpnHost() && /^\/(?!\/)/.test(raw) && !/^\/https?\//i.test(raw)) {
+    const prefix = getCurrentWebVpnCc98Prefix();
+    if (prefix) {
+      return `${prefix}${raw}`;
+    }
+  }
+  if (isWebVpnHost()) {
+    try {
+      const url = new URL(raw, location.href);
+      if (isWebVpnHost(url.hostname) && getWebVpnProxyPrefixFromUrl(url.href)) {
+        return url.href;
+      }
+      if (isWebVpnHost(url.hostname)
+        && !getWebVpnProxyPrefixFromUrl(url.href)
+        && /^\/(?:static|v4-upload|download)(?:\/|$)/i.test(url.pathname)) {
+        const prefix = getCurrentWebVpnCc98Prefix();
+        if (prefix) {
+          return `${prefix}${url.pathname}${url.search}${url.hash}`;
+        }
+      }
+    } catch {
+      // Fall through to the normal URL resolver.
+    }
+  }
+  return makeAbsoluteCc98Url(raw);
+}
+
+function eagerNativeHomeAvatarImages() {
+  const images = getNativeHomeAvatarImages();
+  images.forEach((image) => {
+    const src = getPreferredHomeAvatarUrl(image);
+    if (src && image.getAttribute("src") !== src) {
+      image.src = src;
+    }
+    image.loading = "eager";
+    image.decoding = "async";
+  });
+  return images;
+}
+
+function startHomeAvatarPrewarm() {
+  const pageKey = getLazyPrewarmPageKey();
+  if (homeAvatarPrewarmedPageKey === pageKey) {
+    return Promise.resolve();
+  }
+  if (homeAvatarPrewarmPromise) {
+    return homeAvatarPrewarmPromise;
+  }
+
+  const useShortWebVpnOverlay = isWebVpnHost();
+  if (useShortWebVpnOverlay) {
+    showLoadingOverlay("\u6b63\u5728\u901a\u8fc7 WebVPN \u52a0\u8f7d\u9996\u9875\u5934\u50cf...");
+  }
+
+  homeAvatarPrewarmPromise = (async () => {
+    await waitForDomReady();
+    const originalScrollPositions = captureNativeScrollPositions();
+    const deadline = Date.now() + (useShortWebVpnOverlay ? 620 : 1100);
+    let step = 0;
+    try {
+      if (useShortWebVpnOverlay) {
+        document.documentElement.dataset.cc98ComfortPrewarming = "true";
+      }
+      while (Date.now() < deadline) {
+        const images = eagerNativeHomeAvatarImages();
+        const nativeAvatar = images.find((image) => Boolean(image.closest(".topBarUserImg, .topBarUserInfo, .topBarRight")));
+        const storedAvatarUrl = makeWebVpnCc98ResourceUrl(getStoredCc98UserAvatar());
+        if (storedAvatarUrl) {
+          const preload = new Image();
+          preload.loading = "eager";
+          preload.decoding = "async";
+          preload.src = storedAvatarUrl;
+        }
+        if (nativeAvatar instanceof HTMLImageElement && getPreferredHomeAvatarUrl(nativeAvatar)) {
+          await Promise.race([waitForNativeImage(nativeAvatar, 240), wait(240)]);
+          if (nativeAvatar.complete && nativeAvatar.naturalWidth > 0) {
+            return;
+          }
+        }
+        if (useShortWebVpnOverlay) {
+          const progress = Math.min(1, step / 3);
+          getNativeScrollTargets().forEach((target) => {
+            scrollNativeTargetTo(target, getScrollTargetMaxTop(target) * progress);
+          });
+          dispatchNativeLazySignals();
+        }
+        step += 1;
+        await wait(70);
+      }
+    } finally {
+      restoreNativeScrollPositions(originalScrollPositions);
+      dispatchNativeLazySignals();
+      delete document.documentElement.dataset.cc98ComfortPrewarming;
+    }
+  })().catch(() => {})
+    .finally(() => {
+      homeAvatarPrewarmedPageKey = pageKey;
+      homeAvatarPrewarmPromise = null;
+      if (useShortWebVpnOverlay) {
+        hideLoadingOverlay({ force: true, releaseNativeLazyScroll: true });
+      }
+      scheduleRebuild();
+      if (useShortWebVpnOverlay) {
+        [700, 1600].forEach((delay) => {
+          window.setTimeout(() => {
+            eagerNativeHomeAvatarImages();
+            scheduleRebuild();
+          }, delay);
+        });
+      }
+    });
+
+  return homeAvatarPrewarmPromise;
 }
 
 function getOriginalPagePrewarmDuration() {
@@ -5241,6 +5890,9 @@ function shouldBootCc98Reborn() {
   if (!isWebVpnHost()) {
     return false;
   }
+  if (isCurrentWebVpnExternalProxyPage()) {
+    return false;
+  }
   return isLikelyCc98Document(document);
 }
 
@@ -5251,6 +5903,10 @@ function scheduleWebVpnBootProbe() {
   webVpnBootProbeStarted = true;
   let observer = null;
   const tryBoot = () => {
+    if (redirectCurrentWebVpnExternalPage()) {
+      observer?.disconnect();
+      return true;
+    }
     if (normalPageBooted || !shouldBootCc98Reborn()) {
       return false;
     }
@@ -5314,7 +5970,7 @@ function getPageKind() {
   if (/\/board\/\d+/i.test(cc98RoutePath) && document.querySelector(".board-body, .board-postItem-body")) {
     return "board";
   }
-  if (isUserCenterRoutePath(cc98RoutePath) || document.querySelector(".user-center")) {
+  if (isPublicUserProfilePage() || isUserCenterRoutePath(cc98RoutePath) || document.querySelector(".user-center")) {
     return "userCenter";
   }
   if (document.querySelector(".focus-topic, .card-topic")) {
@@ -5324,6 +5980,10 @@ function getPageKind() {
     return "home";
   }
   return "generic";
+}
+
+function isReadLaterSidebarTopicsPage() {
+  return /^\/(?:newTopics|focus|recommendedTopics)(?:\/|$)/i.test(getCurrentCc98RoutePath());
 }
 
 function isBoardSearchPage() {
@@ -8035,6 +8695,7 @@ function hasRenderedPostContent(root) {
 
 function sanitizeClonedPostContent(contentNode, options = {}) {
   const clone = contentNode.cloneNode(true);
+  repairWebVpnExternalProxyLinks(clone);
   if (options.markdown) {
     markMarkdownPostContent(clone);
     stripMarkdownInlineBackgrounds(clone);
@@ -8053,6 +8714,7 @@ function sanitizeClonedPostContent(contentNode, options = {}) {
   classifyPostImages(clone);
   stabilizePostQuoteBlocks(clone);
   stabilizeEmojiRendering(clone);
+  repairWebVpnExternalProxyLinks(clone);
   return isMeaningfulPostContent(clone) ? clone : null;
 }
 
@@ -9767,20 +10429,28 @@ function getUserCenterData() {
 }
 
 function getNativeTopbar() {
-  const root = document.querySelector("#root") ?? document;
-  return root.querySelector(".topBar-mainPage, .topBar, .header, .headerWithoutImage");
+  const selector = ".topBar-mainPage, .topBar, .header, .headerWithoutImage";
+  const root = document.querySelector("#root");
+  const rootedTopbar = root?.querySelector?.(selector);
+  if (rootedTopbar instanceof HTMLElement) {
+    return rootedTopbar;
+  }
+  return [...document.querySelectorAll(selector)]
+    .find((node) => node instanceof HTMLElement && !node.closest("#cc98-comfort-app"))
+    || null;
 }
 
 function getNativeUserEntry() {
   const topbar = getNativeTopbar();
-  if (!topbar) {
-    return null;
-  }
-  const topbarRight = topbar.querySelector(".topBarRight");
+  const source = topbar || document;
+  const findOutsideRebuild = (selector) => [...source.querySelectorAll(selector)]
+    .find((node) => node instanceof HTMLElement && !node.closest("#cc98-comfort-app"))
+    || null;
+  const topbarRight = findOutsideRebuild(".topBarRight");
   if (topbarRight instanceof HTMLElement) {
     return topbarRight;
   }
-  const direct = topbar.querySelector([
+  const direct = findOutsideRebuild([
     ".topBarUser",
     ".topBarUserInfo",
     ".topBarUserImg",
@@ -9792,11 +10462,11 @@ function getNativeUserEntry() {
   if (direct instanceof HTMLElement) {
     return direct.closest("a, button, [role='button'], .topBarUser, .topBarUserInfo, .topBarUserImg, [class*='topBarUser'], [class*='userInfo']") || direct;
   }
-  const userImage = topbar.querySelector("a[href*='/user/'] img, img[class*='avatar'], img[class*='portrait'], img[src*='avatar'], img[src*='portrait']");
+  const userImage = findOutsideRebuild("a[href*='/user/'] img, img[class*='avatar'], img[class*='portrait'], img[src*='avatar'], img[src*='portrait']");
   if (userImage instanceof HTMLElement) {
     return userImage.closest("a, button, [role='button'], div, span") || userImage;
   }
-  const userLink = topbar.querySelector("a[href*='/user/'], a[href*='userCenter'], a[href*='usercenter']");
+  const userLink = findOutsideRebuild("a[href*='/user/'], a[href*='userCenter'], a[href*='usercenter']");
   return userLink instanceof HTMLElement ? userLink : null;
 }
 
@@ -9976,10 +10646,9 @@ function createSideTopbarMergedButton(label, dataset = {}) {
 
 function getTopbarMergedProfile(nativeEntry) {
   const avatarNode = nativeEntry?.querySelector?.(".topBarUserImg img, .topBarUserInfo img, img[class*='avatar' i], img[class*='portrait' i]");
-  const avatar = makeAbsoluteCc98Url(
-    avatarNode?.currentSrc
-      || avatarNode?.getAttribute?.("src")
-      || avatarNode?.src
+  const avatar = makeWebVpnCc98ResourceUrl(
+    getPreferredHomeAvatarUrl(avatarNode)
+      || lastKnownTopbarAvatarUrl
       || getStoredCc98UserAvatar()
       || ""
   );
@@ -10050,6 +10719,10 @@ function bindSideTopbarMergedMenuHover(nativeEntry, menu) {
       node.setAttribute("aria-hidden", hidden ? "true" : "false");
     });
   };
+  const trigger = nativeEntry.querySelector(":scope > .topBarUserInfo, .topBarUserInfo") || nativeEntry;
+  const isPointerInside = () => {
+    return nativeEntry.matches(":hover");
+  };
   const holdOpen = () => {
     cancelClose();
     nativeEntry.classList.add("cc98-rebuild-side-menu-open");
@@ -10059,11 +10732,8 @@ function bindSideTopbarMergedMenuHover(nativeEntry, menu) {
     cancelClose();
     const timer = window.setTimeout(() => {
       nativeTopbarMenuCloseTimers.delete(nativeEntry);
-      const menus = [...nativeEntry.querySelectorAll(".cc98-rebuild-side-topbar-menu, .cc98-rebuild-side-rail-menu")]
-        .filter((node) => node instanceof HTMLElement);
-      const pointerInside = nativeEntry.matches(":hover") || menus.some((node) => node.matches(":hover"));
       const focused = nativeEntry.contains(document.activeElement);
-      if (pointerInside || (respectFocus && focused)) {
+      if (isPointerInside() || (respectFocus && focused)) {
         holdOpen();
         return;
       }
@@ -10076,10 +10746,21 @@ function bindSideTopbarMergedMenuHover(nativeEntry, menu) {
     nativeTopbarMenuCloseTimers.set(nativeEntry, timer);
   };
 
-  if (nativeEntry.dataset.cc98MergedMenuHoverBound !== "true") {
-    nativeEntry.dataset.cc98MergedMenuHoverBound = "true";
-    nativeEntry.addEventListener("pointerenter", holdOpen);
+  if (trigger.dataset.cc98MergedMenuTriggerBound !== "true") {
+    trigger.dataset.cc98MergedMenuTriggerBound = "true";
+    trigger.addEventListener("pointerenter", holdOpen);
+  }
+  if (nativeEntry.dataset.cc98MergedMenuBoundaryBound !== "true") {
+    nativeEntry.dataset.cc98MergedMenuBoundaryBound = "true";
+    nativeEntry.addEventListener("pointerenter", () => {
+      if (nativeEntry.classList.contains("cc98-rebuild-side-menu-open")) {
+        holdOpen();
+      }
+    });
     nativeEntry.addEventListener("pointerleave", () => scheduleClose(false));
+  }
+  if (nativeEntry.dataset.cc98MergedMenuFocusBound !== "true") {
+    nativeEntry.dataset.cc98MergedMenuFocusBound = "true";
     nativeEntry.addEventListener("focusin", holdOpen);
     nativeEntry.addEventListener("focusout", () => scheduleClose(true));
   }
@@ -10087,9 +10768,13 @@ function bindSideTopbarMergedMenuHover(nativeEntry, menu) {
     menu.dataset.cc98HoverLockBound = "true";
     menu.addEventListener("pointerenter", holdOpen);
     menu.addEventListener("pointermove", holdOpen, { passive: true });
-    menu.addEventListener("pointerleave", () => scheduleClose(false));
   }
-  setMenusHidden(true);
+  const closePending = nativeTopbarMenuCloseTimers.has(nativeEntry);
+  if (isPointerInside() || (!closePending && nativeEntry.contains(document.activeElement))) {
+    holdOpen();
+  } else if (!nativeEntry.classList.contains("cc98-rebuild-side-menu-open")) {
+    setMenusHidden(true);
+  }
 }
 
 function ensureSideTopbarMergedMenu(nativeEntry) {
@@ -10695,14 +11380,14 @@ function getStoredCc98UserName() {
 function getStoredCc98UserAvatar() {
   const info = getStoredCc98UserInfo();
   const avatar = readFirstObjectValueDeep(info, ["portraitUrl", "portrait", "avatarUrl", "avatar", "photoUrl", "faceUrl", "face", "picture"]);
-  return avatar ? makeAbsoluteCc98Url(avatar) : "";
+  return avatar ? makeWebVpnCc98ResourceUrl(avatar) : "";
 }
 
 function createForcedTopbarUserEntry() {
   const entry = createElement("div", "cc98-rebuild-native-user-entry cc98-rebuild-forced-user-entry");
   entry.tabIndex = 0;
   const userInfo = createElement("div", "topBarUserInfo cc98-rebuild-forced-user-info");
-  const avatarUrl = getStoredCc98UserAvatar();
+  const avatarUrl = lastKnownTopbarAvatarUrl || getStoredCc98UserAvatar();
   if (avatarUrl) {
     const avatarWrap = createElement("div", "topBarUserImg");
     const avatar = document.createElement("img");
@@ -10719,16 +11404,116 @@ function createForcedTopbarUserEntry() {
   return prepareNativeTopbarUserEntry(entry);
 }
 
+function createPublicProfileTopbarSnapshot() {
+  if (!isPublicUserProfilePage()) {
+    return null;
+  }
+  const source = getNativeUserEntry();
+  if (!(source instanceof HTMLElement) || source.closest("#cc98-comfort-app")) {
+    return null;
+  }
+  const isGuestSource = Boolean(source.querySelector('a[href*="/logOn"], a[href*="/logon"], a[href*="account.cc98.org"]'));
+  const sourceAvatar = source.querySelector(".topBarUserImg > img, .topBarUserInfo img");
+  const sourceName = source.querySelector(".topBarUserName, [class*='UserName'], [class*='userName']");
+  if (!isGuestSource && (!(sourceAvatar instanceof HTMLImageElement) || !cleanupPostText(sourceName?.textContent))) {
+    return null;
+  }
+  const snapshot = source.cloneNode(true);
+  snapshot.querySelectorAll(".cc98-rebuild-side-topbar-menu, .cc98-rebuild-side-rail-menu").forEach((node) => node.remove());
+  [snapshot, ...snapshot.querySelectorAll("*")].forEach((node) => {
+    if (!(node instanceof Element)) {
+      return;
+    }
+    [...node.attributes].forEach((attribute) => {
+      if (attribute.name === "id" || attribute.name.startsWith("data-cc98-")) {
+        node.removeAttribute(attribute.name);
+      }
+    });
+    [...node.classList].forEach((className) => {
+      if (className.startsWith("cc98-rebuild-")) {
+        node.classList.remove(className);
+      }
+    });
+  });
+  snapshot.classList.add("cc98-rebuild-topbar-snapshot");
+  snapshot.querySelectorAll("img").forEach((image) => {
+    const src = getPreferredHomeAvatarUrl(image);
+    if (src) {
+      image.src = src;
+    }
+    image.removeAttribute("srcset");
+    image.loading = "eager";
+    image.decoding = "async";
+  });
+  return prepareNativeTopbarUserEntry(snapshot);
+}
+
+function syncRebuiltTopbarAvatar(app = document.querySelector("#cc98-comfort-app")) {
+  eagerNativeHomeAvatarImages();
+  const actions = app?.querySelector?.(".cc98-rebuild-actions");
+  if (!(actions instanceof HTMLElement) || !lastKnownTopbarAvatarUrl) {
+    return;
+  }
+
+  let nativeEntry = actions.querySelector(".cc98-rebuild-native-user-entry");
+  if (!(nativeEntry instanceof HTMLElement)) {
+    const forcedEntry = createForcedTopbarUserEntry();
+    const fallback = actions.querySelector(".cc98-rebuild-user-fallback");
+    if (fallback) {
+      fallback.replaceWith(forcedEntry);
+    } else {
+      actions.append(forcedEntry);
+    }
+    return;
+  }
+  if (nativeEntry.classList.contains("cc98-rebuild-guest-user-entry")) {
+    return;
+  }
+
+  const userInfo = nativeEntry.querySelector(":scope > .topBarUserInfo, .topBarUserInfo") || nativeEntry;
+  let avatar = userInfo.querySelector(":scope > .topBarUserImg > img, .topBarUserImg > img");
+  if (!(avatar instanceof HTMLImageElement)) {
+    const avatarWrap = createElement("div", "topBarUserImg");
+    avatar = document.createElement("img");
+    avatar.alt = "";
+    avatarWrap.append(avatar);
+    const label = userInfo.querySelector(".topBarUserName, .cc98-rebuild-native-user-name-link");
+    userInfo.insertBefore(avatarWrap, label instanceof Node ? label : userInfo.firstChild);
+  }
+  if (avatar.getAttribute("src") !== lastKnownTopbarAvatarUrl) {
+    avatar.src = lastKnownTopbarAvatarUrl;
+  }
+  avatar.loading = "eager";
+  avatar.decoding = "async";
+  ensureSideTopbarMergedMenu(nativeEntry);
+}
+
 function prepareNativeTopbarUserEntry(nativeEntry) {
   if (!(nativeEntry instanceof HTMLElement)) {
     return null;
   }
-  rememberReparentedNativeNode(nativeEntry);
+  if (!nativeEntry.classList.contains("cc98-rebuild-topbar-snapshot")) {
+    rememberReparentedNativeNode(nativeEntry);
+  }
   nativeEntry.classList.add("cc98-rebuild-native-user-entry");
-  nativeEntry.classList.toggle(
-    "cc98-rebuild-guest-user-entry",
-    Boolean(nativeEntry.querySelector('a[href*="/logOn"], a[href*="/logon"], a[href*="account.cc98.org"]'))
-  );
+  const isGuestEntry = Boolean(nativeEntry.querySelector('a[href*="/logOn"], a[href*="/logon"], a[href*="account.cc98.org"]'));
+  nativeEntry.classList.toggle("cc98-rebuild-guest-user-entry", isGuestEntry);
+  if (isGuestEntry) {
+    lastKnownTopbarAvatarUrl = "";
+  }
+  const avatar = nativeEntry.querySelector(".topBarUserImg > img, .topBarUserInfo img");
+  if (avatar instanceof HTMLImageElement) {
+    const avatarUrl = getPreferredHomeAvatarUrl(avatar);
+    if (avatarUrl && avatar.getAttribute("src") !== avatarUrl) {
+      avatar.src = avatarUrl;
+    }
+    avatar.loading = "eager";
+    avatar.decoding = "async";
+    if (avatar.dataset.cc98TopbarAvatarBound !== "true") {
+      avatar.dataset.cc98TopbarAvatarBound = "true";
+      avatar.addEventListener("load", () => syncRebuiltTopbarAvatar());
+    }
+  }
   attachNativeTopbarDropdowns(nativeEntry);
   attachHomeTopbarMessageIfMissing(nativeEntry);
   ensureSideTopbarMergedMenu(nativeEntry);
@@ -10812,6 +11597,25 @@ function stabilizeTopbarUserEntry(app = document.querySelector("#cc98-comfort-ap
   if (!(actions instanceof HTMLElement)) {
     return;
   }
+  if (isPublicUserProfilePage()) {
+    const existingSnapshot = actions.querySelector(".cc98-rebuild-topbar-snapshot");
+    if (existingSnapshot instanceof HTMLElement) {
+      prepareNativeTopbarUserEntry(existingSnapshot);
+      return;
+    }
+    const snapshot = createPublicProfileTopbarSnapshot();
+    if (snapshot instanceof HTMLElement) {
+      const current = actions.querySelector(
+        ".cc98-rebuild-user-fallback, .cc98-rebuild-forced-user-entry, .cc98-rebuild-native-user-entry"
+      );
+      if (current instanceof HTMLElement) {
+        current.replaceWith(snapshot);
+      } else {
+        actions.append(snapshot);
+      }
+      return;
+    }
+  }
   const existing = actions.querySelector(".cc98-rebuild-native-user-entry");
   if (existing instanceof HTMLElement && !existing.classList.contains("cc98-rebuild-forced-user-entry")) {
     prepareNativeTopbarUserEntry(existing);
@@ -10843,6 +11647,10 @@ function stabilizeTopbarUserEntry(app = document.querySelector("#cc98-comfort-ap
 }
 
 function renderTopbarUserEntry() {
+  const publicProfileSnapshot = createPublicProfileTopbarSnapshot();
+  if (publicProfileSnapshot) {
+    return publicProfileSnapshot;
+  }
   const nativeEntry = prepareNativeTopbarUserEntry(getNativeUserEntry());
   if (nativeEntry) {
     return nativeEntry;
@@ -10923,9 +11731,10 @@ function createReadLaterCardButton(item) {
       upsertReadLaterItem(readLaterItem);
       showRebuiltTransientToast(button, "\u5df2\u52a0\u5165\u7a0d\u540e\u518d\u770b");
     }
-    scheduleRebuild();
   });
   button.type = "button";
+  button.dataset.readLaterKey = readLaterItem.key;
+  button.dataset.readLaterTitle = readLaterItem.title;
   button.title = saved ? "\u79fb\u51fa\u7a0d\u540e\u518d\u770b" : "\u52a0\u5165\u7a0d\u540e\u518d\u770b";
   button.setAttribute("aria-label", `${button.title}: ${readLaterItem.title}`);
   return button;
@@ -11590,7 +12399,7 @@ function isEditorAuxiliarySubmitControl(control) {
   if (control.closest(".cc98-rebuild-color-popover, .cc98-rebuild-font-size-popover, .cc98-rebuild-editor-draftbar, .ubb-emoji, .ubb-extend")) {
     return true;
   }
-  if (control.closest(".ubb-editor") && !control.matches("#post-topic-button, .button.blue")) {
+  if (control.closest(".ubb-editor") && !control.matches('[id^="post-topic-button"], .button.blue')) {
     return true;
   }
   return false;
@@ -11606,7 +12415,7 @@ function isEditorAuxiliarySubmitEvent(event, editor) {
     return false;
   }
   return Boolean(source.closest(".ubb-extend, .ubb-emoji, .cc98-rebuild-color-popover, .cc98-rebuild-font-size-popover, .cc98-rebuild-editor-draftbar"))
-    || (Boolean(source.closest(".ubb-editor")) && !source.matches("#post-topic-button, .button.blue"));
+    || (Boolean(source.closest(".ubb-editor")) && !source.matches('[id^="post-topic-button"], .button.blue'));
 }
 
 function isLikelyEditorSubmitControl(target) {
@@ -11674,7 +12483,7 @@ function beginNativeEditorSubmitTransaction(editor, control, context = {}) {
     && Date.now() - startedAt < 2500) {
     return false;
   }
-  appendRebornReplyTailIfNeeded(editor);
+  appendRebornReplyTailIfNeeded(editor, submitControl);
   const payload = getNativeEditorSubmitContext(context);
   const transactionStartedAt = Date.now();
   editor.dataset.cc98SubmitTransactionActive = "true";
@@ -11693,7 +12502,64 @@ function beginNativeEditorSubmitTransaction(editor, control, context = {}) {
   return true;
 }
 
-function appendRebornReplyTailIfNeeded(editor) {
+function isAnonymousReplySubmitControl(control) {
+  if (!(control instanceof HTMLElement)) {
+    return false;
+  }
+  const signature = [
+    control.id,
+    control.getAttribute("name"),
+    control.getAttribute("value"),
+    control.getAttribute("title"),
+    control.getAttribute("aria-label"),
+    control.textContent
+  ].filter(Boolean).join(" ");
+  return /anonymous|\u533f\u540d/i.test(signature);
+}
+
+function isAnonymousOnlyReplyEditor(editor) {
+  if (!(editor instanceof HTMLElement)) {
+    return false;
+  }
+  const submitControls = [...editor.querySelectorAll('[id^="post-topic-button"]')]
+    .filter((control) => control instanceof HTMLElement);
+  return submitControls.some((control) => isAnonymousReplySubmitControl(control))
+    && !submitControls.some((control) => !isAnonymousReplySubmitControl(control));
+}
+
+function isSoulBoardReplyContext() {
+  const boardNodes = [
+    ...document.querySelectorAll(".board-head-name"),
+    ...document.querySelectorAll('#root a[href*="/board/"]')
+  ];
+  return boardNodes.some((node) => {
+    if (!(node instanceof HTMLElement)
+      || node.closest("#cc98-comfort-app, .reply, .reply-content, .substance, .signature, .focus-topic, .card-topic")) {
+      return false;
+    }
+    return normalizeText(node.textContent) === "\u5fc3\u7075\u4e4b\u7ea6";
+  });
+}
+
+function stripRebornReplyTail(value) {
+  let nextValue = String(value || "").trimEnd();
+  const tails = [
+    REPLY_REBORN_TAIL_UBB,
+    REPLY_REBORN_TAIL_LEGACY_RIGHT_UBB,
+    REPLY_REBORN_TAIL_LEGACY_ALIGN_UBB
+  ];
+  let changed = false;
+  tails.forEach((tail) => {
+    if (!nextValue.endsWith(tail)) {
+      return;
+    }
+    nextValue = nextValue.slice(0, -tail.length).replace(/\n+$/, "");
+    changed = true;
+  });
+  return changed ? nextValue : String(value || "");
+}
+
+function appendRebornReplyTailIfNeeded(editor, submitControl = null) {
   if (!lastSettings?.replyRebornTail || !(editor instanceof HTMLElement)) {
     return false;
   }
@@ -11705,6 +12571,16 @@ function appendRebornReplyTailIfNeeded(editor) {
     return false;
   }
   const value = String(textarea.value || "");
+  if (isAnonymousReplySubmitControl(submitControl)
+    || isAnonymousOnlyReplyEditor(editor)
+    || isSoulBoardReplyContext()) {
+    const strippedValue = stripRebornReplyTail(value);
+    if (strippedValue !== value) {
+      setNativeMessageInputValue(textarea, strippedValue);
+      return true;
+    }
+    return false;
+  }
   if (!value.trim()) {
     return false;
   }
@@ -11741,9 +12617,10 @@ function ensureRebornReplyTailSubmitGuard() {
   }
   rebornReplyTailSubmitGuardBound = true;
   const handleSubmitPointer = (event) => {
+    const submitControl = event.target?.closest?.("#post-topic-button, button, input[type='button'], input[type='submit'], .button, .ant-btn, [role='button']");
     const editor = getRebornReplyTailEditorFromTarget(event.target);
     if (editor) {
-      appendRebornReplyTailIfNeeded(editor);
+      appendRebornReplyTailIfNeeded(editor, submitControl);
     }
   };
   document.addEventListener("pointerdown", handleSubmitPointer, true);
@@ -11751,7 +12628,7 @@ function ensureRebornReplyTailSubmitGuard() {
   document.addEventListener("submit", (event) => {
     const editor = event.target?.closest?.("#sendTopicInfo");
     if (editor instanceof HTMLElement) {
-      appendRebornReplyTailIfNeeded(editor);
+      appendRebornReplyTailIfNeeded(editor, event.submitter);
     }
   }, true);
 }
@@ -14388,7 +15265,7 @@ function bindNativeEditorStabilizer(editor) {
     const context = getNativeEditorSubmitContext({ editor });
     const submitControl = findNativeEditorSubmitControl(editor, event.submitter);
     if (!(submitControl instanceof HTMLElement)) {
-      appendRebornReplyTailIfNeeded(editor);
+      appendRebornReplyTailIfNeeded(editor, event.submitter);
       markEditorSubmitIntent(context);
       schedulePostSubmitPageRefresh(context);
       return;
@@ -15416,6 +16293,47 @@ function isOpenIdLoginCenterPage() {
       && /\/(?:Account|PassKey)\/LogOn/i.test(location.pathname);
   } catch {
     return false;
+  }
+}
+
+function stopPublicProfileTopbarRecovery() {
+  if (!publicProfileTopbarRecoveryTimer) {
+    return;
+  }
+  window.clearInterval(publicProfileTopbarRecoveryTimer);
+  publicProfileTopbarRecoveryTimer = null;
+}
+
+function armPublicProfileTopbarRecovery(app = document.querySelector("#cc98-comfort-app")) {
+  stopPublicProfileTopbarRecovery();
+  if (!isPublicUserProfilePage() || !(app instanceof HTMLElement)) {
+    return;
+  }
+  const deadline = Date.now() + 30000;
+  let finished = false;
+  const recover = () => {
+    if (!app.isConnected || !isPublicUserProfilePage() || Date.now() >= deadline) {
+      finished = true;
+      stopPublicProfileTopbarRecovery();
+      return;
+    }
+    const actions = app.querySelector(".cc98-rebuild-actions");
+    const completeEntry = actions?.querySelector(".cc98-rebuild-topbar-snapshot");
+    if (completeEntry instanceof HTMLElement) {
+      finished = true;
+      stopPublicProfileTopbarRecovery();
+      return;
+    }
+    stabilizeTopbarUserEntry(app);
+    const recoveredEntry = actions?.querySelector(".cc98-rebuild-topbar-snapshot");
+    if (recoveredEntry instanceof HTMLElement) {
+      finished = true;
+      stopPublicProfileTopbarRecovery();
+    }
+  };
+  recover();
+  if (!finished && !publicProfileTopbarRecoveryTimer) {
+    publicProfileTopbarRecoveryTimer = window.setInterval(recover, 360);
   }
 }
 
@@ -16506,6 +17424,7 @@ function bindNativeUserCenterStabilizer(router) {
     return;
   }
   nativeUserCenterStabilizers.add(router);
+  eagerUserCenterImages(router);
   stabilizeNativeUserCenter(router);
   router.addEventListener("change", (event) => {
     const input = event.target?.closest?.('input[type="file"]#uploadAvatar, input[type="file"][accept*="image"]');
@@ -16525,7 +17444,10 @@ function bindNativeUserCenterStabilizer(router) {
   let userCenterStabilizeTimer = null;
   const scheduleUserCenterStabilize = () => {
     window.clearTimeout(userCenterStabilizeTimer);
-    userCenterStabilizeTimer = window.setTimeout(() => stabilizeNativeUserCenter(router), 80);
+    userCenterStabilizeTimer = window.setTimeout(() => {
+      eagerUserCenterImages(router);
+      stabilizeNativeUserCenter(router);
+    }, 80);
   };
   const userCenterObserver = new MutationObserver(scheduleUserCenterStabilize);
   userCenterObserver.observe(router, {
@@ -16533,7 +17455,7 @@ function bindNativeUserCenterStabilizer(router) {
     subtree: true,
     characterData: true,
     attributes: true,
-    attributeFilter: ["style", "class"]
+    attributeFilter: ["style", "class", "src", "data-src", "data-original", "data-url", "data-avatar", "data-portrait"]
   });
 }
 
@@ -16891,6 +17813,7 @@ function renderSearchPendingState(app) {
 function renderTopics(app) {
   const pageKind = getPageKind();
   const isSearchPage = pageKind === "search";
+  const hasReadLaterSidebar = isReadLaterSidebarTopicsPage();
   const topics = getTopicItems();
   const searchKeyword = isSearchPage ? getCurrentSearchKeyword() : "";
   const sortedTopics = isSearchPage ? sortSearchTopicItems(topics, searchKeyword) : topics;
@@ -16935,6 +17858,13 @@ function renderTopics(app) {
       card.dataset.itemKey = `topic:${item.href}`;
       feed.append(card);
     });
+  }
+  if (hasReadLaterSidebar) {
+    const layout = createElement("div", "cc98-rebuild-topics-read-later-layout");
+    feed.classList.add("cc98-rebuild-topics-read-later-feed");
+    layout.append(feed, createReadLaterSidebar());
+    app.append(layout);
+    return;
   }
   app.append(feed);
 }
@@ -17245,6 +18175,7 @@ function renderUserCenter(app) {
   const isPublicProfile = isPublicUserProfilePage();
 
   const hero = createElement("section", "cc98-rebuild-user-hero");
+  hero.classList.toggle("cc98-rebuild-user-hero-public", isPublicProfile);
   hero.append(createElement("p", "cc98-rebuild-kicker", "User Center"));
   hero.append(createElement("h1", "", activeTitle));
   app.append(hero);
@@ -17252,6 +18183,7 @@ function renderUserCenter(app) {
   if (isPublicProfile) {
     const layout = createElement("div", "cc98-rebuild-user-layout cc98-rebuild-user-layout-public");
     if (router instanceof HTMLElement) {
+      eagerUserCenterImages(router);
       rememberReparentedNativeNode(router);
       router.classList.add("cc98-rebuild-native-user-router");
       bindNativeUserCenterStabilizer(router);
@@ -19116,6 +20048,209 @@ function readLaterItemMatchesQuery(item, query) {
   return haystack.includes(keyword);
 }
 
+function sortReadLaterItems(items = readReadLaterItems()) {
+  return [...items].sort((a, b) => {
+    if (Boolean(a.readAt) !== Boolean(b.readAt)) {
+      return a.readAt ? 1 : -1;
+    }
+    return (b.addedAt || 0) - (a.addedAt || 0);
+  });
+}
+
+function renderReadLaterSidebarContent(sidebar, options = {}) {
+  if (!(sidebar instanceof HTMLElement)) {
+    return;
+  }
+  const items = sortReadLaterItems(options.items || readReadLaterItems());
+  const filteredItems = items.filter((item) => readLaterItemMatchesQuery(item, readLaterSidebarSearchQuery));
+  const pageSize = 8;
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize));
+  readLaterSidebarPage = Math.max(1, Math.min(totalPages, Number(readLaterSidebarPage) || 1));
+  const pageItems = filteredItems.slice(
+    (readLaterSidebarPage - 1) * pageSize,
+    readLaterSidebarPage * pageSize
+  );
+  const unreadCount = items.filter((item) => !item.readAt).length;
+  const count = sidebar.querySelector(".cc98-rebuild-read-later-sidebar-count");
+  const summary = sidebar.querySelector(".cc98-rebuild-read-later-sidebar-summary");
+  const viewport = sidebar.querySelector(".cc98-rebuild-read-later-sidebar-viewport");
+  const pager = sidebar.querySelector(".cc98-rebuild-read-later-sidebar-pager");
+  const clearReadButton = sidebar.querySelector(".cc98-rebuild-read-later-sidebar-clear-read");
+  const resetSearchButton = sidebar.querySelector(".cc98-rebuild-read-later-sidebar-search-reset");
+  if (!(viewport instanceof HTMLElement) || !(pager instanceof HTMLElement)) {
+    return;
+  }
+
+  if (count instanceof HTMLElement) {
+    count.textContent = `${unreadCount} / ${items.length}`;
+    count.title = `未读 ${unreadCount}，全部 ${items.length}`;
+  }
+  if (summary instanceof HTMLElement) {
+    summary.textContent = readLaterSidebarSearchQuery
+      ? `搜索结果 ${filteredItems.length} / ${items.length}`
+      : `未读 ${unreadCount} · 全部 ${items.length}`;
+  }
+  if (clearReadButton instanceof HTMLButtonElement) {
+    clearReadButton.disabled = !items.some((item) => item.readAt);
+  }
+  if (resetSearchButton instanceof HTMLButtonElement) {
+    resetSearchButton.disabled = !readLaterSidebarSearchQuery;
+  }
+
+  const previousScrollTop = viewport.scrollTop;
+  viewport.replaceChildren();
+  if (!items.length) {
+    const empty = createElement("div", "cc98-rebuild-read-later-sidebar-empty");
+    empty.append(createElement("strong", "", "暂无稍后再看"));
+    empty.append(createElement("span", "", "点击新帖右侧的 🕗 即可加入。"));
+    viewport.append(empty);
+  } else if (!filteredItems.length) {
+    const empty = createElement("div", "cc98-rebuild-read-later-sidebar-empty");
+    empty.append(createElement("strong", "", "没有匹配项"));
+    empty.append(createElement("span", "", "换一个关键词再试。"));
+    viewport.append(empty);
+  } else {
+    pageItems.forEach((item) => {
+      const row = createElement("article", `cc98-rebuild-read-later-sidebar-item${item.readAt ? " is-read" : ""}`);
+      row.dataset.readLaterKey = item.key;
+      const top = createElement("div", "cc98-rebuild-read-later-sidebar-item-top");
+      const state = createElement(
+        "span",
+        `cc98-rebuild-read-later-sidebar-state${item.readAt ? " is-read" : ""}`,
+        item.readAt ? "已读" : "未读"
+      );
+      top.append(state);
+      if (item.board) {
+        top.append(createElement("span", "cc98-rebuild-read-later-sidebar-board", item.board));
+      }
+      const controls = createElement("div", "cc98-rebuild-read-later-sidebar-item-controls");
+      const toggleRead = createButton("cc98-rebuild-read-later-sidebar-icon", item.readAt ? "↶" : "✓", () => {
+        markReadLaterItemRead(item.key, !item.readAt);
+      });
+      toggleRead.title = item.readAt ? "标为未读" : "标为已读";
+      toggleRead.setAttribute("aria-label", `${toggleRead.title}: ${item.title}`);
+      const remove = createButton("cc98-rebuild-read-later-sidebar-icon is-delete", "×", () => {
+        removeReadLaterItem(item.key);
+        showRebuiltTransientToast(sidebar, "已从稍后再看删除");
+      });
+      remove.title = "删除";
+      remove.setAttribute("aria-label", `删除: ${item.title}`);
+      controls.append(toggleRead, remove);
+      top.append(controls);
+      row.append(top);
+
+      const title = createLink("cc98-rebuild-read-later-sidebar-title", item.title, item.href);
+      title.addEventListener("click", () => markReadLaterItemRead(item.key, true));
+      row.append(title);
+      const meta = [
+        item.user,
+        item.addedAt ? formatReadLaterTime(item.addedAt) : ""
+      ].filter(Boolean).join(" · ");
+      if (meta) {
+        row.append(createElement("p", "cc98-rebuild-read-later-sidebar-meta", meta));
+      }
+      viewport.append(row);
+    });
+  }
+  viewport.scrollTop = options.preserveScroll ? previousScrollTop : 0;
+
+  pager.replaceChildren();
+  const prev = createButton("cc98-rebuild-read-later-sidebar-page-button", "上一页", () => {
+    readLaterSidebarPage = Math.max(1, readLaterSidebarPage - 1);
+    renderReadLaterSidebarContent(sidebar);
+  });
+  prev.disabled = readLaterSidebarPage <= 1;
+  const pageInfo = createElement(
+    "span",
+    "cc98-rebuild-read-later-sidebar-page-info",
+    `${readLaterSidebarPage} / ${totalPages}`
+  );
+  const next = createButton("cc98-rebuild-read-later-sidebar-page-button", "下一页", () => {
+    readLaterSidebarPage = Math.min(totalPages, readLaterSidebarPage + 1);
+    renderReadLaterSidebarContent(sidebar);
+  });
+  next.disabled = readLaterSidebarPage >= totalPages;
+  pager.append(prev, pageInfo, next);
+}
+
+function createReadLaterSidebar() {
+  const sidebar = createElement("aside", "cc98-rebuild-read-later-sidebar");
+  sidebar.setAttribute("aria-label", "稍后再看");
+  const heading = createElement("div", "cc98-rebuild-read-later-sidebar-heading");
+  const headingTitle = createElement("div", "cc98-rebuild-read-later-sidebar-heading-title");
+  headingTitle.append(createElement("h2", "", "稍后再看"));
+  headingTitle.append(createElement("span", "cc98-rebuild-read-later-sidebar-count", "0 / 0"));
+  const headingActions = createElement("div", "cc98-rebuild-read-later-sidebar-heading-actions");
+  const clearRead = createButton("cc98-rebuild-read-later-sidebar-clear-read", "清已读", () => {
+    writeReadLaterItems(readReadLaterItems().filter((item) => !item.readAt));
+    showRebuiltTransientToast(sidebar, "已清除已读项");
+  });
+  const openAll = createLink("cc98-rebuild-read-later-sidebar-open-all", "全部", getReadLaterPageHref());
+  headingActions.append(clearRead, openAll);
+  heading.append(headingTitle, headingActions);
+
+  const form = createElement("form", "cc98-rebuild-read-later-sidebar-search");
+  const input = createElement("input", "");
+  input.type = "search";
+  input.placeholder = "搜索稍后再看";
+  input.autocomplete = "off";
+  input.value = readLaterSidebarSearchQuery;
+  input.setAttribute("aria-label", "搜索稍后再看");
+  const submit = createElement("button", "cc98-rebuild-read-later-sidebar-search-submit", "搜索");
+  submit.type = "submit";
+  const reset = createButton("cc98-rebuild-read-later-sidebar-search-reset", "×", () => {
+    readLaterSidebarSearchQuery = "";
+    readLaterSidebarPage = 1;
+    input.value = "";
+    renderReadLaterSidebarContent(sidebar);
+    input.focus();
+  });
+  reset.title = "清空搜索";
+  reset.setAttribute("aria-label", "清空搜索");
+  form.append(input, submit, reset);
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    readLaterSidebarSearchQuery = input.value.trim();
+    readLaterSidebarPage = 1;
+    renderReadLaterSidebarContent(sidebar);
+  });
+  input.addEventListener("search", () => {
+    if (!input.value) {
+      readLaterSidebarSearchQuery = "";
+      readLaterSidebarPage = 1;
+      renderReadLaterSidebarContent(sidebar);
+    }
+  });
+
+  sidebar.append(
+    heading,
+    form,
+    createElement("p", "cc98-rebuild-read-later-sidebar-summary"),
+    createElement("div", "cc98-rebuild-read-later-sidebar-viewport"),
+    createElement("div", "cc98-rebuild-read-later-sidebar-pager")
+  );
+  renderReadLaterSidebarContent(sidebar);
+  return sidebar;
+}
+
+function syncReadLaterUi() {
+  const items = readReadLaterItems();
+  const savedKeys = new Set(items.map((item) => item.key));
+  document.querySelectorAll(".cc98-rebuild-read-later-button[data-read-later-key]").forEach((button) => {
+    if (!(button instanceof HTMLButtonElement)) {
+      return;
+    }
+    const saved = savedKeys.has(button.dataset.readLaterKey || "");
+    const title = saved ? "移出稍后再看" : "加入稍后再看";
+    button.classList.toggle("is-saved", saved);
+    button.title = title;
+    button.setAttribute("aria-label", `${title}: ${button.dataset.readLaterTitle || "帖子"}`);
+  });
+  document.querySelectorAll(".cc98-rebuild-read-later-sidebar").forEach((sidebar) => {
+    renderReadLaterSidebarContent(sidebar, { items, preserveScroll: true });
+  });
+}
+
 function renderReadLaterSearchControls(section, totalCount, filteredCount) {
   const form = createElement("form", "cc98-rebuild-read-later-search");
   const input = createElement("input", "");
@@ -19560,6 +20695,17 @@ function renderRebuiltUi() {
     existing.remove();
   }
 
+  if (currentKind === "userCenter" && isPublicUserProfilePage() && isUserCenterPendingNativeLoad()) {
+    document.documentElement.removeAttribute("data-cc98-comfort-app-root");
+    const { router } = getPublicUserProfileNativeShell();
+    if (router instanceof HTMLElement) {
+      eagerUserCenterImages(router);
+    }
+    scheduleUserCenterPendingRebuild();
+    isRebuilding = false;
+    return;
+  }
+
   try {
     removeDecorativeFrameImages(document);
     const app = createElement("div", "cc98-rebuild-shell");
@@ -19658,7 +20804,8 @@ function renderRebuiltUi() {
     }
 
     const rootHost = document.querySelector("#root");
-    if (rootHost instanceof HTMLElement) {
+    const isolateFromWebVpnUserProfileRoot = isWebVpnHost() && isPublicUserProfilePage();
+    if (rootHost instanceof HTMLElement && !isolateFromWebVpnUserProfileRoot) {
       rootHost.prepend(app);
       document.documentElement.dataset.cc98ComfortAppRoot = "true";
     } else {
@@ -19670,6 +20817,7 @@ function renderRebuiltUi() {
     }
     restoreRebuiltSearchUiState(app, preservedSearchState);
     stabilizeTopbarUserEntry(app);
+    armPublicProfileTopbarRecovery(app);
     [120, 480, 1200, 2400, 4200, 6500].forEach((delay) => {
       setTimeout(() => stabilizeTopbarUserEntry(app), delay);
     });
@@ -19887,6 +21035,40 @@ function scheduleFiltering() {
   });
 }
 
+function recoverMissingRebuiltApp() {
+  if (!lastSettings?.enabled || !lastSettings.rebuildUi || !document.body) {
+    return false;
+  }
+  if (document.querySelector("#cc98-comfort-app")) {
+    return false;
+  }
+  const root = document.documentElement;
+  const wasMarkedReady = root.dataset.cc98ComfortRebuildReady === "true"
+    || root.dataset.cc98ComfortAppRoot === "true"
+    || root.classList.contains("cc98-comfort-rebuild-active");
+  if (!wasMarkedReady
+    || root.dataset.cc98ComfortOriginalPrewarming === "true"
+    || root.dataset.cc98ComfortPrewarming === "true") {
+    return false;
+  }
+
+  root.classList.remove("cc98-comfort-rebuild-active");
+  root.dataset.cc98ComfortRebuildReady = "false";
+  root.removeAttribute("data-cc98-comfort-app-root");
+  clearPublicUserProfileLoadingOverlay();
+  scheduleRebuild();
+  return true;
+}
+
+function ensureRebuiltAppPresenceWatchdog() {
+  if (rebuiltAppPresenceWatchdog) {
+    return;
+  }
+  rebuiltAppPresenceWatchdog = window.setInterval(() => {
+    recoverMissingRebuiltApp();
+  }, 420);
+}
+
 function scheduleRebuild() {
   if (forceReloadEditorSubmitErrorPage()) {
     return;
@@ -19895,6 +21077,10 @@ function scheduleRebuild() {
     // Continue rebuilding the user center after clearing stale transition overlays.
   }
   if (handleTopicFirstPagePrevisitNavigation()) {
+    return;
+  }
+  if (shouldPrewarmHomeAvatarBeforeRebuild()) {
+    startHomeAvatarPrewarm();
     return;
   }
   if (shouldPrewarmOriginalBeforeRebuild()) {
@@ -19915,6 +21101,10 @@ function scheduleRebuild() {
       // Continue rebuilding the user center after clearing stale transition overlays.
     }
     if (handleTopicFirstPagePrevisitNavigation()) {
+      return;
+    }
+    if (shouldPrewarmHomeAvatarBeforeRebuild()) {
+      startHomeAvatarPrewarm();
       return;
     }
     if (shouldPrewarmOriginalBeforeRebuild()) {
@@ -19983,6 +21173,15 @@ function syncRebuiltContent() {
   const feed = app?.querySelector("[data-feed-kind]");
   if (getPageKind() === "userCenter") {
     clearUserCenterStaleLoadingOverlay("userCenter");
+    if (isPublicUserProfilePage()) {
+      const router = app?.querySelector(".cc98-rebuild-native-user-router");
+      if (router instanceof HTMLElement) {
+        eagerUserCenterImages(router);
+        stabilizeNativeUserCenter(router);
+      } else if (isPublicUserProfileNativeShellReady()) {
+        scheduleRebuild();
+      }
+    }
     updateUserCenterHero(app);
     return;
   }
@@ -20067,7 +21266,9 @@ function pokeNativeInfiniteLoad() {
   if (!lastSettings?.enabled || !lastSettings.rebuildUi) {
     return;
   }
-  if (!["topics", "search", "post", "board"].includes(getPageKind())) {
+  const kind = getPageKind();
+  const isPublicProfileFeed = kind === "userCenter" && isPublicUserProfilePage();
+  if (!["topics", "search", "post", "board"].includes(kind) && !isPublicProfileFeed) {
     return;
   }
   const now = Date.now();
@@ -20080,6 +21281,7 @@ function pokeNativeInfiniteLoad() {
   const scrollEvent = new Event("scroll", { bubbles: true });
   window.dispatchEvent(scrollEvent);
   document.dispatchEvent(scrollEvent);
+  document.querySelector("#root")?.dispatchEvent(scrollEvent);
 
   const loadMore = document.querySelector(
     "#focus-topic-getMore, [class*='getMore'], [class*='loadMore'], [id*='getMore'], [id*='loadMore']"
@@ -20117,8 +21319,31 @@ function ensureObserver() {
   }
 
   observer = new MutationObserver((records) => {
+    if (redirectCurrentWebVpnExternalPage() || isCurrentWebVpnExternalProxyPage()) {
+      return;
+    }
     if (forceReloadEditorSubmitErrorPage()) {
       return;
+    }
+    recoverMissingRebuiltApp();
+    const hasTopbarAvatarMutation = records.some((record) => {
+      const target = record.target instanceof Element ? record.target : record.target?.parentElement;
+      if (record.type === "attributes") {
+        return target instanceof HTMLImageElement
+          && Boolean(target.closest(".topBarUserImg, .topBarUserInfo"));
+      }
+      return [...record.addedNodes].some((node) => {
+        return node instanceof Element
+          && (
+            node.matches?.(".topBarUserImg img, .topBarUserInfo img")
+            || Boolean(node.querySelector?.(".topBarUserImg img, .topBarUserInfo img"))
+          );
+      });
+    });
+    if (hasTopbarAvatarMutation) {
+      window.setTimeout(() => {
+        syncRebuiltTopbarAvatar();
+      }, 0);
     }
     const hasSourceMutation = records.some((record) => {
       const target = record.target;
@@ -20137,8 +21362,8 @@ function ensureObserver() {
         return node instanceof Element
           && !node.closest?.("#cc98-comfort-app")
           && (
-            node.matches?.(".topBarRight, .topBarUserInfo, .topBarUserCenter, .topBarUserCenter-mainPage, .topBarMessageDetails, .topBarMessageDetails-mainPage, .focus-topic, .card-topic, .board-postItem-body, .createTopic, #sendTopicInfo, .container.body-content, form[action*='/Account/LogOn'], form[action*='/PassKey/LogOn'], article, [class*='floor'], [class*='post'], [class*='reply']")
-            || Boolean(node.querySelector?.(".topBarRight, .topBarUserInfo, .topBarUserCenter, .topBarUserCenter-mainPage, .topBarMessageDetails, .topBarMessageDetails-mainPage, .focus-topic, .card-topic, .board-postItem-body, .createTopic, #sendTopicInfo, .container.body-content, form[action*='/Account/LogOn'], form[action*='/PassKey/LogOn'], article, [class*='floor'], [class*='post'], [class*='reply']"))
+            node.matches?.(".topBarRight, .topBarUserInfo, .topBarUserCenter, .topBarUserCenter-mainPage, .topBarMessageDetails, .topBarMessageDetails-mainPage, .focus-topic, .card-topic, .board-postItem-body, .createTopic, #sendTopicInfo, .container.body-content, .user-center, .user-center-router, .user-center-exact, .user-profile, .user-activities, .user-posts, .user-post, form[action*='/Account/LogOn'], form[action*='/PassKey/LogOn'], article, [class*='floor'], [class*='post'], [class*='reply']")
+            || Boolean(node.querySelector?.(".topBarRight, .topBarUserInfo, .topBarUserCenter, .topBarUserCenter-mainPage, .topBarMessageDetails, .topBarMessageDetails-mainPage, .focus-topic, .card-topic, .board-postItem-body, .createTopic, #sendTopicInfo, .container.body-content, .user-center, .user-center-router, .user-center-exact, .user-profile, .user-activities, .user-posts, .user-post, form[action*='/Account/LogOn'], form[action*='/PassKey/LogOn'], article, [class*='floor'], [class*='post'], [class*='reply']"))
           );
       });
     });
@@ -20153,7 +21378,12 @@ function ensureObserver() {
       scheduleSync();
     }
   });
-  observer.observe(document.querySelector("#root") ?? document.body, { childList: true, subtree: true });
+  observer.observe(document.body || document.documentElement, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ["src", "data-src", "data-original", "data-url", "data-avatar", "data-portrait"]
+  });
 }
 
 function patchHistoryNavigation() {
@@ -20186,6 +21416,9 @@ function patchHistoryNavigation() {
         return result;
       }
       setTimeout(() => {
+        if (redirectCurrentWebVpnExternalPage() || isCurrentWebVpnExternalProxyPage()) {
+          return;
+        }
         if (enforceCurrentWebVpnNakedRouteRedirect()) {
           return;
         }
@@ -20264,6 +21497,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
     readLaterItemsCache = { storageKey: readLaterStorageKey, items };
     writeLegacyReadLaterItemsForCurrentUser(items, readLaterStorageKey);
     readLaterStorageHydratedKey = readLaterStorageKey;
+    syncReadLaterUi();
     scheduleSync();
     if (isReadLaterRoute()) {
       scheduleRebuild();
@@ -20296,6 +21530,9 @@ function bootNormalPage() {
   if (normalPageBooted) {
     return;
   }
+  if (redirectCurrentWebVpnExternalPage()) {
+    return;
+  }
   if (enforceCurrentWebVpnNakedRouteRedirect()) {
     return;
   }
@@ -20303,7 +21540,9 @@ function bootNormalPage() {
     scheduleWebVpnBootProbe();
     return;
   }
+  confirmCurrentWebVpnCc98Prefix();
   normalPageBooted = true;
+  clearPublicUserProfileLoadingOverlay();
   if (redirectNullPageToHome()) {
     return;
   }
@@ -20318,6 +21557,7 @@ function bootNormalPage() {
   scheduleOpenIdBindPromptAfterLogin();
   syncOpenIdBindingWithWebAccount();
   document.addEventListener("DOMContentLoaded", () => {
+    clearPublicUserProfileLoadingOverlay();
     injectSecurityWatermarkPageBridge();
     ensureSecurityWatermark();
     enforceRecentLogoutRedirectIntent();

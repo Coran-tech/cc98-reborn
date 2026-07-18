@@ -876,6 +876,29 @@
   overflow: hidden !important;
 }
 
+:root.cc98-comfort-rebuild-active[data-cc98-comfort-rebuild-ready="true"][data-cc98-comfort-app-root="true"]:not(:has(#cc98-comfort-app)) #root > :not(#cc98-comfort-app) {
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: initial !important;
+  padding: initial !important;
+  overflow: visible !important;
+  clip-path: none !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  contain: none !important;
+}
+
+:root.cc98-comfort-rebuild-active[data-cc98-comfort-rebuild-ready="true"][data-cc98-comfort-app-root="true"]:not(:has(#cc98-comfort-app)) #root > :not(#cc98-comfort-app) > * {
+  max-width: none !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
 :root.cc98-comfort #cc98-comfort-app,
 :root.cc98-comfort #cc98-comfort-app * {
   box-sizing: border-box;
@@ -1269,7 +1292,7 @@
     pointer-events: none !important;
   }
 
-  :root.cc98-comfort[data-cc98-comfort-side-topbar="true"] .cc98-rebuild-native-user-entry.cc98-rebuild-side-menu-ready:is(:hover, :focus-within, .cc98-rebuild-side-menu-open)::after {
+  :root.cc98-comfort[data-cc98-comfort-side-topbar="true"] .cc98-rebuild-native-user-entry.cc98-rebuild-side-menu-ready:is(:focus-within, .cc98-rebuild-side-menu-open)::after {
     top: auto;
     right: auto;
     bottom: 0;
@@ -1304,7 +1327,6 @@
     transition: opacity 100ms ease, transform 100ms ease, visibility 100ms ease !important;
   }
 
-  :root.cc98-comfort[data-cc98-comfort-side-topbar="true"] .cc98-rebuild-native-user-entry.cc98-rebuild-side-menu-ready:hover .cc98-rebuild-side-topbar-menu,
   :root.cc98-comfort[data-cc98-comfort-side-topbar="true"] .cc98-rebuild-native-user-entry.cc98-rebuild-side-menu-ready:focus-within .cc98-rebuild-side-topbar-menu,
   :root.cc98-comfort[data-cc98-comfort-side-topbar="true"] .cc98-rebuild-native-user-entry.cc98-rebuild-side-menu-ready.cc98-rebuild-side-menu-open .cc98-rebuild-side-topbar-menu {
     opacity: 1 !important;
@@ -1858,7 +1880,7 @@
   pointer-events: none !important;
 }
 
-:root.cc98-comfort .cc98-rebuild-native-user-entry.cc98-rebuild-side-menu-ready:is(:hover, :focus-within, .cc98-rebuild-side-menu-open)::after {
+:root.cc98-comfort .cc98-rebuild-native-user-entry.cc98-rebuild-side-menu-ready:is(:focus-within, .cc98-rebuild-side-menu-open)::after {
   content: "";
   position: absolute;
   top: 100%;
@@ -1893,7 +1915,6 @@
   transition: opacity 100ms ease, transform 100ms ease, visibility 100ms ease !important;
 }
 
-:root.cc98-comfort .cc98-rebuild-native-user-entry.cc98-rebuild-side-menu-ready:hover .cc98-rebuild-side-topbar-menu,
 :root.cc98-comfort .cc98-rebuild-native-user-entry.cc98-rebuild-side-menu-ready:focus-within .cc98-rebuild-side-topbar-menu,
 :root.cc98-comfort .cc98-rebuild-native-user-entry.cc98-rebuild-side-menu-ready.cc98-rebuild-side-menu-open .cc98-rebuild-side-topbar-menu {
   opacity: 1 !important;
@@ -2094,7 +2115,6 @@
     transition: opacity 120ms ease, transform 120ms ease, visibility 120ms ease !important;
   }
 
-  :root.cc98-comfort[data-cc98-comfort-side-topbar="true"] .cc98-rebuild-native-user-entry.cc98-rebuild-side-menu-ready:hover .cc98-rebuild-side-rail-menu,
   :root.cc98-comfort[data-cc98-comfort-side-topbar="true"] .cc98-rebuild-native-user-entry.cc98-rebuild-side-menu-ready:focus-within .cc98-rebuild-side-rail-menu,
   :root.cc98-comfort[data-cc98-comfort-side-topbar="true"] .cc98-rebuild-native-user-entry.cc98-rebuild-side-menu-ready.cc98-rebuild-side-menu-open .cc98-rebuild-side-rail-menu {
     opacity: 1 !important;
@@ -5171,6 +5191,408 @@
   font-variant-numeric: tabular-nums;
 }
 
+:root.cc98-comfort .cc98-rebuild-topics-read-later-layout {
+  width: min(1120px, 100%);
+  display: grid;
+  grid-template-columns: minmax(0, 760px) minmax(280px, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+:root.cc98-comfort .cc98-rebuild-topics-read-later-feed {
+  width: 100%;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar {
+  position: sticky;
+  top: 84px;
+  align-self: start;
+  min-width: 0;
+  height: min(640px, calc(100vh - 100px));
+  min-height: min(420px, calc(100vh - 100px));
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--cc98-comfort-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--cc98-comfort-surface) 96%, var(--cc98-comfort-bg));
+  box-shadow: var(--cc98-comfort-shadow);
+  color: var(--cc98-comfort-text);
+  z-index: 8;
+}
+
+:root.cc98-comfort[data-cc98-comfort-side-topbar="true"] .cc98-rebuild-read-later-sidebar {
+  top: 16px;
+  height: min(680px, calc(100vh - 32px));
+  min-height: min(420px, calc(100vh - 32px));
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-heading,
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-heading-title,
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-heading-actions,
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-item-top,
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-item-controls,
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-pager {
+  display: flex;
+  align-items: center;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-heading {
+  min-width: 0;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-heading-title {
+  min-width: 0;
+  gap: 8px;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-heading h2 {
+  margin: 0;
+  color: var(--cc98-comfort-text) !important;
+  font-size: 1.06rem !important;
+  line-height: 1.2 !important;
+  font-weight: 800 !important;
+  white-space: nowrap;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-count {
+  min-width: 44px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--cc98-comfort-accent-2);
+  color: var(--cc98-comfort-accent) !important;
+  font-size: 0.74rem !important;
+  font-weight: 760;
+  font-variant-numeric: tabular-nums;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-heading-actions {
+  gap: 6px;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-clear-read,
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-open-all {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  border: 1px solid var(--cc98-comfort-border) !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  color: var(--cc98-comfort-muted) !important;
+  font: inherit;
+  font-size: 0.76rem !important;
+  line-height: 1 !important;
+  text-decoration: none !important;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-clear-read:hover:not(:disabled),
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-open-all:hover {
+  border-color: var(--cc98-comfort-accent) !important;
+  color: var(--cc98-comfort-accent) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-clear-read:disabled {
+  opacity: 0.42;
+  cursor: default;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-search {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 6px;
+  align-items: center;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-search input {
+  min-width: 0;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--cc98-comfort-border) !important;
+  border-radius: 8px !important;
+  background: var(--cc98-comfort-surface-2) !important;
+  color: var(--cc98-comfort-text) !important;
+  font: inherit;
+  font-size: 0.82rem !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-search input:focus {
+  outline: none;
+  border-color: var(--cc98-comfort-accent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cc98-comfort-accent) 14%, transparent);
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-search-submit,
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-search-reset {
+  height: 34px;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--cc98-comfort-border) !important;
+  border-radius: 8px !important;
+  background: var(--cc98-comfort-surface-2) !important;
+  color: var(--cc98-comfort-text) !important;
+  padding: 0 9px !important;
+  font: inherit;
+  font-size: 0.78rem !important;
+  cursor: pointer;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-search-submit {
+  border-color: color-mix(in srgb, var(--cc98-comfort-accent) 40%, var(--cc98-comfort-border)) !important;
+  background: var(--cc98-comfort-accent-2) !important;
+  color: var(--cc98-comfort-accent) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-search-reset {
+  width: 34px;
+  padding: 0 !important;
+  font-size: 1rem !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-search-reset:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-summary {
+  margin: 0;
+  color: var(--cc98-comfort-muted) !important;
+  font-size: 0.76rem !important;
+  line-height: 1.35 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-viewport {
+  min-height: 0;
+  display: grid;
+  align-content: start;
+  gap: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding-right: 4px;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-item {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+  padding: 11px 2px;
+  border-bottom: 1px solid color-mix(in srgb, var(--cc98-comfort-border) 78%, transparent);
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-item:last-child {
+  border-bottom: 0;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-item.is-read {
+  opacity: 0.66;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-item-top {
+  min-width: 0;
+  gap: 6px;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-state,
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-board {
+  min-height: 21px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 7px;
+  border-radius: 999px;
+  font-size: 0.7rem !important;
+  line-height: 1 !important;
+  white-space: nowrap;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-state {
+  background: var(--cc98-comfort-accent-2);
+  color: var(--cc98-comfort-accent) !important;
+  font-weight: 760;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-state.is-read {
+  background: color-mix(in srgb, var(--cc98-comfort-muted) 14%, var(--cc98-comfort-surface));
+  color: var(--cc98-comfort-muted) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-board {
+  min-width: 0;
+  max-width: 112px;
+  overflow: hidden;
+  background: var(--cc98-comfort-surface-2);
+  color: var(--cc98-comfort-muted) !important;
+  text-overflow: ellipsis;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-item-controls {
+  margin-left: auto;
+  gap: 4px;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-icon {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 !important;
+  border: 1px solid transparent !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  color: var(--cc98-comfort-muted) !important;
+  font-size: 0.88rem !important;
+  line-height: 1 !important;
+  cursor: pointer;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-icon:hover {
+  border-color: var(--cc98-comfort-border) !important;
+  background: var(--cc98-comfort-surface-2) !important;
+  color: var(--cc98-comfort-accent) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-icon.is-delete:hover {
+  color: var(--cc98-comfort-danger) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-title {
+  min-width: 0;
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--cc98-comfort-text) !important;
+  font-family: var(--cc98-comfort-font-reading);
+  font-size: 0.9rem !important;
+  line-height: 1.48 !important;
+  font-weight: 680 !important;
+  text-decoration: none !important;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-title:hover {
+  color: var(--cc98-comfort-link) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-meta {
+  margin: 0;
+  overflow: hidden;
+  color: var(--cc98-comfort-muted) !important;
+  font-size: 0.72rem !important;
+  line-height: 1.35 !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-empty {
+  min-height: 150px;
+  display: grid;
+  place-content: center;
+  gap: 8px;
+  padding: 18px;
+  color: var(--cc98-comfort-muted);
+  text-align: center;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-empty strong {
+  color: var(--cc98-comfort-text) !important;
+  font-size: 0.92rem !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-empty span {
+  color: var(--cc98-comfort-muted) !important;
+  font-size: 0.76rem !important;
+  line-height: 1.45 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-pager {
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 2px;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-page-button,
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-page-info {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--cc98-comfort-border) !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  color: var(--cc98-comfort-muted) !important;
+  font-size: 0.76rem !important;
+  font-variant-numeric: tabular-nums;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-page-button {
+  min-width: 62px;
+  padding: 0 8px !important;
+  font: inherit;
+  cursor: pointer;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-page-button:hover:not(:disabled) {
+  border-color: var(--cc98-comfort-accent) !important;
+  color: var(--cc98-comfort-accent) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-page-button:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+
+:root.cc98-comfort .cc98-rebuild-read-later-sidebar-page-info {
+  min-width: 58px;
+  padding: 0 8px;
+}
+
+@media (max-width: 1020px) {
+  :root.cc98-comfort .cc98-rebuild-topics-read-later-layout {
+    grid-template-columns: minmax(0, 760px);
+  }
+
+  :root.cc98-comfort .cc98-rebuild-read-later-sidebar {
+    position: relative;
+    top: auto;
+    order: -1;
+    width: 100%;
+    height: min(560px, 72vh);
+    min-height: 380px;
+  }
+}
+
+@media (min-width: 1101px) and (max-width: 1320px) {
+  :root.cc98-comfort[data-cc98-comfort-side-topbar="true"] .cc98-rebuild-topics-read-later-layout {
+    grid-template-columns: minmax(0, 760px);
+  }
+
+  :root.cc98-comfort[data-cc98-comfort-side-topbar="true"] .cc98-rebuild-read-later-sidebar {
+    position: relative;
+    top: auto;
+    order: -1;
+    width: 100%;
+    height: min(560px, 72vh);
+    min-height: 380px;
+  }
+}
+
 :root.cc98-comfort .cc98-rebuild-blacklist-page {
   width: min(920px, 100%);
 }
@@ -7566,8 +7988,14 @@
 }
 
 :root.cc98-comfort .cc98-rebuild-user-layout-public {
-  width: min(820px, 100%);
+  width: min(1040px, 100%);
   grid-template-columns: minmax(0, 1fr);
+  margin-inline: auto;
+}
+
+:root.cc98-comfort .cc98-rebuild-user-layout-public > .cc98-rebuild-native-user-router {
+  width: 100% !important;
+  margin-inline: 0 !important;
 }
 
 :root.cc98-comfort .cc98-rebuild-user-hero {
@@ -7577,6 +8005,10 @@
   margin: 24px 0 14px;
   padding-bottom: 14px;
   border-bottom: 1px solid var(--cc98-comfort-border);
+}
+
+:root.cc98-comfort .cc98-rebuild-user-hero-public {
+  margin-inline: auto;
 }
 
 :root.cc98-comfort .cc98-rebuild-user-hero h1 {

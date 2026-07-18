@@ -4,7 +4,7 @@
 
 CC98 Reborn is a Chrome/Edge extension that rebuilds common CC98 pages into a cleaner reading interface while keeping the original site controls available whenever possible.
 
-Current pre-release version: `0.2.9`.
+Current pre-release version: `0.2.10`.
 
 ## Features
 
@@ -24,6 +24,7 @@ Current pre-release version: `0.2.9`.
 - Original CC98 interactions are preserved by reusing native controls for editors, private messages, user center settings, upload buttons, and message sending.
 - The original Markdown editor is theme-matched and includes an immediate local transition preview while the official preview waits for IME input to settle.
 - The rebuilt user menu combines message and account links, with a dedicated compact rail menu in left-side efficiency mode.
+- New Topics, Following, and Recommended Topics include a sticky read-later sidebar with local search, inner scrolling, pagination, read-state controls, and deletion. It shares the same per-user data as the full read-later page.
 - The floating watermark uses the first eight characters of the bound CC98 `watermarkId` and is rendered locally on CC98 pages.
 
 ## Install Locally

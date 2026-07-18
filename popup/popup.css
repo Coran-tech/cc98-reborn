@@ -223,6 +223,10 @@ body {
   border-color: var(--accent);
 }
 
+.about-links .about-feedback-link {
+  grid-column: 1 / -1;
+}
+
 h1,
 p {
   margin: 0;
