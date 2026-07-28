@@ -9365,6 +9365,7 @@
 }
 
 :root.cc98-comfort .cc98-rebuild-native-user-router .user-avatar.cc98-rebuild-profile-hero {
+  --cc98-profile-avatar-size: 160px;
   display: inline-grid !important;
   grid-auto-flow: column !important;
   grid-auto-columns: max-content !important;
@@ -9379,6 +9380,18 @@
 
 :root.cc98-comfort .cc98-rebuild-native-user-router .user-avatar.cc98-rebuild-profile-hero .user-avatar-img {
   display: block !important;
+  box-sizing: border-box !important;
+  flex: 0 0 var(--cc98-profile-avatar-size) !important;
+  width: var(--cc98-profile-avatar-size) !important;
+  min-width: var(--cc98-profile-avatar-size) !important;
+  max-width: var(--cc98-profile-avatar-size) !important;
+  height: var(--cc98-profile-avatar-size) !important;
+  min-height: var(--cc98-profile-avatar-size) !important;
+  max-height: var(--cc98-profile-avatar-size) !important;
+  aspect-ratio: 1 / 1 !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  border-radius: 50% !important;
 }
 
 :root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-badge-panel {

@@ -5,7 +5,7 @@ const OPENID_BINDING_STORAGE_KEY = "cc98RebornOpenIdBinding:v1";
 const SEARCH_SORT_STORAGE_KEY = "cc98RebornSearchSort:v1";
 const READ_LATER_ROUTE_HASH = "#cc98-reborn-read-later";
 const BLACKLIST_ROUTE_HASH = "#cc98-reborn-blacklist";
-const EXTENSION_VERSION = "0.2.10";
+const EXTENSION_VERSION = "0.2.10.1";
 const LOGIN_REDIRECT_MARK_KEY = "cc98RebornLoginRedirectStartedAt";
 const LOGIN_REDIRECT_SNAPSHOT_KEY = "cc98RebornLoginRedirectSnapshot";
 const LOGIN_HOME_REFRESH_MARK_KEY = "cc98RebornLoginHomeRefreshPendingAt";
@@ -195,6 +195,9 @@ let observer = null;
 let headObserver = null;
 let rebuiltAppPresenceWatchdog = null;
 let publicProfileTopbarRecoveryTimer = null;
+let publicProfileRebuildDeferredForSelection = false;
+let publicProfileSelectionGuardBound = false;
+let publicProfilePointerSelectionActive = false;
 let filterQueued = false;
 let isFiltering = false;
 let rebuildQueued = false;
@@ -911,7 +914,25 @@ function getOriginalPostQuoteTargetFromLink(link) {
     return null;
   }
   const pageInfo = getTopicPageInfo();
-  const topicId = url.pathname.match(/\/topic\/(\d+)/i)?.[1] || pageInfo?.topicId || "";
+  const topicTarget = getTopicPathTarget(url.pathname);
+  let topicId = topicTarget?.topicId || "";
+  if (!topicId && pageInfo) {
+    let currentUrl = null;
+    try {
+      currentUrl = new URL(location.href);
+    } catch {
+      currentUrl = null;
+    }
+    const isCurrentTopicDocument = Boolean(
+      currentUrl
+      && url.origin === currentUrl.origin
+      && url.pathname === currentUrl.pathname
+      && url.search === currentUrl.search
+    );
+    if (isCurrentTopicDocument) {
+      topicId = pageInfo.topicId;
+    }
+  }
   if (!topicId) {
     return null;
   }
@@ -1011,7 +1032,9 @@ function bindRebuiltFloorLinks(app) {
     if (quoteTarget) {
       event.preventDefault();
       event.stopImmediatePropagation();
-      if (!scrollToRebuiltFloor(quoteTarget.floor, { updateHash: true })) {
+      const currentTopicId = getTopicPageInfo()?.topicId || "";
+      const isSameTopic = Boolean(currentTopicId && quoteTarget.topicId === currentTopicId);
+      if (!isSameTopic || !scrollToRebuiltFloor(quoteTarget.floor, { updateHash: true })) {
         navigateToRebuiltHref(quoteTarget.href);
       }
       return;
@@ -16692,7 +16715,10 @@ function getUserCenterActiveTitle() {
 function updateUserCenterHero(app = document.querySelector("#cc98-comfort-app")) {
   const title = app?.querySelector(".cc98-rebuild-user-hero h1");
   if (title) {
-    title.textContent = getUserCenterActiveTitle();
+    const nextTitle = getUserCenterActiveTitle();
+    if (title.textContent !== nextTitle) {
+      title.textContent = nextTitle;
+    }
   }
 }
 
@@ -16998,7 +17024,15 @@ function hideProfileAccountStateSource(entry) {
     return;
   }
   if (source?.nodeType === Node.TEXT_NODE) {
-    source.nodeValue = "";
+    const parent = source.parentElement;
+    if (!(parent instanceof HTMLElement)) {
+      return;
+    }
+    const holder = createElement("span", "cc98-rebuild-profile-account-state-source", source.nodeValue || "");
+    holder.toggleAttribute("hidden", true);
+    holder.setAttribute("aria-hidden", "true");
+    holder.style.setProperty("display", "none", "important");
+    source.replaceWith(holder);
   }
 }
 
@@ -17039,7 +17073,47 @@ function stabilizeUserProfileBadges(router, avatar) {
   }
 
   const accountStateMessages = collectProfileAccountStateMessages(router);
-  badge.querySelectorAll(".cc98-rebuild-profile-badge-account-state").forEach((item) => item.remove());
+  const existingAccountStateItems = new Map();
+  badge.querySelectorAll(".cc98-rebuild-profile-badge-account-state").forEach((item) => {
+    if (!(item instanceof HTMLElement)) {
+      return;
+    }
+    const key = normalizeProfileAccountStateText(
+      item.dataset.cc98AccountState || item.textContent
+    );
+    if (!key || existingAccountStateItems.has(key)) {
+      item.remove();
+      return;
+    }
+    existingAccountStateItems.set(key, item);
+  });
+  const desiredAccountStates = new Set(accountStateMessages.map((entry) => entry.text));
+  existingAccountStateItems.forEach((item, key) => {
+    if (!desiredAccountStates.has(key)) {
+      item.remove();
+      existingAccountStateItems.delete(key);
+    }
+  });
+  accountStateMessages.forEach((entry) => {
+    hideProfileAccountStateSource(entry);
+    let item = existingAccountStateItems.get(entry.text);
+    if (!(item instanceof HTMLElement)) {
+      item = createElement(
+        "span",
+        "cc98-rebuild-profile-badge-item cc98-rebuild-profile-badge-item-colored cc98-rebuild-profile-badge-account-state",
+        `\uD83D\uDEAB ${entry.text}`
+      );
+      item.dataset.cc98AccountState = entry.text;
+      badge.append(item);
+      existingAccountStateItems.set(entry.text, item);
+    }
+    const color = entry.source instanceof HTMLElement ? entry.source.style.color : "";
+    if (color) {
+      item.style.setProperty("color", color, "important");
+    } else {
+      item.style.removeProperty("color");
+    }
+  });
   const hasBadgeContent = Boolean(cleanupPostText(badge.textContent) || accountStateMessages.length);
   if (!hasBadgeContent && badge.parentElement?.classList.contains("user-avatar")) {
     badge.classList.remove("cc98-rebuild-profile-badge-panel");
@@ -17093,19 +17167,6 @@ function stabilizeUserProfileBadges(router, avatar) {
         item.classList.add("cc98-rebuild-profile-badge-item-colored");
       }
     });
-  });
-  accountStateMessages.forEach((entry) => {
-    hideProfileAccountStateSource(entry);
-    const item = createElement(
-      "span",
-      "cc98-rebuild-profile-badge-item cc98-rebuild-profile-badge-item-colored cc98-rebuild-profile-badge-account-state",
-      `\uD83D\uDEAB ${entry.text}`
-    );
-    const color = entry.source instanceof HTMLElement ? entry.source.style.color : "";
-    if (color) {
-      item.style.setProperty("color", color, "important");
-    }
-    badge.append(item);
   });
   updateProfileBadgeLayoutState(badge);
 
@@ -17404,7 +17465,92 @@ function stabilizeUserCenterUserLinks(router) {
   });
 }
 
+function hasActiveTextSelectionWithin(root) {
+  if (!(root instanceof Node) || typeof window.getSelection !== "function") {
+    return false;
+  }
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
+    return false;
+  }
+  return Boolean(
+    (selection.anchorNode && root.contains(selection.anchorNode))
+    || (selection.focusNode && root.contains(selection.focusNode))
+  );
+}
+
+function hasActivePublicProfileTextSelection() {
+  if (!isPublicUserProfilePage()) {
+    return false;
+  }
+  const app = document.querySelector("#cc98-comfort-app");
+  const router = app?.querySelector(".cc98-rebuild-native-user-router")
+    || document.querySelector(".user-center-router");
+  return hasActiveTextSelectionWithin(app) || hasActiveTextSelectionWithin(router);
+}
+
+function isPublicProfileSelectionProtected() {
+  return isPublicUserProfilePage()
+    && (publicProfilePointerSelectionActive || hasActivePublicProfileTextSelection());
+}
+
+function bindPublicProfileSelectionRebuildGuard() {
+  if (publicProfileSelectionGuardBound) {
+    return;
+  }
+  publicProfileSelectionGuardBound = true;
+  const flushDeferredRebuild = () => {
+    if (!publicProfileRebuildDeferredForSelection || isPublicProfileSelectionProtected()) {
+      return;
+    }
+    publicProfileRebuildDeferredForSelection = false;
+    window.setTimeout(() => {
+      if (!isPublicProfileSelectionProtected()) {
+        scheduleRebuild();
+      }
+    }, 80);
+  };
+  document.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0 || !isPublicUserProfilePage()) {
+      return;
+    }
+    const router = document.querySelector("#cc98-comfort-app .cc98-rebuild-native-user-router")
+      || document.querySelector(".user-center-router");
+    if (router instanceof HTMLElement && event.target instanceof Node && router.contains(event.target)) {
+      publicProfilePointerSelectionActive = true;
+    }
+  }, true);
+  const releasePointerSelection = () => {
+    if (!publicProfilePointerSelectionActive) {
+      return;
+    }
+    publicProfilePointerSelectionActive = false;
+    flushDeferredRebuild();
+  };
+  document.addEventListener("pointerup", releasePointerSelection, true);
+  document.addEventListener("pointercancel", releasePointerSelection, true);
+  window.addEventListener("blur", releasePointerSelection);
+  document.addEventListener("selectionchange", () => {
+    flushDeferredRebuild();
+  }, true);
+}
+
+function deferPublicProfileRebuildForSelection() {
+  if (!isPublicProfileSelectionProtected()) {
+    return false;
+  }
+  publicProfileRebuildDeferredForSelection = true;
+  bindPublicProfileSelectionRebuildGuard();
+  return true;
+}
+
 function stabilizeNativeUserCenter(router) {
+  if (
+    hasActiveTextSelectionWithin(router)
+    || (isPublicUserProfilePage() && publicProfilePointerSelectionActive)
+  ) {
+    return false;
+  }
   router.querySelectorAll(".user-center-config-avatar").forEach((block) => {
     if (!block.classList.contains("cc98-avatar-crop-active")) {
       block.classList.remove("cc98-avatar-crop-active");
@@ -17417,11 +17563,15 @@ function stabilizeNativeUserCenter(router) {
   stabilizeUserDescriptionSignatures(router);
   stabilizeUserReplyUbbContents(router);
   stabilizeUserCenterUserLinks(router);
+  return true;
 }
 
 function bindNativeUserCenterStabilizer(router) {
   if (!router || nativeUserCenterStabilizers.has(router)) {
     return;
+  }
+  if (isPublicUserProfilePage()) {
+    bindPublicProfileSelectionRebuildGuard();
   }
   nativeUserCenterStabilizers.add(router);
   eagerUserCenterImages(router);
@@ -17442,20 +17592,26 @@ function bindNativeUserCenterStabilizer(router) {
     }
   }, true);
   let userCenterStabilizeTimer = null;
-  const scheduleUserCenterStabilize = () => {
+  const scheduleUserCenterStabilize = (delay = 80) => {
     window.clearTimeout(userCenterStabilizeTimer);
     userCenterStabilizeTimer = window.setTimeout(() => {
+      if (!router.isConnected) {
+        userCenterObserver.disconnect();
+        return;
+      }
       eagerUserCenterImages(router);
-      stabilizeNativeUserCenter(router);
-    }, 80);
+      if (!stabilizeNativeUserCenter(router)) {
+        scheduleUserCenterStabilize(240);
+      }
+    }, delay);
   };
-  const userCenterObserver = new MutationObserver(scheduleUserCenterStabilize);
+  const userCenterObserver = new MutationObserver(() => scheduleUserCenterStabilize());
   userCenterObserver.observe(router, {
     childList: true,
     subtree: true,
     characterData: true,
     attributes: true,
-    attributeFilter: ["style", "class", "src", "data-src", "data-original", "data-url", "data-avatar", "data-portrait"]
+    attributeFilter: ["src", "data-src", "data-original", "data-url", "data-avatar", "data-portrait"]
   });
 }
 
@@ -21070,6 +21226,10 @@ function ensureRebuiltAppPresenceWatchdog() {
 }
 
 function scheduleRebuild() {
+  if (deferPublicProfileRebuildForSelection()) {
+    return;
+  }
+  publicProfileRebuildDeferredForSelection = false;
   if (forceReloadEditorSubmitErrorPage()) {
     return;
   }
@@ -21097,6 +21257,10 @@ function scheduleRebuild() {
   rebuildQueued = true;
   requestAnimationFrame(() => {
     rebuildQueued = false;
+    if (deferPublicProfileRebuildForSelection()) {
+      return;
+    }
+    publicProfileRebuildDeferredForSelection = false;
     if (clearUserCenterStaleLoadingOverlay()) {
       // Continue rebuilding the user center after clearing stale transition overlays.
     }
@@ -21167,8 +21331,15 @@ function syncRebuiltContent() {
     return;
   }
 
-  removeDecorativeFrameImages(document);
   const app = document.querySelector("#cc98-comfort-app");
+  if (
+    getPageKind() === "userCenter"
+    && isPublicUserProfilePage()
+    && isPublicProfileSelectionProtected()
+  ) {
+    return;
+  }
+  removeDecorativeFrameImages(document);
   stabilizeTopbarUserEntry(app);
   const feed = app?.querySelector("[data-feed-kind]");
   if (getPageKind() === "userCenter") {
@@ -21268,6 +21439,9 @@ function pokeNativeInfiniteLoad() {
   }
   const kind = getPageKind();
   const isPublicProfileFeed = kind === "userCenter" && isPublicUserProfilePage();
+  if (isPublicProfileFeed && isPublicProfileSelectionProtected()) {
+    return;
+  }
   if (!["topics", "search", "post", "board"].includes(kind) && !isPublicProfileFeed) {
     return;
   }
