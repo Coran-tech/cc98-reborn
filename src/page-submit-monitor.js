@@ -1,4 +1,77 @@
 (() => {
+  function decodeLocationValue(value) {
+    let decoded = String(value || "");
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        const next = decodeURIComponent(decoded);
+        if (next === decoded) {
+          break;
+        }
+        decoded = next;
+      } catch {
+        break;
+      }
+    }
+    return decoded;
+  }
+
+  function isOpenIdAuthorizationRoute() {
+    if (location.hostname === "openid.cc98.org") {
+      return true;
+    }
+    if (!isWebVpnHost()) {
+      return false;
+    }
+    const route = decodeLocationValue(`${location.pathname}${location.search}`);
+    return /\/connect\/authorize(?:[/?#]|$)|\/(?:Account|PassKey)\/LogOn(?:[/?#]|$)/i.test(route);
+  }
+
+  function isPotentialWebVpnOpenIdCallback() {
+    if (!isWebVpnHost()) {
+      return false;
+    }
+    const result = decodeLocationValue(`${location.pathname}${location.search}${location.hash}`);
+    return /(?:^|[?&#])state=[^&#]+/i.test(result)
+      && /(?:^|[?&#])(?:code|error)=[^&#]+/i.test(result);
+  }
+
+  function getConfirmedWebVpnPrefixCacheKey() {
+    return `cc98RebornConfirmedWebVpnPrefix:${location.origin}`;
+  }
+
+  function normalizeWebVpnProxyPrefix(prefix) {
+    return String(prefix || "").replace(/\/+$/, "").toLowerCase();
+  }
+
+  function isConfirmedExternalWebVpnProxyPage() {
+    if (!isWebVpnHost()) {
+      return false;
+    }
+    const currentPrefix = getWebVpnProxyPrefixFromUrl(location.href);
+    if (!currentPrefix) {
+      return false;
+    }
+    try {
+      const confirmedPrefix = sessionStorage.getItem(getConfirmedWebVpnPrefixCacheKey())
+        || localStorage.getItem(getConfirmedWebVpnPrefixCacheKey())
+        || "";
+      return Boolean(
+        confirmedPrefix
+        && normalizeWebVpnProxyPrefix(currentPrefix) !== normalizeWebVpnProxyPrefix(confirmedPrefix)
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  if (
+    isOpenIdAuthorizationRoute()
+    || isPotentialWebVpnOpenIdCallback()
+    || isConfirmedExternalWebVpnProxyPage()
+  ) {
+    return;
+  }
+
   if (window.__cc98RebornSubmitMonitorInstalled) {
     return;
   }

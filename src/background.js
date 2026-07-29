@@ -1,6 +1,11 @@
 const UPDATE_STATUS_STORAGE_KEY = "cc98RebornUpdateStatus:v1";
 const UPDATE_STARTUP_NOTICE_SESSION_KEY = "cc98RebornUpdateStartupNoticeShown:v1";
 const OPENID_BINDING_STORAGE_KEY = "cc98RebornOpenIdBinding:v1";
+const OPENID_WEBVPN_PENDING_STORAGE_KEY = "cc98RebornOpenIdWebVpnPending:v1";
+const OPENID_WEBVPN_PENDING_TTL_MS = 10 * 60 * 1000;
+const OPENID_PROFILE_REFRESH_ALARM_NAME = "cc98-reborn-openid-profile-refresh";
+const OPENID_PROFILE_REFRESH_INTERVAL_MINUTES = 60;
+const OPENID_PROFILE_REFRESH_MIN_INTERVAL_MS = 55 * 60 * 1000;
 const UPDATE_CHECK_ALARM_NAME = "cc98-reborn-update-check";
 const UPDATE_CHECK_INTERVAL_MINUTES = 6 * 60;
 const UPDATE_CHECK_MIN_INTERVAL_MS = 30 * 60 * 1000;
@@ -9,7 +14,13 @@ const CC98_OPENID_AUTHORIZE_URL = "https://openid.cc98.org/connect/authorize";
 const CC98_OPENID_TOKEN_URL = "https://openid.cc98.org/connect/token";
 const CC98_OPENID_USERINFO_URL = "https://openid.cc98.org/connect/userinfo";
 const CC98_API_ME_URL = "https://api.cc98.org/me";
+const CC98_WEBVPN_OPENID_REDIRECT_URI = "https://www.cc98.org/";
 const CC98_OPENID_SCOPES = ["openid", "profile", "cc98-api", "read-user-info"];
+const CC98_WEBVPN_ORIGIN = "https://webvpn.zju.edu.cn";
+const CC98_WEBVPN_HOST_TOKENS = Object.freeze({
+  "openid.cc98.org": "77726476706e69737468656265737421ffe744922e3426537d51d1e2974724",
+  "api.cc98.org": "77726476706e69737468656265737421f1e748d22433310830079bab"
+});
 const RELEASES_API_URL = "https://api.github.com/repos/Coran-tech/cc98-reborn/releases/latest";
 const RELEASES_LIST_API_URL = "https://api.github.com/repos/Coran-tech/cc98-reborn/releases?per_page=1";
 const RELEASES_LATEST_PAGE_URL = "https://github.com/Coran-tech/cc98-reborn/releases/latest";
@@ -42,6 +53,9 @@ const CC98_TAB_URL_PATTERNS = [
   "*://www-cc98-org-s.webvpn.zju.edu.cn/*",
   "*://*.webvpn.zju.edu.cn/*"
 ];
+let openIdProfileRefreshPromise = null;
+let pendingOpenIdWebVpnFlow = null;
+let openIdWebVpnCallbackPromise = null;
 
 function isCc98Url(url) {
   return /\.cc98\.org$/i.test(url.hostname)
@@ -178,6 +192,14 @@ function isCc98WebPageTabUrl(value) {
   }
 }
 
+function isWebVpnPageUrl(value) {
+  try {
+    return /(?:^|\.)webvpn\.zju\.edu\.cn$/i.test(new URL(value || "").hostname);
+  } catch {
+    return false;
+  }
+}
+
 async function findCurrentCc98WebAccount() {
   const tabs = dedupeTabs([
     ...await queryActiveTabs(),
@@ -194,9 +216,20 @@ async function findCurrentCc98WebAccount() {
       continue;
     }
     if (result.account.userId) {
-      return { ok: true, account: result.account, tabId: tab.id };
+      return {
+        ok: true,
+        account: result.account,
+        tabId: tab.id,
+        authTransport: isWebVpnPageUrl(tab.url) ? "webvpn" : "direct"
+      };
     }
-    fallback = fallback || { ok: true, account: result.account, tabId: tab.id, warning: "uid-missing" };
+    fallback = fallback || {
+      ok: true,
+      account: result.account,
+      tabId: tab.id,
+      authTransport: isWebVpnPageUrl(tab.url) ? "webvpn" : "direct",
+      warning: "uid-missing"
+    };
   }
   return fallback || {
     ok: false,
@@ -331,13 +364,13 @@ async function createCodeChallenge(verifier) {
   return base64UrlFromBytes(new Uint8Array(digest));
 }
 
-function launchWebAuthFlow(url) {
+function launchWebAuthFlow(url, { interactive = true } = {}) {
   return new Promise((resolve, reject) => {
     if (!chrome.identity?.launchWebAuthFlow) {
       reject(new Error("identity-unavailable"));
       return;
     }
-    chrome.identity.launchWebAuthFlow({ url, interactive: true }, (redirectUrl) => {
+    chrome.identity.launchWebAuthFlow({ url, interactive }, (redirectUrl) => {
       const error = chrome.runtime.lastError?.message;
       if (error) {
         reject(new Error(error));
@@ -352,17 +385,208 @@ function launchWebAuthFlow(url) {
   });
 }
 
-function getAuthRedirectParams(redirectUrl) {
-  const url = new URL(redirectUrl);
-  const searchParams = new URLSearchParams(url.search);
-  if ([...searchParams.keys()].length) {
-    return searchParams;
-  }
-  const hash = url.hash.replace(/^#/, "");
-  return new URLSearchParams(hash);
+function launchWebVpnTabAuthFlow(url, { interactive = true } = {}) {
+  return new Promise((resolve, reject) => {
+    let authTabId = null;
+    let settled = false;
+    const timeoutMs = interactive ? 5 * 60 * 1000 : 30 * 1000;
+
+    const cleanup = ({ closeTab = true } = {}) => {
+      chrome.tabs.onUpdated.removeListener(handleTabUpdated);
+      chrome.tabs.onRemoved.removeListener(handleTabRemoved);
+      clearTimeout(timeoutId);
+      if (pendingOpenIdWebVpnFlow?.complete === finish) {
+        pendingOpenIdWebVpnFlow.complete = null;
+      }
+      if (closeTab && Number.isFinite(authTabId)) {
+        chrome.tabs.remove(authTabId, () => {
+          void chrome.runtime.lastError;
+        });
+      }
+    };
+
+    const finish = (callbackUrl) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      cleanup();
+      resolve(callbackUrl);
+    };
+
+    const fail = (error, options = {}) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      cleanup(options);
+      reject(error instanceof Error ? error : new Error(String(error || "webvpn-authorization-failed")));
+    };
+
+    const inspectUrl = (candidate) => {
+      if (!candidate) {
+        return false;
+      }
+      const recovered = recoverPendingOpenIdWebVpnCallback(candidate);
+      if (!recovered.ok) {
+        return false;
+      }
+      finish(recovered.redirectUrl);
+      return true;
+    };
+
+    function handleTabUpdated(tabId, changeInfo, tab) {
+      if (tabId !== authTabId) {
+        return;
+      }
+      inspectUrl(changeInfo.url || tab?.url || "");
+    }
+
+    function handleTabRemoved(tabId) {
+      if (tabId === authTabId) {
+        fail(new Error("webvpn authorization tab was closed"), { closeTab: false });
+      }
+    }
+
+    chrome.tabs.onUpdated.addListener(handleTabUpdated);
+    chrome.tabs.onRemoved.addListener(handleTabRemoved);
+    if (pendingOpenIdWebVpnFlow) {
+      pendingOpenIdWebVpnFlow.complete = finish;
+    }
+    const timeoutId = setTimeout(() => {
+      fail(new Error("webvpn authorization timed out"));
+    }, timeoutMs);
+
+    chrome.tabs.create({ url, active: interactive }, (tab) => {
+      const error = chrome.runtime.lastError?.message;
+      if (error || !Number.isFinite(tab?.id)) {
+        fail(new Error(error || "webvpn authorization tab could not be created"), { closeTab: false });
+        return;
+      }
+      authTabId = tab.id;
+      inspectUrl(tab.url || "");
+    });
+  });
 }
 
-async function exchangeOpenIdCode(code, codeVerifier, redirectUri) {
+function getAuthRedirectParams(redirectUrl) {
+  const candidates = [String(redirectUrl || "")];
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const decoded = decodeURIComponent(candidates[candidates.length - 1]);
+      if (decoded === candidates[candidates.length - 1]) {
+        break;
+      }
+      candidates.push(decoded);
+    } catch {
+      break;
+    }
+  }
+  const params = new URLSearchParams();
+  for (const candidate of candidates) {
+    try {
+      const url = new URL(candidate);
+      const sources = [
+        new URLSearchParams(url.search),
+        new URLSearchParams(url.hash.replace(/^#/, ""))
+      ];
+      for (const source of sources) {
+        for (const [key, value] of source) {
+          if (!params.has(key)) {
+            params.set(key, value);
+          }
+        }
+      }
+    } catch {
+      // Try the next decoded representation.
+    }
+  }
+  return params;
+}
+
+function recoverPendingOpenIdWebVpnCallback(value, pending = pendingOpenIdWebVpnFlow) {
+  if (!pending || pending.expiresAt < Date.now()) {
+    return { ok: false, error: "no-pending-webvpn-openid-flow" };
+  }
+
+  let sourceUrl;
+  try {
+    sourceUrl = new URL(value, CC98_WEBVPN_ORIGIN);
+  } catch {
+    return { ok: false, error: "invalid-webvpn-callback-url" };
+  }
+  const expectedRedirectUrl = new URL(pending.redirectUri);
+  const isDirectExtensionCallback = sourceUrl.origin === expectedRedirectUrl.origin
+    && sourceUrl.pathname === expectedRedirectUrl.pathname;
+  if (!isWebVpnPageUrl(sourceUrl.href) && !isDirectExtensionCallback) {
+    return { ok: false, error: "not-openid-callback" };
+  }
+
+  const params = getAuthRedirectParams(sourceUrl.href);
+  if (params.get("state") !== pending.state) {
+    return { ok: false, error: "webvpn-callback-state-mismatch" };
+  }
+  if (!params.get("code") && !params.get("error")) {
+    return { ok: false, error: "webvpn-callback-result-missing" };
+  }
+
+  const redirectUrl = new URL(pending.redirectUri);
+  ["code", "state", "error", "error_description", "session_state", "iss"].forEach((key) => {
+    const result = params.get(key);
+    if (result) {
+      redirectUrl.searchParams.set(key, result);
+    }
+  });
+  return { ok: true, redirectUrl: redirectUrl.href };
+}
+
+async function readPersistedOpenIdWebVpnFlow() {
+  const stored = await readSessionStorage(OPENID_WEBVPN_PENDING_STORAGE_KEY);
+  const pending = stored[OPENID_WEBVPN_PENDING_STORAGE_KEY];
+  if (
+    !pending
+    || pending.authTransport !== "webvpn"
+    || !pending.state
+    || !pending.redirectUri
+    || !pending.codeVerifier
+    || Number(pending.expiresAt) < Date.now()
+  ) {
+    if (pending) {
+      await removeSessionStorage(OPENID_WEBVPN_PENDING_STORAGE_KEY);
+    }
+    return null;
+  }
+  return pending;
+}
+
+function persistOpenIdWebVpnFlow(pending) {
+  return writeSessionStorage({
+    [OPENID_WEBVPN_PENDING_STORAGE_KEY]: pending
+  });
+}
+
+function clearPersistedOpenIdWebVpnFlow() {
+  return removeSessionStorage(OPENID_WEBVPN_PENDING_STORAGE_KEY);
+}
+
+function normalizeOpenIdAuthTransport(value) {
+  return value === "webvpn" ? "webvpn" : "direct";
+}
+
+function getOpenIdTransportUrl(value, authTransport = "direct") {
+  const directUrl = new URL(value);
+  if (normalizeOpenIdAuthTransport(authTransport) !== "webvpn") {
+    return directUrl.href;
+  }
+  const hostToken = CC98_WEBVPN_HOST_TOKENS[directUrl.hostname.toLowerCase()];
+  if (!hostToken) {
+    throw new Error(`webvpn: unsupported host ${directUrl.hostname}`);
+  }
+  const protocol = directUrl.protocol.replace(/:$/, "").toLowerCase();
+  return `${CC98_WEBVPN_ORIGIN}/${protocol}/${hostToken}${directUrl.pathname}${directUrl.search}${directUrl.hash}`;
+}
+
+async function exchangeOpenIdCode(code, codeVerifier, redirectUri, authTransport = "direct") {
   const body = new URLSearchParams({
     grant_type: "authorization_code",
     client_id: CC98_OPENID_CLIENT_ID,
@@ -370,14 +594,15 @@ async function exchangeOpenIdCode(code, codeVerifier, redirectUri) {
     redirect_uri: redirectUri,
     code_verifier: codeVerifier
   });
-  const response = await fetch(CC98_OPENID_TOKEN_URL, {
+  const response = await fetch(getOpenIdTransportUrl(CC98_OPENID_TOKEN_URL, authTransport), {
     method: "POST",
     headers: {
       "Accept": "application/json",
       "Content-Type": "application/x-www-form-urlencoded"
     },
     body,
-    cache: "no-store"
+    cache: "no-store",
+    credentials: normalizeOpenIdAuthTransport(authTransport) === "webvpn" ? "include" : "omit"
   });
   const text = await response.text();
   let payload = {};
@@ -407,16 +632,17 @@ function describeOpenIdPayload(payload, status) {
   return String(reason).replace(/\s+/g, " ").trim().slice(0, 220) || `HTTP ${status}`;
 }
 
-async function fetchJsonWithBearer(url, accessToken, label, { retries = 0 } = {}) {
+async function fetchJsonWithBearer(url, accessToken, label, { retries = 0, authTransport = "direct" } = {}) {
   let lastError = null;
   for (let attempt = 0; attempt <= retries; attempt += 1) {
-    const response = await fetch(url, {
+    const response = await fetch(getOpenIdTransportUrl(url, authTransport), {
       method: "GET",
       headers: {
         "Accept": "application/json",
         "Authorization": `Bearer ${accessToken}`
       },
-      cache: "no-store"
+      cache: "no-store",
+      credentials: normalizeOpenIdAuthTransport(authTransport) === "webvpn" ? "include" : "omit"
     });
     const text = await response.text();
     let payload = {};
@@ -437,24 +663,30 @@ async function fetchJsonWithBearer(url, accessToken, label, { retries = 0 } = {}
   throw lastError || new Error(`${label}: request failed`);
 }
 
-async function fetchCc98Me(accessToken) {
-  return fetchJsonWithBearer(CC98_API_ME_URL, accessToken, "me", { retries: 2 });
+async function fetchCc98Me(accessToken, authTransport = "direct") {
+  return fetchJsonWithBearer(CC98_API_ME_URL, accessToken, "me", {
+    retries: 2,
+    authTransport
+  });
 }
 
-async function fetchOpenIdUserInfo(accessToken) {
-  return fetchJsonWithBearer(CC98_OPENID_USERINFO_URL, accessToken, "userinfo", { retries: 1 });
+async function fetchOpenIdUserInfo(accessToken, authTransport = "direct") {
+  return fetchJsonWithBearer(CC98_OPENID_USERINFO_URL, accessToken, "userinfo", {
+    retries: 1,
+    authTransport
+  });
 }
 
-async function fetchCc98Profile(accessToken) {
+async function fetchCc98Profile(accessToken, authTransport = "direct") {
   try {
-    const profile = await fetchCc98Me(accessToken);
+    const profile = await fetchCc98Me(accessToken, authTransport);
     return {
       ...profile,
       _cc98RebornProfileSource: "api-me"
     };
   } catch (meError) {
     try {
-      const profile = await fetchOpenIdUserInfo(accessToken);
+      const profile = await fetchOpenIdUserInfo(accessToken, authTransport);
       return {
         ...profile,
         _cc98RebornProfileSource: "openid-userinfo",
@@ -568,6 +800,30 @@ function normalizeAccountName(value) {
   return String(value ?? "").trim().toLowerCase();
 }
 
+function normalizeExpectedAccountForStorage(account) {
+  if (!account) {
+    return null;
+  }
+  return {
+    userId: normalizeAccountId(
+      account.userId
+      ?? account.id
+      ?? account.uid
+      ?? account.userID
+      ?? account.cc98Id
+      ?? account.cc98UserId
+    ),
+    userName: String(
+      account.userName
+      ?? account.name
+      ?? account.username
+      ?? account.nickName
+      ?? account.displayName
+      ?? ""
+    ).trim()
+  };
+}
+
 function accountsReferToSameCc98User(left, right) {
   if (!left || !right) {
     return false;
@@ -602,8 +858,17 @@ async function getOpenIdBinding() {
   return binding?.bound ? { ok: true, binding } : { ok: true, binding: null };
 }
 
-async function requestCc98OpenIdBinding({ forceLogin = false } = {}) {
-  const redirectUri = chrome.identity.getRedirectURL();
+async function requestCc98OpenIdBinding({
+  forceLogin = false,
+  interactive = true,
+  authTransport = "direct",
+  expectedAccount = null,
+  resumeMode = "request"
+} = {}) {
+  const normalizedTransport = normalizeOpenIdAuthTransport(authTransport);
+  const redirectUri = normalizedTransport === "webvpn"
+    ? CC98_WEBVPN_OPENID_REDIRECT_URI
+    : chrome.identity.getRedirectURL();
   const state = randomBase64Url(24);
   const codeVerifier = randomBase64Url(64);
   const codeChallenge = await createCodeChallenge(codeVerifier);
@@ -618,34 +883,113 @@ async function requestCc98OpenIdBinding({ forceLogin = false } = {}) {
   if (forceLogin) {
     authorizeUrl.searchParams.set("prompt", "login consent");
     authorizeUrl.searchParams.set("max_age", "0");
+  } else if (!interactive) {
+    authorizeUrl.searchParams.set("prompt", "none");
   }
-  const redirectUrl = await launchWebAuthFlow(authorizeUrl.href);
-  const redirectedParams = getAuthRedirectParams(redirectUrl);
-  const returnedState = redirectedParams.get("state");
-  if (returnedState !== state) {
-    throw new Error("state-mismatch");
+  const authFlowUrl = getOpenIdTransportUrl(authorizeUrl.href, normalizedTransport);
+  if (normalizedTransport === "webvpn") {
+    const createdAt = Date.now();
+    const persistedPending = {
+      version: 1,
+      state,
+      redirectUri,
+      codeVerifier,
+      authTransport: "webvpn",
+      expectedAccount: normalizeExpectedAccountForStorage(expectedAccount),
+      resumeMode: resumeMode === "refresh" ? "refresh" : "bind",
+      createdAt,
+      expiresAt: createdAt + OPENID_WEBVPN_PENDING_TTL_MS
+    };
+    pendingOpenIdWebVpnFlow = {
+      ...persistedPending,
+      complete: null
+    };
+    await persistOpenIdWebVpnFlow(persistedPending);
   }
-  const error = redirectedParams.get("error");
-  if (error) {
-    throw new Error(redirectedParams.get("error_description") || error);
+  let redirectUrl;
+  try {
+    redirectUrl = normalizedTransport === "webvpn"
+      ? await launchWebVpnTabAuthFlow(authFlowUrl, { interactive })
+      : await launchWebAuthFlow(authFlowUrl, { interactive });
+  } catch (error) {
+    if (normalizedTransport === "webvpn") {
+      pendingOpenIdWebVpnFlow = null;
+      await clearPersistedOpenIdWebVpnFlow();
+    }
+    throw new Error(`${normalizedTransport} authorize: ${error?.message || "authorization failed"}`);
   }
-  const code = redirectedParams.get("code");
-  if (!code) {
-    throw new Error("missing-code");
+  if (normalizedTransport === "webvpn") {
+    pendingOpenIdWebVpnFlow = null;
   }
-  const tokenPayload = await exchangeOpenIdCode(code, codeVerifier, redirectUri);
-  const profile = await fetchCc98Profile(tokenPayload.access_token);
-  return normalizeOpenIdBinding(profile, tokenPayload);
+  try {
+    const redirectedParams = getAuthRedirectParams(redirectUrl);
+    const returnedState = redirectedParams.get("state");
+    if (returnedState !== state) {
+      throw new Error("state-mismatch");
+    }
+    const error = redirectedParams.get("error");
+    if (error) {
+      throw new Error(redirectedParams.get("error_description") || error);
+    }
+    const code = redirectedParams.get("code");
+    if (!code) {
+      throw new Error("missing-code");
+    }
+    const tokenPayload = await exchangeOpenIdCode(
+      code,
+      codeVerifier,
+      redirectUri,
+      normalizedTransport
+    );
+    const profile = await fetchCc98Profile(tokenPayload.access_token, normalizedTransport);
+    return normalizeOpenIdBinding(profile, tokenPayload);
+  } finally {
+    if (normalizedTransport === "webvpn") {
+      await clearPersistedOpenIdWebVpnFlow();
+    }
+  }
 }
 
-async function loginWithCc98OpenId(expectedAccount = null) {
-  let binding = await requestCc98OpenIdBinding({ forceLogin: false });
+function prepareOpenIdBindingForStorage(binding, expectedAccount, authTransport) {
+  const nextBinding = { ...binding };
+  if (expectedAccount) {
+    requireSameCc98UserId(nextBinding, expectedAccount);
+    nextBinding.matchedWebAccount = {
+      ...normalizeExpectedAccountForStorage(expectedAccount),
+      matchedAt: Date.now()
+    };
+  }
+  nextBinding.storageMode = "local-readonly";
+  nextBinding.authTransport = normalizeOpenIdAuthTransport(authTransport);
+  nextBinding.verifiedBy = "openid-api-me";
+  nextBinding.verifiedAt = Date.now();
+  nextBinding.profileRefreshAttemptedAt = nextBinding.verifiedAt;
+  if (nextBinding.profileSource === "api-me") {
+    nextBinding.profileRefreshedAt = nextBinding.verifiedAt;
+  }
+  nextBinding.profileRefreshError = "";
+  return nextBinding;
+}
+
+async function loginWithCc98OpenId(expectedAccount = null, { authTransport = "direct" } = {}) {
+  const normalizedTransport = normalizeOpenIdAuthTransport(authTransport);
+  let binding = await requestCc98OpenIdBinding({
+    forceLogin: false,
+    authTransport: normalizedTransport,
+    expectedAccount,
+    resumeMode: "bind"
+  });
   if (expectedAccount) {
     try {
       requireSameCc98UserId(binding, expectedAccount);
     } catch (firstError) {
       await clearCc98OpenIdSessionData();
-      binding = await requestCc98OpenIdBinding({ forceLogin: true });
+      binding = await requestCc98OpenIdBinding({
+        forceLogin: true,
+        authTransport: normalizedTransport,
+        expectedAccount,
+        resumeMode: "bind"
+      });
       try {
         requireSameCc98UserId(binding, expectedAccount);
       } catch {
@@ -653,21 +997,259 @@ async function loginWithCc98OpenId(expectedAccount = null) {
       }
     }
   }
-  if (expectedAccount) {
-    binding.matchedWebAccount = {
-      userId: normalizeAccountId(expectedAccount.userId ?? expectedAccount.id ?? expectedAccount.uid ?? expectedAccount.userID ?? expectedAccount.cc98Id ?? expectedAccount.cc98UserId),
-      userName: String(expectedAccount.userName ?? expectedAccount.name ?? expectedAccount.username ?? expectedAccount.nickName ?? expectedAccount.displayName ?? "").trim(),
-      matchedAt: Date.now()
-    };
-  }
-  binding.storageMode = "local-readonly";
-  binding.verifiedBy = "openid-api-me";
-  binding.verifiedAt = Date.now();
+  binding = prepareOpenIdBindingForStorage(binding, expectedAccount, normalizedTransport);
   await writeLocalStorage({ [OPENID_BINDING_STORAGE_KEY]: binding });
   return { ok: true, binding };
 }
 
+function closeTabQuietly(tabId) {
+  return new Promise((resolve) => {
+    if (!Number.isFinite(tabId)) {
+      resolve(false);
+      return;
+    }
+    chrome.tabs.remove(tabId, () => {
+      resolve(!chrome.runtime.lastError);
+    });
+  });
+}
+
+async function persistResumedOpenIdWebVpnBinding(binding, pending) {
+  const existing = (await getOpenIdBinding()).binding;
+  if (pending.resumeMode === "refresh" && existing?.bound) {
+    if (binding.profileSource !== "api-me" || !binding.watermarkIdPrefix) {
+      throw new Error("OpenID /me did not return a usable watermarkId");
+    }
+    requireSameCc98UserId(binding, existing.matchedWebAccount || existing);
+    const refreshedAt = Date.now();
+    const nextBinding = {
+      ...existing,
+      userId: binding.userId || existing.userId,
+      userName: binding.userName || existing.userName,
+      portraitUrl: binding.portraitUrl || existing.portraitUrl,
+      watermarkIdPrefix: binding.watermarkIdPrefix,
+      profileSource: "api-me",
+      profileWarning: "",
+      scope: binding.scope || existing.scope,
+      storageMode: "local-readonly",
+      authTransport: "webvpn",
+      verifiedBy: "openid-api-me",
+      verifiedAt: refreshedAt,
+      profileRefreshedAt: refreshedAt,
+      profileRefreshAttemptedAt: refreshedAt,
+      profileRefreshError: ""
+    };
+    await writeLocalStorage({ [OPENID_BINDING_STORAGE_KEY]: nextBinding });
+    return nextBinding;
+  }
+
+  const nextBinding = prepareOpenIdBindingForStorage(
+    binding,
+    pending.expectedAccount || null,
+    "webvpn"
+  );
+  await writeLocalStorage({ [OPENID_BINDING_STORAGE_KEY]: nextBinding });
+  return nextBinding;
+}
+
+async function resumePersistedOpenIdWebVpnFlow(recovered, pending, authTabId) {
+  try {
+    const params = getAuthRedirectParams(recovered.redirectUrl);
+    const error = params.get("error");
+    if (error) {
+      throw new Error(params.get("error_description") || error);
+    }
+    const code = params.get("code");
+    if (!code) {
+      throw new Error("missing-code");
+    }
+    const tokenPayload = await exchangeOpenIdCode(
+      code,
+      pending.codeVerifier,
+      pending.redirectUri,
+      "webvpn"
+    );
+    const profile = await fetchCc98Profile(tokenPayload.access_token, "webvpn");
+    const binding = await persistResumedOpenIdWebVpnBinding(
+      normalizeOpenIdBinding(profile, tokenPayload),
+      pending
+    );
+    await closeTabQuietly(authTabId);
+    return {
+      ok: true,
+      binding,
+      resumed: true
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error?.message || "webvpn-openid-resume-failed"
+    };
+  } finally {
+    await clearPersistedOpenIdWebVpnFlow();
+  }
+}
+
+async function handleOpenIdWebVpnCallback(value, sender = {}) {
+  const memoryPending = pendingOpenIdWebVpnFlow?.expiresAt >= Date.now()
+    ? pendingOpenIdWebVpnFlow
+    : null;
+  const pending = memoryPending || await readPersistedOpenIdWebVpnFlow();
+  const recovered = recoverPendingOpenIdWebVpnCallback(value, pending);
+  if (!recovered.ok) {
+    return recovered;
+  }
+
+  if (memoryPending && typeof memoryPending.complete === "function") {
+    memoryPending.complete(recovered.redirectUrl);
+    return {
+      ...recovered,
+      resumed: false
+    };
+  }
+
+  if (!openIdWebVpnCallbackPromise) {
+    openIdWebVpnCallbackPromise = resumePersistedOpenIdWebVpnFlow(
+      recovered,
+      pending,
+      sender.tab?.id
+    ).finally(() => {
+      openIdWebVpnCallbackPromise = null;
+    });
+  }
+  return openIdWebVpnCallbackPromise;
+}
+
+function isOpenIdWebVpnCallbackNavigation(value) {
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    return false;
+  }
+  const directRedirect = new URL(CC98_WEBVPN_OPENID_REDIRECT_URI);
+  const isSupportedCallback = isWebVpnPageUrl(url.href)
+    || (
+      url.origin === directRedirect.origin
+      && url.pathname === directRedirect.pathname
+    );
+  if (!isSupportedCallback) {
+    return false;
+  }
+  const params = getAuthRedirectParams(url.href);
+  return Boolean(
+    params.get("state")
+    && (params.get("code") || params.get("error"))
+  );
+}
+
+function handleOpenIdWebVpnNavigation(details) {
+  if (
+    details?.frameId !== 0
+    || !Number.isFinite(details?.tabId)
+    || !isOpenIdWebVpnCallbackNavigation(details?.url)
+  ) {
+    return;
+  }
+  handleOpenIdWebVpnCallback(details.url, {
+    tab: { id: details.tabId }
+  }).catch(() => {});
+}
+
+function handleOpenIdWebVpnTabUpdated(tabId, changeInfo, tab) {
+  const url = changeInfo?.url || tab?.url || "";
+  if (!Number.isFinite(tabId) || !isOpenIdWebVpnCallbackNavigation(url)) {
+    return;
+  }
+  handleOpenIdWebVpnCallback(url, {
+    tab: { id: tabId }
+  }).catch(() => {});
+}
+
+async function performOpenIdBindingProfileRefresh({ force = false } = {}) {
+  const current = await getOpenIdBinding();
+  const binding = current.binding;
+  if (!binding?.bound) {
+    return { ok: true, binding: null, refreshed: false, reason: "not-bound" };
+  }
+
+  const now = Date.now();
+  const lastAttemptAt = Number(
+    binding.profileRefreshAttemptedAt
+    || binding.profileRefreshedAt
+    || binding.verifiedAt
+    || binding.boundAt
+    || 0
+  );
+  if (!force && lastAttemptAt && now - lastAttemptAt < OPENID_PROFILE_REFRESH_MIN_INTERVAL_MS) {
+    return { ok: true, binding, refreshed: false, reason: "fresh" };
+  }
+
+  try {
+    const refreshed = await requestCc98OpenIdBinding({
+      forceLogin: false,
+      interactive: false,
+      authTransport: normalizeOpenIdAuthTransport(binding.authTransport),
+      expectedAccount: binding.matchedWebAccount || binding,
+      resumeMode: "refresh"
+    });
+    if (refreshed.profileSource !== "api-me" || !refreshed.watermarkIdPrefix) {
+      throw new Error("OpenID /me did not return a usable watermarkId");
+    }
+    requireSameCc98UserId(refreshed, binding.matchedWebAccount || binding);
+
+    const refreshedAt = Date.now();
+    const nextBinding = {
+      ...binding,
+      userId: refreshed.userId || binding.userId,
+      userName: refreshed.userName || binding.userName,
+      portraitUrl: refreshed.portraitUrl || binding.portraitUrl,
+      watermarkIdPrefix: refreshed.watermarkIdPrefix,
+      profileSource: "api-me",
+      profileWarning: "",
+      scope: refreshed.scope || binding.scope,
+      storageMode: "local-readonly",
+      verifiedBy: "openid-api-me",
+      verifiedAt: refreshedAt,
+      profileRefreshedAt: refreshedAt,
+      profileRefreshAttemptedAt: refreshedAt,
+      profileRefreshError: ""
+    };
+    await writeLocalStorage({ [OPENID_BINDING_STORAGE_KEY]: nextBinding });
+    return { ok: true, binding: nextBinding, refreshed: true };
+  } catch (error) {
+    const failedAt = Date.now();
+    const message = String(error?.message || "openid-profile-refresh-failed").slice(0, 240);
+    const latest = (await getOpenIdBinding()).binding;
+    const originalId = normalizeAccountId(binding.userId);
+    const latestId = normalizeAccountId(latest?.userId);
+    if (latest?.bound && (!originalId || !latestId || originalId === latestId)) {
+      const nextBinding = {
+        ...latest,
+        profileRefreshAttemptedAt: failedAt,
+        profileRefreshError: message
+      };
+      await writeLocalStorage({ [OPENID_BINDING_STORAGE_KEY]: nextBinding });
+      return { ok: false, binding: nextBinding, refreshed: false, error: message };
+    }
+    return { ok: false, binding: latest || binding, refreshed: false, error: message };
+  }
+}
+
+function refreshOpenIdBindingProfile(options = {}) {
+  if (openIdProfileRefreshPromise) {
+    return openIdProfileRefreshPromise;
+  }
+  openIdProfileRefreshPromise = performOpenIdBindingProfileRefresh(options)
+    .finally(() => {
+      openIdProfileRefreshPromise = null;
+    });
+  return openIdProfileRefreshPromise;
+}
+
 async function logoutCc98OpenId() {
+  pendingOpenIdWebVpnFlow = null;
+  await clearPersistedOpenIdWebVpnFlow();
   await removeLocalStorage(OPENID_BINDING_STORAGE_KEY);
   const session = await clearCc98OpenIdSessionData();
   return {
@@ -894,16 +1476,33 @@ function setupUpdateChecker() {
   checkForUpdates().catch(() => {});
 }
 
+function setupOpenIdProfileRefresh() {
+  chrome.alarms.create(OPENID_PROFILE_REFRESH_ALARM_NAME, {
+    delayInMinutes: 2,
+    periodInMinutes: OPENID_PROFILE_REFRESH_INTERVAL_MINUTES
+  });
+  refreshOpenIdBindingProfile().catch(() => {});
+}
+
 chrome.runtime.onInstalled.addListener(setupUpdateChecker);
 chrome.runtime.onStartup.addListener(setupUpdateChecker);
+chrome.runtime.onInstalled.addListener(setupOpenIdProfileRefresh);
+chrome.runtime.onStartup.addListener(setupOpenIdProfileRefresh);
+
+chrome.webNavigation?.onBeforeNavigate?.addListener(handleOpenIdWebVpnNavigation);
+chrome.webNavigation?.onCommitted?.addListener(handleOpenIdWebVpnNavigation);
+chrome.webNavigation?.onHistoryStateUpdated?.addListener(handleOpenIdWebVpnNavigation);
+chrome.tabs.onUpdated.addListener(handleOpenIdWebVpnTabUpdated);
 
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm?.name === UPDATE_CHECK_ALARM_NAME) {
     checkForUpdates().catch(() => {});
+  } else if (alarm?.name === OPENID_PROFILE_REFRESH_ALARM_NAME) {
+    refreshOpenIdBindingProfile().catch(() => {});
   }
 });
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.type === "CC98_REBORN_DOWNLOAD_FILE") {
     return handleDownloadFile(message, sendResponse);
   }
@@ -929,9 +1528,21 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
 
   if (message?.type === "CC98_REBORN_OPENID_LOGIN") {
-    loginWithCc98OpenId(message.expectedAccount || null)
+    loginWithCc98OpenId(message.expectedAccount || null, {
+      authTransport: message.authTransport
+    })
       .then(sendResponse)
       .catch((error) => sendResponse({ ok: false, error: error?.message || "openid-login-failed" }));
+    return true;
+  }
+
+  if (message?.type === "CC98_REBORN_OPENID_WEBVPN_CALLBACK") {
+    handleOpenIdWebVpnCallback(message.url, sender)
+      .then(sendResponse)
+      .catch((error) => sendResponse({
+        ok: false,
+        error: error?.message || "webvpn-openid-callback-failed"
+      }));
     return true;
   }
 

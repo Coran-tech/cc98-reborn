@@ -323,7 +323,7 @@ function setOpenIdUi(result = {}) {
     fields.openidStatus.dataset.state = result.error ? "error" : (isBound ? "bound" : "idle");
     fields.openidStatus.textContent = result.error
       ? `\u7ed1\u5b9a\u5931\u8d25\uff1a${result.error}`
-      : (isBound ? `\u5df2\u7ed1\u5b9a ${binding.userName || "CC98 \u7528\u6237"} \u00b7 \u4f7f\u7528\u672c\u5730\u6570\u636e` : "\u672a\u7ed1\u5b9a\u3002\u7ed1\u5b9a\u540e\u7531\u6269\u5c55\u901a\u8fc7 OpenID \u8bfb\u53d6 /me\uff0c\u4e0d\u4f9d\u8d56\u7f51\u9875\u767b\u5f55\u6001\u3002");
+      : (isBound ? `\u5df2\u7ed1\u5b9a ${binding.userName || "CC98 \u7528\u6237"} \u00b7 \u672c\u5730\u6570\u636e\uff0c\u6bcf\u5c0f\u65f6\u81ea\u52a8\u6821\u51c6` : "\u672a\u7ed1\u5b9a\u3002\u7ed1\u5b9a\u540e\u7531\u6269\u5c55\u901a\u8fc7 OpenID \u8bfb\u53d6 /me\uff0c\u4e0d\u4f9d\u8d56\u7f51\u9875\u767b\u5f55\u6001\u3002");
   }
   if (fields.openidMeta) {
     fields.openidMeta.hidden = !isBound;
@@ -332,9 +332,10 @@ function setOpenIdUi(result = {}) {
       const items = [
         binding.userId ? `UID ${binding.userId}` : "",
         binding.watermarkIdPrefix ? `\u6c34\u5370 ${binding.watermarkIdPrefix}` : "",
-        binding.storageMode === "local-readonly" ? "\u4f7f\u7528\u672c\u5730\u6570\u636e" : "",
+        binding.storageMode === "local-readonly" ? "\u672c\u5730\u6570\u636e \u00b7 \u6bcf\u5c0f\u65f6\u6821\u51c6" : "",
         binding.profileSource === "openid-userinfo" ? "\u57fa\u7840\u7ed1\u5b9a" : "",
         binding.profileWarning ? binding.profileWarning : "",
+        binding.profileRefreshedAt ? `\u4e0a\u6b21\u6821\u51c6 ${formatDateTime(binding.profileRefreshedAt)}` : "",
         binding.boundAt ? `\u7ed1\u5b9a ${formatDateTime(binding.boundAt)}` : ""
       ].filter(Boolean);
       items.forEach((text) => {
@@ -394,7 +395,8 @@ async function bindOpenId() {
   }
   const result = await sendRuntimeMessage({
     type: "CC98_REBORN_OPENID_LOGIN",
-    expectedAccount: accountResult.account
+    expectedAccount: accountResult.account,
+    authTransport: accountResult.authTransport || "direct"
   });
   setOpenIdUi(result);
 }

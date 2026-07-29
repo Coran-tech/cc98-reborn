@@ -1,6 +1,6 @@
 # Release Checklist
 
-Current release target: `0.2.10.1`.
+Current release target: `0.2.11`.
 
 1. Confirm `manifest.json` version.
 2. Run validation:
@@ -8,6 +8,7 @@ Current release target: `0.2.10.1`.
 ```powershell
 node --check .\src\content.js
 node --check .\src\background.js
+node --check .\src\openid-webvpn-bridge.js
 node --check .\src\page-submit-monitor.js
 node --check .\popup\popup.js
 node -e "JSON.parse(require('fs').readFileSync('manifest.json','utf8')); console.log('manifest ok')"
@@ -29,6 +30,7 @@ node -e "JSON.parse(require('fs').readFileSync('manifest.json','utf8')); console
 - `popup/`
 - `src/background.js`
 - `src/content.js`
+- `src/openid-webvpn-bridge.js`
 - `src/page-submit-monitor.js`
 - `src/styles.css`
 - `README.md`
@@ -39,4 +41,4 @@ node -e "JSON.parse(require('fs').readFileSync('manifest.json','utf8')); console
 
 ## Notes
 
-The release includes the active CC98 OpenID authorization code + PKCE flow. Binding must match the current CC98 web-account UID. Only the local identity summary and watermark prefix are retained; access and refresh tokens are not persisted.
+The release includes the active CC98 OpenID authorization code + PKCE flow for direct CC98 and WebVPN sessions. Binding must match the current CC98 web-account UID. Only the local identity summary and watermark prefix are retained; access and refresh tokens are not persisted. A non-interactive refresh checks `/me` about once per hour and preserves the previous valid summary when refresh fails.

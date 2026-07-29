@@ -4,7 +4,7 @@
 
 CC98 Reborn is a Chrome/Edge extension that rebuilds common CC98 pages into a cleaner reading interface while keeping the original site controls available whenever possible.
 
-Current pre-release version: `0.2.10.1`.
+Current pre-release version: `0.2.11`.
 
 ## Features
 
@@ -19,7 +19,8 @@ Current pre-release version: `0.2.10.1`.
 - Built-in update checks provide manual checks, periodic background checks, a popup update indicator, and a once-per-browser-session page notice.
 - The popup can clear CC98 cookies and local site data, then reload open CC98 tabs.
 - The popup about panel shows the current extension version, avatar, and author profile links.
-- Optional CC98 OpenID binding uses authorization code + PKCE, requests the CC98 API user-info scope, stores only a local identity summary, and enables the local floating watermark after binding.
+- Optional CC98 OpenID binding uses authorization code + PKCE, supports both direct CC98 and WebVPN authorization, validates the authorized UID against the current web account, stores only a local identity summary, and enables the local floating watermark after binding.
+- A bound OpenID profile is revalidated about once per hour through a non-interactive authorization attempt; short-lived tokens are discarded after `/me` is read, and the last valid local summary remains available if refresh fails.
 - Blocking rules for boards, title keywords, and user IDs.
 - Original CC98 interactions are preserved by reusing native controls for editors, private messages, user center settings, upload buttons, and message sending.
 - The original Markdown editor is theme-matched and includes an immediate local transition preview while the official preview waits for IME input to settle.
@@ -64,6 +65,8 @@ The extension requests:
 - `alarms`: schedule periodic release checks.
 - `browsingData`: clear CC98 cookies and local site data when the user explicitly clicks the cleanup button.
 - `identity`: run the CC98 OpenID authorization flow when the user explicitly binds an account.
+- `activeTab`: inspect the active CC98 tab when matching an OpenID binding to the current web account.
+- `webNavigation`: recover the top-level OpenID callback when authorization is completed through WebVPN.
 - CC98 host permissions: run the content script on CC98 and the common WebVPN domain.
 - CC98 OpenID/API host permissions: exchange the authorization code, request `cc98-api` / `read-user-info`, and read `https://api.cc98.org/me`.
 - GitHub Release and mirror host permissions: check whether a newer extension package is available.
@@ -91,6 +94,7 @@ src/
   content.js
   styles.css
   background.js
+  openid-webvpn-bridge.js
   page-submit-monitor.js
 popup/
   popup.html
@@ -112,6 +116,7 @@ For a GitHub pre-release:
 ```powershell
 node --check .\src\content.js
 node --check .\src\background.js
+node --check .\src\openid-webvpn-bridge.js
 node --check .\src\page-submit-monitor.js
 node --check .\popup\popup.js
 node -e "JSON.parse(require('fs').readFileSync('manifest.json','utf8')); console.log('manifest ok')"
@@ -125,7 +130,7 @@ node -e "JSON.parse(require('fs').readFileSync('manifest.json','utf8')); console
 
 4. Upload `dist/cc98-reborn-<version>.zip` as a Chrome Web Store package or GitHub Release asset.
 
-The OpenID authorization and watermark flow is active in the release build. The background service worker performs authorization code + PKCE, validates the bound UID against the current CC98 web account, stores only the local identity summary, and supplies the watermark prefix to the content script.
+The OpenID authorization and watermark flow is active in the release build. The background service worker performs authorization code + PKCE, supports direct and WebVPN callback recovery, validates the bound UID against the current CC98 web account, stores only the local identity summary, refreshes `/me` about hourly, and supplies the watermark prefix to the content script.
 
 ## Notes
 

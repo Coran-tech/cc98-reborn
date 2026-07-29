@@ -5,7 +5,7 @@ const OPENID_BINDING_STORAGE_KEY = "cc98RebornOpenIdBinding:v1";
 const SEARCH_SORT_STORAGE_KEY = "cc98RebornSearchSort:v1";
 const READ_LATER_ROUTE_HASH = "#cc98-reborn-read-later";
 const BLACKLIST_ROUTE_HASH = "#cc98-reborn-blacklist";
-const EXTENSION_VERSION = "0.2.10.1";
+const EXTENSION_VERSION = "0.2.11";
 const LOGIN_REDIRECT_MARK_KEY = "cc98RebornLoginRedirectStartedAt";
 const LOGIN_REDIRECT_SNAPSHOT_KEY = "cc98RebornLoginRedirectSnapshot";
 const LOGIN_HOME_REFRESH_MARK_KEY = "cc98RebornLoginHomeRefreshPendingAt";
@@ -5882,6 +5882,59 @@ function isWebVpnHost(hostname = location.hostname) {
   return /(?:^|\.)webvpn\.zju\.edu\.cn$/i.test(String(hostname || ""));
 }
 
+function decodeLocationValue(value) {
+  let decoded = String(value || "");
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const next = decodeURIComponent(decoded);
+      if (next === decoded) {
+        break;
+      }
+      decoded = next;
+    } catch {
+      break;
+    }
+  }
+  return decoded;
+}
+
+function isOpenIdAuthorizationPage(root = document) {
+  if (location.hostname === "openid.cc98.org") {
+    return true;
+  }
+  if (!isWebVpnHost()) {
+    return false;
+  }
+
+  const route = decodeLocationValue(`${location.pathname}${location.search}`);
+  if (/\/connect\/authorize(?:[/?#]|$)|\/(?:Account|PassKey)\/LogOn(?:[/?#]|$)/i.test(route)) {
+    return true;
+  }
+  if (!root?.querySelector) {
+    return false;
+  }
+
+  const title = String(root.title || document.title || "");
+  const hasOpenIdTitle = /CC98\s*(?:OpenID|\u767b\u5f55\u4e2d\u5fc3)|(?:OpenID|\u767b\u5f55\u4e2d\u5fc3)\s*[-|·]?\s*CC98/i.test(title);
+  const hasOpenIdForm = Boolean(root.querySelector(
+    'form[action*="/connect/authorize"], form[action*="/Account/LogOn"], form[action*="/PassKey/LogOn"]'
+  ));
+  return hasOpenIdTitle || hasOpenIdForm;
+}
+
+function isPotentialWebVpnOpenIdCallback() {
+  if (!isWebVpnHost()) {
+    return false;
+  }
+  const result = decodeLocationValue(`${location.pathname}${location.search}${location.hash}`);
+  return /(?:^|[?&#])state=[^&#]+/i.test(result)
+    && /(?:^|[?&#])(?:code|error)=[^&#]+/i.test(result);
+}
+
+function recoverPendingWebVpnOpenIdCallback() {
+  return isPotentialWebVpnOpenIdCallback();
+}
+
 function isDirectCc98Host(hostname = location.hostname) {
   return /(?:^|\.)cc98\.org$/i.test(String(hostname || ""))
     || hostname === "cc98.org";
@@ -5893,6 +5946,9 @@ function isKnownCc98WebVpnHost(hostname = location.hostname) {
 
 function isLikelyCc98Document(root = document) {
   if (!root?.querySelector) {
+    return false;
+  }
+  if (isOpenIdAuthorizationPage(root)) {
     return false;
   }
   if (/CC98/i.test(document.title || "")) {
@@ -5907,6 +5963,9 @@ function isLikelyCc98Document(root = document) {
 }
 
 function shouldBootCc98Reborn() {
+  if (isOpenIdAuthorizationPage() || isPotentialWebVpnOpenIdCallback()) {
+    return false;
+  }
   if (isDirectCc98Host() || isKnownCc98WebVpnHost()) {
     return true;
   }
@@ -5920,12 +5979,16 @@ function shouldBootCc98Reborn() {
 }
 
 function scheduleWebVpnBootProbe() {
-  if (!isWebVpnHost() || webVpnBootProbeStarted) {
+  if (!isWebVpnHost() || webVpnBootProbeStarted || isOpenIdAuthorizationPage()) {
     return;
   }
   webVpnBootProbeStarted = true;
   let observer = null;
   const tryBoot = () => {
+    if (isOpenIdAuthorizationPage()) {
+      observer?.disconnect();
+      return true;
+    }
     if (redirectCurrentWebVpnExternalPage()) {
       observer?.disconnect();
       return true;
@@ -11282,7 +11345,8 @@ async function bindOpenIdForCurrentWebAccount(prompt, account) {
   }
   const result = await sendExtensionMessage({
     type: "CC98_REBORN_OPENID_LOGIN",
-    expectedAccount: account
+    expectedAccount: account,
+    authTransport: isWebVpnHost() ? "webvpn" : "direct"
   });
   if (result?.ok && result.binding?.bound) {
     clearOpenIdBindPromptMark();
@@ -16528,16 +16592,40 @@ function redirectToCc98Home() {
 
 function isCc98LoginPath() {
   try {
-    return new URL(location.href).pathname.replace(/\/+$/, "").toLowerCase() === "/logon";
+    const url = new URL(location.href);
+    const normalizePath = (value) => String(value || "")
+      .split(/[?#]/, 1)[0]
+      .replace(/\/+$/, "")
+      .toLowerCase();
+    const routePath = normalizePath(getCc98RoutePathFromHref(url.href));
+    if (routePath === "/logon") {
+      return true;
+    }
+    const pathname = normalizePath(url.pathname);
+    if (isDirectCc98Host(url.hostname)) {
+      return pathname === "/logon";
+    }
+    return isWebVpnHost(url.hostname) && pathname.endsWith("/logon");
   } catch {
-    return /\/logOn\/?$/i.test(location.href);
+    return /\/logOn\/?(?:[?#].*)?$/i.test(location.href);
   }
 }
 
 function isCc98NullRedirectPage() {
   try {
     const url = new URL(location.href);
-    return /^(?:www\.)?cc98\.org$/i.test(url.hostname) && url.pathname.replace(/\/+$/, "").toLowerCase() === "/null";
+    const pathname = url.pathname.replace(/\/+$/, "").toLowerCase();
+    if (isDirectCc98Host(url.hostname)) {
+      return pathname === "/null";
+    }
+    if (!isWebVpnHost(url.hostname) || !pathname.endsWith("/null")) {
+      return false;
+    }
+    const currentPrefix = getWebVpnProxyPrefixFromUrl(url.href);
+    const confirmedPrefix = getConfirmedWebVpnCc98Prefix();
+    return Boolean(currentPrefix)
+      && (!confirmedPrefix
+        || normalizeWebVpnProxyPrefix(currentPrefix) === normalizeWebVpnProxyPrefix(confirmedPrefix));
   } catch {
     return /\/null\/?$/i.test(location.href);
   }
@@ -16547,13 +16635,16 @@ function redirectNullPageToHome() {
   if (!isCc98NullRedirectPage()) {
     return false;
   }
+  clearLoginRedirectWatcher();
+  clearLoginRedirectIntent();
   markOpenIdBindPromptAfterLogin();
   location.replace(getCc98HomeHref());
   return true;
 }
 
 function redirectToCc98Login() {
-  if ((location.hostname === "www.cc98.org" || isWebVpnHost()) && isCc98LoginPath()) {
+  if ((isDirectCc98Host() || isWebVpnHost()) && isCc98LoginPath()) {
+    clearLogoutRedirectIntent();
     return;
   }
   location.assign(buildCc98RouteHref("/logOn"));
@@ -16602,9 +16693,14 @@ function clearLikelyCc98LoginState() {
 }
 
 function enforceRecentLogoutRedirectIntent() {
-  if (hasRecentLogoutRedirectIntent() && !isCc98LoginPath()) {
-    window.setTimeout(redirectToCc98Login, 0);
+  if (!hasRecentLogoutRedirectIntent()) {
+    return;
   }
+  if (isCc98LoginPath()) {
+    clearLogoutRedirectIntent();
+    return;
+  }
+  window.setTimeout(redirectToCc98Login, 0);
 }
 
 function scheduleLogoutRedirect() {
@@ -21589,6 +21685,9 @@ function patchHistoryNavigation() {
       if (isImageViewerHistoryState) {
         return result;
       }
+      if (redirectNullPageToHome()) {
+        return result;
+      }
       setTimeout(() => {
         if (redirectCurrentWebVpnExternalPage() || isCurrentWebVpnExternalProxyPage()) {
           return;
@@ -21701,6 +21800,12 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 });
 
 function bootNormalPage() {
+  if (isOpenIdAuthorizationPage()) {
+    return;
+  }
+  if (redirectNullPageToHome()) {
+    return;
+  }
   if (normalPageBooted) {
     return;
   }
@@ -21717,9 +21822,6 @@ function bootNormalPage() {
   confirmCurrentWebVpnCc98Prefix();
   normalPageBooted = true;
   clearPublicUserProfileLoadingOverlay();
-  if (redirectNullPageToHome()) {
-    return;
-  }
   bindPageEditorSubmitResultMonitor();
   ensureRebornReplyTailSubmitGuard();
   restoreEditorSubmitOverlayAfterReload();
@@ -21775,4 +21877,6 @@ function bootNormalPage() {
   loadSettings();
 }
 
-bootNormalPage();
+if (!recoverPendingWebVpnOpenIdCallback() && !isOpenIdAuthorizationPage()) {
+  bootNormalPage();
+}

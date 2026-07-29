@@ -4,7 +4,7 @@
 
 CC98 Reborn 是一个面向 Chrome / Edge 的 CC98 论坛界面重构插件。它会在浏览器本地重建常用页面的阅读和操作界面，同时尽量复用原站已有控件，保证发帖、回复、上传、评分、私信、收藏等功能仍由原站逻辑处理。
 
-当前预发布版本：`0.2.10.1`。
+当前预发布版本：`0.2.11`。
 
 ## 主要功能
 
@@ -24,7 +24,8 @@ CC98 Reborn 是一个面向 Chrome / Edge 的 CC98 论坛界面重构插件。�
 - 新帖、关注和精选列表右侧提供悬浮“稍后再看”侧栏，支持组件内滚动、搜索、翻页、已读管理和删除，并与按用户 ID 保存的完整稍后再看页面实时同步。
 - 支持插件更新检测；发现新版本时会在弹窗中提示，并在浏览器启动后展示一次页面提醒。
 - 弹窗中提供清除 CC98 Cookie 和本地站点数据功能，用于刷新十大；清理前会提示会抹掉稍后再看、版面置顶与草稿等本地数据。
-- 可选 CC98 OpenID 绑定，使用授权码 + PKCE，只在本地保存身份摘要；绑定后可启用本地水印。
+- 可选 CC98 OpenID 绑定，使用授权码 + PKCE，支持直连和 WebVPN 授权，并以 UID 校验授权账号与当前网页登录账号一致；只在本地保存身份摘要，绑定后可启用本地水印。
+- 已绑定的 OpenID 身份与水印信息约每小时通过非交互授权自动校准一次；临时令牌会在读取 `/me` 后丢弃，校准失败时继续使用最后一次有效的本地摘要。
 
 ## 水印与安全说明
 
@@ -60,7 +61,7 @@ https://github.com/Coran-tech/cc98-reborn/releases
 生成的发布包位于：
 
 ```text
-dist/cc98-reborn-0.2.10.1.zip
+dist/cc98-reborn-0.2.11.zip
 ```
 
 发布包包含运行所需文件：
@@ -71,6 +72,7 @@ dist/cc98-reborn-0.2.10.1.zip
 - `popup/`
 - `src/background.js`
 - `src/content.js`
+- `src/openid-webvpn-bridge.js`
 - `src/page-submit-monitor.js`
 - `src/styles.css`
 - `README.md`
@@ -87,6 +89,7 @@ dist/cc98-reborn-0.2.10.1.zip
 - `browsingData`：仅在用户确认清理时，用于清除 CC98 Cookie 和本地站点数据。
 - `identity`：仅在用户点击绑定时，用于打开 CC98 OpenID 授权流程。
 - `activeTab`：用于当前标签页内的必要交互。
+- `webNavigation`：在 WebVPN 授权完成后识别顶层回调地址，并将结果交还给后台 PKCE 流程。
 - CC98 相关域名权限：在 CC98 和常见 WebVPN 域名上运行内容脚本。
 - CC98 OpenID / API 权限：用于交换授权码，请求 `cc98-api` / `read-user-info`，并读取 `https://api.cc98.org/me`。
 - GitHub Release 与镜像域名权限：仅读取公开版本发布信息。
@@ -96,6 +99,7 @@ dist/cc98-reborn-0.2.10.1.zip
 ```powershell
 node --check .\src\content.js
 node --check .\src\background.js
+node --check .\src\openid-webvpn-bridge.js
 node --check .\src\page-submit-monitor.js
 node --check .\popup\popup.js
 node -e "JSON.parse(require('fs').readFileSync('manifest.json','utf8')); console.log('manifest ok')"

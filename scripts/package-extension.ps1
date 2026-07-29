@@ -40,6 +40,7 @@ New-Item -ItemType Directory -Force -Path (Join-Path $stage "src") | Out-Null
 @(
   "background.js",
   "content.js",
+  "openid-webvpn-bridge.js",
   "page-submit-monitor.js",
   "styles.css"
 ) | ForEach-Object {
