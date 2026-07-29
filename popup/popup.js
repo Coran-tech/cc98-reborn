@@ -1,6 +1,7 @@
 const STORAGE_KEY = "cc98ComfortSettings";
 const RELEASES_PAGE_URL = "https://github.com/Coran-tech/cc98-reborn/releases";
-const BLACKLIST_PAGE_URL = "https://www.cc98.org/#cc98-reborn-blacklist";
+const BLACKLIST_ROUTE_HASH = "#cc98-reborn-blacklist";
+const BLACKLIST_PAGE_URL = `https://www.cc98.org/${BLACKLIST_ROUTE_HASH}`;
 
 const DEFAULT_SETTINGS = {
   enabled: true,
@@ -173,19 +174,42 @@ function openBlacklistPage() {
       location.href = url;
     }
   };
+  const getFallbackUrl = (activeUrl) => {
+    try {
+      const parsed = new URL(activeUrl);
+      const hostname = parsed.hostname.toLowerCase();
+      if (hostname === "www.cc98.org" || hostname === "cc98.org") {
+        return `${parsed.origin}/${BLACKLIST_ROUTE_HASH}`;
+      }
+      if (hostname === "www-cc98-org-s.webvpn.zju.edu.cn") {
+        return `${parsed.origin}/${BLACKLIST_ROUTE_HASH}`;
+      }
+    } catch {
+      // Use the canonical direct address below.
+    }
+    return BLACKLIST_PAGE_URL;
+  };
   try {
     chrome.tabs?.query?.({ active: true, currentWindow: true }, (tabs) => {
-      const activeUrl = tabs?.[0]?.url || "";
-      try {
-        const parsed = new URL(activeUrl);
-        if (/cc98\.org$/i.test(parsed.hostname) || parsed.hostname.endsWith(".cc98.org") || parsed.hostname.includes("cc98-org-s.webvpn.zju.edu.cn")) {
-          openUrl(`${parsed.origin}/#cc98-reborn-blacklist`);
-          return;
-        }
-      } catch {
-        // Fall through to the canonical CC98 URL.
+      const activeTab = tabs?.[0];
+      const fallbackUrl = getFallbackUrl(activeTab?.url || "");
+      if (!Number.isFinite(activeTab?.id) || typeof chrome.tabs?.sendMessage !== "function") {
+        openUrl(fallbackUrl);
+        return;
       }
-      openUrl(BLACKLIST_PAGE_URL);
+      try {
+        chrome.tabs.sendMessage(activeTab.id, {
+          type: "CC98_REBORN_GET_BLACKLIST_PAGE_HREF"
+        }, (response) => {
+          const runtimeError = chrome.runtime.lastError;
+          const href = !runtimeError && response?.ok && response.href
+            ? response.href
+            : fallbackUrl;
+          openUrl(href);
+        });
+      } catch {
+        openUrl(fallbackUrl);
+      }
     });
   } catch {
     openUrl(BLACKLIST_PAGE_URL);

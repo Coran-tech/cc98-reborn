@@ -2883,7 +2883,16 @@ function isBlacklistRoute(url = location.href) {
 }
 
 function getBlacklistPageHref() {
-  return `${location.origin}/${BLACKLIST_ROUTE_HASH}`;
+  try {
+    const url = new URL(getCc98HomeHref(), location.href);
+    url.hash = BLACKLIST_ROUTE_HASH;
+    return url.href;
+  } catch {
+    if (isWebVpnHost()) {
+      return `${location.pathname}${location.search}${BLACKLIST_ROUTE_HASH}`;
+    }
+    return `${location.origin}/${BLACKLIST_ROUTE_HASH}`;
+  }
 }
 
 function getRoutePageKey(url = location.href) {
@@ -9066,6 +9075,23 @@ function getPostAvatar(post, userHref = "") {
   return findImageSrc("img");
 }
 
+function getPostAuthorCardInfo(post) {
+  const userMessage = post?.querySelector?.(".userMessage");
+  if (!(userMessage instanceof HTMLElement)) {
+    return null;
+  }
+  const stats = [...userMessage.querySelectorAll(".userMessageOpt")]
+    .map((node) => cleanupPostText(node.textContent))
+    .filter(Boolean)
+    .slice(0, 8);
+  const genderIcon = userMessage.querySelector(".userGender i");
+  const genderClasses = genderIcon?.classList ? [...genderIcon.classList] : [];
+  const gender = genderClasses.includes("fa-mars")
+    ? "\u2642"
+    : (genderClasses.includes("fa-venus") ? "\u2640" : "");
+  return { stats, gender };
+}
+
 function getAnonymousPostCode(post) {
   if (!(post instanceof Element)) {
     return "";
@@ -9571,6 +9597,12 @@ function isFollowPostAction(action) {
   return /^(?:\u5173\u6ce8|\u53d6\u5173|\u53d6\u6d88\u5173\u6ce8)$/.test(text);
 }
 
+function isPrivateMessagePostAction(action) {
+  const text = cleanupPostText(action?.text || action?.control?.textContent || "")
+    .replace(/\s+\d+\s*$/, "");
+  return text === "\u79c1\u4fe1";
+}
+
 function isCurrentWebUserPostItem(item) {
   const uid = normalizeCc98AccountId(item?.uid || "");
   if (!uid) {
@@ -10002,6 +10034,7 @@ function getPostItems() {
     const userHref = makeAbsoluteCc98Url(user?.href || (uidMatch?.[1] ? `/user/id/${uidMatch[1]}` : ""));
     const anonymousCode = getAnonymousPostCode(post);
     const avatar = getPostAvatar(post, userHref);
+    const authorCard = anonymousCode ? null : getPostAuthorCardInfo(post);
     const content = contentNode ? sanitizePostContent(contentNode) : null;
     const signature = getPostSignatureContent(post);
     let awardState = getPostAwardState(post);
@@ -10015,6 +10048,7 @@ function getPostItems() {
     const editInfo = getPostEditInfo(post);
     const actions = collectPostActions(post);
     const followAction = actions.find(isFollowPostAction) || null;
+    const messageAction = actions.find(isPrivateMessagePostAction) || null;
     const visibleActions = actions.filter((action) => !isFollowPostAction(action));
     const isHot = isHotPostNode(post);
     const floorNumber = getPostFloorNumber(post, index);
@@ -10038,6 +10072,7 @@ function getPostItems() {
       uid: uidMatch?.[1] ?? "",
       anonymousCode,
       avatar,
+      authorCard,
       text,
       content,
       voteContent,
@@ -10052,6 +10087,7 @@ function getPostItems() {
       editedBy: editInfo.editor,
       actions: visibleActions,
       followAction,
+      messageAction,
       isCurrentUser: Boolean(uidMatch?.[1] && uidMatch[1] === getCc98AccountId(getStoredCc98UserInfo())),
       isHot
     };
@@ -10473,8 +10509,11 @@ function getBoardTopicItems() {
       const tags = [...row.querySelectorAll(".board-postItem-tags .ant-tag")].map((tag) => tag.textContent?.trim() ?? "").filter(Boolean);
       const lastReplyLink = row.querySelector('.board-postItem-lastReply')?.closest("a");
       const lastReplySpans = [...row.querySelectorAll(".board-postItem-lastReply span")].map((span) => span.textContent?.trim() ?? "").filter(Boolean);
-      const icon = row.querySelector(".board-postItem-icon img")?.src ?? "";
+      const iconNode = row.querySelector(".board-postItem-icon img");
+      const icon = iconNode?.currentSrc || iconNode?.src || iconNode?.getAttribute("src") || "";
+      const iconHint = `${iconNode?.getAttribute("src") || ""} ${icon}`;
       const isPinned = /top-/i.test(icon) || titleLink.text.includes("公告");
+      const isLocked = /(?:^|\/)lock\.png(?:[?#]|$)/i.test(iconHint);
       return {
         type: "topic",
         title: titleLink.text,
@@ -10490,6 +10529,7 @@ function getBoardTopicItems() {
         pageLinks,
         icon,
         isPinned,
+        isLocked,
         board: getFirstText(document, ".board-head-name"),
         boardHref: location.href
       };
@@ -11962,6 +12002,148 @@ function renderPostVoteContent(voteContent) {
   return voteContent;
 }
 
+function getPostAuthorFollowState(action) {
+  const text = cleanupPostText(getActionText(action?.control) || action?.text || "");
+  const followed = /^(?:\u53d6\u5173|\u53d6\u6d88\u5173\u6ce8)$/.test(text);
+  return {
+    followed,
+    label: followed ? "\u53d6\u6d88\u5173\u6ce8" : "\u5173\u6ce8"
+  };
+}
+
+function renderPostAuthorFollowAction(action) {
+  let lastActivatedAt = 0;
+  const button = createButton("cc98-rebuild-post-author-action is-follow", "", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const now = Date.now();
+    if (now - lastActivatedAt < 520) {
+      return;
+    }
+    lastActivatedAt = now;
+    button.classList.add("is-pending");
+    triggerOriginalControl(action.control);
+    [120, 360, 760, 1300, 2200].forEach((delay, index, delays) => {
+      window.setTimeout(() => {
+        if (!button.isConnected) {
+          return;
+        }
+        const state = getPostAuthorFollowState(action);
+        button.textContent = state.label;
+        button.classList.toggle("is-followed", state.followed);
+        button.setAttribute("aria-pressed", String(state.followed));
+        if (index === delays.length - 1) {
+          button.classList.remove("is-pending");
+        }
+      }, delay);
+    });
+    [320, 900, 1800, 2600].forEach((delay) => {
+      window.setTimeout(scheduleDelayedRebuilds, delay);
+    });
+    scheduleNativeAntUiStabilize();
+  });
+  const state = getPostAuthorFollowState(action);
+  button.textContent = state.label;
+  button.classList.toggle("is-followed", state.followed);
+  button.setAttribute("aria-pressed", String(state.followed));
+  return button;
+}
+
+function renderPostAuthorMessageAction(action) {
+  if (action?.href && action.href !== "#") {
+    return createLink(
+      "cc98-rebuild-post-author-action is-message",
+      "\u79c1\u4fe1",
+      action.href
+    );
+  }
+  return createButton("cc98-rebuild-post-author-action is-message", "\u79c1\u4fe1", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    triggerOriginalControl(action?.control);
+    scheduleNativeAntUiStabilize();
+  });
+}
+
+function renderPostAuthorCard(item) {
+  if (!item?.authorCard || item.anonymousCode) {
+    return null;
+  }
+  const card = createElement("aside", "cc98-rebuild-post-author-card");
+  card.setAttribute("role", "group");
+  card.setAttribute("aria-label", `${item.user || "CC98 \u7528\u6237"}\u7684\u7528\u6237\u4fe1\u606f`);
+
+  const profile = createElement("div", "cc98-rebuild-post-author-card-profile");
+  const avatarUrl = makeWebVpnCc98ResourceUrl(item.avatar) || item.avatar;
+  const avatar = createElement("img", "cc98-rebuild-post-author-card-avatar");
+  avatar.src = avatarUrl;
+  avatar.alt = "";
+  avatar.loading = "eager";
+  avatar.decoding = "async";
+  if (isLightDefaultAvatarUrl(item.avatar)) {
+    avatar.classList.add("cc98-rebuild-avatar-light-default");
+  }
+  const avatarNode = item.userHref
+    ? createLink("cc98-rebuild-post-author-card-avatar-link", "", item.userHref)
+    : createElement("span", "cc98-rebuild-post-author-card-avatar-link");
+  if (avatarNode instanceof HTMLAnchorElement) {
+    avatarNode.textContent = "";
+    avatarNode.setAttribute("aria-label", `${item.user || "CC98 用户"}的主页`);
+  }
+  if (avatarUrl) {
+    avatarNode.style.backgroundImage = `url(${JSON.stringify(avatarUrl)})`;
+  }
+  avatar.addEventListener("error", () => {
+    avatar.classList.add("has-load-error");
+    avatarNode.classList.add("is-fallback-only");
+  });
+  avatarNode.append(avatar);
+
+  const identity = createElement("div", "cc98-rebuild-post-author-card-identity");
+  const name = item.userHref
+    ? createLink("cc98-rebuild-post-author-card-name", item.user, item.userHref)
+    : createElement("strong", "cc98-rebuild-post-author-card-name", item.user);
+  identity.append(name);
+  if (item.authorCard.gender) {
+    identity.append(createElement(
+      "span",
+      "cc98-rebuild-post-author-card-gender",
+      item.authorCard.gender
+    ));
+  }
+  profile.append(avatarNode, identity);
+  card.append(profile);
+
+  if (item.authorCard.stats?.length) {
+    const stats = createElement("div", "cc98-rebuild-post-author-card-stats");
+    item.authorCard.stats.forEach((text) => {
+      const match = text.match(/^(.+?)\s+(.+)$/);
+      const row = createElement(
+        "div",
+        `cc98-rebuild-post-author-card-stat${/^\u6700\u540e\u767b\u5f55/.test(text) ? " is-wide" : ""}`
+      );
+      row.append(
+        createElement("span", "cc98-rebuild-post-author-card-stat-label", match?.[1] || text),
+        createElement("strong", "cc98-rebuild-post-author-card-stat-value", match?.[2] || "")
+      );
+      stats.append(row);
+    });
+    card.append(stats);
+  }
+
+  const actions = createElement("div", "cc98-rebuild-post-author-card-actions");
+  if (item.followAction && !item.isCurrentUser) {
+    actions.append(renderPostAuthorFollowAction(item.followAction));
+  }
+  if (item.messageAction) {
+    actions.append(renderPostAuthorMessageAction(item.messageAction));
+  }
+  if (actions.children.length) {
+    card.append(actions);
+  }
+  return card;
+}
+
 function renderPostCard(item) {
   const blockReason = shouldBlockRebuiltItem(item);
   if (blockReason && !isBlacklistItemRevealed(item)) {
@@ -11987,6 +12169,7 @@ function renderPostCard(item) {
     card.append(originalAnchor);
   }
   const header = createElement("div", "cc98-rebuild-post-header");
+  let authorPopover = null;
   if (item.avatar) {
     const avatar = createElement("img", "cc98-rebuild-avatar");
     avatar.src = item.avatar;
@@ -12003,7 +12186,14 @@ function renderPostCard(item) {
         avatarLink.classList.add("cc98-rebuild-avatar-light-default-link");
       }
       avatarLink.append(avatar);
-      header.append(avatarLink);
+      if (item.authorCard && !item.anonymousCode) {
+        avatarLink.setAttribute("aria-haspopup", "true");
+        authorPopover = createElement("div", "cc98-rebuild-post-author-popover");
+        authorPopover.append(avatarLink);
+        header.append(authorPopover);
+      } else {
+        header.append(avatarLink);
+      }
     } else {
       header.append(avatar);
     }
@@ -12021,6 +12211,10 @@ function renderPostCard(item) {
   }
   if (item.followAction && !item.isCurrentUser) {
     userLine.append(renderNativeFollowControl(item.followAction));
+  }
+  const authorCard = authorPopover ? renderPostAuthorCard(item) : null;
+  if (authorCard) {
+    authorPopover.append(authorCard);
   }
   byline.append(userLine);
   if (item.isHot) {
@@ -12290,10 +12484,16 @@ function renderBoardTopicCard(item) {
   if (item.isPinned) {
     card.classList.add("is-pinned");
   }
+  if (item.isLocked) {
+    card.classList.add("is-locked");
+  }
   const marker = createElement("span", "cc98-rebuild-board-topic-marker", item.isPinned ? "置顶" : "主题");
   const main = createElement("div", "cc98-rebuild-board-topic-main");
   const titleRow = createElement("div", "cc98-rebuild-board-topic-title-row");
-  titleRow.append(createLink("cc98-rebuild-card-title", item.title, item.href));
+  const title = item.isLocked && !/^🔒\s*/u.test(item.title)
+    ? `🔒 ${item.title}`
+    : item.title;
+  titleRow.append(createLink("cc98-rebuild-card-title", title, item.href));
   if (item.pageLinks?.length) {
     const pages = createElement("div", "cc98-rebuild-board-topic-pages");
     item.pageLinks.slice(0, 8).forEach((page) => pages.append(createLink("cc98-rebuild-chip", page.text, page.href)));
@@ -21786,6 +21986,15 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
   if (message?.type === "CC98_REBORN_GET_CURRENT_WEB_ACCOUNT") {
     sendResponse({ ok: true, account: getCurrentCc98WebAccount() });
+    return true;
+  }
+
+  if (message?.type === "CC98_REBORN_GET_BLACKLIST_PAGE_HREF") {
+    if (!shouldBootCc98Reborn()) {
+      sendResponse({ ok: false, href: "" });
+      return true;
+    }
+    sendResponse({ ok: true, href: getBlacklistPageHref() });
     return true;
   }
 
