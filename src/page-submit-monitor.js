@@ -78,6 +78,8 @@
   window.__cc98RebornSubmitMonitorInstalled = true;
 
   const MESSAGE_SOURCE = "cc98-reborn-submit-monitor";
+  const DOM_BRIDGE_EVENT = "cc98-reborn-submit-monitor-event";
+  let monitorEventSequence = 0;
 
   function isWebVpnHost(hostname = location.hostname) {
     return /(?:^|\.)webvpn\.zju\.edu\.cn$/i.test(String(hostname || ""));
@@ -266,24 +268,88 @@
       return "";
     }
     const normalizedMethod = String(method || "GET").toUpperCase();
-    const pathname = parsed.pathname.replace(/^\/api(?:\/v\d+)?/i, "");
-    if (normalizedMethod === "POST" && /^\/topic\/\d+\/post\/?$/i.test(pathname)) {
+    const pathname = decodeLocationValue(parsed.pathname)
+      .replace(/\\/g, "/")
+      .replace(/\/+$/, "");
+    if (normalizedMethod === "POST" && /\/topic\/\d+\/post$/i.test(pathname)) {
       return "reply";
     }
-    if (normalizedMethod === "POST" && /^\/board\/\d+\/topic\/?$/i.test(pathname)) {
+    if (normalizedMethod === "POST" && /\/board\/\d+\/topic$/i.test(pathname)) {
       return "post";
     }
-    if (/^(?:PUT|PATCH)$/i.test(normalizedMethod) && /^\/post\/\d+\/?$/i.test(pathname)) {
+    if (/^(?:PUT|PATCH)$/i.test(normalizedMethod) && /\/post\/\d+$/i.test(pathname)) {
       return "edit";
     }
     return "";
   }
 
+  function classifyTopicContentRequest(url, method) {
+    if (String(method || "GET").toUpperCase() !== "GET") {
+      return null;
+    }
+    const value = decodeLocationValue(String(url || ""));
+    const match = value.match(/\/Topic\/(\d+)\/(hot-post|post)(?=[/?#]|$)/i);
+    if (!match) {
+      return null;
+    }
+    const fromMatch = value.match(/[?&]from=(\d+)/i);
+    const sizeMatch = value.match(/[?&]size=(\d+)/i);
+    return {
+      topicId: match[1],
+      kind: match[2].toLowerCase() === "hot-post" ? "hot" : "page",
+      from: Math.max(0, Number(fromMatch?.[1]) || 0),
+      size: Math.max(0, Number(sizeMatch?.[1]) || 0),
+      url: String(url || "")
+    };
+  }
+
+  function emitMonitorMessage(type, payload) {
+    const message = {
+      source: MESSAGE_SOURCE,
+      type,
+      payload,
+      monitorEventId: `${Date.now()}:${++monitorEventSequence}:${type}`
+    };
+    try {
+      document.dispatchEvent(new CustomEvent(DOM_BRIDGE_EVENT, {
+        detail: JSON.stringify(message)
+      }));
+    } catch {
+      // The postMessage bridge below remains available.
+    }
+    window.postMessage(message, location.origin);
+  }
+
   function reportResult(payload) {
+    emitMonitorMessage("editor-submit-result", payload);
+  }
+
+  function reportSubmitStart(payload) {
+    emitMonitorMessage("editor-submit-start", payload);
+  }
+
+  function reportTopicContentSnapshot(request, data, responseUrl = "") {
+    if (!request || !Array.isArray(data)) {
+      return;
+    }
+    const items = data.slice(0, 60).map((item, index) => ({
+      id: String(item?.id ?? item?.postId ?? ""),
+      floor: Math.max(0, Number(item?.floor ?? item?.index ?? (request.kind === "page" ? request.from + index + 1 : 0)) || 0),
+      content: typeof item?.content === "string" ? item.content : "",
+      contentType: Number(item?.contentType) || 0,
+      userId: String(item?.userId ?? ""),
+      userName: String(item?.userName ?? ""),
+      isAnonymous: Boolean(item?.isAnonymous),
+      signatureCode: typeof item?.signatureCode === "string" ? item.signatureCode : ""
+    }));
     window.postMessage({
       source: MESSAGE_SOURCE,
-      type: "editor-submit-result",
-      payload
+      type: "topic-content-snapshot",
+      payload: {
+        ...request,
+        responseUrl: String(responseUrl || ""),
+        items
+      }
     }, location.origin);
   }
 
@@ -293,23 +359,52 @@
       const requestUrl = typeof input === "string" || input instanceof URL ? String(input) : input?.url;
       const requestMethod = init?.method || input?.method || "GET";
       const requestKind = classifyRequest(requestUrl, requestMethod);
+      const topicContentRequest = classifyTopicContentRequest(requestUrl, requestMethod);
+      if (requestKind) {
+        reportSubmitStart({
+          kind: requestKind,
+          method: String(requestMethod).toUpperCase(),
+          url: String(requestUrl || ""),
+          startedAt: Date.now()
+        });
+      }
       try {
         const response = await nativeFetch.apply(this, arguments);
+        if (topicContentRequest && response.ok) {
+          response.clone().json()
+            .then((data) => reportTopicContentSnapshot(
+              topicContentRequest,
+              data,
+              response.url || String(requestUrl || "")
+            ))
+            .catch(() => {});
+        }
         if (requestKind) {
-          response.clone().text()
-            .catch(() => "")
-            .then((body) => {
-              reportResult({
-                kind: requestKind,
-                method: String(requestMethod).toUpperCase(),
-                url: response.url || String(requestUrl || ""),
-                responseUrl: response.url || "",
-                location: response.headers.get("location") || "",
-                status: response.status,
-                ok: response.ok,
-                body: String(body || "").slice(0, 2048)
+          const result = {
+            kind: requestKind,
+            method: String(requestMethod).toUpperCase(),
+            url: response.url || String(requestUrl || ""),
+            responseUrl: response.url || "",
+            location: response.headers.get("location") || "",
+            status: response.status,
+            ok: response.ok
+          };
+          if (requestKind === "post") {
+            response.clone().text()
+              .catch(() => "")
+              .then((body) => {
+                reportResult({
+                  ...result,
+                  body: String(body || "").slice(0, 2048)
+                });
               });
+          } else {
+            reportResult({
+              ...result,
+              body: "",
+              headersOnly: true
             });
+          }
         }
         return response;
       } catch (error) {
@@ -337,11 +432,32 @@
       method: String(method || "GET").toUpperCase(),
       url: String(url || "")
     };
+    this.__cc98RebornTopicContentRequest = classifyTopicContentRequest(url, method);
     return nativeOpen.apply(this, arguments);
   };
   XMLHttpRequest.prototype.send = function monitoredSend() {
     const request = this.__cc98RebornSubmitRequest;
+    const topicContentRequest = this.__cc98RebornTopicContentRequest;
+    if (topicContentRequest) {
+      this.addEventListener("loadend", () => {
+        if (this.status < 200 || this.status >= 300) {
+          return;
+        }
+        try {
+          const data = this.responseType === "json"
+            ? this.response
+            : JSON.parse(this.responseText || "[]");
+          reportTopicContentSnapshot(topicContentRequest, data, this.responseURL || topicContentRequest.url);
+        } catch {
+          // Ignore non-JSON and incomplete responses.
+        }
+      }, { once: true });
+    }
     if (request?.kind) {
+      reportSubmitStart({
+        ...request,
+        startedAt: Date.now()
+      });
       this.addEventListener("loadend", () => {
         let body = "";
         try {
@@ -363,4 +479,126 @@
     }
     return nativeSend.apply(this, arguments);
   };
+
+  let renderedTopicSnapshotTimer = null;
+  let renderedTopicSnapshotSignature = "";
+
+  function getCurrentTopicRouteInfo() {
+    const route = decodeLocationValue(`${location.pathname}${location.search}`);
+    const match = route.match(/\/topic\/(\d+)(?:\/(\d+))?/i);
+    if (!match) {
+      return null;
+    }
+    const page = Math.max(1, Number(match[2]) || 1);
+    return {
+      topicId: match[1],
+      from: (page - 1) * 10
+    };
+  }
+
+  function getReactFiber(node) {
+    if (!(node instanceof Element)) {
+      return null;
+    }
+    const key = Object.keys(node).find((name) => (
+      name.startsWith("__reactFiber$")
+      || name.startsWith("__reactInternalInstance$")
+    ));
+    return key ? node[key] : null;
+  }
+
+  function collectReactPostProps(reply) {
+    const candidates = [
+      reply,
+      ...reply.querySelectorAll(".reply-content, .substance, .signature, article")
+    ];
+    let postInfo = null;
+    let userInfo = null;
+    for (const candidate of candidates) {
+      let fiber = getReactFiber(candidate);
+      for (let depth = 0; fiber && depth < 24; depth += 1, fiber = fiber.return) {
+        const props = fiber.memoizedProps || fiber.pendingProps;
+        if (!props || typeof props !== "object") {
+          continue;
+        }
+        const possiblePost = props.postInfo && typeof props.postInfo === "object"
+          ? props.postInfo
+          : props;
+        if (!postInfo
+          && typeof possiblePost.content === "string"
+          && (possiblePost.postId || possiblePost.id || possiblePost.floor)) {
+          postInfo = possiblePost;
+        }
+        if (!userInfo && props.userInfo && typeof props.userInfo === "object") {
+          userInfo = props.userInfo;
+        }
+        if (postInfo && userInfo) {
+          return { postInfo, userInfo };
+        }
+      }
+    }
+    return { postInfo, userInfo };
+  }
+
+  function collectRenderedTopicSnapshot() {
+    renderedTopicSnapshotTimer = null;
+    const route = getCurrentTopicRouteInfo();
+    if (!route) {
+      renderedTopicSnapshotSignature = "";
+      return;
+    }
+    const replies = [...document.querySelectorAll(".reply")]
+      .filter((reply) => !reply.closest("#cc98-comfort-app"))
+      .slice(0, 30);
+    const items = replies.map((reply, index) => {
+      const { postInfo, userInfo } = collectReactPostProps(reply);
+      if (!postInfo || typeof postInfo.content !== "string") {
+        return null;
+      }
+      return {
+        id: String(postInfo.postId ?? postInfo.id ?? ""),
+        floor: Math.max(0, Number(postInfo.floor) || route.from + index + 1),
+        content: postInfo.content,
+        contentType: Number(postInfo.contentType) || 0,
+        userId: String(postInfo.userId ?? userInfo?.id ?? ""),
+        userName: String(postInfo.userName ?? userInfo?.name ?? ""),
+        isAnonymous: Boolean(postInfo.isAnonymous),
+        signatureCode: typeof userInfo?.signatureCode === "string" ? userInfo.signatureCode : ""
+      };
+    }).filter(Boolean);
+    if (!items.length) {
+      return;
+    }
+    const signature = `${route.topicId}:${route.from}:${items
+      .map((item) => `${item.id}:${item.floor}:${item.content.length}:${item.signatureCode.length}`)
+      .join("|")}`;
+    if (signature === renderedTopicSnapshotSignature) {
+      return;
+    }
+    renderedTopicSnapshotSignature = signature;
+    reportTopicContentSnapshot({
+      topicId: route.topicId,
+      kind: "page",
+      from: route.from,
+      size: items.length,
+      url: location.href
+    }, items, location.href);
+  }
+
+  function scheduleRenderedTopicSnapshot() {
+    if (!getCurrentTopicRouteInfo()) {
+      return;
+    }
+    clearTimeout(renderedTopicSnapshotTimer);
+    renderedTopicSnapshotTimer = setTimeout(collectRenderedTopicSnapshot, 120);
+  }
+
+  const renderedTopicObserver = new MutationObserver(scheduleRenderedTopicSnapshot);
+  renderedTopicObserver.observe(document.documentElement, {
+    childList: true,
+    subtree: true
+  });
+  [0, 180, 520, 1200, 2400].forEach((delay) => {
+    setTimeout(scheduleRenderedTopicSnapshot, delay);
+  });
 })();

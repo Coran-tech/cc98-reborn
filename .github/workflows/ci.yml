@@ -26,3 +26,6 @@ jobs:
 
       - name: Validate manifest
         run: node -e "JSON.parse(require('fs').readFileSync('manifest.json','utf8')); console.log('manifest ok')"
+
+      - name: Test submit monitor
+        run: node tests/page-submit-monitor.test.js

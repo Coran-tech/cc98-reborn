@@ -2,10 +2,13 @@ const STORAGE_KEY = "cc98ComfortSettings";
 const PINNED_BOARDS_STORAGE_KEY = "cc98RebornPinnedBoards:v1";
 const READ_LATER_STORAGE_KEY = "cc98RebornReadLater:v1";
 const OPENID_BINDING_STORAGE_KEY = "cc98RebornOpenIdBinding:v1";
-const SEARCH_SORT_STORAGE_KEY = "cc98RebornSearchSort:v1";
+const SEARCH_SORT_STORAGE_KEY = "cc98RebornSearchSort:v2";
+const SEARCH_HISTORY_STORAGE_KEY = "cc98RebornSearchHistory:v1";
+const SEARCH_HISTORY_CHANGE_EVENT = "cc98-reborn-search-history-change";
+const SEARCH_HISTORY_LIMIT = 12;
 const READ_LATER_ROUTE_HASH = "#cc98-reborn-read-later";
 const BLACKLIST_ROUTE_HASH = "#cc98-reborn-blacklist";
-const EXTENSION_VERSION = "0.2.11";
+const EXTENSION_VERSION = "0.3.0";
 const LOGIN_REDIRECT_MARK_KEY = "cc98RebornLoginRedirectStartedAt";
 const LOGIN_REDIRECT_SNAPSHOT_KEY = "cc98RebornLoginRedirectSnapshot";
 const LOGIN_HOME_REFRESH_MARK_KEY = "cc98RebornLoginHomeRefreshPendingAt";
@@ -21,6 +24,13 @@ const VOTE_OPTIMISTIC_STATE_TTL = 2600;
 const HOME_HOT_RANK_CACHE_KEY_PREFIX = "cc98RebornHomeHotRanking:v1:";
 const SEARCH_EMPTY_INITIAL_GRACE_MS = 2600;
 const SEARCH_EMPTY_LOADING_GRACE_MS = 7000;
+const SEAMLESS_SCROLL_SYNC_DELAY = 160;
+const SEAMLESS_SCROLL_SYNC_FOLLOWUP_DELAY = 820;
+const SEAMLESS_SCROLL_SYNC_MIN_INTERVAL = 520;
+const SEAMLESS_SCROLL_SYNC_INTENT_TTL = 1900;
+const TOPIC_CONTENT_CAPTURE_GRACE_MS = 3600;
+const REBUILD_TRANSITION_VEIL_FAILSAFE_MS = 2800;
+const REBUILD_TRANSITION_VEIL_FADE_MS = 140;
 const EDITOR_SUBMIT_INTENT_KEY = "cc98RebornEditorSubmitIntentAt";
 const EDITOR_SUBMIT_CONTEXT_KEY = "cc98RebornEditorSubmitContext";
 const EDITOR_LAST_TOPIC_HREF_KEY = "cc98RebornLastTopicHref";
@@ -28,7 +38,7 @@ const EDITOR_TOPIC_RELOAD_KEY_PREFIX = "cc98RebornEditorTopicReload:";
 const EDITOR_TOPIC_RELOAD_TTL = 15000;
 const EDITOR_TOPIC_SUBMIT_RELOAD_KEY_PREFIX = "cc98RebornEditorTopicSubmitReload:";
 const EDITOR_TOPIC_SUBMIT_RELOAD_TTL = 30000;
-const EDITOR_SUBMIT_FORCE_REFRESH_DELAY = 500;
+const EDITOR_SUBMIT_MONITOR_EVENT = "cc98-reborn-submit-monitor-event";
 const EDITOR_DRAFT_STORAGE_PREFIX = "cc98RebornDraft:v1:";
 const BLACKLIST_PAGE_REVEAL_PREFIX = "cc98RebornBlacklistPageReveal:";
 const BLACKLIST_ITEM_REVEAL_PREFIX = "cc98RebornBlacklistItemReveal:";
@@ -81,6 +91,7 @@ const DEFAULT_SETTINGS = {
 
 const THEME_IDS = new Set(["soft", "mist", "night", "sage", "lake", "rose", "graphite", "midnight", "wine"]);
 const DARK_THEME_IDS = new Set(["night", "graphite", "midnight", "wine"]);
+const SEAMLESS_SCROLL_SYNC_PAGE_KINDS = new Set(["home", "boardList", "topics", "search", "boardSearch", "board", "post"]);
 const THEME_LOADING_COLORS = {
   soft: {
     bg: "#f4f6f5",
@@ -209,6 +220,21 @@ let autoLoadArmed = false;
 let isPokingNativeScroll = false;
 let lastAutoLoadAt = 0;
 let lastSyncScheduledAt = 0;
+let seamlessScrollSyncTimer = null;
+let seamlessScrollSyncFollowupTimer = null;
+let seamlessScrollSyncRouteKey = "";
+let seamlessScrollSyncSignature = "";
+let seamlessScrollSyncLastRefreshAt = 0;
+let seamlessScrollSyncIntentUntil = 0;
+let seamlessScrollInteractionRevision = 0;
+let newTopicModeSyncRevision = 0;
+let newTopicModeSyncTimers = [];
+let newTopicAutoRefreshVisitActive = false;
+let newTopicAutoRefreshTriggered = false;
+let newTopicAutoRefreshTimer = null;
+let topicContentCaptureGraceRouteKey = "";
+let topicContentCaptureGraceUntil = 0;
+let topicContentCaptureFallbackTimer = null;
 let lazyPrewarmPromise = null;
 let lazyPrewarmedPageKey = "";
 let homeAvatarPrewarmPromise = null;
@@ -226,6 +252,9 @@ let loadingOverlayFailsafeTimer = null;
 let loadingOverlayAutoHideTimer = null;
 let loadingOverlayStartedAt = 0;
 let loadingOverlaySoft = false;
+let rebuildTransitionVeilFailsafeTimer = null;
+let rebuildTransitionVeilReleaseTimer = null;
+let rebuildTransitionVeilNavigationBound = false;
 let nativeLazyScrollOverlayDepth = 0;
 let userCenterPendingRebuildTimer = null;
 let messageTitleObserver = null;
@@ -243,7 +272,6 @@ let imageViewerScrollRestoreTimers = [];
 let imageViewerPreviousScrollRestoration = "";
 let imageViewerSuppressHashScrollUntil = 0;
 let nativePostSubmitRefreshTimers = [];
-let editorSubmitHardRefreshTimers = [];
 let editorSubmitOverlayReleaseTimer = null;
 let editorSubmitResultMonitorBound = false;
 let editorSubmitOverlayAwaitingRebuild = false;
@@ -279,16 +307,25 @@ let openLinksInNewTabGuardBound = false;
 let rebornReplyTailSubmitGuardBound = false;
 let privateMessageEmojiDismissBound = false;
 const originalPosterIdentityPrefetches = new Map();
+const capturedTopicPostsById = new Map();
+const capturedTopicPostsByFloor = new Map();
+const capturedTopicContentPages = new Set();
+const capturedTopicContentPageCounts = new Map();
 const neutralizedLinks = new WeakMap();
 const reparentedNativeNodes = new WeakMap();
 const nativeEditorStabilizers = new WeakSet();
+const nativeEditorStabilizeTimers = new WeakMap();
 const markdownEditorInputStates = new WeakMap();
 const markdownEditorLocalPreviews = new WeakMap();
 const nativeUserCenterStabilizers = new WeakSet();
 const nativeTopbarUserStabilizers = new WeakSet();
 const nativeTopbarMenuCloseTimers = new WeakMap();
 const proxyControlSyncTimers = new WeakMap();
+const handledEditorSubmitMonitorEvents = new Set();
 const searchSuggestionCache = new Map();
+let searchHistoryCache = null;
+let searchHistoryStorageHydratedKey = "";
+let searchHistoryStorageHydratingKey = "";
 const homeHotRankingStates = new Map();
 const postAwardDeltaCache = new Map();
 const blacklistRevealScopes = new Set();
@@ -449,6 +486,9 @@ function applySettings(settings) {
   root.style.setProperty("--cc98-emoji-size", `${(1.75 * lastSettings.emojiScale / 100).toFixed(3)}em`);
   root.style.setProperty("--cc98-editor-emoji-size", `${(2.2 * lastSettings.emojiScale / 100).toFixed(3)}em`);
   root.style.setProperty("--cc98-comfort-radius", `${lastSettings.cornerRadius}px`);
+  if (!lastSettings.enabled || !lastSettings.rebuildUi) {
+    releaseRebuildTransitionVeil({ immediate: true });
+  }
 
   if (consumeLoginHomeRefreshIntent()) {
     return;
@@ -1485,31 +1525,13 @@ function bindPostDownloadButtons(app) {
 
 function triggerOriginalControl(control) {
   if (!(control instanceof HTMLElement)) {
-    return;
+    return false;
   }
-  const target = control.matches("button, a, [role='button']")
+  const target = control.matches("button, a, input, label, [role='button']")
     ? control
-    : (control.querySelector("button, a, [role='button'], i, span") || control);
-  const rect = control.getBoundingClientRect();
-  const eventInit = {
-    bubbles: true,
-    cancelable: true,
-    composed: true,
-    view: window,
-    clientX: rect.left + Math.max(1, rect.width / 2),
-    clientY: rect.top + Math.max(1, rect.height / 2),
-    button: 0,
-    buttons: 1
-  };
-  if (typeof PointerEvent === "function") {
-    target.dispatchEvent(new PointerEvent("pointerdown", { ...eventInit, pointerId: 1, pointerType: "mouse", isPrimary: true }));
-  }
-  target.dispatchEvent(new MouseEvent("mousedown", eventInit));
-  if (typeof PointerEvent === "function") {
-    target.dispatchEvent(new PointerEvent("pointerup", { ...eventInit, buttons: 0, pointerId: 1, pointerType: "mouse", isPrimary: true }));
-  }
-  target.dispatchEvent(new MouseEvent("mouseup", { ...eventInit, buttons: 0 }));
+    : (control.querySelector("button, a, input, label, [role='button']") || control);
   target.click();
+  return true;
 }
 
 function getActionKindFromText(text) {
@@ -1649,78 +1671,6 @@ function getVoteGroupDisplayKind(group) {
     return desiredKind;
   }
   return nativeKind;
-}
-
-function waitForNativeVoteState(action, active, timeout = 900) {
-  const kind = getActionVoteKind(action);
-  if (kind !== "like" && kind !== "dislike") {
-    return Promise.resolve(false);
-  }
-  const startedAt = Date.now();
-  return new Promise((resolve) => {
-    const check = () => {
-      const current = isPostActionActive(action.control, kind);
-      if (current === active) {
-        resolve(true);
-        return;
-      }
-      if (Date.now() - startedAt >= timeout) {
-        resolve(false);
-        return;
-      }
-      window.setTimeout(check, 60);
-    };
-    check();
-  });
-}
-
-function settleVoteGroupNativeState(group, desiredKind, token) {
-  if (!group || group.transitionToken !== token) {
-    return;
-  }
-  const nativeKind = getVoteGroupNativeKind(group);
-  if (nativeKind === desiredKind) {
-    return;
-  }
-  if (!desiredKind && nativeKind) {
-    triggerOriginalControl(group[nativeKind]?.control);
-    return;
-  }
-  if (desiredKind && nativeKind && nativeKind !== desiredKind) {
-    const wrongAction = group[nativeKind];
-    triggerOriginalControl(wrongAction?.control);
-    waitForNativeVoteState(wrongAction, false, 900).then(() => {
-      if (group.transitionToken !== token) {
-        return;
-      }
-      if (!isPostActionActive(group[desiredKind]?.control, desiredKind)) {
-        triggerOriginalControl(group[desiredKind]?.control);
-      }
-    });
-    return;
-  }
-  if (desiredKind && !nativeKind) {
-    triggerOriginalControl(group[desiredKind]?.control);
-  }
-}
-
-function triggerVoteNativeTransition(action, oppositeAction, oppositeWasNativeActive) {
-  const group = action?.voteGroup;
-  const token = group?.transitionToken || 0;
-  const actionKind = getActionVoteKind(action);
-  if (!oppositeWasNativeActive) {
-    triggerOriginalControl(action.control);
-    return;
-  }
-  triggerOriginalControl(oppositeAction.control);
-  waitForNativeVoteState(oppositeAction, false, 1200).then(() => {
-    if (group && group.transitionToken !== token) {
-      return;
-    }
-    if (!isPostActionActive(action.control, actionKind)) {
-      triggerOriginalControl(action.control);
-    }
-  });
 }
 
 function getVoteActionNativeCount(action) {
@@ -1885,12 +1835,21 @@ function renderNativeFollowControl(action) {
     control.dataset.cc98RebuildPostFollowBound = "true";
     control.addEventListener("click", () => {
       control.classList.add("is-pending");
-      [120, 420, 900].forEach((delay) => {
-        window.setTimeout(() => configureFollowProxyAction(control, { ...action, text: control.textContent || action.text }), delay);
+      [180, 650, 1400].forEach((delay, index, delays) => {
+        window.setTimeout(() => {
+          if (!control.isConnected) {
+            return;
+          }
+          configureFollowProxyAction(control, {
+            ...action,
+            text: control.textContent || action.text
+          });
+          if (index === delays.length - 1) {
+            control.classList.remove("is-pending");
+          }
+        }, delay);
       });
-      [260, 700, 1400, 2400].forEach((delay) => {
-        window.setTimeout(scheduleDelayedRebuilds, delay);
-      });
+      window.setTimeout(scheduleRebuild, 850);
       scheduleNativeAntUiStabilize();
     }, false);
   }
@@ -1920,6 +1879,7 @@ function setProxyControlDisplayText(proxy, text, kind = "", scoreDelta = NaN) {
 }
 
 function syncProxyControlDisplay(proxy, action) {
+  resolveCurrentProxyAction(action);
   const nativeText = getTopicFavoriteDisplayText(action)
     || action.displayText
     || getActionText(action.control)
@@ -1955,18 +1915,6 @@ function syncProxyControlDisplay(proxy, action) {
   configureFollowProxyAction(proxy, action);
 }
 
-function applyOptimisticPostActionState(button, action) {
-  const kind = getPostActionKind(action.control, action.text);
-  if (kind !== "like" && kind !== "dislike") {
-    return;
-  }
-  button.dataset.actionKind = kind;
-  button.classList.toggle("is-like", kind === "like");
-  button.classList.toggle("is-dislike", kind === "dislike");
-  button.classList.add("is-pending");
-  button.setAttribute("aria-busy", "true");
-}
-
 function clearProxyControlSyncTimers(button) {
   const timers = proxyControlSyncTimers.get(button);
   if (!timers) {
@@ -1997,6 +1945,122 @@ function scheduleProxyControlDisplaySync(button, action, delays, clearPendingAft
 
 function isTopicShareAction(action) {
   return action?.scope === "topic" && cleanupPostText(action.text).includes("\u5206\u4eab\u5e16\u5b50\u94fe\u63a5");
+}
+
+function getProxyActionIdentity(action) {
+  const kind = getActionVoteKind(action) || getPostActionKind(action?.control, action?.text || "");
+  if (kind) {
+    return kind;
+  }
+  const label = cleanupPostText(getActionText(action?.control) || action?.text || "")
+    .replace(/\s+[+-]?\d+\s*$/, "");
+  if (/^(?:\u5173\u6ce8|\u53d6\u5173|\u53d6\u6d88\u5173\u6ce8)$/.test(label)) {
+    return "follow";
+  }
+  return label;
+}
+
+function findCurrentNativePostForAction(action) {
+  if (action?.sourcePost instanceof HTMLElement
+    && action.sourcePost.isConnected
+    && !action.sourcePost.closest("#cc98-comfort-app")) {
+    return action.sourcePost;
+  }
+  const posts = [...document.querySelectorAll(".reply")]
+    .filter((post) => post instanceof HTMLElement && !post.closest("#cc98-comfort-app"));
+  if (action?.nativePostId) {
+    const matchedById = posts.find((post) => (
+      getCapturedPostIdCandidates(post).includes(action.nativePostId)
+    ));
+    if (matchedById) {
+      return matchedById;
+    }
+  }
+  const floor = Math.max(0, Number(action?.nativePostFloor) || 0);
+  return floor
+    ? posts.find((post, index) => getPostFloorNumber(post, index) === floor) || null
+    : null;
+}
+
+function resolveCurrentProxyAction(action) {
+  if (!action) {
+    return null;
+  }
+  if (action.control instanceof HTMLElement
+    && action.control.isConnected
+    && (
+      !action.control.closest("#cc98-comfort-app")
+      || action.control.classList.contains("cc98-rebuild-native-post-follow-action")
+    )) {
+    return action.control;
+  }
+
+  let freshAction = null;
+  if (action.scope === "topic") {
+    const current = getTopicToolbarActions();
+    freshAction = isTopicShareAction(action) ? current.share : current.favorite;
+  } else if (action.scope === "post") {
+    const sourcePost = findCurrentNativePostForAction(action);
+    if (sourcePost) {
+      const identity = getProxyActionIdentity(action);
+      freshAction = collectPostActions(sourcePost)
+        .find((candidate) => getProxyActionIdentity(candidate) === identity) || null;
+      action.sourcePost = sourcePost;
+    }
+  }
+
+  if (!(freshAction?.control instanceof HTMLElement)) {
+    return null;
+  }
+  const existingVoteGroup = action.voteGroup;
+  if (existingVoteGroup && freshAction.voteGroup) {
+    ["like", "dislike"].forEach((kind) => {
+      const existing = existingVoteGroup[kind];
+      const fresh = freshAction.voteGroup[kind];
+      if (!existing || !fresh?.control) {
+        return;
+      }
+      existing.control = fresh.control;
+      existing.text = fresh.text || existing.text;
+      existing.href = fresh.href || existing.href;
+      existing.kind = fresh.kind || existing.kind;
+      existing.sourcePost = fresh.sourcePost || action.sourcePost;
+      existing.nativePostId = fresh.nativePostId || action.nativePostId;
+      existing.nativePostFloor = fresh.nativePostFloor || action.nativePostFloor;
+    });
+  }
+  action.control = freshAction.control;
+  action.text = freshAction.text || action.text;
+  action.href = freshAction.href || action.href;
+  action.kind = freshAction.kind || action.kind;
+  return action.control;
+}
+
+function isTopicFavoriteAction(action) {
+  if (action?.scope !== "topic") {
+    return false;
+  }
+  const text = cleanupPostText(getActionText(action.control) || action.text || "")
+    .replace(/\s+\d+\s*$/, "");
+  return /^(?:\u6536\u85cf|\u53d6\u6d88\u6536\u85cf|\u5df2\u6536\u85cf)$/.test(text);
+}
+
+function getTopicShareClipboardText() {
+  const topicInfo = getTopicRouteInfo();
+  const topicId = topicInfo?.topicId || "";
+  const href = topicId
+    ? `https://www.cc98.org/topic/${topicId}`
+    : stripUrlHash(location.href);
+  const title = cleanupPostText(
+    getFirstText(document, "#essay1")
+      || document.title.replace(/\s*-\s*CC98.*$/i, "")
+  );
+  const board = cleanupPostText(
+    getFirstText(document, ".topicInfo-boardMessage a")
+      || getFirstText(document, ".board-head-name")
+  );
+  const label = title ? `${board ? `\u3010${board}\u3011` : ""}${title}` : "";
+  return `${[label, href].filter(Boolean).join(" ")} \u590d\u5236\u672c\u94fe\u63a5\u5230\u6d4f\u89c8\u5668\u6216\u8005\u6253\u5f00\u3010CC98\u3011\u5fae\u4fe1\u5c0f\u7a0b\u5e8f\u67e5\u770b~`.trim();
 }
 
 function fallbackCopyTextToClipboard(text) {
@@ -2170,52 +2234,57 @@ function renderProxyControl(action) {
     event?.stopPropagation?.();
     event?.stopImmediatePropagation?.();
     const now = Date.now();
+    const isShareAction = isTopicShareAction(action);
+    if (!isShareAction && !(resolveCurrentProxyAction(action) instanceof HTMLElement)) {
+      showRebuiltTransientToast(button, "\u539f\u9875\u9762\u63a7\u4ef6\u5df2\u66f4\u65b0\uff0c\u8bf7\u518d\u8bd5\u4e00\u6b21");
+      scheduleDelayedRebuilds();
+      return;
+    }
     const actionKind = getPostActionKind(action.control, action.text);
     const isVoteAction = actionKind === "like" || actionKind === "dislike";
     const isFollowAction = isFollowPostAction(action);
-    const activationGap = isVoteAction ? 180 : 420;
+    const isFavoriteAction = isTopicFavoriteAction(action);
+    const activationGap = isVoteAction ? 180 : 320;
     if (now - lastActivatedAt < activationGap) {
       return;
     }
     lastActivatedAt = now;
+
+    if (isShareAction) {
+      button.classList.add("is-pending");
+      button.setAttribute("aria-busy", "true");
+      copyTextToClipboard(getTopicShareClipboardText()).then((copied) => {
+        showRebuiltTransientToast(
+          button,
+          copied ? "\u590d\u5236\u6210\u529f" : "\u590d\u5236\u5931\u8d25\uff0c\u8bf7\u91cd\u8bd5"
+        );
+      }).finally(() => {
+        button.classList.remove("is-pending");
+        button.removeAttribute("aria-busy");
+      });
+      return;
+    }
+
     const isPostAction = action.scope === "post" || Boolean(action.control?.closest?.(".reply"));
     const isNativeOverlayAction = isPostAction || action.scope === "topic";
     const oppositeAction = isVoteAction ? getOppositeVoteAction(action) : null;
     if (isVoteAction) {
       const wasActive = isVoteActionVisuallyActive(action);
       const shouldBeActive = !wasActive;
-      const oppositeKind = getActionVoteKind(oppositeAction);
       const oppositeWasVisuallyActive = shouldBeActive && oppositeAction && isVoteActionVisuallyActive(oppositeAction);
-      const oppositeWasActive = shouldBeActive && oppositeAction && isPostActionActive(oppositeAction.control, oppositeKind);
       if (action.voteGroup) {
         setVoteGroupDesiredKind(action.voteGroup, shouldBeActive ? actionKind : "");
       }
       setVoteActionVisual(oppositeAction, false);
       setVoteActionVisual(action, shouldBeActive);
       applyOptimisticVoteCounts(action, shouldBeActive, oppositeAction, oppositeWasVisuallyActive);
-      if (oppositeWasActive) {
-        triggerVoteNativeTransition(action, oppositeAction, true);
-      } else {
-        triggerOriginalControl(action.control);
-      }
-      if (action.voteGroup && oppositeWasActive) {
-        const token = action.voteGroup.transitionToken || 0;
-        const desiredKind = shouldBeActive ? actionKind : "";
-        [1300, 2600].forEach((delay) => {
-          window.setTimeout(() => settleVoteGroupNativeState(action.voteGroup, desiredKind, token), delay);
-        });
-      }
-    } else {
-      applyOptimisticPostActionState(button, action);
+      // CC98's native like endpoint accepts the desired state and refreshes
+      // both counters, so one native click is sufficient for mutual exclusion.
       triggerOriginalControl(action.control);
-      if (isTopicShareAction(action)) {
-        copyTextToClipboard(location.href).finally(() => {
-          showRebuiltTransientToast(button, "\u590d\u5236\u6210\u529f");
-        });
-      }
+    } else {
+      triggerOriginalControl(action.control);
       if (isFollowAction) {
-        window.setTimeout(scheduleDelayedRebuilds, 700);
-        window.setTimeout(scheduleDelayedRebuilds, 1600);
+        window.setTimeout(scheduleRebuild, 850);
       }
     }
     if (isNativeOverlayAction) {
@@ -2223,13 +2292,19 @@ function renderProxyControl(action) {
     } else {
       scheduleDelayedRebuilds();
     }
-    button.classList.add("is-pending");
+    const shouldSyncDisplay = isVoteAction || isFavoriteAction || isFollowAction;
+    if (shouldSyncDisplay) {
+      button.classList.add("is-pending");
+      button.setAttribute("aria-busy", "true");
+    }
     const syncDelays = isVoteAction
-      ? [35, 90, 170, 320, 620, 1000, 1400, 1800, 2200, 3000, 4200]
-      : [120, 360, 900, 1800];
-    scheduleProxyControlDisplaySync(button, action, syncDelays, isVoteAction ? 620 : 360);
+      ? [80, 260, 700, 1400, 2400]
+      : [180, 700, 1600, 3200];
+    if (shouldSyncDisplay) {
+      scheduleProxyControlDisplaySync(button, action, syncDelays, isVoteAction ? 700 : 180);
+    }
     if (isVoteAction && oppositeAction?.proxyButton) {
-      scheduleProxyControlDisplaySync(oppositeAction.proxyButton, oppositeAction, syncDelays, 90);
+      scheduleProxyControlDisplaySync(oppositeAction.proxyButton, oppositeAction, syncDelays, 80);
     }
   });
   button.addEventListener("pointerdown", (event) => {
@@ -3535,8 +3610,6 @@ function clearEditorSubmitIntent() {
   }
   nativePostSubmitRefreshTimers.forEach((timer) => window.clearTimeout(timer));
   nativePostSubmitRefreshTimers = [];
-  editorSubmitHardRefreshTimers.forEach((timer) => window.clearTimeout(timer));
-  editorSubmitHardRefreshTimers = [];
   if (editorSubmitOverlayReleaseTimer) {
     window.clearTimeout(editorSubmitOverlayReleaseTimer);
     editorSubmitOverlayReleaseTimer = null;
@@ -3576,7 +3649,9 @@ function clearSettledEditorSubmitIntent() {
   if (!hasNavigationAttempt && elapsed < 10000) {
     return false;
   }
-  clearNativeEditorDraftByKey(context.draftKey);
+  if (!context.preserveDraftUntilConfirmed) {
+    clearNativeEditorDraftByKey(context.draftKey);
+  }
   clearEditorSubmitIntent();
   return true;
 }
@@ -3600,8 +3675,8 @@ function getEditorSubmitTargetHref() {
     return currentTopic.href;
   }
   return getTopicReferrerHref()
-    || getStoredLastTopicHref()
     || getEditorSubmitDestinationHref()
+    || getStoredLastTopicHref()
     || "";
 }
 
@@ -3669,44 +3744,258 @@ function resetReleasedNativeEditors() {
     });
 }
 
-function handlePageEditorSubmitResult(event) {
+function getCurrentTopicContentCapturePageKey() {
+  const info = getTopicPageInfo();
+  if (!info?.topicId) {
+    return "";
+  }
+  return `${info.topicId}:${Math.max(0, (Math.max(1, Number(info.current) || 1) - 1) * 10)}`;
+}
+
+function ensureTopicContentCaptureGraceWindow() {
+  const routeKey = getRoutePageKey();
+  if (topicContentCaptureGraceRouteKey !== routeKey) {
+    topicContentCaptureGraceRouteKey = routeKey;
+    topicContentCaptureGraceUntil = Date.now() + TOPIC_CONTENT_CAPTURE_GRACE_MS;
+    if (topicContentCaptureFallbackTimer) {
+      window.clearTimeout(topicContentCaptureFallbackTimer);
+      topicContentCaptureFallbackTimer = null;
+    }
+  }
+  return topicContentCaptureGraceUntil;
+}
+
+function hasCapturedCurrentTopicContentPage() {
+  const pageKey = getCurrentTopicContentCapturePageKey();
+  if (!pageKey || !capturedTopicContentPages.has(pageKey)) {
+    return false;
+  }
+  const replies = [...document.querySelectorAll(".reply")]
+    .filter((reply) => !reply.closest("#cc98-comfort-app"))
+    .slice(0, 30);
+  if (!replies.length) {
+    return capturedTopicContentPageCounts.get(pageKey) === 0;
+  }
+  return replies.every((reply, index) => {
+    const contentNode = findPostContentNode(reply);
+    const signatureNode = reply.querySelector(".signature, [class*='signature'], [class*='Signature']");
+    const contentSlots = contentNode?.querySelectorAll(".lazyload-placeholder, .hiddenImage").length || 0;
+    const signatureSlots = signatureNode?.querySelectorAll(".lazyload-placeholder, .hiddenImage").length || 0;
+    if (!contentSlots && !signatureSlots) {
+      return true;
+    }
+    const floor = getPostFloorNumber(reply, index);
+    const snapshot = findCapturedTopicPostSnapshot(reply, floor);
+    if (!snapshot) {
+      return false;
+    }
+    const contentMedia = extractCapturedPostMediaSources(snapshot.content || "").length;
+    const signatureMedia = extractCapturedPostMediaSources(snapshot.signatureCode || "").length;
+    return contentMedia >= contentSlots && signatureMedia >= signatureSlots;
+  });
+}
+
+function pruneCapturedTopicContent() {
+  const trim = (map, limit) => {
+    while (map.size > limit) {
+      map.delete(map.keys().next().value);
+    }
+  };
+  trim(capturedTopicPostsById, 600);
+  trim(capturedTopicPostsByFloor, 600);
+  trim(capturedTopicContentPageCounts, 80);
+  while (capturedTopicContentPages.size > 80) {
+    capturedTopicContentPages.delete(capturedTopicContentPages.values().next().value);
+  }
+}
+
+function handlePageTopicContentSnapshot(event) {
   if (event.source !== window || event.origin !== location.origin) {
     return;
   }
   const message = event.data;
-  if (message?.source !== "cc98-reborn-submit-monitor" || message.type !== "editor-submit-result") {
+  if (message?.source !== "cc98-reborn-submit-monitor" || message.type !== "topic-content-snapshot") {
     return;
   }
+  const payload = message.payload;
+  const topicId = String(payload?.topicId || "").match(/\d+/)?.[0] || "";
+  if (!topicId || !Array.isArray(payload?.items)) {
+    return;
+  }
+  const from = Math.max(0, Number(payload.from) || 0);
+  if (payload.kind === "page") {
+    const pageKey = `${topicId}:${from}`;
+    capturedTopicContentPages.add(pageKey);
+    capturedTopicContentPageCounts.set(pageKey, payload.items.length);
+  }
+  payload.items.forEach((item, index) => {
+    const id = String(item?.id || "").match(/\d+/)?.[0] || "";
+    const floor = Math.max(
+      0,
+      Number(item?.floor) || (payload.kind === "page" ? from + index + 1 : 0)
+    );
+    const snapshot = {
+      topicId,
+      id,
+      floor,
+      content: typeof item?.content === "string" ? item.content : "",
+      contentType: Number(item?.contentType) || 0,
+      userId: String(item?.userId || ""),
+      userName: String(item?.userName || ""),
+      isAnonymous: Boolean(item?.isAnonymous),
+      signatureCode: typeof item?.signatureCode === "string" ? item.signatureCode : "",
+      capturedAt: Date.now()
+    };
+    if (id) {
+      capturedTopicPostsById.set(`${topicId}:${id}`, snapshot);
+    }
+    if (floor) {
+      capturedTopicPostsByFloor.set(`${topicId}:${floor}`, snapshot);
+    }
+  });
+  pruneCapturedTopicContent();
+
+  const currentTopicId = getTopicPageInfo()?.topicId || "";
+  if (currentTopicId !== topicId) {
+    return;
+  }
+  scheduleRebuild();
+}
+
+function recoverEditorSubmitContextFromMonitor(result) {
+  const existing = readEditorSubmitContext();
+  if (existing && hasRecentEditorSubmitIntent(90000)) {
+    return existing;
+  }
+  const kind = String(result?.kind || "");
+  const editor = kind === "reply"
+    ? document.querySelector("#sendTopicInfo")
+    : document.querySelector(".createTopic");
+  if (!(editor instanceof HTMLElement)) {
+    return null;
+  }
+  const context = getNativeEditorSubmitContext({
+    editor,
+    submitKind: kind
+  });
+  markEditorSubmitIntent({
+    ...context,
+    monitorRecovered: true
+  });
+  schedulePostSubmitPageRefresh(context);
+  return readEditorSubmitContext();
+}
+
+function getStrictTopicPageHref(value) {
+  if (!value) {
+    return "";
+  }
+  try {
+    const parsed = new URL(value, location.href);
+    if (!/\/topic\/\d+(?:\/\d+)?\/?$/i.test(parsed.pathname)) {
+      return "";
+    }
+    return getTopicRouteInfo(parsed.href)?.href || "";
+  } catch {
+    return "";
+  }
+}
+
+function clearNativePostSubmitRefreshTimers() {
+  nativePostSubmitRefreshTimers.forEach((timer) => window.clearTimeout(timer));
+  nativePostSubmitRefreshTimers = [];
+}
+
+function scheduleAmbiguousEditorSubmitRecovery(context, result) {
+  if (!context) {
+    return;
+  }
+  updateEditorSubmitContext({
+    ambiguousResponseAt: Date.now(),
+    ambiguousResponseStatus: Number(result?.status) || 0,
+    preserveDraftUntilConfirmed: true
+  });
+}
+
+function handlePageEditorSubmitResult(event) {
+  const isDomBridgeEvent = event?.type === EDITOR_SUBMIT_MONITOR_EVENT;
+  if (!isDomBridgeEvent && (event.source !== window || event.origin !== location.origin)) {
+    return;
+  }
+  let message = event.data;
+  if (isDomBridgeEvent) {
+    try {
+      message = JSON.parse(String(event.detail || ""));
+    } catch {
+      return;
+    }
+  }
+  if (message?.source !== "cc98-reborn-submit-monitor"
+    || !/^(?:editor-submit-start|editor-submit-result)$/.test(message.type || "")) {
+    return;
+  }
+  const monitorEventId = String(message.monitorEventId || "");
+  if (monitorEventId && handledEditorSubmitMonitorEvents.has(monitorEventId)) {
+    return;
+  }
+  if (monitorEventId) {
+    handledEditorSubmitMonitorEvents.add(monitorEventId);
+    while (handledEditorSubmitMonitorEvents.size > 80) {
+      handledEditorSubmitMonitorEvents.delete(handledEditorSubmitMonitorEvents.values().next().value);
+    }
+  }
   const result = message.payload;
-  const context = readEditorSubmitContext();
-  if (!context || !hasRecentEditorSubmitIntent(90000) || !result?.kind) {
+  if (!result?.kind) {
+    return;
+  }
+  const context = recoverEditorSubmitContextFromMonitor(result);
+  if (!context || !hasRecentEditorSubmitIntent(90000)) {
     return;
   }
   if (context.submitKind && context.submitKind !== result.kind) {
     return;
   }
 
-  nativePostSubmitRefreshTimers.forEach((timer) => window.clearTimeout(timer));
-  nativePostSubmitRefreshTimers = [];
-
-  const accepted = Boolean(result.ok)
-    || (Number(result.status) >= 200 && Number(result.status) < 300);
-  if (!accepted) {
-    clearEditorSubmitIntent();
-    resetReleasedNativeEditors();
+  if (message.type === "editor-submit-start") {
+    updateEditorSubmitContext({
+      requestObservedAt: Number(result.startedAt) || Date.now(),
+      requestMethod: String(result.method || ""),
+      requestUrl: String(result.url || "")
+    });
     return;
   }
 
+  const responseEntityId = getSubmittedTopicIdFromResponseBody(result.body);
+  const status = Number(result.status) || 0;
+  const accepted = Boolean(result.ok)
+    || (status >= 200 && status < 300)
+    || (/^(?:post|reply)$/.test(result.kind) && /^\d+$/.test(responseEntityId));
+  if (!accepted) {
+    const definitiveFailure = status >= 400 && status < 500;
+    if (definitiveFailure) {
+      clearNativePostSubmitRefreshTimers();
+      clearEditorSubmitIntent();
+      resetReleasedNativeEditors();
+      return;
+    }
+    scheduleAmbiguousEditorSubmitRecovery(context, result);
+    return;
+  }
+
+  clearNativePostSubmitRefreshTimers();
   clearNativeEditorDraftByKey(context.draftKey);
   const topicId = result.kind === "post"
-    ? getSubmittedTopicIdFromResponseBody(result.body)
+    ? responseEntityId
     : "";
-  const responseTopicHref = getTopicRouteInfo(result.location || result.responseUrl || result.url || "")?.href || "";
+  const responseTopicHref = getStrictTopicPageHref(
+    result.location || result.responseUrl || result.url || ""
+  );
   const destination = topicId
     ? makeAbsoluteCc98Url(`/topic/${topicId}`)
     : responseTopicHref || getEditorSubmitHardTarget(context);
   updateEditorSubmitContext({
     serverAcceptedAt: Date.now(),
+    responseObservedAt: Date.now(),
     successNavigationAttemptedAt: Date.now(),
     destinationHref: destination || context.destinationHref,
     responseStatus: Number(result.status) || 0
@@ -3718,9 +4007,9 @@ function handlePageEditorSubmitResult(event) {
   window.setTimeout(() => {
     navigateToEditorSubmitTarget(destination || location.href, {
       reloadFallback: true,
-      fallbackDelay: 500
+      fallbackDelay: 360
     });
-  }, result.kind === "edit" ? 500 : 1200);
+  }, result.kind === "edit" ? 220 : 360);
 }
 
 function bindPageEditorSubmitResultMonitor() {
@@ -3729,6 +4018,8 @@ function bindPageEditorSubmitResultMonitor() {
   }
   editorSubmitResultMonitorBound = true;
   window.addEventListener("message", handlePageEditorSubmitResult);
+  document.addEventListener(EDITOR_SUBMIT_MONITOR_EVENT, handlePageEditorSubmitResult);
+  window.addEventListener("message", handlePageTopicContentSnapshot);
 }
 
 function hasRecentEditorSubmitIntent(ttl = 45000) {
@@ -4022,10 +4313,6 @@ function getEditorSubmitRecoveryTarget(context = readEditorSubmitContext()) {
     .find((href) => href && getTopicRouteInfo(href)) || "";
 }
 
-function shouldForceRefreshAfterEditorSubmit(context, startedOnTopic = false) {
-  return Boolean(context?.submittedAt || context?.destinationHref || context?.startedHref || context?.isEdit || context?.startedOnTopic || startedOnTopic);
-}
-
 function getEditorSubmitHardTarget(context = readEditorSubmitContext()) {
   const currentTopic = getTopicRouteInfo()?.href || "";
   if (currentTopic && !isNativeErrorPage()) {
@@ -4064,11 +4351,16 @@ function navigateToEditorSubmitTarget(destination, options = {}) {
   if (target && targetWithoutHash !== currentWithoutHash) {
     location.replace(target);
     if (options.reloadFallback !== false) {
+      const fallbackDelay = Math.max(
+        5000,
+        Number.isFinite(options.fallbackDelay) ? options.fallbackDelay : 6000
+      );
       window.setTimeout(() => {
-        if (hasRecentEditorSubmitIntent(90000)) {
-          hardReloadCurrentLocation();
+        if (hasRecentEditorSubmitIntent(90000)
+          && stripUrlHash(location.href) === currentWithoutHash) {
+          location.replace(target);
         }
-      }, Number.isFinite(options.fallbackDelay) ? options.fallbackDelay : 650);
+      }, fallbackDelay);
     }
     return;
   }
@@ -4096,12 +4388,32 @@ function getUnobservedNativeSubmitRecoveryTarget(context) {
   return getEditorSubmitHardTarget(context);
 }
 
+function hasPendingNativeEditorSubmitControl() {
+  return [...document.querySelectorAll(
+    ".createTopic button, .createTopic input[type='button'], .createTopic input[type='submit'], #sendTopicInfo button, #sendTopicInfo input[type='button'], #sendTopicInfo input[type='submit']"
+  )].some((control) => {
+    if (!(control instanceof HTMLElement) || isEditorAuxiliarySubmitControl(control)) {
+      return false;
+    }
+    const label = cleanupPostText(
+      control instanceof HTMLInputElement ? control.value : control.textContent
+    ).replace(/\*/g, "").trim();
+    return label === "..." || control.dataset.cc98SubmitPending === "true";
+  });
+}
+
 function recoverUnobservedNativePostSubmit(startedRouteKey, options = {}) {
   const context = readEditorSubmitContext();
   if (!context || context.startedRouteKey !== startedRouteKey || !hasRecentEditorSubmitIntent(90000)) {
     return false;
   }
   if (!/^(?:post|reply)$/i.test(context.submitKind || "")) {
+    return false;
+  }
+  const routeChanged = getRoutePageKey() !== startedRouteKey;
+  const nativeControlPending = hasPendingNativeEditorSubmitControl();
+  const visibleSuccess = hasVisibleEditorSubmitSuccess();
+  if (!routeChanged && !nativeControlPending && !visibleSuccess) {
     return false;
   }
   if (hasVisibleEditorSubmitFailure()) {
@@ -4118,12 +4430,11 @@ function recoverUnobservedNativePostSubmit(startedRouteKey, options = {}) {
     return false;
   }
   const target = getUnobservedNativeSubmitRecoveryTarget(context);
-  showLoadingOverlay(context.submitKind === "reply"
-    ? "\u56de\u5e16\u5df2\u53d1\u51fa\uff0c\u6b63\u5728\u5237\u65b0\u5e16\u5b50..."
-    : "\u53d1\u5e16\u5df2\u53d1\u51fa\uff0c\u6b63\u5728\u5237\u65b0\u76ee\u6807\u9875...");
+  showLoadingOverlay("\u6b63\u5728\u5237\u65b0\u9875\u9762\u6838\u9a8c\u63d0\u4ea4\u7ed3\u679c...");
   updateEditorSubmitContext({
     unobservedNativeSubmitReloadAttemptedAt: Date.now(),
     successNavigationAttemptedAt: Date.now(),
+    preserveDraftUntilConfirmed: true,
     destinationHref: target || context.destinationHref
   });
   resetReleasedNativeEditors();
@@ -4131,86 +4442,6 @@ function recoverUnobservedNativePostSubmit(startedRouteKey, options = {}) {
     reloadFallback: true,
     fallbackDelay: Number.isFinite(options.fallbackDelay) ? options.fallbackDelay : 420
   });
-  return true;
-}
-
-function absoluteNavigateAfterEditorSubmit(context = readEditorSubmitContext(), options = {}) {
-  const target = getEditorSubmitHardTarget(context);
-  showLoadingOverlay(context?.isEdit
-    ? "\u4fee\u6539\u5df2\u63d0\u4ea4\uff0c\u6b63\u5728\u5f3a\u5236\u8fd4\u56de..."
-    : "\u63d0\u4ea4\u5df2\u53d1\u51fa\uff0c\u6b63\u5728\u5f3a\u5236\u8fd4\u56de...");
-  clearNativeEditorDraftByKey(context?.draftKey);
-  if (context) {
-    updateEditorSubmitContext({
-      absoluteNavigationAttemptedAt: Date.now(),
-      forcedRefreshAttemptedAt: Date.now(),
-      successNavigationAttemptedAt: Date.now()
-    });
-  }
-  navigateToEditorSubmitTarget(target, {
-    reloadFallback: true,
-    fallbackDelay: Number.isFinite(options.fallbackDelay) ? options.fallbackDelay : 260
-  });
-  return true;
-}
-
-function forceRefreshAfterEditorSubmit(startedOnTopic = false, options = {}) {
-  const context = readEditorSubmitContext();
-  if (!context || !hasRecentEditorSubmitIntent(90000) || !shouldForceRefreshAfterEditorSubmit(context, startedOnTopic)) {
-    return false;
-  }
-  if (isSubmitContextAttempted(context, "forcedRefreshAttemptedAt") && !options.allowRepeat) {
-    return false;
-  }
-  const submittedAt = Number(context.submittedAt) || 0;
-  if (!options.ignoreDelay && Date.now() - submittedAt < EDITOR_SUBMIT_FORCE_REFRESH_DELAY) {
-    return false;
-  }
-  const destination = getEditorSubmitHardTarget(context);
-  showLoadingOverlay(context.isEdit
-    ? "\u5df2\u89e6\u53d1\u4fee\u6539\u63d0\u4ea4\uff0c\u6b63\u5728\u5f3a\u5236\u5237\u65b0\u5e16\u5b50..."
-    : "\u5df2\u89e6\u53d1\u63d0\u4ea4\uff0c\u6b63\u5728\u5f3a\u5236\u5237\u65b0\u76ee\u6807\u9875...");
-  clearNativeEditorDraftByKey(context.draftKey);
-  updateEditorSubmitContext({
-    forcedRefreshAttemptedAt: Date.now(),
-    forcedRefreshRepeatAt: options.allowRepeat ? Date.now() : context.forcedRefreshRepeatAt,
-    successNavigationAttemptedAt: Date.now()
-  });
-  navigateToEditorSubmitTarget(destination, {
-    reloadFallback: true,
-    fallbackDelay: options.fallbackDelay
-  });
-  return true;
-}
-
-function armEditorSubmitHardRefreshWatchdog(context = readEditorSubmitContext()) {
-  editorSubmitHardRefreshTimers.forEach((timer) => window.clearTimeout(timer));
-  editorSubmitHardRefreshTimers = [];
-  if (!context || !shouldForceRefreshAfterEditorSubmit(context, Boolean(context.startedOnTopic))) {
-    return;
-  }
-  const submittedAt = Number(context.submittedAt) || Date.now();
-  const delay = Math.max(0, EDITOR_SUBMIT_FORCE_REFRESH_DELAY - (Date.now() - submittedAt));
-  editorSubmitHardRefreshTimers = [window.setTimeout(() => {
-    const latest = readEditorSubmitContext() || context;
-    if (!latest || !shouldForceRefreshAfterEditorSubmit(latest, Boolean(latest.startedOnTopic))) {
-      return;
-    }
-    absoluteNavigateAfterEditorSubmit(latest, { fallbackDelay: 180 });
-  }, delay)];
-}
-
-function resumeForcedEditorSubmitReturn() {
-  const context = readEditorSubmitContext();
-  if (!context || !hasRecentEditorSubmitIntent(90000)) {
-    return false;
-  }
-  if (isSubmitContextAttempted(context, "absoluteNavigationAttemptedAt")) {
-    clearNativeEditorDraftByKey(context.draftKey);
-    clearEditorSubmitIntent();
-    return false;
-  }
-  armEditorSubmitHardRefreshWatchdog(context);
   return true;
 }
 
@@ -4283,7 +4514,9 @@ function recoverEditorSubmitAfterNavigation() {
     return true;
   }
   if (getTopicRouteInfo() && pageHasNativeTopicContent()) {
-    clearNativeEditorDraftByKey(context.draftKey);
+    if (!context.preserveDraftUntilConfirmed) {
+      clearNativeEditorDraftByKey(context.draftKey);
+    }
     clearEditorSubmitIntent();
     resetReleasedNativeEditors();
     removeEditorSubmitRecoveryCacheBust();
@@ -5121,6 +5354,124 @@ function ensureSecurityWatermark(options = {}) {
   }
 }
 
+function getRebuildTransitionRoutePath(value = location.href) {
+  const route = getCc98RoutePathFromHref(value);
+  const normalizedRoutePath = String(route || "").split(/[?#]/, 1)[0] || "/";
+  if (isCc98RoutePath(normalizedRoutePath)) {
+    return normalizedRoutePath;
+  }
+  try {
+    const url = new URL(value, location.href);
+    if (!isWebVpnHost(url.hostname)) {
+      return url.pathname || "/";
+    }
+    const prefixMatch = url.pathname.match(/^\/https?\/[^/?#]+/i);
+    if (!prefixMatch) {
+      return url.pathname || "/";
+    }
+    return url.pathname.slice(prefixMatch[0].length) || "/";
+  } catch {
+    return normalizedRoutePath;
+  }
+}
+
+function isRebuildTransitionVeilTarget(value = location.href) {
+  const path = getRebuildTransitionRoutePath(value).replace(/\/+$/, "") || "/";
+  return path === "/"
+    || /^\/user\/(?:id|name)(?:\/|$)/i.test(path)
+    || /^\/usercenter(?:\/|$)/i.test(path);
+}
+
+function releaseRebuildTransitionVeil(options = {}) {
+  if (rebuildTransitionVeilFailsafeTimer) {
+    window.clearTimeout(rebuildTransitionVeilFailsafeTimer);
+    rebuildTransitionVeilFailsafeTimer = null;
+  }
+  if (rebuildTransitionVeilReleaseTimer) {
+    window.clearTimeout(rebuildTransitionVeilReleaseTimer);
+    rebuildTransitionVeilReleaseTimer = null;
+  }
+  const root = document.documentElement;
+  if (!root.hasAttribute("data-cc98-rebuild-transition-veil")) {
+    return;
+  }
+  if (options.immediate) {
+    root.removeAttribute("data-cc98-rebuild-transition-veil");
+    return;
+  }
+  root.dataset.cc98RebuildTransitionVeil = "leaving";
+  rebuildTransitionVeilReleaseTimer = window.setTimeout(() => {
+    rebuildTransitionVeilReleaseTimer = null;
+    root.removeAttribute("data-cc98-rebuild-transition-veil");
+  }, REBUILD_TRANSITION_VEIL_FADE_MS);
+}
+
+function beginRebuildTransitionVeil(value = location.href) {
+  if (!isRebuildTransitionVeilTarget(value)
+    || (lastSettings && (!lastSettings.enabled || !lastSettings.rebuildUi))) {
+    return false;
+  }
+  if (rebuildTransitionVeilReleaseTimer) {
+    window.clearTimeout(rebuildTransitionVeilReleaseTimer);
+    rebuildTransitionVeilReleaseTimer = null;
+  }
+  if (rebuildTransitionVeilFailsafeTimer) {
+    window.clearTimeout(rebuildTransitionVeilFailsafeTimer);
+  }
+  document.documentElement.dataset.cc98RebuildTransitionVeil = "active";
+  rebuildTransitionVeilFailsafeTimer = window.setTimeout(() => {
+    rebuildTransitionVeilFailsafeTimer = null;
+    releaseRebuildTransitionVeil();
+  }, REBUILD_TRANSITION_VEIL_FAILSAFE_MS);
+  return true;
+}
+
+function releaseRebuildTransitionVeilWhenReady() {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => releaseRebuildTransitionVeil());
+  });
+}
+
+function bindRebuildTransitionVeilNavigationGuard() {
+  if (rebuildTransitionVeilNavigationBound) {
+    return;
+  }
+  rebuildTransitionVeilNavigationBound = true;
+  document.addEventListener("click", (event) => {
+    if (event.defaultPrevented || event.button !== 0
+      || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return;
+    }
+    const link = event.target?.closest?.("a[href]");
+    if (!(link instanceof HTMLAnchorElement)
+      || link.target === "_blank"
+      || link.hasAttribute("download")) {
+      return;
+    }
+    const href = getLinkNewTabHref(link);
+    if (!href || shouldForceLinkNewTab(link, href) || !isRebuildTransitionVeilTarget(href)) {
+      return;
+    }
+    try {
+      if (new URL(href, location.href).href === location.href) {
+        return;
+      }
+    } catch {
+      // A valid internal route can still be handled by the native page.
+    }
+    beginRebuildTransitionVeil(href);
+  }, true);
+}
+
+function armInitialRebuildTransitionVeil() {
+  const canBeCc98 = isDirectCc98Host()
+    || isKnownCc98WebVpnHost()
+    || (isWebVpnHost() && Boolean(getWebVpnProxyPrefixFromUrl(location.href)));
+  if (canBeCc98 && !isOpenIdAuthorizationPage() && !isPotentialWebVpnOpenIdCallback()) {
+    beginRebuildTransitionVeil(location.href);
+  }
+}
+
 function isSoftLoadingOverlayMessage(message = loadingOverlayMessage) {
   return /WebVPN|跳转搜索结果|刷新搜索结果/i.test(String(message || ""));
 }
@@ -5137,11 +5488,12 @@ function getUserCenterNativeShell() {
 }
 
 function getPublicUserProfileNativeShell() {
-  const nativeRoot = document.querySelector("#root");
-  const router = nativeRoot?.querySelector?.(".user-center-router")
-    || [...document.querySelectorAll(".user-center-router")]
-      .find((node) => node instanceof HTMLElement && !node.closest("#cc98-comfort-app"))
-    || null;
+  const rebuiltRouter = document.querySelector(
+    "#cc98-comfort-app .cc98-rebuild-native-user-router"
+  );
+  const nativeRouter = [...document.querySelectorAll(".user-center-router")]
+    .find((node) => node instanceof HTMLElement && !node.closest("#cc98-comfort-app"));
+  const router = rebuiltRouter || nativeRouter || null;
   return {
     router,
     exact: router?.querySelector?.(".user-center-exact") || null,
@@ -5248,8 +5600,19 @@ function scheduleUserCenterPendingRebuild() {
   }
   userCenterPendingRebuildTimer = window.setTimeout(() => {
     userCenterPendingRebuildTimer = null;
+    if (!isUserCenterPendingNativeLoad()) {
+      return;
+    }
     scheduleRebuild();
   }, 420);
+}
+
+function cancelUserCenterPendingRebuild() {
+  if (!userCenterPendingRebuildTimer) {
+    return;
+  }
+  window.clearTimeout(userCenterPendingRebuildTimer);
+  userCenterPendingRebuildTimer = null;
 }
 
 function isDismissibleLoadingOverlay() {
@@ -5322,6 +5685,7 @@ function clearUserCenterStaleLoadingOverlay(kind = getPageKind()) {
     scheduleUserCenterPendingRebuild();
     return true;
   }
+  cancelUserCenterPendingRebuild();
   hideLoadingOverlay({ force: true, releaseNativeLazyScroll: true });
   return true;
 }
@@ -5528,13 +5892,15 @@ function hideLoadingOverlay(options = {}) {
   document.querySelector("#cc98-comfort-loading")?.remove();
 }
 
-function hideLoadingOverlayWhenReady(root) {
+function hideLoadingOverlayWhenReady(root, options = {}) {
   const finish = () => {
     requestAnimationFrame(() => {
       editorSubmitOverlayAwaitingRebuild = false;
       hideLoadingOverlay({ force: true });
-      scrollToCurrentRebuiltHash();
-      setTimeout(scrollToCurrentRebuiltHash, 120);
+      if (!options.skipHashScroll) {
+        scrollToCurrentRebuiltHash();
+        setTimeout(scrollToCurrentRebuiltHash, 120);
+      }
     });
   };
   const overlay = document.querySelector("#cc98-comfort-loading");
@@ -5543,7 +5909,16 @@ function hideLoadingOverlayWhenReady(root) {
     return;
   }
   const images = [...root.querySelectorAll("img")]
-    .filter((image) => image instanceof HTMLImageElement);
+    .filter((image) => {
+      if (!(image instanceof HTMLImageElement)) {
+        return false;
+      }
+      if (image.loading !== "lazy" || image.complete) {
+        return true;
+      }
+      const rect = image.getBoundingClientRect();
+      return rect.bottom >= -240 && rect.top <= window.innerHeight + 240;
+    });
   Promise.all(images.map((image) => waitForNativeImage(image, 1300)))
     .finally(finish);
 }
@@ -5569,11 +5944,15 @@ function withTimeout(promise, timeout, label) {
 }
 
 function shouldPrewarmOriginalBeforeRebuild() {
-  return lastSettings?.enabled
+  const eligible = lastSettings?.enabled
     && lastSettings.rebuildUi
     && getPageKind() === "post"
     && !isNativeErrorPage()
     && lazyPrewarmedPageKey !== getLazyPrewarmPageKey();
+  if (!eligible || hasCapturedCurrentTopicContentPage()) {
+    return false;
+  }
+  return Date.now() >= ensureTopicContentCaptureGraceWindow();
 }
 
 function shouldPrewarmHomeAvatarBeforeRebuild() {
@@ -5625,10 +6004,57 @@ function getPreferredHomeAvatarUrl(image) {
   return resolvedUrl;
 }
 
+function getWebVpnFileResourcePrefixCacheKey() {
+  return `cc98RebornWebVpnFileResourcePrefix:${location.origin}`;
+}
+
+function getCurrentWebVpnFileResourcePrefix() {
+  if (!isWebVpnHost()) {
+    return "";
+  }
+  const media = [...document.querySelectorAll([
+    "img[src*='/v4-upload/']",
+    "video[src*='/v4-upload/']",
+    "source[src*='/v4-upload/']"
+  ].join(","))];
+  for (const node of media) {
+    const src = node.getAttribute("src") || node.currentSrc || node.src || "";
+    const prefix = getWebVpnProxyPrefixFromUrl(src);
+    if (!prefix) {
+      continue;
+    }
+    try {
+      sessionStorage.setItem(getWebVpnFileResourcePrefixCacheKey(), prefix);
+    } catch {
+      // The currently visible resource remains usable without persistence.
+    }
+    return prefix;
+  }
+  try {
+    return sessionStorage.getItem(getWebVpnFileResourcePrefixCacheKey()) || "";
+  } catch {
+    return "";
+  }
+}
+
 function makeWebVpnCc98ResourceUrl(value) {
   const raw = String(value || "").trim();
   if (!raw) {
     return "";
+  }
+  if (isWebVpnHost()) {
+    try {
+      const directUrl = new URL(raw, "https://www.cc98.org");
+      if (/^(?:file\.)?cc98\.org$/i.test(directUrl.hostname)
+        && /^\/v4-upload(?:\/|$)/i.test(directUrl.pathname)) {
+        const filePrefix = getCurrentWebVpnFileResourcePrefix();
+        if (filePrefix) {
+          return `${filePrefix}${directUrl.pathname}${directUrl.search}${directUrl.hash}`;
+        }
+      }
+    } catch {
+      // Continue with normal WebVPN and direct URL resolution.
+    }
   }
   if (isWebVpnHost() && /^\/(?!\/)/.test(raw) && !/^\/https?\//i.test(raw)) {
     const prefix = getCurrentWebVpnCc98Prefix();
@@ -5758,7 +6184,11 @@ function startOriginalPagePrewarm() {
 
   originalPagePrewarmPageKey = pageKey;
   const root = document.documentElement;
-  document.querySelector("#cc98-comfort-app")?.remove();
+  const rebuiltApp = document.querySelector("#cc98-comfort-app");
+  if (rebuiltApp instanceof HTMLElement) {
+    restoreReparentedNativeNodes(rebuiltApp);
+    rebuiltApp.remove();
+  }
   root.classList.remove("cc98-comfort", "cc98-comfort-rebuild-active");
   root.dataset.cc98ComfortRebuildReady = "false";
   root.dataset.cc98ComfortOriginalPrewarming = "true";
@@ -5871,20 +6301,23 @@ function startPostLazyFallbackPrewarm() {
   if (getPageKind() !== "post" || isNativeErrorPage()) {
     return;
   }
-  if (lazyPrewarmedPageKey === getLazyPrewarmPageKey()) {
+  if (lazyPrewarmedPageKey === getLazyPrewarmPageKey() || hasCapturedCurrentTopicContentPage()) {
     return;
   }
-  prewarmNativeLazyMedia()
-    .then(() => {
-      scheduleRebuild();
-    })
-    .catch((error) => {
-      console.warn("[CC98 Reborn] lazy prewarm failed", error);
-      document.querySelectorAll("#cc98-comfort-app .cc98-rebuild-image-frame[data-status='loading']")
-        .forEach((frame) => {
-          frame.dataset.status = "failed";
-        });
-    });
+  if (topicContentCaptureFallbackTimer) {
+    return;
+  }
+  const remaining = Math.max(0, ensureTopicContentCaptureGraceWindow() - Date.now());
+  topicContentCaptureFallbackTimer = window.setTimeout(() => {
+    topicContentCaptureFallbackTimer = null;
+    if (getPageKind() !== "post"
+      || isNativeErrorPage()
+      || hasCapturedCurrentTopicContentPage()
+      || lazyPrewarmedPageKey === getLazyPrewarmPageKey()) {
+      return;
+    }
+    startOriginalPagePrewarm();
+  }, remaining + 80);
 }
 
 function isWebVpnHost(hostname = location.hostname) {
@@ -6079,6 +6512,29 @@ function getPageKind() {
 
 function isReadLaterSidebarTopicsPage() {
   return /^\/(?:newTopics|focus|recommendedTopics)(?:\/|$)/i.test(getCurrentCc98RoutePath());
+}
+
+function isNewTopicsPage() {
+  return /^\/newTopics(?:\/|$)/i.test(getCurrentCc98RoutePath());
+}
+
+function getNativeNewTopicControl(id) {
+  return [...document.querySelectorAll(`#${id}`)]
+    .find((node) => node instanceof HTMLButtonElement && !node.closest("#cc98-comfort-app"))
+    || null;
+}
+
+function getNativeNewTopicViewMode() {
+  if (!isNewTopicsPage()) {
+    return "";
+  }
+  if (getNativeNewTopicControl("new-topic-media-only-button")?.classList.contains("focus-hover")) {
+    return "media";
+  }
+  if (getNativeNewTopicControl("new-topic-card-button")?.classList.contains("focus-hover")) {
+    return "card";
+  }
+  return "classic";
 }
 
 function isBoardSearchPage() {
@@ -6293,10 +6749,59 @@ function parseStructuredTopicMeta(topic) {
   return null;
 }
 
+function collectNewTopicCardMedia(topic) {
+  if (!(topic instanceof Element) || !topic.classList.contains("card-topic")) {
+    return [];
+  }
+  const media = [];
+  const seen = new Set();
+  topic.querySelectorAll([
+    ".card-topic-thumbnail img",
+    ".dplayer video[poster]",
+    ".dplayer [style*='background-image']"
+  ].join(",")).forEach((node) => {
+    if (!(node instanceof Element) || node.closest(".card-topic-thumbnail-mini")) {
+      return;
+    }
+    const rawUrl = node instanceof HTMLVideoElement
+      ? (node.getAttribute("poster") || "")
+      : (getRuntimeMediaUrl(node) || getMediaUrl(node));
+    if (!String(rawUrl || "").trim() || /^(?:data:|blob:|about:blank)/i.test(String(rawUrl).trim())) {
+      return;
+    }
+    const src = makeWebVpnCc98ResourceUrl(rawUrl);
+    if (!src
+      || seen.has(src)
+      || (!isProbablyPostImageUrl(src) && !/\/v(?:2|4)-upload\/(?:thumbnail|t)\//i.test(src))
+      || isDecorativeFrameImageUrl(src)
+      || /\/static\/images\/audio_cover\.png(?:[?#]|$)/i.test(src)) {
+      return;
+    }
+    seen.add(src);
+    media.push({
+      src,
+      alt: cleanupPostText(node.getAttribute("alt") || "")
+    });
+  });
+  return media.slice(0, 6);
+}
+
 function getTopicItems(root = document) {
   const items = [];
   const seen = new Set();
-  root.querySelectorAll(".focus-topic, .card-topic").forEach((topic) => {
+  const currentNewTopicMode = root === document && isNewTopicsPage()
+    ? getNativeNewTopicViewMode()
+    : "";
+  const preferredSelector = currentNewTopicMode && currentNewTopicMode !== "classic"
+    ? ".card-topic"
+    : (currentNewTopicMode === "classic" ? ".focus-topic" : ".focus-topic, .card-topic");
+  let topicNodes = [...root.querySelectorAll(preferredSelector)]
+    .filter((topic) => !topic.closest("#cc98-comfort-app"));
+  if (!topicNodes.length && preferredSelector !== ".focus-topic, .card-topic") {
+    topicNodes = [...root.querySelectorAll(".focus-topic, .card-topic")]
+      .filter((topic) => !topic.closest("#cc98-comfort-app"));
+  }
+  topicNodes.forEach((topic) => {
     const titleLink = getFirstLink(topic, ".focus-topic-title, .card-topic-title");
     if (!titleLink?.href || seen.has(titleLink.href)) {
       return;
@@ -6320,17 +6825,19 @@ function getTopicItems(root = document) {
       meta: parsedMeta.meta,
       hoverMeta: parsedMeta.hoverMeta,
       replyCount: parsedMeta.replyCount,
-      viewCount: parsedMeta.viewCount || ""
+      viewCount: parsedMeta.viewCount || "",
+      viewMode: currentNewTopicMode,
+      media: collectNewTopicCardMedia(topic)
     });
   });
   return items;
 }
 
 const SEARCH_SORT_CRITERIA = [
+  { value: "original", label: "原顺序" },
   { value: "views-desc", label: "浏览数高到低" },
   { value: "time-desc", label: "时间新到旧" },
-  { value: "time-asc", label: "时间旧到新" },
-  { value: "original", label: "原顺序" }
+  { value: "time-asc", label: "时间旧到新" }
 ];
 
 function normalizeSearchSortCriterion(value, fallback = "original") {
@@ -6339,19 +6846,19 @@ function normalizeSearchSortCriterion(value, fallback = "original") {
 
 function normalizeSearchSortSetting(value) {
   if (typeof value === "string") {
-    return normalizeSearchSortCriterion(value, "views-desc");
+    return normalizeSearchSortCriterion(value, "original");
   }
   if (value && typeof value === "object") {
-    return normalizeSearchSortCriterion(value.primary, "views-desc");
+    return normalizeSearchSortCriterion(value.primary, "original");
   }
-  return "views-desc";
+  return "original";
 }
 
 function getSearchSortSetting() {
   try {
     return normalizeSearchSortSetting(JSON.parse(localStorage.getItem(SEARCH_SORT_STORAGE_KEY) || "null"));
   } catch {
-    return "views-desc";
+    return "original";
   }
 }
 
@@ -7297,8 +7804,10 @@ function removeLegacyVideoPlayerChrome(root) {
 
 function createContentImageFromUrl(url, alt = "") {
   const image = document.createElement("img");
-  image.src = url;
+  image.src = makeWebVpnCc98ResourceUrl(url);
   image.alt = alt;
+  image.loading = "lazy";
+  image.decoding = "async";
   return image;
 }
 
@@ -7683,6 +8192,18 @@ function createDeferredImageProxy(sourceControl, sourceRoot) {
 
   button.addEventListener("click", () => {
     if (button.dataset.status === "loading") {
+      return;
+    }
+
+    const directSrc = makeWebVpnCc98ResourceUrl(button.dataset.cc98DirectImageSrc || "");
+    if (directSrc) {
+      const replacement = createContentImageFromUrl(directSrc, "");
+      replacement.classList.add("cc98-rebuild-content-image");
+      button.replaceWith(replacement);
+      const app = replacement.closest("#cc98-comfort-app");
+      if (app instanceof HTMLElement) {
+        setupRebuiltImagePlaceholders(app);
+      }
       return;
     }
 
@@ -8282,6 +8803,107 @@ function buildReadablePostContent(contentNode) {
   return output;
 }
 
+function decodeCapturedMediaText(value) {
+  const text = String(value ?? "").trim();
+  if (!text || !text.includes("&")) {
+    return text;
+  }
+  const parser = new DOMParser();
+  return parser.parseFromString(`<body>${text}</body>`, "text/html").body.textContent?.trim() || text;
+}
+
+function normalizeCapturedMediaUrl(value) {
+  const decoded = decodeCapturedMediaText(value)
+    .replace(/^<|>$/g, "")
+    .replace(/^["']|["']$/g, "")
+    .trim();
+  if (!decoded || /^(?:data|blob|javascript):/i.test(decoded)) {
+    return "";
+  }
+  return makeWebVpnCc98ResourceUrl(decoded);
+}
+
+function extractCapturedPostMediaSources(rawContent) {
+  const raw = String(rawContent ?? "");
+  if (!raw) {
+    return [];
+  }
+  const sources = [];
+  const seen = new Set();
+  const append = (value, kind, alt = "") => {
+    const src = normalizeCapturedMediaUrl(value);
+    const key = normalizeMediaKey(src);
+    if (!src || !key || seen.has(key)) {
+      return;
+    }
+    if (kind === "image" && isDecorativeFrameImageUrl(src)) {
+      return;
+    }
+    seen.add(key);
+    sources.push({ src, alt: cleanupPostText(alt), kind, captured: true });
+  };
+  let ubbMatch;
+  const ubbMediaPattern = /\[(img|video)(?:=[^\]]*)?(?:\s+[^\]]*)?\]([\s\S]*?)\[\/\1\]/gi;
+  while ((ubbMatch = ubbMediaPattern.exec(raw))) {
+    append(ubbMatch[2], ubbMatch[1].toLowerCase() === "video" ? "video" : "image");
+  }
+
+  let markdownMatch;
+  const markdownImagePattern = /!\[([^\]]*)\]\(\s*<?([^)\s>]+)>?(?:\s+["'][^)]*["'])?\s*\)/g;
+  while ((markdownMatch = markdownImagePattern.exec(raw))) {
+    append(markdownMatch[2], "image", markdownMatch[1]);
+  }
+
+  if (/<(?:img|video|source)\b/i.test(raw)) {
+    const template = document.createElement("template");
+    template.innerHTML = raw;
+    template.content.querySelectorAll("img[src], video[src], video source[src]").forEach((node) => {
+      append(node.getAttribute("src"), node.closest("video") ? "video" : "image", node.getAttribute("alt") || "");
+    });
+  }
+  return sources;
+}
+
+function hydrateCapturedLazyMediaSlots(clone, mediaSources) {
+  if (!(clone instanceof Element) || !mediaSources?.length) {
+    return;
+  }
+  const present = new Set([...clone.querySelectorAll("img, video, source")]
+    .map((node) => normalizeMediaKey(getMediaUrl(node) || node.currentSrc || node.src || ""))
+    .filter(Boolean));
+  const missing = mediaSources.filter((item) => {
+    const key = normalizeMediaKey(item.src);
+    return key && !present.has(key);
+  });
+  if (!missing.length) {
+    return;
+  }
+
+  const slots = [...clone.querySelectorAll(".lazyload-placeholder, .cc98-rebuild-hidden-image-button")];
+  let sourceIndex = 0;
+  slots.forEach((slot) => {
+    const item = missing[sourceIndex];
+    if (!item) {
+      return;
+    }
+    if (slot.classList.contains("cc98-rebuild-hidden-image-button") && item.kind === "image") {
+      slot.dataset.cc98DirectImageSrc = item.src;
+      present.add(normalizeMediaKey(item.src));
+      sourceIndex += 1;
+      return;
+    }
+    const media = item.kind === "video"
+      ? createContentVideoFromUrl(item.src)
+      : createContentImageFromUrl(item.src, item.alt);
+    if (media instanceof HTMLImageElement) {
+      media.classList.add("cc98-rebuild-content-image");
+    }
+    slot.replaceWith(media);
+    present.add(normalizeMediaKey(item.src));
+    sourceIndex += 1;
+  });
+}
+
 function collectPostMediaSources(root) {
   const sources = [];
   const seen = new Set();
@@ -8453,8 +9075,10 @@ function classifyPostImages(clone) {
       return;
     }
     if (src) {
-      image.src = src;
+      image.src = makeWebVpnCc98ResourceUrl(src);
     }
+    image.loading = "lazy";
+    image.decoding = "async";
     markRebuiltEmojiImage(image, src);
   });
   markInlineEmojiContainers(clone);
@@ -8465,12 +9089,22 @@ function ensurePostMediaCoverage(clone, originalSources) {
     return;
   }
 
-  const present = new Set([...clone.querySelectorAll("img, video, source")]
-    .map((node) => normalizeMediaKey(getMediaUrl(node) || node.src))
+  const present = new Set([...clone.querySelectorAll("img, video, source, .cc98-rebuild-hidden-image-button[data-cc98-direct-image-src]")]
+    .map((node) => normalizeMediaKey(
+      node.dataset?.cc98DirectImageSrc || getMediaUrl(node) || node.src
+    ))
     .filter(Boolean));
   const missing = originalSources.filter((item) => !present.has(normalizeMediaKey(item.src)));
-  const imageMissing = missing.filter((item) => !isDecorativeFrameImageUrl(item.src) && !isDownloadFileUrl(item.src) && isProbablyPostImageUrl(item.src));
-  const videoMissing = missing.filter((item) => !isDecorativeFrameImageUrl(item.src) && !isDownloadFileUrl(item.src) && isProbablyPostVideoUrl(item.src));
+  const imageMissing = missing.filter((item) => (
+    !isDecorativeFrameImageUrl(item.src)
+    && !isDownloadFileUrl(item.src)
+    && (item.kind === "image" || isProbablyPostImageUrl(item.src))
+  ));
+  const videoMissing = missing.filter((item) => (
+    !isDecorativeFrameImageUrl(item.src)
+    && !isDownloadFileUrl(item.src)
+    && (item.kind === "video" || isProbablyPostVideoUrl(item.src))
+  ));
   if (!imageMissing.length && !videoMissing.length) {
     return;
   }
@@ -8798,6 +9432,7 @@ function sanitizeClonedPostContent(contentNode, options = {}) {
   removeDecorativeFrameImages(clone);
   removePostChromeNodes(clone);
   restoreDeferredImageControls(contentNode, clone);
+  hydrateCapturedLazyMediaSlots(clone, options.mediaSources || []);
   rewriteLegacyQuoteInlineStyles(clone);
   materializeAudioPlayers(clone, contentNode);
   materializePostMedia(clone);
@@ -8823,31 +9458,47 @@ function getMarkdownPreviewContentNode(root) {
   return root.querySelector(".markdown-container .mde-preview-content, .mde-preview .mde-preview-content, .mde-preview-content, .markdown-body, .markdown-preview");
 }
 
-function sanitizePostContent(contentNode) {
+function sanitizePostContent(contentNode, supplementalMediaSources = []) {
   removeDecorativeFrameImages(contentNode);
   const originalMediaSources = collectPostMediaSources(contentNode);
+  const mediaSources = [];
+  const mediaKeys = new Set();
+  [...supplementalMediaSources, ...originalMediaSources].forEach((item) => {
+    const key = normalizeMediaKey(item?.src);
+    if (!key || mediaKeys.has(key)) {
+      return;
+    }
+    mediaKeys.add(key);
+    mediaSources.push(item);
+  });
   const markdownPreview = getMarkdownPreviewContentNode(contentNode);
 
   if (markdownPreview) {
-    const markdownClone = sanitizeClonedPostContent(markdownPreview, { markdown: true });
+    const markdownClone = sanitizeClonedPostContent(markdownPreview, {
+      markdown: true,
+      mediaSources: supplementalMediaSources
+    });
     if (markdownClone) {
       markMarkdownPostContent(markdownClone);
       stripMarkdownInlineBackgrounds(markdownClone);
-      ensurePostMediaCoverage(markdownClone, originalMediaSources);
+      ensurePostMediaCoverage(markdownClone, mediaSources);
       stabilizeEmojiRendering(markdownClone);
       return markdownClone;
     }
   }
 
-  const clone = sanitizeClonedPostContent(contentNode);
+  const clone = sanitizeClonedPostContent(contentNode, {
+    mediaSources: supplementalMediaSources
+  });
   if (clone) {
-    ensurePostMediaCoverage(clone, originalMediaSources);
+    ensurePostMediaCoverage(clone, mediaSources);
     stabilizeEmojiRendering(clone);
     return clone;
   }
 
   const readable = buildReadablePostContent(contentNode);
-  ensurePostMediaCoverage(readable, originalMediaSources);
+  hydrateCapturedLazyMediaSlots(readable, supplementalMediaSources);
+  ensurePostMediaCoverage(readable, mediaSources);
   stabilizeEmojiRendering(readable);
   return readable;
 }
@@ -9535,6 +10186,8 @@ function getActionText(control) {
 }
 
 function collectPostActions(post) {
+  const nativePostId = getCapturedPostIdCandidates(post)[0] || "";
+  const nativePostFloor = getPostFloorNumber(post, 0);
   const controls = [
     ...post.querySelectorAll(".upup, .downdown, .operation1, button, a")
   ].filter((control) => {
@@ -9565,7 +10218,15 @@ function collectPostActions(post) {
       return;
     }
     seen.add(key);
-    actions.push({ text, href, control, scope: "post" });
+    actions.push({
+      text,
+      href,
+      control,
+      scope: "post",
+      sourcePost: post,
+      nativePostId,
+      nativePostFloor
+    });
   });
   const voteGroup = {};
   actions.forEach((action) => {
@@ -9631,13 +10292,13 @@ function hasRenderablePostContent(contentNode) {
     return false;
   }
   const text = cleanupPostText(contentNode.innerText || contentNode.textContent);
-  return text.length > 0 || Boolean(contentNode.querySelector("img, video, audio, source, .aplayer, a[href], [style*='url('], [data-src], [data-original], [data-url], [data-img], [data-image]"));
+  return text.length > 0 || Boolean(contentNode.querySelector("img, video, audio, source, .aplayer, a[href], [style*='url('], [data-src], [data-original], [data-url], [data-img], [data-image], .lazyload-placeholder, .hiddenImage"));
 }
 
 function isRenderableSignatureCandidate(node) {
   return node instanceof HTMLElement
     && (Boolean(cleanupPostText(node.textContent))
-      || Boolean(node.querySelector("img, video, audio, source, .aplayer, a[href], [style*='url(']")));
+      || Boolean(node.querySelector("img, video, audio, source, .aplayer, a[href], [style*='url('], .lazyload-placeholder, .hiddenImage")));
 }
 
 function isSignatureNoticeTag(tag) {
@@ -9694,7 +10355,7 @@ function appendSignatureNoticeTags(signature, post, signatureSource) {
   });
 }
 
-function getPostSignatureContent(post) {
+function getPostSignatureContent(post, supplementalMediaSources = []) {
   if (!(post instanceof Element)) {
     return null;
   }
@@ -9737,6 +10398,8 @@ function getPostSignatureContent(post) {
     ? signatureSource
     : (signatureSource.querySelector("article") || signatureSource);
   const signature = normalizeRichContentNode(signaturePayload, { keepSignatureChildren: true });
+  hydrateCapturedLazyMediaSlots(signature, supplementalMediaSources);
+  ensurePostMediaCoverage(signature, supplementalMediaSources);
   materializeAudioPlayers(signature, signaturePayload);
   materializePostMedia(signature);
   parseInlineUbbTextNodes(signature);
@@ -9807,9 +10470,7 @@ function ensurePostAwardExpanded(post, awardState = null) {
   }
   state.toggleControl.dataset.cc98RebuildAutoExpanded = "true";
   triggerOriginalControl(state.toggleControl);
-  [120, 320, 700, 1200].forEach((delay) => {
-    window.setTimeout(scheduleRebuild, delay);
-  });
+  window.setTimeout(scheduleRebuild, 220);
   return true;
 }
 
@@ -9991,6 +10652,54 @@ function getTopicFavoriteDisplayText(action) {
   return count === "" ? label : `${label} ${count}`;
 }
 
+function getCapturedPostIdCandidates(post) {
+  if (!(post instanceof Element)) {
+    return [];
+  }
+  const values = [
+    post.id,
+    post.getAttribute("data-id"),
+    post.getAttribute("data-post-id"),
+    ...[...post.querySelectorAll("[id], [data-id], [data-post-id]")]
+      .slice(0, 80)
+      .flatMap((node) => [
+        node.id,
+        node.getAttribute("data-id"),
+        node.getAttribute("data-post-id")
+      ])
+  ];
+  const ids = new Set();
+  values.forEach((value) => {
+    const text = String(value || "");
+    const explicit = text.match(/(?:post|reply|like|dislike|awardInfo|comment)(\d{5,})/i)?.[1];
+    if (explicit) {
+      ids.add(explicit);
+      return;
+    }
+    if (/^\d{5,}$/.test(text)) {
+      ids.add(text);
+    }
+  });
+  return [...ids];
+}
+
+function findCapturedTopicPostSnapshot(post, floor) {
+  const topicId = getTopicPageInfo()?.topicId || "";
+  if (!topicId) {
+    return null;
+  }
+  for (const id of getCapturedPostIdCandidates(post)) {
+    const snapshot = capturedTopicPostsById.get(`${topicId}:${id}`);
+    if (snapshot) {
+      return snapshot;
+    }
+  }
+  const normalizedFloor = Math.max(0, Number(floor) || 0);
+  return normalizedFloor
+    ? capturedTopicPostsByFloor.get(`${topicId}:${normalizedFloor}`) || null
+    : null;
+}
+
 function getPostItems() {
   const directReplies = [...document.querySelectorAll(".reply")]
     .filter((node) => !node.closest("#cc98-comfort-app"))
@@ -10029,14 +10738,18 @@ function getPostItems() {
     if (!contentNode && !voteContent) {
       return null;
     }
+    const floorNumber = getPostFloorNumber(post, index);
+    const capturedPost = findCapturedTopicPostSnapshot(post, floorNumber);
+    const capturedMediaSources = extractCapturedPostMediaSources(capturedPost?.content || "");
+    const capturedSignatureMediaSources = extractCapturedPostMediaSources(capturedPost?.signatureCode || "");
     const user = getFirstLink(post, 'a[href*="/user/id/"], a[href*="/user/name/"]');
     const uidMatch = user?.href?.match(/\/user\/id\/(\d+)/);
     const userHref = makeAbsoluteCc98Url(user?.href || (uidMatch?.[1] ? `/user/id/${uidMatch[1]}` : ""));
     const anonymousCode = getAnonymousPostCode(post);
     const avatar = getPostAvatar(post, userHref);
     const authorCard = anonymousCode ? null : getPostAuthorCardInfo(post);
-    const content = contentNode ? sanitizePostContent(contentNode) : null;
-    const signature = getPostSignatureContent(post);
+    const content = contentNode ? sanitizePostContent(contentNode, capturedMediaSources) : null;
+    const signature = getPostSignatureContent(post, capturedSignatureMediaSources);
     let awardState = getPostAwardState(post);
     const awardAutoExpanding = ensurePostAwardExpanded(post, awardState);
     if (awardAutoExpanding) {
@@ -10051,7 +10764,6 @@ function getPostItems() {
     const messageAction = actions.find(isPrivateMessagePostAction) || null;
     const visibleActions = actions.filter((action) => !isFollowPostAction(action));
     const isHot = isHotPostNode(post);
-    const floorNumber = getPostFloorNumber(post, index);
     const id = post.id || post.getAttribute("data-id") || `floor-${floorNumber}-${text.slice(0, 24)}`;
     const awardKey = `${getTopicPageInfo()?.topicId || location.pathname}:${id}`;
     const cachedAwardDelta = postAwardDeltaCache.get(awardKey);
@@ -11372,9 +12084,13 @@ function dismissOpenIdBindPrompt(prompt) {
 async function bindOpenIdForCurrentWebAccount(prompt, account) {
   const status = prompt?.querySelector?.(".cc98-rebuild-openid-bind-status");
   const bindButton = prompt?.querySelector?.(".cc98-rebuild-openid-bind-primary");
+  const refreshButton = prompt?.querySelector?.(".cc98-rebuild-openid-bind-refresh");
   const exitButton = prompt?.querySelector?.(".cc98-rebuild-openid-bind-exit");
   if (bindButton) {
     bindButton.disabled = true;
+  }
+  if (refreshButton) {
+    refreshButton.disabled = true;
   }
   if (exitButton) {
     exitButton.disabled = true;
@@ -11400,6 +12116,9 @@ async function bindOpenIdForCurrentWebAccount(prompt, account) {
   }
   if (bindButton) {
     bindButton.disabled = false;
+  }
+  if (refreshButton) {
+    refreshButton.disabled = false;
   }
   if (exitButton) {
     exitButton.disabled = false;
@@ -11469,6 +12188,16 @@ async function maybeShowOpenIdBindPromptAfterLogin() {
     event.stopPropagation();
     bindOpenIdForCurrentWebAccount(overlay, account);
   });
+  const refreshButton = createButton("cc98-rebuild-openid-bind-refresh", "\u5237\u65b0", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    actions.querySelectorAll("button").forEach((button) => {
+      button.disabled = true;
+    });
+    status.textContent = "\u6b63\u5728\u5237\u65b0\u9875\u9762\u4e0e\u7ed1\u5b9a\u72b6\u6001...";
+    status.dataset.state = "pending";
+    window.location.reload();
+  });
   const exitButton = createButton("cc98-rebuild-openid-bind-exit", "\u9000\u51fa\u6b64\u8d26\u53f7", (event) => {
     event.preventDefault();
     event.stopPropagation();
@@ -11481,7 +12210,7 @@ async function maybeShowOpenIdBindPromptAfterLogin() {
   } else if (!hadPromptMark) {
     status.textContent = "\u672a\u5b8c\u6210\u7ed1\u5b9a\u524d\uff0c\u9875\u9762\u4f1a\u4fdd\u6301\u906e\u7f69\u72b6\u6001\u3002";
   }
-  actions.append(exitButton, bindButton);
+  actions.append(refreshButton, exitButton, bindButton);
   dialog.append(title, message, status, actions);
   overlay.append(dialog);
   document.body.append(overlay);
@@ -11867,6 +12596,29 @@ function createReadLaterCardButton(item) {
   return button;
 }
 
+function renderTopicCardMedia(item) {
+  const mediaItems = Array.isArray(item?.media)
+    ? item.media.filter((media) => media?.src)
+    : [];
+  if (!mediaItems.length) {
+    return null;
+  }
+  const gallery = createElement(
+    "div",
+    `cc98-rebuild-topic-media-grid count-${Math.min(mediaItems.length, 6)}`
+  );
+  gallery.setAttribute("aria-label", "\u4e3b\u9898\u5a92\u4f53\u9884\u89c8");
+  mediaItems.slice(0, 6).forEach((media) => {
+    const image = createElement("img", "cc98-rebuild-content-image cc98-rebuild-topic-media-image");
+    image.src = media.src;
+    image.alt = media.alt || "";
+    image.loading = "lazy";
+    image.decoding = "async";
+    gallery.append(image);
+  });
+  return gallery;
+}
+
 function renderTopicCard(item) {
   const reason = shouldBlockRebuiltItem(item);
   if (reason && !isBlacklistItemRevealed(item)) {
@@ -11879,6 +12631,12 @@ function renderTopicCard(item) {
   }
 
   const card = createElement("article", "cc98-rebuild-card");
+  if (item.viewMode === "card" || item.viewMode === "media") {
+    card.classList.add("cc98-rebuild-topic-card-view");
+  }
+  if (item.viewMode === "media") {
+    card.classList.add("cc98-rebuild-topic-media-only-view");
+  }
   const readLaterButton = createReadLaterCardButton(item);
   if (readLaterButton) {
     card.classList.add("has-read-later");
@@ -11894,6 +12652,10 @@ function renderTopicCard(item) {
   }
   card.append(top);
   card.append(createLink("cc98-rebuild-card-title", item.title, item.href));
+  const media = renderTopicCardMedia(item);
+  if (media) {
+    card.append(media);
+  }
   if (item.meta) {
     card.append(createCardMetaElement(item.meta));
   }
@@ -12021,13 +12783,20 @@ function renderPostAuthorFollowAction(action) {
       return;
     }
     lastActivatedAt = now;
+    const control = resolveCurrentProxyAction(action);
+    if (!(control instanceof HTMLElement)) {
+      showRebuiltTransientToast(button, "\u5173\u6ce8\u63a7\u4ef6\u5df2\u66f4\u65b0\uff0c\u8bf7\u518d\u8bd5\u4e00\u6b21");
+      scheduleRebuild();
+      return;
+    }
     button.classList.add("is-pending");
-    triggerOriginalControl(action.control);
-    [120, 360, 760, 1300, 2200].forEach((delay, index, delays) => {
+    triggerOriginalControl(control);
+    [180, 650, 1400].forEach((delay, index, delays) => {
       window.setTimeout(() => {
         if (!button.isConnected) {
           return;
         }
+        resolveCurrentProxyAction(action);
         const state = getPostAuthorFollowState(action);
         button.textContent = state.label;
         button.classList.toggle("is-followed", state.followed);
@@ -12037,9 +12806,7 @@ function renderPostAuthorFollowAction(action) {
         }
       }, delay);
     });
-    [320, 900, 1800, 2600].forEach((delay) => {
-      window.setTimeout(scheduleDelayedRebuilds, delay);
-    });
+    window.setTimeout(scheduleRebuild, 850);
     scheduleNativeAntUiStabilize();
   });
   const state = getPostAuthorFollowState(action);
@@ -12569,7 +13336,11 @@ function renderBoardPage(app) {
 
   const toolbar = createElement("section", "cc98-rebuild-board-toolbar");
   if (data.postTopic?.href) {
-    toolbar.append(createLink("cc98-rebuild-action", "发主题", data.postTopic.href));
+    toolbar.append(createLink(
+      "cc98-rebuild-action cc98-rebuild-board-post-topic-action",
+      "发主题",
+      data.postTopic.href
+    ));
   }
   data.filters.forEach((filter) => toolbar.append(renderProxyControl(filter)));
   app.append(toolbar);
@@ -12770,7 +13541,6 @@ function beginNativeEditorSubmitTransaction(editor, control, context = {}) {
     && Date.now() - startedAt < 2500) {
     return false;
   }
-  appendRebornReplyTailIfNeeded(editor, submitControl);
   const payload = getNativeEditorSubmitContext(context);
   const transactionStartedAt = Date.now();
   editor.dataset.cc98SubmitTransactionActive = "true";
@@ -12787,6 +13557,32 @@ function beginNativeEditorSubmitTransaction(editor, control, context = {}) {
     delete submitControl.dataset.cc98SubmitPending;
   }, 2600);
   return true;
+}
+
+function ensurePendingNativeEditorSubmitRecovery(editor) {
+  if (!(editor instanceof HTMLElement) || !isNativePostSubmitEditor(editor)) {
+    return;
+  }
+  const pendingControl = [...editor.querySelectorAll(
+    "#post-topic-button, [id^='post-topic-button-'], button, input[type='button'], input[type='submit']"
+  )].find((control) => {
+    if (!(control instanceof HTMLElement) || isEditorAuxiliarySubmitControl(control)) {
+      return false;
+    }
+    const label = cleanupPostText(
+      control instanceof HTMLInputElement ? control.value : control.textContent
+    ).replace(/\*/g, "").trim();
+    return label === "...";
+  });
+  if (!pendingControl || hasRecentEditorSubmitIntent(90000)) {
+    return;
+  }
+  const context = getNativeEditorSubmitContext({ editor });
+  markEditorSubmitIntent({
+    ...context,
+    pendingButtonRecovered: true
+  });
+  schedulePostSubmitPageRefresh(context);
 }
 
 function isAnonymousReplySubmitControl(control) {
@@ -14164,6 +14960,10 @@ function updateEditorColorButtonPreview(button, color) {
   getEditorColorPanels(button).forEach((panel) => {
     if (panel instanceof HTMLElement) {
       panel.dataset.cc98CurrentColor = normalized;
+      panel.dataset.cc98TransparentSelected = "false";
+      const transparent = panel.querySelector(".cc98-rebuild-color-transparent");
+      transparent?.classList.remove("is-active");
+      transparent?.setAttribute("aria-pressed", "false");
     }
   });
   [
@@ -14171,7 +14971,9 @@ function updateEditorColorButtonPreview(button, color) {
     ...getEditorColorPanels(button).flatMap((panel) => [...panel.querySelectorAll(".cc98-rebuild-color-popover-input")])
   ].forEach((input) => {
     if (input instanceof HTMLInputElement) {
-      input.value = normalized;
+      if (input !== document.activeElement || !input.classList.contains("cc98-rebuild-color-popover-input")) {
+        input.value = normalized;
+      }
     }
   });
   getEditorColorPanels(button).flatMap((panel) => [...panel.querySelectorAll("[data-cc98-color-channel]")]).forEach((input) => {
@@ -14226,7 +15028,11 @@ function rememberEditorSelection(editor, button) {
 
 function applyEditorColor(editor, color, selection = null) {
   const textarea = getNativeEditorTextarea(editor);
-  if (!(textarea instanceof HTMLTextAreaElement) || !/^#[0-9a-f]{6}$/i.test(color)) {
+  const normalizedColor = String(color ?? "").trim().toLowerCase();
+  if (
+    !(textarea instanceof HTMLTextAreaElement)
+    || (normalizedColor !== "transparent" && !/^#[0-9a-f]{6}$/i.test(normalizedColor))
+  ) {
     return false;
   }
   const start = Number.isFinite(selection?.start)
@@ -14239,10 +15045,10 @@ function applyEditorColor(editor, color, selection = null) {
   const before = textarea.value.slice(0, start);
   const after = textarea.value.slice(end);
   const wrapped = selected
-    ? `[color=${color}]${selected}[/color]`
-    : `[color=${color}][/color]`;
+    ? `[color=${normalizedColor}]${selected}[/color]`
+    : `[color=${normalizedColor}][/color]`;
   setNativeMessageInputValue(textarea, `${before}${wrapped}${after}`);
-  const caret = selected ? start + wrapped.length : start + `[color=${color}]`.length;
+  const caret = selected ? start + wrapped.length : start + `[color=${normalizedColor}]`.length;
   textarea.focus({ preventScroll: true });
   textarea.setSelectionRange(caret, caret);
   scheduleNativeEditorStabilize(editor);
@@ -14472,6 +15278,7 @@ function ensureEditorColorPopover(editor, button) {
     if (
       panel.querySelector(".cc98-rebuild-color-popover-channels")
       && panel.querySelector(".cc98-rebuild-color-presets")
+      && panel.querySelector(".cc98-rebuild-color-transparent")
       && panel.querySelector(".cc98-rebuild-gradient-editor")
       && panel.querySelector(".cc98-rebuild-gradient-density-input")
       && existingInput instanceof HTMLInputElement
@@ -14511,6 +15318,7 @@ function ensureEditorColorPopover(editor, button) {
   input.maxLength = 7;
   input.spellcheck = false;
   input.inputMode = "text";
+  input.autocomplete = "off";
   input.setAttribute("aria-label", "color");
   row.append(swatch, input);
 
@@ -14526,6 +15334,13 @@ function ensureEditorColorPopover(editor, button) {
     preset.append(createElement("span", "cc98-rebuild-color-preset-swatch"));
     presets.append(preset);
   });
+  const transparent = createElement("button", "cc98-rebuild-color-transparent");
+  transparent.type = "button";
+  transparent.setAttribute("aria-pressed", "false");
+  transparent.append(
+    createElement("span", "cc98-rebuild-color-transparent-swatch"),
+    document.createTextNode("\u900f\u660e")
+  );
 
   const gradientEditor = createElement("div", "cc98-rebuild-gradient-editor");
   gradientEditor.hidden = true;
@@ -14592,7 +15407,7 @@ function ensureEditorColorPopover(editor, button) {
   actions.append(cancel, ok);
   const status = createElement("p", "cc98-rebuild-color-popover-status");
   status.hidden = true;
-  panel.append(mode, row, presets, gradientEditor, channels, status, actions);
+  panel.append(mode, row, presets, transparent, gradientEditor, channels, status, actions);
 
   panel.dataset.cc98ColorMode = "solid";
   panel.__cc98GradientStops = normalizeEditorGradientStops([], input.value);
@@ -14682,9 +15497,23 @@ function ensureEditorColorPopover(editor, button) {
       event.stopPropagation();
     });
   });
+  const getCompleteHexInput = () => {
+    const raw = input.value.trim();
+    const withHash = raw.startsWith("#") ? raw : `#${raw}`;
+    return /^#[0-9a-f]{6}$/i.test(withHash) ? withHash.toLowerCase() : "";
+  };
   const syncFromHex = () => {
-    const normalized = normalizeHexColor(input.value, getColorPopoverValue(panel, button));
+    const normalized = getCompleteHexInput();
+    if (!normalized) {
+      return false;
+    }
     applyActiveColor(normalized);
+    return true;
+  };
+  const commitHexInput = () => {
+    if (!syncFromHex()) {
+      input.value = getColorPopoverValue(panel, button);
+    }
   };
   const syncFromChannels = (event) => {
     const source = event?.currentTarget;
@@ -14708,10 +15537,27 @@ function ensureEditorColorPopover(editor, button) {
   solidMode.addEventListener("click", () => setMode("solid"));
   gradientMode.addEventListener("click", () => setMode("gradient"));
   input.addEventListener("input", syncFromHex);
+  input.addEventListener("change", commitHexInput);
+  input.addEventListener("blur", commitHexInput);
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      commitHexInput();
+    }
+  });
   presets.querySelectorAll(".cc98-rebuild-color-preset").forEach((preset) => {
     preset.addEventListener("click", () => {
       applyActiveColor(preset.dataset.cc98ColorPreset || "#ff0000");
     });
+  });
+  transparent.addEventListener("click", () => {
+    if (panel.dataset.cc98ColorMode === "gradient") {
+      setMode("solid");
+    }
+    panel.dataset.cc98TransparentSelected = "true";
+    transparent.classList.add("is-active");
+    transparent.setAttribute("aria-pressed", "true");
+    status.hidden = true;
   });
   addStop.addEventListener("click", () => {
     const stops = normalizeEditorGradientStops(panel.__cc98GradientStops, input.value);
@@ -14781,17 +15627,18 @@ function ensureEditorColorPopover(editor, button) {
     const selection = textarea instanceof HTMLTextAreaElement ? getStoredEditorSelection(button, textarea) : null;
     const color = getColorPopoverValue(panel, button);
     const isGradient = panel.dataset.cc98ColorMode === "gradient";
+    const isTransparent = !isGradient && panel.dataset.cc98TransparentSelected === "true";
     const gradientDensityValue = normalizeEditorGradientDensity(panel.querySelector(".cc98-rebuild-gradient-density-input")?.value);
     const applied = isGradient
       ? applyEditorGradient(editor, panel.__cc98GradientStops, selection, gradientDensityValue)
-      : applyEditorColor(editor, color, selection);
+      : applyEditorColor(editor, isTransparent ? "transparent" : color, selection);
     if (!applied && isGradient) {
       status.textContent = "\u8bf7\u5148\u5728\u7f16\u8f91\u5668\u4e2d\u9009\u4e2d\u8981\u5e94\u7528\u6e10\u53d8\u7684\u6587\u5b57\u3002";
       status.hidden = false;
       positionEditorColorPopover(button, panel);
       return;
     }
-    if (applied) {
+    if (applied && !isTransparent) {
       updateEditorColorButtonPreview(button, color);
     }
     panel.hidden = true;
@@ -15061,6 +15908,10 @@ function openEditorColorPicker(colorButton, editor = colorButton?.closest?.(".cc
   const previousColor = getEditorColorButtonValue(colorButton);
   panel.dataset.cc98PreviousColor = previousColor;
   panel.dataset.cc98ColorMode = "solid";
+  panel.dataset.cc98TransparentSelected = "false";
+  const transparent = panel.querySelector(".cc98-rebuild-color-transparent");
+  transparent?.classList.remove("is-active");
+  transparent?.setAttribute("aria-pressed", "false");
   panel.querySelectorAll(".cc98-rebuild-color-mode-button").forEach((control) => {
     control.classList.toggle("is-active", control.dataset.cc98ColorMode === "solid");
   });
@@ -15356,6 +16207,7 @@ function stabilizeNativeEditor(editor) {
   stabilizeEditorTagDropdown(editor);
   stabilizeEditorEmojiImages(editor);
   stabilizeEditorPreviewFormatting(editor);
+  ensurePendingNativeEditorSubmitRecovery(editor);
   editor.querySelectorAll(".ubb-editor, .react-mde, .mde-header, .mde-text, .mde-preview, .mde-preview-content, .markdown-editor, .for-container, .for-editor, .for-toolbar, .for-preview, .editor-preview, .CodeMirror, textarea")
     .forEach((node) => node.classList.add("cc98-rebuild-editor-surface"));
 }
@@ -15364,9 +16216,18 @@ function scheduleNativeEditorStabilize(editor) {
   if (editor?.dataset?.cc98ProfileSignatureEditor === "true") {
     return;
   }
-  [60, 220, 620].forEach((delay) => {
-    setTimeout(() => stabilizeNativeEditor(editor), delay);
-  });
+  const previousTimer = nativeEditorStabilizeTimers.get(editor);
+  if (previousTimer) {
+    window.clearTimeout(previousTimer);
+  }
+  const timer = window.setTimeout(() => {
+    nativeEditorStabilizeTimers.delete(editor);
+    if (!editor?.isConnected || editor.dataset.cc98SubmitTransactionActive === "true") {
+      return;
+    }
+    stabilizeNativeEditor(editor);
+  }, 70);
+  nativeEditorStabilizeTimers.set(editor, timer);
 }
 
 function schedulePostSubmitPageRefresh(options = {}) {
@@ -15390,7 +16251,7 @@ function schedulePostSubmitPageRefresh(options = {}) {
     context = readEditorSubmitContext();
   }
   const recoveryDelays = /^(?:post|reply)$/i.test(context?.submitKind || "")
-    ? [6500, 12000]
+    ? [6000, 11000]
     : [];
   nativePostSubmitRefreshTimers = [
     ...recoveryDelays.map((delay, index) => window.setTimeout(() => {
@@ -15489,8 +16350,10 @@ function bindNativeEditorStabilizer(editor) {
     if (deferMarkdownPreviewUntilInputSettles(editor, event)) {
       return;
     }
-    const submitControl = event.target?.closest?.("#post-topic-button, button, input[type='button'], input[type='submit'], .button, .ant-btn, [role='button']");
     if (isNativePostSubmitEditor(editor) && isLikelyEditorSubmitControl(event.target)) {
+      const submitControl = event.target?.closest?.("#post-topic-button, [id^='post-topic-button-'], button, input[type='button'], input[type='submit'], .button, .ant-btn, [role='button']");
+      appendRebornReplyTailIfNeeded(editor, submitControl);
+      scheduleNativeEditorDraftSave(editor);
       const context = getNativeEditorSubmitContext({ editor });
       if (!beginNativeEditorSubmitTransaction(editor, submitControl, context)) {
         event.preventDefault();
@@ -15549,15 +16412,16 @@ function bindNativeEditorStabilizer(editor) {
     if (editor.dataset.cc98SubmitTransactionActive === "true") {
       return;
     }
-    const context = getNativeEditorSubmitContext({ editor });
     const submitControl = findNativeEditorSubmitControl(editor, event.submitter);
-    if (!(submitControl instanceof HTMLElement)) {
-      appendRebornReplyTailIfNeeded(editor, event.submitter);
+    appendRebornReplyTailIfNeeded(editor, submitControl);
+    const context = getNativeEditorSubmitContext({ editor });
+    if (submitControl instanceof HTMLElement) {
+      beginNativeEditorSubmitTransaction(editor, submitControl, context);
+    } else {
       markEditorSubmitIntent(context);
       schedulePostSubmitPageRefresh(context);
-      return;
     }
-    beginNativeEditorSubmitTransaction(editor, submitControl, context);
+    scheduleNativeEditorDraftSave(editor);
   }, true);
   const editorObserver = new MutationObserver(() => scheduleNativeEditorStabilize(editor));
   editorObserver.observe(editor, {
@@ -18193,10 +19057,12 @@ function renderHome(app) {
     const rankedItems = hotSection ? getHomeHotItemsWithRankMovement(section) : section.items;
     const visibleItemLimit = hotOnly && hotSection ? 10 : 12;
     rankedItems.slice(0, visibleItemLimit).forEach((item, index) => {
-      list.append(renderTopicCard({
+      const card = renderTopicCard({
         ...item,
         rank: hotSection && index < 10 ? index + 1 : 0
-      }));
+      });
+      card.dataset.itemKey = `home-topic:${item.href || `${section.title}:${index}:${item.title}`}`;
+      list.append(card);
     });
     block.append(list);
     grid.append(block);
@@ -18262,10 +19128,171 @@ function renderSearchPendingState(app) {
   app.append(section);
 }
 
+function getNewTopicNativeSyncToken() {
+  return `${getNativeNewTopicViewMode()}:${getSeamlessNativeContentSignature("topics")}`;
+}
+
+function syncNewTopicModePanel(panel) {
+  if (!(panel instanceof HTMLElement)) {
+    return;
+  }
+  const activeMode = getNativeNewTopicViewMode();
+  panel.querySelectorAll("[data-new-topic-mode]").forEach((button) => {
+    const active = button.getAttribute("data-new-topic-mode") === activeMode;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+}
+
+function scheduleNewTopicModeSync(initialToken = "") {
+  const revision = ++newTopicModeSyncRevision;
+  seamlessScrollSyncIntentUntil = Math.max(seamlessScrollSyncIntentUntil, Date.now() + 4500);
+  newTopicModeSyncTimers.forEach((timer) => window.clearTimeout(timer));
+  newTopicModeSyncTimers = [];
+  let previousToken = initialToken;
+  const delays = [35, 180, 520, 1080, 1680];
+  newTopicModeSyncTimers = delays.map((delay, index) => window.setTimeout(() => {
+    if (revision !== newTopicModeSyncRevision || !isNewTopicsPage()) {
+      return;
+    }
+    const panel = document.querySelector("#cc98-comfort-app .cc98-rebuild-new-topic-controls");
+    syncNewTopicModePanel(panel);
+    const token = getNewTopicNativeSyncToken();
+    if (index === 0 || token !== previousToken || index === delays.length - 1) {
+      refreshRebuiltFromLoadedNativeContent(null, { automatic: true });
+      previousToken = token;
+    }
+    if (index === delays.length - 1) {
+      newTopicModeSyncTimers = [];
+      document.querySelector("#cc98-comfort-app .cc98-rebuild-new-topic-controls")
+        ?.classList.remove("is-syncing");
+    }
+  }, delay));
+}
+
+function triggerNewTopicNativeControl(controlId, panel) {
+  const source = getNativeNewTopicControl(controlId);
+  if (!source) {
+    showRebuiltTransientToast(panel, "\u539f\u9875\u9762\u63a7\u4ef6\u5c1a\u672a\u52a0\u8f7d");
+    scheduleDelayedRebuilds();
+    return;
+  }
+  const initialToken = getNewTopicNativeSyncToken();
+  panel?.classList.add("is-syncing");
+  triggerOriginalControl(source);
+  scheduleNewTopicModeSync(initialToken);
+}
+
+function updateNewTopicAutoRefreshVisitState() {
+  if (isNewTopicsPage()) {
+    if (!newTopicAutoRefreshVisitActive) {
+      newTopicAutoRefreshVisitActive = true;
+      newTopicAutoRefreshTriggered = false;
+    }
+    return;
+  }
+  newTopicAutoRefreshVisitActive = false;
+  newTopicAutoRefreshTriggered = false;
+  if (newTopicAutoRefreshTimer) {
+    window.clearTimeout(newTopicAutoRefreshTimer);
+    newTopicAutoRefreshTimer = null;
+  }
+}
+
+function scheduleNewTopicEntryAutoRefresh() {
+  updateNewTopicAutoRefreshVisitState();
+  if (!newTopicAutoRefreshVisitActive
+    || newTopicAutoRefreshTriggered
+    || newTopicAutoRefreshTimer) {
+    return;
+  }
+  newTopicAutoRefreshTriggered = true;
+  let attempts = 0;
+  const attemptRefresh = () => {
+    newTopicAutoRefreshTimer = null;
+    if (!newTopicAutoRefreshVisitActive || !isNewTopicsPage()) {
+      return;
+    }
+    const source = getNativeNewTopicControl("new-topic-refresh-button");
+    if (!source && attempts < 12) {
+      attempts += 1;
+      newTopicAutoRefreshTimer = window.setTimeout(attemptRefresh, 180);
+      return;
+    }
+    if (!source) {
+      return;
+    }
+    const initialToken = getNewTopicNativeSyncToken();
+    document.querySelector("#cc98-comfort-app .cc98-rebuild-new-topic-controls")
+      ?.classList.add("is-syncing");
+    triggerOriginalControl(source);
+    scheduleNewTopicModeSync(initialToken);
+  };
+  // The native first load keeps its refresh handler locked for at least one second.
+  newTopicAutoRefreshTimer = window.setTimeout(attemptRefresh, 1150);
+}
+
+function createNewTopicModeControls() {
+  if (!isNewTopicsPage()) {
+    return null;
+  }
+  const definitions = [
+    {
+      mode: "classic",
+      id: "new-topic-classic-button",
+      label: "\u7ecf\u5178\u6a21\u5f0f"
+    },
+    {
+      mode: "card",
+      id: "new-topic-card-button",
+      label: "\u5361\u7247\u6a21\u5f0f"
+    },
+    {
+      mode: "media",
+      id: "new-topic-media-only-button",
+      label: "\u53ea\u770b\u5a92\u4f53"
+    }
+  ];
+  if (!definitions.some(({ id }) => getNativeNewTopicControl(id))) {
+    return null;
+  }
+
+  const panel = createElement("section", "cc98-rebuild-new-topic-controls");
+  panel.setAttribute("aria-label", "\u65b0\u5e16\u6d4f\u89c8\u65b9\u5f0f");
+  const heading = createElement("div", "cc98-rebuild-new-topic-controls-heading");
+  heading.append(createElement("strong", "", "\u6d4f\u89c8\u65b9\u5f0f"));
+  const refresh = createButton("cc98-rebuild-new-topic-refresh", "\u21bb \u5237\u65b0", (event) => {
+    event.preventDefault();
+    triggerNewTopicNativeControl("new-topic-refresh-button", panel);
+  });
+  refresh.title = "\u5237\u65b0\u539f\u9875\u9762\u65b0\u5e16\u6570\u636e";
+  heading.append(refresh);
+
+  const modes = createElement("div", "cc98-rebuild-new-topic-mode-group");
+  modes.setAttribute("role", "group");
+  modes.setAttribute("aria-label", "\u65b0\u5e16\u663e\u793a\u6a21\u5f0f");
+  definitions.forEach(({ mode, id, label }) => {
+    const button = createButton("cc98-rebuild-new-topic-mode", label, (event) => {
+      event.preventDefault();
+      triggerNewTopicNativeControl(id, panel);
+    });
+    button.dataset.newTopicMode = mode;
+    button.setAttribute("aria-pressed", "false");
+    modes.append(button);
+  });
+
+  panel.append(heading, modes);
+  syncNewTopicModePanel(panel);
+  return panel;
+}
+
 function renderTopics(app) {
   const pageKind = getPageKind();
   const isSearchPage = pageKind === "search";
-  const hasReadLaterSidebar = isReadLaterSidebarTopicsPage();
+  const hasReadLaterSidebar = isReadLaterSidebarTopicsPage() || isSearchPage;
+  if (isNewTopicsPage()) {
+    scheduleNewTopicEntryAutoRefresh();
+  }
   const topics = getTopicItems();
   const searchKeyword = isSearchPage ? getCurrentSearchKeyword() : "";
   const sortedTopics = isSearchPage ? sortSearchTopicItems(topics, searchKeyword) : topics;
@@ -18302,9 +19329,6 @@ function renderTopics(app) {
     app.append(createAdvancedFuzzySearchPanel(searchKeyword, fallbackFuzzyTerms, feed, sortedTopics));
   }
   if (!useAdvancedFuzzy) {
-    if (isSearchPage) {
-      app.append(createSearchSortControls(sortedTopics.length, searchKeyword));
-    }
     sortedTopics.forEach((item) => {
       const card = renderTopicCard(item);
       card.dataset.itemKey = `topic:${item.href}`;
@@ -18314,7 +19338,19 @@ function renderTopics(app) {
   if (hasReadLaterSidebar) {
     const layout = createElement("div", "cc98-rebuild-topics-read-later-layout");
     feed.classList.add("cc98-rebuild-topics-read-later-feed");
-    layout.append(feed, createReadLaterSidebar());
+    const readLaterSidebar = createReadLaterSidebar();
+    const sideColumn = createElement("div", "cc98-rebuild-topics-side-column");
+    if (isSearchPage && !useAdvancedFuzzy) {
+      sideColumn.append(createSearchSortControls(sortedTopics.length, searchKeyword));
+      layout.classList.add("has-search-sort-controls");
+    }
+    const modeControls = createNewTopicModeControls();
+    if (modeControls) {
+      sideColumn.append(modeControls);
+      layout.classList.add("has-new-topic-controls");
+    }
+    sideColumn.append(readLaterSidebar);
+    layout.append(feed, sideColumn);
     app.append(layout);
     return;
   }
@@ -18471,6 +19507,7 @@ function renderPost(app) {
 
 function renderBoardCard(board, pinned = false) {
   const card = createElement("article", `cc98-rebuild-board${pinned ? " is-pinned" : ""}`);
+  card.dataset.itemKey = `board:${normalizePinnedBoardHref(board.href) || board.title}`;
   const pinButton = createButton("cc98-rebuild-board-pin", pinned ? "\u2212" : "+", (event) => {
     event.preventDefault();
     event.stopPropagation();
@@ -18946,6 +19983,8 @@ function captureRebuiltSearchUiState(app = document.querySelector("#cc98-comfort
   }
   const form = app.querySelector(".cc98-rebuild-search");
   const input = form?.querySelector('input[type="search"]');
+  const typeButton = form?.querySelector(".cc98-rebuild-search-type");
+  const typeMenu = form?.querySelector(".cc98-rebuild-search-type-menu");
   if (!(form instanceof HTMLFormElement) || !(input instanceof HTMLInputElement)) {
     return null;
   }
@@ -18953,16 +19992,21 @@ function captureRebuiltSearchUiState(app = document.querySelector("#cc98-comfort
     value: input.value,
     type: form.dataset.searchType || "",
     focused: document.activeElement === input,
+    typeButtonFocused: document.activeElement === typeButton,
+    typeMenuOpen: typeMenu instanceof HTMLElement && !typeMenu.hidden,
     selectionStart: input.selectionStart,
     selectionEnd: input.selectionEnd
   };
 }
 
 function restoreRebuiltSearchUiState(app, state) {
-  if (!(app instanceof HTMLElement) || !state?.focused) {
+  if (!(app instanceof HTMLElement) || !state) {
     return;
   }
-  const input = app.querySelector('.cc98-rebuild-search input[type="search"]');
+  const form = app.querySelector(".cc98-rebuild-search");
+  const input = form?.querySelector('input[type="search"]');
+  const typeButton = form?.querySelector(".cc98-rebuild-search-type");
+  const typeMenu = form?.querySelector(".cc98-rebuild-search-type-menu");
   if (!(input instanceof HTMLInputElement)) {
     return;
   }
@@ -18970,14 +20014,28 @@ function restoreRebuiltSearchUiState(app, state) {
     if (!input.isConnected) {
       return;
     }
-    input.focus({ preventScroll: true });
-    const start = Number.isInteger(state.selectionStart) ? state.selectionStart : input.value.length;
-    const end = Number.isInteger(state.selectionEnd) ? state.selectionEnd : start;
-    try {
-      input.setSelectionRange(start, end);
-    } catch {
-      // Search focus restoration is best-effort.
+    if (
+      state.typeMenuOpen
+      && typeButton instanceof HTMLButtonElement
+      && typeMenu instanceof HTMLElement
+    ) {
+      typeMenu.hidden = false;
+      typeButton.setAttribute("aria-expanded", "true");
+      if (state.typeButtonFocused) {
+        typeButton.focus({ preventScroll: true });
+      }
     }
+    if (state.focused) {
+      input.focus({ preventScroll: true });
+      const start = Number.isInteger(state.selectionStart) ? state.selectionStart : input.value.length;
+      const end = Number.isInteger(state.selectionEnd) ? state.selectionEnd : start;
+      try {
+        input.setSelectionRange(start, end);
+      } catch {
+        // Search focus restoration is best-effort.
+      }
+    }
+    delete form?.dataset.cc98PreserveTypeMenu;
   });
 }
 
@@ -18995,6 +20053,7 @@ function submitRebuiltSearch(keyword, type = getNativeSearchState().selected) {
   if (!normalized) {
     return false;
   }
+  rememberSearchHistoryQuery(normalized);
   const targetHref = repairWebVpnNakedCc98Href(getRebuiltSearchTargetHref(normalized, type) || getSearchUrl(normalized).href);
   const startedAt = getRoutePageKey();
   const targetRouteKey = getRoutePageKey(targetHref);
@@ -19016,6 +20075,130 @@ function submitRebuiltSearch(keyword, type = getNativeSearchState().selected) {
     }
   }, 360);
   return true;
+}
+
+function normalizeSearchHistoryQuery(value) {
+  return String(value ?? "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 120);
+}
+
+function getSearchHistoryStorageKey(userId = getCurrentReadLaterUserId()) {
+  return `${SEARCH_HISTORY_STORAGE_KEY}:uid:${encodeURIComponent(normalizeCc98AccountId(userId) || "guest")}`;
+}
+
+function normalizeSearchHistoryItems(items) {
+  const source = Array.isArray(items) ? items : [];
+  const byQuery = new Map();
+  source.forEach((item, index) => {
+    const query = normalizeSearchHistoryQuery(typeof item === "string" ? item : item?.query);
+    if (!query) {
+      return;
+    }
+    const key = query.toLocaleLowerCase();
+    const searchedAt = Number(typeof item === "string" ? 0 : item?.searchedAt) || (source.length - index);
+    const existing = byQuery.get(key);
+    if (!existing || searchedAt > existing.searchedAt) {
+      byQuery.set(key, { query, searchedAt });
+    }
+  });
+  return [...byQuery.values()]
+    .sort((left, right) => right.searchedAt - left.searchedAt)
+    .slice(0, SEARCH_HISTORY_LIMIT);
+}
+
+function readLocalSearchHistory(storageKey) {
+  try {
+    return normalizeSearchHistoryItems(JSON.parse(localStorage.getItem(storageKey) || "[]"));
+  } catch {
+    return [];
+  }
+}
+
+function writeLocalSearchHistory(storageKey, items) {
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(items));
+  } catch {
+    // Per-origin storage is only a fallback for extension storage.
+  }
+}
+
+function notifySearchHistoryChanged() {
+  document.querySelectorAll('.cc98-rebuild-search input[type="search"]').forEach((input) => {
+    input.dispatchEvent(new Event(SEARCH_HISTORY_CHANGE_EVENT));
+  });
+}
+
+function hydrateSearchHistoryStorage() {
+  const storageKey = getSearchHistoryStorageKey();
+  if (searchHistoryStorageHydratedKey === storageKey || searchHistoryStorageHydratingKey === storageKey) {
+    return;
+  }
+  if (!globalThis.chrome?.storage?.local?.get) {
+    searchHistoryStorageHydratedKey = storageKey;
+    return;
+  }
+  searchHistoryStorageHydratingKey = storageKey;
+  const localItems = readLocalSearchHistory(storageKey);
+  globalThis.chrome.storage.local.get(storageKey, (result) => {
+    if (searchHistoryStorageHydratingKey !== storageKey) {
+      return;
+    }
+    searchHistoryStorageHydratingKey = "";
+    if (globalThis.chrome.runtime?.lastError) {
+      searchHistoryStorageHydratedKey = storageKey;
+      return;
+    }
+    const cachedItems = searchHistoryCache?.storageKey === storageKey ? searchHistoryCache.items : [];
+    const storedItems = normalizeSearchHistoryItems(result?.[storageKey]);
+    const merged = normalizeSearchHistoryItems([...cachedItems, ...storedItems, ...localItems]);
+    searchHistoryCache = { storageKey, items: merged };
+    searchHistoryStorageHydratedKey = storageKey;
+    writeLocalSearchHistory(storageKey, merged);
+    if (JSON.stringify(storedItems) !== JSON.stringify(merged)) {
+      globalThis.chrome.storage.local.set({ [storageKey]: merged });
+    }
+    notifySearchHistoryChanged();
+  });
+}
+
+function readSearchHistory() {
+  const storageKey = getSearchHistoryStorageKey();
+  if (searchHistoryCache?.storageKey === storageKey) {
+    hydrateSearchHistoryStorage();
+    return searchHistoryCache.items;
+  }
+  const items = readLocalSearchHistory(storageKey);
+  searchHistoryCache = { storageKey, items };
+  hydrateSearchHistoryStorage();
+  return items;
+}
+
+function writeSearchHistory(items) {
+  const storageKey = getSearchHistoryStorageKey();
+  const normalized = normalizeSearchHistoryItems(items);
+  searchHistoryCache = { storageKey, items: normalized };
+  searchHistoryStorageHydratedKey = storageKey;
+  searchHistoryStorageHydratingKey = "";
+  writeLocalSearchHistory(storageKey, normalized);
+  try {
+    globalThis.chrome?.storage?.local?.set?.({ [storageKey]: normalized });
+  } catch {
+    // Local fallback remains available in static previews.
+  }
+  notifySearchHistoryChanged();
+  return normalized;
+}
+
+function rememberSearchHistoryQuery(query) {
+  const normalized = normalizeSearchHistoryQuery(query);
+  if (!normalized) {
+    return;
+  }
+  const key = normalized.toLocaleLowerCase();
+  const previous = readSearchHistory().filter((item) => item.query.toLocaleLowerCase() !== key);
+  writeSearchHistory([{ query: normalized, searchedAt: Date.now() }, ...previous]);
 }
 
 function normalizeSuggestionText(text) {
@@ -19854,14 +21037,69 @@ function createAdvancedFuzzySearchPanel(query, terms, feed, initialItems) {
   return section;
 }
 
+function renderSearchHistory(box, input, suggestions, state, onSubmit) {
+  const history = readSearchHistory();
+  if (!history.length) {
+    return false;
+  }
+  const section = createElement("section", "cc98-rebuild-search-history");
+  section.setAttribute("aria-label", "\u641c\u7d22\u5386\u53f2");
+  const header = createElement("div", "cc98-rebuild-search-history-header");
+  header.append(createElement("span", "cc98-rebuild-search-history-title", "\u641c\u7d22\u5386\u53f2"));
+  const clearButton = createElement("button", "cc98-rebuild-search-history-clear", "\u5168\u90e8\u6e05\u7a7a");
+  clearButton.type = "button";
+  clearButton.addEventListener("mousedown", (event) => event.preventDefault());
+  clearButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    writeSearchHistory([]);
+    renderSearchSuggestions(box, input, suggestions, state, onSubmit);
+  });
+  header.append(clearButton);
+  const list = createElement("div", "cc98-rebuild-search-history-list");
+  history.forEach((item) => {
+    const row = createElement("div", "cc98-rebuild-search-history-item");
+    const queryButton = createElement("button", "cc98-rebuild-search-history-query", item.query);
+    queryButton.type = "button";
+    queryButton.title = item.query;
+    queryButton.addEventListener("mousedown", (event) => event.preventDefault());
+    queryButton.addEventListener("click", () => {
+      input.value = item.query;
+      onSubmit(item.query);
+    });
+    const deleteButton = createElement("button", "cc98-rebuild-search-history-delete", "\u00d7");
+    deleteButton.type = "button";
+    deleteButton.title = `\u5220\u9664\u201c${item.query}\u201d`;
+    deleteButton.setAttribute("aria-label", `\u5220\u9664\u641c\u7d22\u5386\u53f2\uff1a${item.query}`);
+    deleteButton.addEventListener("mousedown", (event) => event.preventDefault());
+    deleteButton.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const itemKey = item.query.toLocaleLowerCase();
+      writeSearchHistory(readSearchHistory().filter((entry) => entry.query.toLocaleLowerCase() !== itemKey));
+      renderSearchSuggestions(box, input, suggestions, state, onSubmit);
+    });
+    row.append(queryButton, deleteButton);
+    list.append(row);
+  });
+  section.append(header, list);
+  box.append(section);
+  return true;
+}
+
 function renderSearchSuggestions(box, input, suggestions, state = "ready", onSubmit = submitRebuiltSearch) {
   box.textContent = "";
   box.dataset.state = state;
+  const hasHistory = renderSearchHistory(box, input, suggestions, state, onSubmit);
+  box.dataset.hasHistory = String(hasHistory);
   if (state === "idle") {
-    box.hidden = true;
+    box.hidden = !hasHistory;
     return;
   }
   box.hidden = false;
+  if (hasHistory) {
+    box.append(createElement("div", "cc98-rebuild-search-suggestion-heading", "\u641c\u7d22\u8054\u60f3"));
+  }
   if (state === "loading") {
     box.append(createElement("div", "cc98-rebuild-search-suggestion-status", "正在分析相关搜索..."));
     return;
@@ -20273,6 +21511,11 @@ function createSearchForm() {
 
   input.addEventListener("input", scheduleSuggestions);
   input.addEventListener("focus", scheduleSuggestions);
+  input.addEventListener(SEARCH_HISTORY_CHANGE_EVENT, () => {
+    if (document.activeElement === input || !suggestionBox.hidden) {
+      scheduleSuggestions();
+    }
+  });
   input.addEventListener("blur", () => {
     window.setTimeout(() => {
       suggestionBox.hidden = true;
@@ -20362,6 +21605,9 @@ function createRebuiltSearchForm(preservedState = null) {
   });
   typeWrap.addEventListener("focusout", () => {
     window.setTimeout(() => {
+      if (form.dataset.cc98PreserveTypeMenu === "true") {
+        return;
+      }
       if (!typeWrap.contains(document.activeElement)) {
         closeTypeMenu();
       }
@@ -20405,6 +21651,11 @@ function createRebuiltSearchForm(preservedState = null) {
   input.addEventListener("focus", () => {
     closeTypeMenu();
     scheduleSuggestions();
+  });
+  input.addEventListener(SEARCH_HISTORY_CHANGE_EVENT, () => {
+    if (document.activeElement === input || !suggestionBox.hidden) {
+      scheduleSuggestions();
+    }
   });
   input.addEventListener("blur", () => {
     window.setTimeout(() => {
@@ -21085,29 +22336,319 @@ function renderGeneric(app) {
   app.append(section);
 }
 
-function refreshRebuiltFromLoadedNativeContent(button) {
+function getSeamlessNativeContentSelector(kind = getPageKind()) {
+  if (kind === "home") {
+    return ".announcementContent article, .mainPageList";
+  }
+  if (kind === "boardList") {
+    return ".anArea";
+  }
+  if (kind === "topics" || kind === "search") {
+    return ".focus-topic, .card-topic";
+  }
+  if (kind === "boardSearch") {
+    return ".focus-board-area, #noResultBoard";
+  }
+  if (kind === "board") {
+    return ".board-head-body, .board-head-bar, .board-postItem-body";
+  }
+  if (kind === "post") {
+    return ".reply";
+  }
+  return "";
+}
+
+function hashSeamlessNativeContentPart(hash, value) {
+  const text = String(value ?? "");
+  let next = hash >>> 0;
+  for (let index = 0; index < text.length; index += 1) {
+    next ^= text.charCodeAt(index);
+    next = Math.imul(next, 16777619);
+  }
+  return next >>> 0;
+}
+
+function getSeamlessNativeContentSignature(kind = getPageKind()) {
+  const selector = getSeamlessNativeContentSelector(kind);
+  if (!selector || !document.body) {
+    return "";
+  }
+  const app = document.querySelector("#cc98-comfort-app");
+  const roots = [...document.querySelectorAll(selector)]
+    .filter((node) => node instanceof HTMLElement && !app?.contains(node) && !node.closest("#cc98-comfort-app"))
+    .slice(0, 180);
+  let hash = 2166136261;
+  const append = (value) => {
+    hash = hashSeamlessNativeContentPart(hash, value);
+    hash = hashSeamlessNativeContentPart(hash, "\u001f");
+  };
+  append(getRoutePageKey());
+  append(kind);
+  append(roots.length);
+
+  roots.forEach((root, rootIndex) => {
+    append(rootIndex);
+    append(root.id);
+    append(root.childElementCount);
+    const text = cleanupPostText(root.textContent)
+      .replace(/\b\d{1,3}:\d{2}(?::\d{2})?\b/g, "<clock>");
+    append(text.length);
+    append(text.slice(0, 560));
+    append(text.slice(-560));
+
+    const links = [...root.querySelectorAll("a[href]")].slice(0, 96);
+    append(links.length);
+    links.forEach((link) => {
+      append(link.getAttribute("href") || link.href || "");
+      append(cleanupPostText(link.textContent).slice(0, 180));
+    });
+
+    const mediaNodes = [...root.querySelectorAll("img, video, audio, source, [style*='url(']")].slice(0, 180);
+    append(mediaNodes.length);
+    mediaNodes.forEach((node) => {
+      append(node.tagName);
+      [
+        "src",
+        "srcset",
+        "data-src",
+        "data-srcset",
+        "data-original",
+        "data-url",
+        "data-avatar",
+        "data-portrait",
+        "data-original-src",
+        "data-lazy-src",
+        "data-actualsrc",
+        "poster"
+      ].forEach((attribute) => append(node.getAttribute?.(attribute) || ""));
+      append(node.currentSrc || "");
+      const backgroundUrl = node.getAttribute?.("style")?.match(/url\(["']?([^"')]+)["']?\)/i)?.[1] || "";
+      append(backgroundUrl);
+    });
+  });
+  return `${kind}:${roots.length}:${(hash >>> 0).toString(36)}`;
+}
+
+function rememberSeamlessNativeContentSignature() {
+  const kind = getPageKind();
+  if (!SEAMLESS_SCROLL_SYNC_PAGE_KINDS.has(kind)) {
+    seamlessScrollSyncRouteKey = "";
+    seamlessScrollSyncSignature = "";
+    return;
+  }
+  seamlessScrollSyncRouteKey = getRoutePageKey();
+  seamlessScrollSyncSignature = getSeamlessNativeContentSignature(kind);
+}
+
+function captureSeamlessRebuildScrollState() {
+  const app = document.querySelector("#cc98-comfort-app");
+  const topbarBottom = app?.querySelector(".cc98-rebuild-topbar")?.getBoundingClientRect?.().bottom || 0;
+  const anchor = [...(app?.querySelectorAll?.("[data-item-key]") || [])]
+    .find((node) => {
+      const rect = node.getBoundingClientRect();
+      return rect.bottom > Math.max(0, topbarBottom) + 4 && rect.top < window.innerHeight - 4;
+    });
+  return {
+    routeKey: getRoutePageKey(),
+    position: captureImageViewerScrollPosition(),
+    anchorKey: anchor?.getAttribute("data-item-key") || "",
+    anchorTop: anchor?.getBoundingClientRect?.().top || 0,
+    readLaterSidebarTop: app?.querySelector(".cc98-rebuild-read-later-sidebar-viewport")?.scrollTop || 0
+  };
+}
+
+function restoreSeamlessRebuildScrollState(state, interactionRevision, force = false) {
+  if (!state || state.routeKey !== getRoutePageKey()) {
+    return;
+  }
+  if (!force && interactionRevision !== seamlessScrollInteractionRevision) {
+    return;
+  }
+  restoreImageViewerScrollPosition(state.position);
+  const readLaterViewport = document.querySelector("#cc98-comfort-app .cc98-rebuild-read-later-sidebar-viewport");
+  if (readLaterViewport instanceof HTMLElement) {
+    readLaterViewport.scrollTop = Number(state.readLaterSidebarTop) || 0;
+  }
+  if (!state.anchorKey) {
+    return;
+  }
+  const escapedKey = typeof CSS !== "undefined" && typeof CSS.escape === "function"
+    ? CSS.escape(state.anchorKey)
+    : state.anchorKey.replace(/["\\]/g, "\\$&");
+  const anchor = document.querySelector(`#cc98-comfort-app [data-item-key="${escapedKey}"]`);
+  if (!(anchor instanceof HTMLElement)) {
+    return;
+  }
+  const delta = anchor.getBoundingClientRect().top - Number(state.anchorTop || 0);
+  if (Number.isFinite(delta) && Math.abs(delta) >= 0.5) {
+    window.scrollBy({ top: delta, left: 0, behavior: "auto" });
+  }
+}
+
+function hasVisibleNativeDialog() {
+  return [...document.querySelectorAll(".ant-modal-wrap, [role='dialog']")].some((dialog) => {
+    if (!(dialog instanceof HTMLElement)) {
+      return false;
+    }
+    const style = getComputedStyle(dialog);
+    return style.display !== "none"
+      && style.visibility !== "hidden"
+      && dialog.getClientRects().length > 0;
+  });
+}
+
+function isSeamlessNativeContentSyncBlocked() {
+  const app = document.querySelector("#cc98-comfort-app");
+  if (!app
+    || isRebuilding
+    || document.visibilityState === "hidden"
+    || loadingOverlayActive
+    || nativeLazyScrollOverlayDepth > 0
+    || document.documentElement.dataset.cc98ComfortOriginalPrewarming === "true"
+    || document.querySelector("#cc98-comfort-image-viewer")
+    || isEditingRebuiltSearchOnCurrentRoute()
+    || hasActiveTextSelectionWithin(app)
+    || hasVisibleNativeDialog()) {
+    return true;
+  }
+  const active = document.activeElement;
+  if (active instanceof HTMLElement
+    && app.contains(active)
+    && (active.matches("input, textarea, select, [contenteditable='true']")
+      || Boolean(active.closest(".cc98-rebuild-native-editor, .cc98-rebuild-native-message")))) {
+    return true;
+  }
+  if (app.querySelector([
+    ".cc98-rebuild-post-author-popover:hover",
+    ".cc98-rebuild-native-user-entry:hover",
+    ".cc98-rebuild-color-popover:not([hidden])",
+    ".cc98-rebuild-font-size-popover:not([hidden])",
+    ".cc98-rebuild-message-emoji-panel:not([hidden])"
+  ].join(","))) {
+    return true;
+  }
+  return false;
+}
+
+function runSeamlessNativeContentSync() {
+  seamlessScrollSyncTimer = null;
+  const now = Date.now();
+  const kind = getPageKind();
+  if (now > seamlessScrollSyncIntentUntil
+    || !lastSettings?.enabled
+    || !lastSettings.rebuildUi
+    || !SEAMLESS_SCROLL_SYNC_PAGE_KINDS.has(kind)) {
+    return;
+  }
+  if (isSeamlessNativeContentSyncBlocked()) {
+    const remaining = seamlessScrollSyncIntentUntil - now;
+    if (remaining > 180) {
+      seamlessScrollSyncTimer = window.setTimeout(runSeamlessNativeContentSync, Math.min(260, remaining));
+    }
+    return;
+  }
+
+  const routeKey = getRoutePageKey();
+  const signature = getSeamlessNativeContentSignature(kind);
+  if (!signature) {
+    return;
+  }
+  if (seamlessScrollSyncRouteKey !== routeKey || !seamlessScrollSyncSignature) {
+    seamlessScrollSyncRouteKey = routeKey;
+    seamlessScrollSyncSignature = signature;
+    return;
+  }
+  if (signature === seamlessScrollSyncSignature) {
+    return;
+  }
+
+  const intervalRemaining = SEAMLESS_SCROLL_SYNC_MIN_INTERVAL - (now - seamlessScrollSyncLastRefreshAt);
+  if (intervalRemaining > 0) {
+    seamlessScrollSyncTimer = window.setTimeout(runSeamlessNativeContentSync, intervalRemaining);
+    return;
+  }
+  seamlessScrollSyncSignature = signature;
+  seamlessScrollSyncLastRefreshAt = now;
+  refreshRebuiltFromLoadedNativeContent(null, { automatic: true });
+}
+
+function scheduleSeamlessNativeContentSync(options = {}) {
+  const kind = getPageKind();
+  if (!SEAMLESS_SCROLL_SYNC_PAGE_KINDS.has(kind)
+    || !lastSettings?.enabled
+    || !lastSettings.rebuildUi) {
+    return;
+  }
+  const fromMutation = Boolean(options.fromMutation);
+  const now = Date.now();
+  if (fromMutation && now > seamlessScrollSyncIntentUntil) {
+    return;
+  }
+  if (!fromMutation) {
+    seamlessScrollSyncIntentUntil = now + SEAMLESS_SCROLL_SYNC_INTENT_TTL;
+  }
+  window.clearTimeout(seamlessScrollSyncTimer);
+  seamlessScrollSyncTimer = window.setTimeout(
+    runSeamlessNativeContentSync,
+    fromMutation ? 90 : SEAMLESS_SCROLL_SYNC_DELAY
+  );
+  if (!fromMutation) {
+    window.clearTimeout(seamlessScrollSyncFollowupTimer);
+    seamlessScrollSyncFollowupTimer = window.setTimeout(
+      runSeamlessNativeContentSync,
+      SEAMLESS_SCROLL_SYNC_FOLLOWUP_DELAY
+    );
+  }
+}
+
+function isSeamlessNativeContentMutation(record, app = document.querySelector("#cc98-comfort-app")) {
+  const selector = getSeamlessNativeContentSelector();
+  if (!selector) {
+    return false;
+  }
+  const candidates = [record.target, ...record.addedNodes, ...record.removedNodes];
+  return candidates.some((node) => {
+    const element = node instanceof Element ? node : node?.parentElement;
+    if (!(element instanceof Element) || app?.contains(element) || element.closest("#cc98-comfort-app")) {
+      return false;
+    }
+    return element.matches(selector)
+      || Boolean(element.closest(selector))
+      || Boolean(element.querySelector?.(selector));
+  });
+}
+
+function refreshRebuiltFromLoadedNativeContent(button, options = {}) {
   if (isRebuilding || !lastSettings?.enabled || !lastSettings.rebuildUi) {
     return;
   }
-  const scrollPosition = captureImageViewerScrollPosition();
+  const automatic = Boolean(options.automatic);
+  const interactionRevision = seamlessScrollInteractionRevision;
+  const scrollState = captureSeamlessRebuildScrollState();
   if (button instanceof HTMLButtonElement) {
     button.disabled = true;
     button.setAttribute("aria-busy", "true");
     button.textContent = "同步中";
   }
 
-  renderRebuiltUi();
-  const restore = () => restoreImageViewerScrollPosition(scrollPosition);
+  renderRebuiltUi({ preserveScroll: automatic });
+  const restore = () => restoreSeamlessRebuildScrollState(
+    scrollState,
+    interactionRevision,
+    !automatic
+  );
   requestAnimationFrame(restore);
   [80, 220].forEach((delay) => {
     window.setTimeout(() => {
-      syncRebuiltContent();
+      if (!automatic && document.querySelector("#cc98-comfort-app [data-feed-kind]")) {
+        syncRebuiltContent();
+      }
       restore();
     }, delay);
   });
 }
 
-function renderRebuiltUi() {
+function renderRebuiltUi(options = {}) {
   if (isRebuilding) {
     return;
   }
@@ -21118,11 +22659,18 @@ function renderRebuiltUi() {
 
   const existing = document.querySelector("#cc98-comfort-app");
   const currentKind = getPageKind();
+  updateNewTopicAutoRefreshVisitState();
   clearUserCenterStaleLoadingOverlay(currentKind);
   const preservedMessageScrollState = currentKind === "message"
     ? captureMessageWindowScrollState(existing || document)
     : null;
   const preservedSearchState = captureRebuiltSearchUiState(existing);
+  const preservedSearchForm = existing?.dataset.routeKey === getRoutePageKey()
+    ? existing.querySelector(".cc98-rebuild-topbar > .cc98-rebuild-search")
+    : null;
+  if (preservedSearchForm instanceof HTMLFormElement && preservedSearchState?.typeMenuOpen) {
+    preservedSearchForm.dataset.cc98PreserveTypeMenu = "true";
+  }
   if (!lastSettings || !document.body) {
     isRebuilding = false;
     return;
@@ -21136,6 +22684,7 @@ function renderRebuiltUi() {
     }
     editorSubmitOverlayAwaitingRebuild = false;
     hideLoadingOverlay({ force: true });
+    releaseRebuildTransitionVeil({ immediate: true });
     isRebuilding = false;
     return;
   }
@@ -21144,6 +22693,7 @@ function renderRebuiltUi() {
     legacyQuoteGuardObserver?.disconnect();
     legacyQuoteGuardObserver = null;
     restoreReparentedNativeNodes(existing);
+    preservedSearchForm?.remove();
     existing.remove();
   }
 
@@ -21193,15 +22743,19 @@ function renderRebuiltUi() {
         ["\u7a0d\u540e\u518d\u770b", getReadLaterPageHref()]
       ].forEach(([label, href]) => navLinks.append(createLink("", label, href)));
       nav.append(navLinks);
-      const searchForm = createRebuiltSearchForm(preservedSearchState);
-      const refreshButton = createButton(
-        "cc98-rebuild-icon-button cc98-rebuild-refresh-button",
-        "刷新",
-        (event) => refreshRebuiltFromLoadedNativeContent(event.currentTarget)
-      );
-      refreshButton.title = "同步原页面已加载内容";
-      refreshButton.setAttribute("aria-label", "同步原页面已加载内容");
-      searchForm.append(refreshButton);
+      const searchForm = preservedSearchForm instanceof HTMLFormElement
+        ? preservedSearchForm
+        : createRebuiltSearchForm(preservedSearchState);
+      if (!searchForm.querySelector(".cc98-rebuild-refresh-button")) {
+        const refreshButton = createButton(
+          "cc98-rebuild-icon-button cc98-rebuild-refresh-button",
+          "刷新",
+          (event) => refreshRebuiltFromLoadedNativeContent(event.currentTarget)
+        );
+        refreshButton.title = "同步原页面已加载内容";
+        refreshButton.setAttribute("aria-label", "同步原页面已加载内容");
+        searchForm.append(refreshButton);
+      }
       nav.append(searchForm);
       const actions = createElement("div", "cc98-rebuild-actions");
       actions.append(renderTopbarUserEntry());
@@ -21287,24 +22841,33 @@ function renderRebuiltUi() {
     setupRebuiltImagePlaceholders(app);
     document.documentElement.classList.add("cc98-comfort-rebuild-active");
     document.documentElement.dataset.cc98ComfortRebuildReady = "true";
+    releaseRebuildTransitionVeilWhenReady();
     if (app.dataset.cc98UserCenterPending === "true") {
       showLoadingOverlay("正在加载个人中心...", { allowUserCenter: true });
       scheduleUserCenterPendingRebuild();
     } else {
-      hideLoadingOverlayWhenReady(app);
+      hideLoadingOverlayWhenReady(app, {
+        skipHashScroll: Boolean(options.preserveScroll)
+      });
     }
     armAutoLoader();
+    rememberSeamlessNativeContentSignature();
     startPostLazyFallbackPrewarm();
   } catch (error) {
     console.error("[CC98 Reborn] rebuild failed", error);
     legacyQuoteGuardObserver?.disconnect();
     legacyQuoteGuardObserver = null;
-    document.querySelector("#cc98-comfort-app")?.remove();
+    const failedApp = document.querySelector("#cc98-comfort-app");
+    if (failedApp instanceof HTMLElement) {
+      restoreReparentedNativeNodes(failedApp);
+      failedApp.remove();
+    }
     document.documentElement.classList.remove("cc98-comfort-rebuild-active");
     document.documentElement.dataset.cc98ComfortRebuildReady = "false";
     document.documentElement.removeAttribute("data-cc98-comfort-app-root");
     editorSubmitOverlayAwaitingRebuild = false;
     hideLoadingOverlay({ force: true });
+    releaseRebuildTransitionVeil({ immediate: true });
   } finally {
     isRebuilding = false;
   }
@@ -21770,16 +23333,38 @@ function armAutoLoader() {
   }
 
   autoLoadArmed = true;
+  const markScrollInteraction = () => {
+    seamlessScrollInteractionRevision += 1;
+  };
+  window.addEventListener("wheel", markScrollInteraction, { passive: true, capture: true });
+  window.addEventListener("touchmove", markScrollInteraction, { passive: true, capture: true });
+  document.addEventListener("pointerdown", markScrollInteraction, { passive: true, capture: true });
+  document.addEventListener("pointermove", (event) => {
+    if (event.buttons) {
+      markScrollInteraction();
+    }
+  }, { passive: true, capture: true });
+  document.addEventListener("keydown", (event) => {
+    if (["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "].includes(event.key)) {
+      markScrollInteraction();
+    }
+  }, true);
   window.addEventListener("scroll", () => {
     if (!lastSettings?.enabled || !lastSettings.rebuildUi) {
       return;
+    }
+    const kind = getPageKind();
+    if (SEAMLESS_SCROLL_SYNC_PAGE_KINDS.has(kind)) {
+      scheduleSeamlessNativeContentSync();
     }
     const nearBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 900;
     if (!nearBottom) {
       return;
     }
     pokeNativeInfiniteLoad();
-    scheduleSync();
+    if (kind === "userCenter") {
+      scheduleSync();
+    }
   }, { passive: true });
 }
 
@@ -21837,6 +23422,12 @@ function ensureObserver() {
           );
       });
     });
+    const hasSeamlessNativeContentMutation = records.some((record) => {
+      return isSeamlessNativeContentMutation(record);
+    });
+    if (hasSeamlessNativeContentMutation) {
+      scheduleSeamlessNativeContentSync({ fromMutation: true });
+    }
     if (!hasSourceMutation) {
       return;
     }
@@ -21845,14 +23436,32 @@ function ensureObserver() {
       scheduleFiltering();
     }
     if (!isRebuilding) {
-      scheduleSync();
+      if (SEAMLESS_SCROLL_SYNC_PAGE_KINDS.has(getPageKind())
+        && Date.now() <= seamlessScrollSyncIntentUntil) {
+        scheduleSeamlessNativeContentSync({ fromMutation: true });
+      } else {
+        scheduleSync();
+      }
     }
   });
   observer.observe(document.body || document.documentElement, {
     childList: true,
     subtree: true,
     attributes: true,
-    attributeFilter: ["src", "data-src", "data-original", "data-url", "data-avatar", "data-portrait"]
+    attributeFilter: [
+      "src",
+      "srcset",
+      "data-src",
+      "data-srcset",
+      "data-original",
+      "data-url",
+      "data-avatar",
+      "data-portrait",
+      "data-original-src",
+      "data-lazy-src",
+      "data-actualsrc",
+      "poster"
+    ]
   });
 }
 
@@ -21879,6 +23488,16 @@ function patchHistoryNavigation() {
           if (fixedUrl) {
             args[2] = fixedUrl;
           }
+        }
+      }
+      if (args.length >= 3 && typeof args[2] !== "undefined" && args[2] !== null) {
+        try {
+          const targetHref = new URL(String(args[2]), location.href).href;
+          if (targetHref !== location.href && isRebuildTransitionVeilTarget(targetHref)) {
+            beginRebuildTransitionVeil(targetHref);
+          }
+        } catch {
+          // Native history handling remains authoritative for malformed URLs.
         }
       }
       const result = original.apply(this, args);
@@ -21916,6 +23535,7 @@ function patchHistoryNavigation() {
     }
     const nextRouteKey = getRoutePageKey();
     if (nextRouteKey !== previousRouteKey) {
+      beginRebuildTransitionVeil(location.href);
       previousRouteKey = nextRouteKey;
       markCurrentTopicReadLaterRead();
       scheduleDelayedRebuilds();
@@ -22030,6 +23650,7 @@ function bootNormalPage() {
   }
   confirmCurrentWebVpnCc98Prefix();
   normalPageBooted = true;
+  bindRebuildTransitionVeilNavigationGuard();
   clearPublicUserProfileLoadingOverlay();
   bindPageEditorSubmitResultMonitor();
   ensureRebornReplyTailSubmitGuard();
@@ -22086,6 +23707,7 @@ function bootNormalPage() {
   loadSettings();
 }
 
+armInitialRebuildTransitionVeil();
 if (!recoverPendingWebVpnOpenIdCallback() && !isOpenIdAuthorizationPage()) {
   bootNormalPage();
 }

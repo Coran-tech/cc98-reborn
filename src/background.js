@@ -1,11 +1,16 @@
 const UPDATE_STATUS_STORAGE_KEY = "cc98RebornUpdateStatus:v1";
 const UPDATE_STARTUP_NOTICE_SESSION_KEY = "cc98RebornUpdateStartupNoticeShown:v1";
 const OPENID_BINDING_STORAGE_KEY = "cc98RebornOpenIdBinding:v1";
+const OPENID_REFRESH_CREDENTIAL_STORAGE_KEY = "cc98RebornOpenIdRefreshCredential:v1";
+const OPENID_ACCESS_CREDENTIAL_SESSION_KEY = "cc98RebornOpenIdAccessCredential:v1";
 const OPENID_WEBVPN_PENDING_STORAGE_KEY = "cc98RebornOpenIdWebVpnPending:v1";
 const OPENID_WEBVPN_PENDING_TTL_MS = 10 * 60 * 1000;
 const OPENID_PROFILE_REFRESH_ALARM_NAME = "cc98-reborn-openid-profile-refresh";
-const OPENID_PROFILE_REFRESH_INTERVAL_MINUTES = 60;
-const OPENID_PROFILE_REFRESH_MIN_INTERVAL_MS = 55 * 60 * 1000;
+// Keep the refresh implementation dormant. Current releases use the profile
+// captured at binding time as the sole local watermark source.
+const OPENID_PROFILE_REFRESH_ENABLED = false;
+const OPENID_PROFILE_REFRESH_INTERVAL_MINUTES = 1;
+const OPENID_PROFILE_REFRESH_MIN_INTERVAL_MS = 45 * 1000;
 const UPDATE_CHECK_ALARM_NAME = "cc98-reborn-update-check";
 const UPDATE_CHECK_INTERVAL_MINUTES = 6 * 60;
 const UPDATE_CHECK_MIN_INTERVAL_MS = 30 * 60 * 1000;
@@ -15,7 +20,13 @@ const CC98_OPENID_TOKEN_URL = "https://openid.cc98.org/connect/token";
 const CC98_OPENID_USERINFO_URL = "https://openid.cc98.org/connect/userinfo";
 const CC98_API_ME_URL = "https://api.cc98.org/me";
 const CC98_WEBVPN_OPENID_REDIRECT_URI = "https://www.cc98.org/";
-const CC98_OPENID_SCOPES = ["openid", "profile", "cc98-api", "read-user-info"];
+const CC98_OPENID_SCOPES = [
+  "openid",
+  "profile",
+  "cc98-api",
+  "read-user-info",
+  ...(OPENID_PROFILE_REFRESH_ENABLED ? ["offline_access"] : [])
+];
 const CC98_WEBVPN_ORIGIN = "https://webvpn.zju.edu.cn";
 const CC98_WEBVPN_HOST_TOKENS = Object.freeze({
   "openid.cc98.org": "77726476706e69737468656265737421ffe744922e3426537d51d1e2974724",
@@ -621,6 +632,196 @@ async function exchangeOpenIdCode(code, codeVerifier, redirectUri, authTransport
   return payload;
 }
 
+async function exchangeOpenIdRefreshToken(refreshToken, authTransport = "direct") {
+  if (!refreshToken) {
+    throw new Error("refresh-token: missing refresh_token");
+  }
+  const body = new URLSearchParams({
+    grant_type: "refresh_token",
+    client_id: CC98_OPENID_CLIENT_ID,
+    refresh_token: refreshToken
+  });
+  const response = await fetch(getOpenIdTransportUrl(CC98_OPENID_TOKEN_URL, authTransport), {
+    method: "POST",
+    headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body,
+    cache: "no-store",
+    credentials: normalizeOpenIdAuthTransport(authTransport) === "webvpn" ? "include" : "omit"
+  });
+  const text = await response.text();
+  let payload = {};
+  try {
+    payload = text ? JSON.parse(text) : {};
+  } catch {
+    payload = { raw: text };
+  }
+  if (!response.ok) {
+    const errorCode = String(payload.error || "").trim();
+    const errorDescription = String(payload.error_description || "").trim();
+    const reason = errorCode && errorDescription
+      ? `${errorCode}: ${errorDescription}`
+      : (errorDescription || errorCode || payload.raw || `HTTP ${response.status}`);
+    throw new Error(`refresh-token: ${reason}`);
+  }
+  if (!payload.access_token) {
+    throw new Error("refresh-token: missing access_token");
+  }
+  return payload;
+}
+
+function normalizeOpenIdTokenUserId(binding) {
+  return normalizeAccountId(
+    binding?.userId
+    ?? binding?.id
+    ?? binding?.uid
+    ?? binding?.userID
+    ?? binding?.cc98Id
+    ?? binding?.cc98UserId
+  );
+}
+
+function openIdCredentialMatchesBinding(credential, binding) {
+  const credentialUserId = normalizeAccountId(credential?.userId);
+  const bindingUserId = normalizeOpenIdTokenUserId(binding);
+  return Boolean(credentialUserId && bindingUserId && credentialUserId === bindingUserId);
+}
+
+async function readOpenIdCredential(binding) {
+  const [localResult, sessionResult] = await Promise.all([
+    readLocalStorage(OPENID_REFRESH_CREDENTIAL_STORAGE_KEY),
+    readSessionStorage(OPENID_ACCESS_CREDENTIAL_SESSION_KEY)
+  ]);
+  const refreshCredential = localResult[OPENID_REFRESH_CREDENTIAL_STORAGE_KEY];
+  const accessCredential = sessionResult[OPENID_ACCESS_CREDENTIAL_SESSION_KEY];
+  return {
+    refresh: openIdCredentialMatchesBinding(refreshCredential, binding) ? refreshCredential : null,
+    access: openIdCredentialMatchesBinding(accessCredential, binding) ? accessCredential : null
+  };
+}
+
+async function clearOpenIdCredential() {
+  await Promise.all([
+    removeLocalStorage(OPENID_REFRESH_CREDENTIAL_STORAGE_KEY),
+    removeSessionStorage(OPENID_ACCESS_CREDENTIAL_SESSION_KEY)
+  ]);
+}
+
+async function persistOpenIdTokenPayload(tokenPayload, binding, authTransport = "direct") {
+  const userId = normalizeOpenIdTokenUserId(binding);
+  if (!userId || !tokenPayload?.access_token) {
+    throw new Error("token-storage: missing UID or access_token");
+  }
+  const now = Date.now();
+  const expiresInSeconds = Number(tokenPayload.expires_in);
+  const expiresAt = now + (
+    Number.isFinite(expiresInSeconds) && expiresInSeconds > 0
+      ? expiresInSeconds * 1000
+      : 5 * 60 * 1000
+  );
+  const normalizedTransport = normalizeOpenIdAuthTransport(authTransport);
+  const existing = await readOpenIdCredential(binding);
+  const refreshToken = String(tokenPayload.refresh_token || existing.refresh?.refreshToken || "");
+  const scope = String(tokenPayload.scope || existing.refresh?.scope || binding.scope || CC98_OPENID_SCOPES.join(" "));
+  const accessCredential = {
+    version: 1,
+    userId,
+    accessToken: String(tokenPayload.access_token),
+    tokenType: String(tokenPayload.token_type || "Bearer"),
+    scope,
+    authTransport: normalizedTransport,
+    expiresAt,
+    updatedAt: now
+  };
+  await writeSessionStorage({
+    [OPENID_ACCESS_CREDENTIAL_SESSION_KEY]: accessCredential
+  });
+  if (refreshToken) {
+    await writeLocalStorage({
+      [OPENID_REFRESH_CREDENTIAL_STORAGE_KEY]: {
+        version: 1,
+        userId,
+        refreshToken,
+        scope,
+        authTransport: normalizedTransport,
+        updatedAt: now
+      }
+    });
+  } else {
+    await removeLocalStorage(OPENID_REFRESH_CREDENTIAL_STORAGE_KEY);
+  }
+  return {
+    ...accessCredential,
+    refreshToken
+  };
+}
+
+async function refreshStoredOpenIdAccessToken(binding, refreshCredential) {
+  if (!openIdCredentialMatchesBinding(refreshCredential, binding) || !refreshCredential?.refreshToken) {
+    throw new Error("\u9700\u8981\u91cd\u65b0\u6388\u6743\uff1a\u672a\u4fdd\u5b58 OpenID refresh_token");
+  }
+  const authTransport = normalizeOpenIdAuthTransport(
+    refreshCredential.authTransport || binding.authTransport
+  );
+  let tokenPayload;
+  try {
+    tokenPayload = await exchangeOpenIdRefreshToken(
+      refreshCredential.refreshToken,
+      authTransport
+    );
+  } catch (error) {
+    const message = String(error?.message || "");
+    if (/login_required|invalid_grant|invalid_token|expired.*refresh|refresh.*expired/i.test(message)) {
+      await clearOpenIdCredential();
+      throw new Error("\u9700\u8981\u91cd\u65b0\u6388\u6743\uff1aOpenID refresh_token \u5df2\u5931\u6548");
+    }
+    throw error;
+  }
+  return persistOpenIdTokenPayload(tokenPayload, binding, authTransport);
+}
+
+async function fetchCc98MeWithStoredCredential(binding) {
+  let credential = await readOpenIdCredential(binding);
+  let accessCredential = credential.access;
+  const authTransport = normalizeOpenIdAuthTransport(
+    accessCredential?.authTransport
+    || credential.refresh?.authTransport
+    || binding.authTransport
+  );
+  if (
+    !accessCredential?.accessToken
+    || Number(accessCredential.expiresAt || 0) <= Date.now() + 30 * 1000
+  ) {
+    accessCredential = await refreshStoredOpenIdAccessToken(binding, credential.refresh);
+    credential = await readOpenIdCredential(binding);
+  }
+
+  let profile;
+  try {
+    profile = await fetchCc98Me(accessCredential.accessToken, authTransport);
+  } catch (firstError) {
+    if (!credential.refresh?.refreshToken) {
+      throw firstError;
+    }
+    accessCredential = await refreshStoredOpenIdAccessToken(binding, credential.refresh);
+    profile = await fetchCc98Me(accessCredential.accessToken, authTransport);
+  }
+  return {
+    binding: normalizeOpenIdBinding({
+      ...profile,
+      _cc98RebornProfileSource: "api-me"
+    }, {
+      scope: accessCredential.scope
+    }),
+    credential: {
+      ...accessCredential,
+      refreshToken: credential.refresh?.refreshToken || accessCredential.refreshToken || ""
+    }
+  };
+}
+
 function wait(ms) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
@@ -883,8 +1084,9 @@ async function requestCc98OpenIdBinding({
   if (forceLogin) {
     authorizeUrl.searchParams.set("prompt", "login consent");
     authorizeUrl.searchParams.set("max_age", "0");
-  } else if (!interactive) {
-    authorizeUrl.searchParams.set("prompt", "none");
+  } else if (interactive && OPENID_PROFILE_REFRESH_ENABLED) {
+    // offline_access needs explicit consent so the provider reliably returns a refresh token.
+    authorizeUrl.searchParams.set("prompt", "consent");
   }
   const authFlowUrl = getOpenIdTransportUrl(authorizeUrl.href, normalizedTransport);
   if (normalizedTransport === "webvpn") {
@@ -942,7 +1144,10 @@ async function requestCc98OpenIdBinding({
       normalizedTransport
     );
     const profile = await fetchCc98Profile(tokenPayload.access_token, normalizedTransport);
-    return normalizeOpenIdBinding(profile, tokenPayload);
+    return {
+      binding: normalizeOpenIdBinding(profile, tokenPayload),
+      tokenPayload
+    };
   } finally {
     if (normalizedTransport === "webvpn") {
       await clearPersistedOpenIdWebVpnFlow();
@@ -963,41 +1168,65 @@ function prepareOpenIdBindingForStorage(binding, expectedAccount, authTransport)
   nextBinding.authTransport = normalizeOpenIdAuthTransport(authTransport);
   nextBinding.verifiedBy = "openid-api-me";
   nextBinding.verifiedAt = Date.now();
-  nextBinding.profileRefreshAttemptedAt = nextBinding.verifiedAt;
-  if (nextBinding.profileSource === "api-me") {
-    nextBinding.profileRefreshedAt = nextBinding.verifiedAt;
+  if (OPENID_PROFILE_REFRESH_ENABLED) {
+    nextBinding.profileRefreshAttemptedAt = nextBinding.verifiedAt;
+    if (nextBinding.profileSource === "api-me") {
+      nextBinding.profileRefreshedAt = nextBinding.verifiedAt;
+    }
+    nextBinding.profileRefreshError = "";
+  } else {
+    delete nextBinding.profileRefreshAttemptedAt;
+    delete nextBinding.profileRefreshedAt;
+    delete nextBinding.profileRefreshError;
+    delete nextBinding.autoCalibrationReady;
   }
-  nextBinding.profileRefreshError = "";
   return nextBinding;
 }
 
 async function loginWithCc98OpenId(expectedAccount = null, { authTransport = "direct" } = {}) {
   const normalizedTransport = normalizeOpenIdAuthTransport(authTransport);
-  let binding = await requestCc98OpenIdBinding({
+  let authorization = await requestCc98OpenIdBinding({
     forceLogin: false,
     authTransport: normalizedTransport,
     expectedAccount,
     resumeMode: "bind"
   });
+  let binding = authorization.binding;
   if (expectedAccount) {
     try {
       requireSameCc98UserId(binding, expectedAccount);
     } catch (firstError) {
+      await clearOpenIdCredential();
       await clearCc98OpenIdSessionData();
-      binding = await requestCc98OpenIdBinding({
+      authorization = await requestCc98OpenIdBinding({
         forceLogin: true,
         authTransport: normalizedTransport,
         expectedAccount,
         resumeMode: "bind"
       });
+      binding = authorization.binding;
       try {
         requireSameCc98UserId(binding, expectedAccount);
       } catch {
+        await clearOpenIdCredential();
         throw firstError;
       }
     }
   }
   binding = prepareOpenIdBindingForStorage(binding, expectedAccount, normalizedTransport);
+  if (OPENID_PROFILE_REFRESH_ENABLED) {
+    const credential = await persistOpenIdTokenPayload(
+      authorization.tokenPayload,
+      binding,
+      normalizedTransport
+    );
+    binding.autoCalibrationReady = Boolean(credential.refreshToken);
+    if (!binding.autoCalibrationReady) {
+      binding.profileRefreshError = "\u9700\u8981\u91cd\u65b0\u6388\u6743\uff1aOpenID \u672a\u8fd4\u56de refresh_token\uff0c\u8bf7\u786e\u8ba4 offline_access \u6743\u9650";
+    }
+  } else {
+    await clearOpenIdCredential();
+  }
   await writeLocalStorage({ [OPENID_BINDING_STORAGE_KEY]: binding });
   return { ok: true, binding };
 }
@@ -1070,10 +1299,23 @@ async function resumePersistedOpenIdWebVpnFlow(recovered, pending, authTabId) {
       "webvpn"
     );
     const profile = await fetchCc98Profile(tokenPayload.access_token, "webvpn");
-    const binding = await persistResumedOpenIdWebVpnBinding(
+    let binding = await persistResumedOpenIdWebVpnBinding(
       normalizeOpenIdBinding(profile, tokenPayload),
       pending
     );
+    if (OPENID_PROFILE_REFRESH_ENABLED) {
+      const credential = await persistOpenIdTokenPayload(tokenPayload, binding, "webvpn");
+      binding = {
+        ...binding,
+        autoCalibrationReady: Boolean(credential.refreshToken),
+        profileRefreshError: credential.refreshToken
+          ? ""
+          : "\u9700\u8981\u91cd\u65b0\u6388\u6743\uff1aOpenID \u672a\u8fd4\u56de refresh_token\uff0c\u8bf7\u786e\u8ba4 offline_access \u6743\u9650"
+      };
+      await writeLocalStorage({ [OPENID_BINDING_STORAGE_KEY]: binding });
+    } else {
+      await clearOpenIdCredential();
+    }
     await closeTabQuietly(authTabId);
     return {
       ok: true,
@@ -1169,6 +1411,14 @@ function handleOpenIdWebVpnTabUpdated(tabId, changeInfo, tab) {
 async function performOpenIdBindingProfileRefresh({ force = false } = {}) {
   const current = await getOpenIdBinding();
   const binding = current.binding;
+  if (!OPENID_PROFILE_REFRESH_ENABLED) {
+    return {
+      ok: true,
+      binding,
+      refreshed: false,
+      reason: "local-binding-only"
+    };
+  }
   if (!binding?.bound) {
     return { ok: true, binding: null, refreshed: false, reason: "not-bound" };
   }
@@ -1185,35 +1435,38 @@ async function performOpenIdBindingProfileRefresh({ force = false } = {}) {
     return { ok: true, binding, refreshed: false, reason: "fresh" };
   }
 
+  const attemptingBinding = {
+    ...binding,
+    profileRefreshAttemptedAt: now,
+    profileRefreshError: ""
+  };
+  await writeLocalStorage({ [OPENID_BINDING_STORAGE_KEY]: attemptingBinding });
+
   try {
-    const refreshed = await requestCc98OpenIdBinding({
-      forceLogin: false,
-      interactive: false,
-      authTransport: normalizeOpenIdAuthTransport(binding.authTransport),
-      expectedAccount: binding.matchedWebAccount || binding,
-      resumeMode: "refresh"
-    });
+    const refreshedResult = await fetchCc98MeWithStoredCredential(attemptingBinding);
+    const refreshed = refreshedResult.binding;
     if (refreshed.profileSource !== "api-me" || !refreshed.watermarkIdPrefix) {
       throw new Error("OpenID /me did not return a usable watermarkId");
     }
-    requireSameCc98UserId(refreshed, binding.matchedWebAccount || binding);
+    requireSameCc98UserId(refreshed, attemptingBinding.matchedWebAccount || attemptingBinding);
 
     const refreshedAt = Date.now();
     const nextBinding = {
-      ...binding,
-      userId: refreshed.userId || binding.userId,
-      userName: refreshed.userName || binding.userName,
-      portraitUrl: refreshed.portraitUrl || binding.portraitUrl,
+      ...attemptingBinding,
+      userId: refreshed.userId || attemptingBinding.userId,
+      userName: refreshed.userName || attemptingBinding.userName,
+      portraitUrl: refreshed.portraitUrl || attemptingBinding.portraitUrl,
       watermarkIdPrefix: refreshed.watermarkIdPrefix,
       profileSource: "api-me",
       profileWarning: "",
-      scope: refreshed.scope || binding.scope,
+      scope: refreshed.scope || attemptingBinding.scope,
       storageMode: "local-readonly",
       verifiedBy: "openid-api-me",
       verifiedAt: refreshedAt,
       profileRefreshedAt: refreshedAt,
       profileRefreshAttemptedAt: refreshedAt,
-      profileRefreshError: ""
+      profileRefreshError: "",
+      autoCalibrationReady: Boolean(refreshedResult.credential?.refreshToken)
     };
     await writeLocalStorage({ [OPENID_BINDING_STORAGE_KEY]: nextBinding });
     return { ok: true, binding: nextBinding, refreshed: true };
@@ -1221,7 +1474,7 @@ async function performOpenIdBindingProfileRefresh({ force = false } = {}) {
     const failedAt = Date.now();
     const message = String(error?.message || "openid-profile-refresh-failed").slice(0, 240);
     const latest = (await getOpenIdBinding()).binding;
-    const originalId = normalizeAccountId(binding.userId);
+    const originalId = normalizeAccountId(attemptingBinding.userId);
     const latestId = normalizeAccountId(latest?.userId);
     if (latest?.bound && (!originalId || !latestId || originalId === latestId)) {
       const nextBinding = {
@@ -1232,7 +1485,7 @@ async function performOpenIdBindingProfileRefresh({ force = false } = {}) {
       await writeLocalStorage({ [OPENID_BINDING_STORAGE_KEY]: nextBinding });
       return { ok: false, binding: nextBinding, refreshed: false, error: message };
     }
-    return { ok: false, binding: latest || binding, refreshed: false, error: message };
+    return { ok: false, binding: latest || attemptingBinding, refreshed: false, error: message };
   }
 }
 
@@ -1250,7 +1503,10 @@ function refreshOpenIdBindingProfile(options = {}) {
 async function logoutCc98OpenId() {
   pendingOpenIdWebVpnFlow = null;
   await clearPersistedOpenIdWebVpnFlow();
-  await removeLocalStorage(OPENID_BINDING_STORAGE_KEY);
+  await Promise.all([
+    removeLocalStorage(OPENID_BINDING_STORAGE_KEY),
+    clearOpenIdCredential()
+  ]);
   const session = await clearCc98OpenIdSessionData();
   return {
     ok: true,
@@ -1476,18 +1732,94 @@ function setupUpdateChecker() {
   checkForUpdates().catch(() => {});
 }
 
-function setupOpenIdProfileRefresh() {
+function readAlarm(name) {
+  return new Promise((resolve) => {
+    chrome.alarms.get(name, (alarm) => {
+      if (chrome.runtime.lastError) {
+        resolve(null);
+        return;
+      }
+      resolve(alarm || null);
+    });
+  });
+}
+
+function clearAlarm(name) {
+  return new Promise((resolve) => {
+    chrome.alarms.clear(name, (cleared) => {
+      void chrome.runtime.lastError;
+      resolve(Boolean(cleared));
+    });
+  });
+}
+
+async function ensureOpenIdProfileRefreshAlarm() {
+  const alarm = await readAlarm(OPENID_PROFILE_REFRESH_ALARM_NAME);
+  if (!OPENID_PROFILE_REFRESH_ENABLED) {
+    if (alarm) {
+      await clearAlarm(OPENID_PROFILE_REFRESH_ALARM_NAME);
+    }
+    return null;
+  }
+  const currentPeriod = Number(alarm?.periodInMinutes || 0);
+  if (
+    alarm
+    && Math.abs(currentPeriod - OPENID_PROFILE_REFRESH_INTERVAL_MINUTES) < 0.001
+  ) {
+    return alarm;
+  }
+  if (alarm) {
+    await clearAlarm(OPENID_PROFILE_REFRESH_ALARM_NAME);
+  }
   chrome.alarms.create(OPENID_PROFILE_REFRESH_ALARM_NAME, {
-    delayInMinutes: 2,
+    delayInMinutes: OPENID_PROFILE_REFRESH_INTERVAL_MINUTES,
     periodInMinutes: OPENID_PROFILE_REFRESH_INTERVAL_MINUTES
   });
-  refreshOpenIdBindingProfile().catch(() => {});
+  return readAlarm(OPENID_PROFILE_REFRESH_ALARM_NAME);
+}
+
+async function enforceLocalOnlyOpenIdBinding() {
+  await ensureOpenIdProfileRefreshAlarm();
+  await clearOpenIdCredential();
+  const stored = await readLocalStorage(OPENID_BINDING_STORAGE_KEY);
+  const binding = stored[OPENID_BINDING_STORAGE_KEY];
+  if (!binding?.bound) {
+    return { ok: true, binding: null };
+  }
+  const calibrationKeys = [
+    "profileRefreshAttemptedAt",
+    "profileRefreshedAt",
+    "profileRefreshError",
+    "autoCalibrationReady"
+  ];
+  if (!calibrationKeys.some((key) => Object.prototype.hasOwnProperty.call(binding, key))) {
+    return { ok: true, binding };
+  }
+  const nextBinding = { ...binding };
+  calibrationKeys.forEach((key) => {
+    delete nextBinding[key];
+  });
+  await writeLocalStorage({ [OPENID_BINDING_STORAGE_KEY]: nextBinding });
+  return { ok: true, binding: nextBinding };
+}
+
+async function setupOpenIdProfileRefresh() {
+  if (!OPENID_PROFILE_REFRESH_ENABLED) {
+    return enforceLocalOnlyOpenIdBinding();
+  }
+  await ensureOpenIdProfileRefreshAlarm();
+  return refreshOpenIdBindingProfile({ force: true });
 }
 
 chrome.runtime.onInstalled.addListener(setupUpdateChecker);
 chrome.runtime.onStartup.addListener(setupUpdateChecker);
-chrome.runtime.onInstalled.addListener(setupOpenIdProfileRefresh);
-chrome.runtime.onStartup.addListener(setupOpenIdProfileRefresh);
+chrome.runtime.onInstalled.addListener(() => {
+  setupOpenIdProfileRefresh().catch(() => {});
+});
+chrome.runtime.onStartup.addListener(() => {
+  setupOpenIdProfileRefresh().catch(() => {});
+});
+setupOpenIdProfileRefresh().catch(() => {});
 
 chrome.webNavigation?.onBeforeNavigate?.addListener(handleOpenIdWebVpnNavigation);
 chrome.webNavigation?.onCommitted?.addListener(handleOpenIdWebVpnNavigation);
@@ -1497,8 +1829,11 @@ chrome.tabs.onUpdated.addListener(handleOpenIdWebVpnTabUpdated);
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm?.name === UPDATE_CHECK_ALARM_NAME) {
     checkForUpdates().catch(() => {});
-  } else if (alarm?.name === OPENID_PROFILE_REFRESH_ALARM_NAME) {
-    refreshOpenIdBindingProfile().catch(() => {});
+  } else if (
+    OPENID_PROFILE_REFRESH_ENABLED
+    && alarm?.name === OPENID_PROFILE_REFRESH_ALARM_NAME
+  ) {
+    refreshOpenIdBindingProfile({ force: true }).catch(() => {});
   }
 });
 
@@ -1514,6 +1849,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message?.type === "CC98_REBORN_OPENID_GET_STATE") {
     getOpenIdBinding().then(sendResponse);
+    return true;
+  }
+
+  if (message?.type === "CC98_REBORN_OPENID_REFRESH_PROFILE") {
+    ensureOpenIdProfileRefreshAlarm()
+      .then(() => refreshOpenIdBindingProfile({ force: true }))
+      .then(sendResponse)
+      .catch((error) => sendResponse({
+        ok: false,
+        error: error?.message || "openid-profile-refresh-failed"
+      }));
     return true;
   }
 

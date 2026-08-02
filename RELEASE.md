@@ -1,6 +1,6 @@
 # Release Checklist
 
-Current release target: `0.2.11`.
+Current release target: `0.3.0`.
 
 1. Confirm `manifest.json` version.
 2. Run validation:
@@ -34,11 +34,10 @@ node -e "JSON.parse(require('fs').readFileSync('manifest.json','utf8')); console
 - `src/page-submit-monitor.js`
 - `src/styles.css`
 - `README.md`
-- `README.zh-CN.md`
 - `CHANGELOG.md`
 - `LICENSE`
 - `PRIVACY.md`
 
 ## Notes
 
-The release includes the active CC98 OpenID authorization code + PKCE flow for direct CC98 and WebVPN sessions. Binding must match the current CC98 web-account UID. Only the local identity summary and watermark prefix are retained; access and refresh tokens are not persisted. A non-interactive refresh checks `/me` about once per hour and preserves the previous valid summary when refresh fails.
+The release includes the active CC98 OpenID authorization code + PKCE flow for direct CC98 and WebVPN sessions. Binding must match the current CC98 web-account UID. Only the local identity summary and watermark prefix captured at binding time are retained; access and refresh tokens are not persisted. Periodic profile refresh code remains disabled.

@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="zh-CN" class="cc98-comfort">
+<head>
+  <meta charset="utf-8">
+  <title>CC98 Reborn interaction regression</title>
+  <link rel="stylesheet" href="../src/styles.css">
+  <style>
+    body { padding: 24px; }
+    .search-history-regression {
+      position: relative;
+      width: min(420px, calc(100vw - 48px));
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <main id="results"></main>
+  <script>
+    window.chrome = {
+      storage: {
+        local: {
+          get(_key, callback) {
+            callback({});
+          },
+          set(_value, callback) {
+            callback?.();
+          },
+          remove(_key, callback) {
+            callback?.();
+          }
+        },
+        onChanged: {
+          addListener() {}
+        }
+      },
+      runtime: {
+        lastError: null,
+        getURL(path) {
+          return path;
+        },
+        sendMessage(_message, callback) {
+          callback?.({ ok: false });
+        },
+        onMessage: {
+          addListener() {}
+        }
+      }
+    };
+  </script>
+  <script src="../src/content.js"></script>
+  <script>
+    const results = document.querySelector("#results");
+    const checks = [];
+    const waitForRegression = (delay) => new Promise((resolve) => setTimeout(resolve, delay));
+
+    function check(name, condition, detail = "") {
+      checks.push({ name, passed: Boolean(condition), detail });
+    }
+
+    async function run() {
+      if (new URLSearchParams(location.search).has("side")) {
+        document.documentElement.dataset.cc98ComfortSideTopbar = "true";
+      }
+      document.body.insertAdjacentHTML("beforeend", `
+        <section class="topicInfo-info">
+          <div id="essay1">Regression topic</div>
+          <div class="topicInfo-boardMessage"><a>Test board</a></div>
+        </section>
+      `);
+
+      const favorite = document.createElement("div");
+      favorite.className = "followTopic";
+      favorite.textContent = "\u6536\u85cf";
+      let favoriteClicks = 0;
+      favorite.addEventListener("click", () => {
+        favoriteClicks += 1;
+      });
+      const favoriteProxy = renderProxyControl({
+        text: "\u6536\u85cf",
+        href: "",
+        control: favorite,
+        scope: "topic"
+      });
+      document.body.append(favorite, favoriteProxy);
+      favoriteProxy.click();
+      check("favorite dispatches once", favoriteClicks === 1, `clicks=${favoriteClicks}`);
+
+      const score = document.createElement("div");
+      score.className = "operation1";
+      score.textContent = "\u8bc4\u5206";
+      let scoreClicks = 0;
+      score.addEventListener("click", () => {
+        scoreClicks += 1;
+      });
+      const scoreProxy = renderProxyControl({
+        text: "\u8bc4\u5206",
+        href: "",
+        control: score,
+        scope: "post"
+      });
+      document.body.append(score, scoreProxy);
+      scoreProxy.click();
+      check("score dispatches once", scoreClicks === 1, `clicks=${scoreClicks}`);
+      for (let index = 0; index < 3; index += 1) {
+        await waitForRegression(340);
+        scoreProxy.click();
+      }
+      check("repeated score clicks do not accumulate handlers", scoreClicks === 4, `clicks=${scoreClicks}`);
+
+      const oldPost = document.createElement("div");
+      oldPost.className = "reply";
+      oldPost.id = "reply839454548";
+      oldPost.dataset.floor = "6";
+      const oldScore = document.createElement("div");
+      oldScore.className = "operation1";
+      oldScore.textContent = "\u8bc4\u5206";
+      oldPost.append(oldScore);
+      document.body.append(oldPost);
+      const staleScoreAction = collectPostActions(oldPost)
+        .find((action) => getProxyActionIdentity(action) === "score");
+      const staleScoreProxy = renderProxyControl(staleScoreAction);
+      document.body.append(staleScoreProxy);
+      oldPost.remove();
+      const newPost = document.createElement("div");
+      newPost.className = "reply";
+      newPost.id = "reply839454548";
+      newPost.dataset.floor = "6";
+      const newScore = document.createElement("div");
+      newScore.className = "operation1";
+      newScore.textContent = "\u8bc4\u5206";
+      let newScoreClicks = 0;
+      newScore.addEventListener("click", () => {
+        newScoreClicks += 1;
+      });
+      newPost.append(newScore);
+      document.body.append(newPost);
+      staleScoreProxy.click();
+      check("stale score control is re-resolved", newScoreClicks === 1, `clicks=${newScoreClicks}`);
+
+      const topicToolbar = document.querySelector(".topicInfo-info");
+      const oldFavorite = document.createElement("div");
+      oldFavorite.className = "followTopic";
+      oldFavorite.textContent = "\u6536\u85cf";
+      topicToolbar.append(oldFavorite);
+      const staleFavoriteProxy = renderProxyControl({
+        text: "\u6536\u85cf",
+        href: "",
+        control: oldFavorite,
+        scope: "topic"
+      });
+      document.body.append(staleFavoriteProxy);
+      oldFavorite.remove();
+      const newFavorite = document.createElement("div");
+      newFavorite.className = "followTopic";
+      newFavorite.textContent = "\u6536\u85cf";
+      let newFavoriteClicks = 0;
+      newFavorite.addEventListener("click", () => {
+        newFavoriteClicks += 1;
+      });
+      topicToolbar.append(newFavorite);
+      staleFavoriteProxy.click();
+      check("stale favorite control is re-resolved", newFavoriteClicks === 1, `clicks=${newFavoriteClicks}`);
+
+      const like = document.createElement("div");
+      like.className = "upup";
+      like.innerHTML = '<i class="fa fa-thumbs-o-up"></i><span class="commentProp"> 3</span>';
+      const dislike = document.createElement("div");
+      dislike.className = "downdown red-color";
+      dislike.innerHTML = '<i class="fa fa-thumbs-down"></i><span class="commentProp"> 2</span>';
+      let likeClicks = 0;
+      let dislikeClicks = 0;
+      like.addEventListener("click", () => {
+        likeClicks += 1;
+      });
+      dislike.addEventListener("click", () => {
+        dislikeClicks += 1;
+      });
+      const voteGroup = {};
+      const likeAction = { text: "\u8d5e 3", href: "", control: like, scope: "post", kind: "like", voteGroup };
+      const dislikeAction = { text: "\u8e29 2", href: "", control: dislike, scope: "post", kind: "dislike", voteGroup };
+      voteGroup.like = likeAction;
+      voteGroup.dislike = dislikeAction;
+      const likeProxy = renderProxyControl(likeAction);
+      const dislikeProxy = renderProxyControl(dislikeAction);
+      document.body.append(like, dislike, likeProxy, dislikeProxy);
+      likeProxy.click();
+      check("vote uses one native request", likeClicks === 1 && dislikeClicks === 0, `like=${likeClicks}, dislike=${dislikeClicks}`);
+      check("vote proxy is mutually exclusive", likeProxy.classList.contains("is-active") && !dislikeProxy.classList.contains("is-active"));
+
+      let copiedText = "";
+      try {
+        Object.defineProperty(navigator, "clipboard", {
+          configurable: true,
+          value: {
+            async writeText(text) {
+              copiedText = text;
+            }
+          }
+        });
+      } catch {
+        document.execCommand = () => {
+          copiedText = document.activeElement?.value || "";
+          return true;
+        };
+      }
+      const share = document.createElement("div");
+      share.className = "followTopic";
+      share.textContent = "\u5206\u4eab\u5e16\u5b50\u94fe\u63a5";
+      let shareNativeClicks = 0;
+      share.addEventListener("click", () => {
+        shareNativeClicks += 1;
+      });
+      const shareProxy = renderProxyControl({
+        text: "\u5206\u4eab\u5e16\u5b50\u94fe\u63a5",
+        href: "",
+        control: share,
+        scope: "topic"
+      });
+      document.body.append(share, shareProxy);
+      shareProxy.click();
+      await waitForRegression(20);
+      check("share bypasses the fragile native proxy", shareNativeClicks === 0, `clicks=${shareNativeClicks}`);
+      check("share writes meaningful text", /Regression topic/.test(copiedText), copiedText);
+
+      const editor = document.createElement("div");
+      editor.className = "createTopic";
+      const textarea = document.createElement("textarea");
+      textarea.value = "test";
+      const submit = document.createElement("button");
+      submit.id = "post-topic-button";
+      submit.className = "button blue";
+      submit.textContent = "\u53d1\u8868";
+      let submitClicks = 0;
+      submit.addEventListener("click", () => {
+        submitClicks += 1;
+      });
+      editor.append(textarea, submit);
+      document.body.append(editor);
+      bindNativeEditorStabilizer(editor);
+      submit.click();
+      submit.click();
+      const submitContext = readEditorSubmitContext();
+      check("submit reaches the native handler once", submitClicks === 1, `clicks=${submitClicks}`);
+      check("submit recovery context is recorded", submitContext?.submitKind === "post", JSON.stringify(submitContext));
+      clearEditorSubmitIntent();
+      editor.remove();
+
+      const replyEditor = document.createElement("div");
+      replyEditor.id = "sendTopicInfo";
+      const replyTextarea = document.createElement("textarea");
+      replyTextarea.value = "reply test";
+      const replySubmit = document.createElement("button");
+      replySubmit.id = "post-topic-button";
+      replySubmit.className = "button blue";
+      replySubmit.textContent = "\u56de\u590d";
+      let replyClicks = 0;
+      replySubmit.addEventListener("click", () => {
+        replyClicks += 1;
+      });
+      replyEditor.append(replyTextarea, replySubmit);
+      document.body.append(replyEditor);
+      bindNativeEditorStabilizer(replyEditor);
+      replySubmit.click();
+      replySubmit.click();
+      const replyContext = readEditorSubmitContext();
+      check("reply reaches the native handler once", replyClicks === 1, `clicks=${replyClicks}`);
+      check("reply recovery context is recorded", replyContext?.submitKind === "reply", JSON.stringify(replyContext));
+      clearEditorSubmitIntent();
+
+      writeSearchHistory([]);
+      rememberSearchHistoryQuery("\u8bfe\u7a0b\u8bc4\u4ef7");
+      rememberSearchHistoryQuery("\u9009\u8bfe\u8d44\u6599");
+      rememberSearchHistoryQuery("\u8bfe\u7a0b\u8bc4\u4ef7");
+      const searchHistoryBox = document.createElement("div");
+      searchHistoryBox.className = "cc98-rebuild-search-suggestions";
+      const searchHistoryInput = document.createElement("input");
+      const searchHistoryHarness = document.createElement("form");
+      searchHistoryHarness.className = "cc98-rebuild-search search-history-regression";
+      let submittedHistoryQuery = "";
+      renderSearchSuggestions(
+        searchHistoryBox,
+        searchHistoryInput,
+        ["\u8bfe\u7a0b\u8bc4\u4ef7 \u8001\u5e08"],
+        "ready",
+        (value) => {
+          submittedHistoryQuery = value;
+        }
+      );
+      searchHistoryHarness.append(searchHistoryInput, searchHistoryBox);
+      document.body.append(searchHistoryHarness);
+      const historySection = searchHistoryBox.querySelector(".cc98-rebuild-search-history");
+      const suggestionHeading = searchHistoryBox.querySelector(".cc98-rebuild-search-suggestion-heading");
+      check(
+        "search history renders above suggestions",
+        historySection && suggestionHeading && historySection.compareDocumentPosition(suggestionHeading) & Node.DOCUMENT_POSITION_FOLLOWING
+      );
+      check(
+        "search history de-duplicates repeated queries",
+        searchHistoryBox.querySelectorAll(".cc98-rebuild-search-history-item").length === 2
+      );
+      searchHistoryBox.querySelector(".cc98-rebuild-search-history-query")?.click();
+      check("search history item submits its query", submittedHistoryQuery === "\u8bfe\u7a0b\u8bc4\u4ef7", submittedHistoryQuery);
+      searchHistoryBox.querySelector(".cc98-rebuild-search-history-delete")?.click();
+      check(
+        "search history supports deleting one item",
+        searchHistoryBox.querySelectorAll(".cc98-rebuild-search-history-item").length === 1
+      );
+      searchHistoryBox.querySelector(".cc98-rebuild-search-history-clear")?.click();
+      check(
+        "search history supports clearing all items",
+        searchHistoryBox.querySelectorAll(".cc98-rebuild-search-history-item").length === 0
+      );
+      rememberSearchHistoryQuery("\u8bfe\u7a0b\u8bc4\u4ef7");
+      rememberSearchHistoryQuery("\u9009\u8bfe\u8d44\u6599");
+      renderSearchSuggestions(
+        searchHistoryBox,
+        searchHistoryInput,
+        ["\u8bfe\u7a0b\u8bc4\u4ef7 \u8001\u5e08"],
+        "ready",
+        (value) => {
+          submittedHistoryQuery = value;
+        }
+      );
+
+      const colorEditor = document.createElement("div");
+      colorEditor.className = "cc98-rebuild-native-editor";
+      const colorTextarea = document.createElement("textarea");
+      colorTextarea.value = "test";
+      colorTextarea.setSelectionRange(0, 4);
+      const colorButton = document.createElement("button");
+      colorButton.type = "button";
+      colorButton.className = "ubb-button-color cc98-rebuild-color-button";
+      colorEditor.append(colorTextarea, colorButton);
+      document.body.append(colorEditor);
+      const colorPanel = ensureEditorColorPopover(colorEditor, colorButton);
+      colorPanel.hidden = false;
+      const colorHexInput = colorPanel.querySelector(".cc98-rebuild-color-popover-input");
+      colorHexInput.focus();
+      colorHexInput.value = "#";
+      colorHexInput.dispatchEvent(new Event("input", { bubbles: true }));
+      check("partial color input remains editable", colorHexInput.value === "#", colorHexInput.value);
+      colorHexInput.value = "#114E66";
+      colorHexInput.dispatchEvent(new Event("input", { bubbles: true }));
+      check(
+        "complete color input updates the picker without replacing typed text",
+        colorHexInput.value === "#114E66" && colorPanel.dataset.cc98CurrentColor === "#114e66",
+        `${colorHexInput.value}/${colorPanel.dataset.cc98CurrentColor}`
+      );
+      colorTextarea.focus();
+      colorTextarea.setSelectionRange(0, 4);
+      rememberEditorSelection(colorEditor, colorButton);
+      colorPanel.querySelector(".cc98-rebuild-color-transparent")?.click();
+      colorPanel.querySelector(".cc98-rebuild-color-popover-ok")?.click();
+      check(
+        "transparent color inserts valid UBB",
+        colorTextarea.value === "[color=transparent]test[/color]",
+        colorTextarea.value
+      );
+
+      results.replaceChildren();
+      checks.forEach((item) => {
+        const row = document.createElement("p");
+        row.dataset.passed = String(item.passed);
+        row.textContent = `${item.passed ? "PASS" : "FAIL"}: ${item.name}${item.detail ? ` (${item.detail})` : ""}`;
+        results.append(row);
+      });
+      document.title = checks.every((item) => item.passed) ? "PASS" : "FAIL";
+    }
+
+    run().catch((error) => {
+      document.title = "FAIL";
+      results.textContent = error?.stack || String(error);
+    });
+  </script>
+</body>
+</html>

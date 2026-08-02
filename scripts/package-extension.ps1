@@ -29,7 +29,6 @@ New-Item -ItemType Directory -Force -Path (Join-Path $stage "src") | Out-Null
   "images",
   "popup",
   "README.md",
-  "README.zh-CN.md",
   "CHANGELOG.md",
   "LICENSE",
   "PRIVACY.md"
