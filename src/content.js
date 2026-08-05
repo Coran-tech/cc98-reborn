@@ -8,7 +8,7 @@ const SEARCH_HISTORY_CHANGE_EVENT = "cc98-reborn-search-history-change";
 const SEARCH_HISTORY_LIMIT = 12;
 const READ_LATER_ROUTE_HASH = "#cc98-reborn-read-later";
 const BLACKLIST_ROUTE_HASH = "#cc98-reborn-blacklist";
-const EXTENSION_VERSION = "0.3.0";
+const EXTENSION_VERSION = "0.3.1";
 const LOGIN_REDIRECT_MARK_KEY = "cc98RebornLoginRedirectStartedAt";
 const LOGIN_REDIRECT_SNAPSHOT_KEY = "cc98RebornLoginRedirectSnapshot";
 const LOGIN_HOME_REFRESH_MARK_KEY = "cc98RebornLoginHomeRefreshPendingAt";
@@ -227,6 +227,7 @@ let seamlessScrollSyncSignature = "";
 let seamlessScrollSyncLastRefreshAt = 0;
 let seamlessScrollSyncIntentUntil = 0;
 let seamlessScrollInteractionRevision = 0;
+let rebuiltRefreshSequence = 0;
 let newTopicModeSyncRevision = 0;
 let newTopicModeSyncTimers = [];
 let newTopicAutoRefreshVisitActive = false;
@@ -8411,6 +8412,7 @@ function createUbbEmotionPreviewNode(tag) {
     return document.createTextNode(`[${tag}]`);
   }
   const wrap = createElement("span", "cc98-rebuild-inline-emoji-wrap");
+  wrap.dataset.cc98UbbEmotionTag = String(tag || "");
   wrap.style.display = "inline";
   const image = createContentImageFromUrl(src, "");
   markRebuiltEmojiImage(image, src);
@@ -8425,15 +8427,23 @@ function createUbbMediaPreviewNode(tag, url, title = "") {
   }
   const normalizedTag = String(tag ?? "").toLowerCase();
   if (normalizedTag === "audio" || normalizedTag === "mp3") {
-    return createAudioPlayerFromUrl(src, title);
+    const audio = createAudioPlayerFromUrl(src, title);
+    audio.dataset.cc98UbbTag = normalizedTag;
+    audio.dataset.cc98UbbValue = src;
+    return audio;
   }
   if (normalizedTag === "video") {
-    return createContentVideoFromUrl(src);
+    const video = createContentVideoFromUrl(src);
+    video.dataset.cc98UbbTag = normalizedTag;
+    video.dataset.cc98UbbValue = src;
+    return video;
   }
   if (normalizedTag === "bili" || normalizedTag === "bilibili") {
     const link = createLink("cc98-rebuild-ubb-media-link", `Bilibili 视频：${src}`, makeAbsoluteCc98Url(src));
     link.target = "_blank";
     link.rel = "noreferrer";
+    link.dataset.cc98UbbTag = normalizedTag;
+    link.dataset.cc98UbbValue = src;
     return link;
   }
   return null;
@@ -8452,22 +8462,31 @@ function appendInlineUbbText(target, text) {
   };
 
   const makeNode = (tag, value = "") => {
+    const markNode = (node) => {
+      if (node instanceof HTMLElement) {
+        node.dataset.cc98UbbTag = tag;
+        if (value) {
+          node.dataset.cc98UbbValue = value;
+        }
+      }
+      return node;
+    };
     if (tag === "b") {
-      return document.createElement("strong");
+      return markNode(document.createElement("strong"));
     }
     if (tag === "i") {
-      return document.createElement("em");
+      return markNode(document.createElement("em"));
     }
     if (tag === "u") {
       const node = document.createElement("span");
       node.style.setProperty("text-decoration", "underline", "important");
-      return node;
+      return markNode(node);
     }
     if (tag === "s") {
-      return document.createElement("s");
+      return markNode(document.createElement("s"));
     }
     if (tag === "del") {
-      return document.createElement("del");
+      return markNode(document.createElement("del"));
     }
     if (tag === "url") {
       const node = document.createElement("a");
@@ -8477,7 +8496,7 @@ function appendInlineUbbText(target, text) {
         node.target = "_blank";
         node.rel = "noreferrer";
       }
-      return node;
+      return markNode(node);
     }
     if (tag === "color") {
       const node = document.createElement("span");
@@ -8499,7 +8518,7 @@ function appendInlineUbbText(target, text) {
       node.dataset.cc98UbbMediaTag = tag.toLowerCase();
       node.dataset.cc98UbbMediaTitle = value || "";
     }
-    return node;
+    return markNode(node);
   };
 
   source.replace(tokenPattern, (match, emotionTag, closing, tag, value, imageUrl, offset) => {
@@ -8513,6 +8532,8 @@ function appendInlineUbbText(target, text) {
       const src = imageUrl.trim();
       if (src) {
         const image = createContentImageFromUrl(makeAbsoluteCc98Url(src), "");
+        image.dataset.cc98UbbTag = "img";
+        image.dataset.cc98UbbValue = src;
         markRebuiltEmojiImage(image, src);
         stack.at(-1).node.append(image);
       }
@@ -14326,6 +14347,17 @@ function handleNativeEditorInsertControl(editor, target, event) {
     triggerNativeEditorUpload(editor, control);
     return true;
   }
+  if (kind === "link" && typeof editor.__cc98WysiwygInsertLink === "function") {
+    editor.__cc98WysiwygInsertLink();
+    scheduleNativeEditorDraftSave(editor);
+    return true;
+  }
+  if (typeof editor.__cc98WysiwygInsertMedia === "function") {
+    const mediaTag = kind === "bilibili" ? "bilibili" : kind;
+    editor.__cc98WysiwygInsertMedia(mediaTag);
+    scheduleNativeEditorDraftSave(editor);
+    return true;
+  }
   const textarea = getNativeEditorTextarea(editor);
   if (!(textarea instanceof HTMLTextAreaElement)) {
     return true;
@@ -14347,6 +14379,13 @@ function handleNativeEditorInsertControl(editor, target, event) {
 }
 
 function getNativeEditorTextarea(editor) {
+  const boundTextarea = editor?.querySelector?.("textarea[data-cc98-dual-ubb-native='true']");
+  if (
+    boundTextarea instanceof HTMLTextAreaElement
+    && !editor?.classList?.contains("cc98-rebuild-markdown-editor-active")
+  ) {
+    return boundTextarea;
+  }
   const textareas = [...editor.querySelectorAll("textarea")]
     .filter((textarea) => textarea instanceof HTMLTextAreaElement);
   return textareas.find((textarea) => {
@@ -15018,6 +15057,10 @@ function getStoredEditorSelection(button, textarea) {
 }
 
 function rememberEditorSelection(editor, button) {
+  if (typeof editor?.__cc98WysiwygRememberSelection === "function") {
+    editor.__cc98WysiwygRememberSelection(button);
+    return;
+  }
   const textarea = getNativeEditorTextarea(editor);
   if (!(textarea instanceof HTMLTextAreaElement)) {
     return;
@@ -15027,6 +15070,9 @@ function rememberEditorSelection(editor, button) {
 }
 
 function applyEditorColor(editor, color, selection = null) {
+  if (typeof editor?.__cc98WysiwygApplyColor === "function") {
+    return editor.__cc98WysiwygApplyColor(color);
+  }
   const textarea = getNativeEditorTextarea(editor);
   const normalizedColor = String(color ?? "").trim().toLowerCase();
   if (
@@ -15056,6 +15102,9 @@ function applyEditorColor(editor, color, selection = null) {
 }
 
 function applyEditorGradient(editor, stops, selection = null, density = 1) {
+  if (typeof editor?.__cc98WysiwygApplyGradient === "function") {
+    return editor.__cc98WysiwygApplyGradient(stops, density);
+  }
   const textarea = getNativeEditorTextarea(editor);
   if (!(textarea instanceof HTMLTextAreaElement)) {
     return false;
@@ -15109,6 +15158,10 @@ function getStoredEditorFontSizeSelection(button, textarea) {
 }
 
 function rememberEditorFontSizeSelection(editor, button) {
+  if (typeof editor?.__cc98WysiwygRememberSelection === "function") {
+    editor.__cc98WysiwygRememberSelection(button);
+    return;
+  }
   const textarea = getNativeEditorTextarea(editor);
   if (!(textarea instanceof HTMLTextAreaElement)) {
     return;
@@ -15119,6 +15172,9 @@ function rememberEditorFontSizeSelection(editor, button) {
 
 function applyEditorFontSize(editor, size, selection = null) {
   const normalized = normalizeEditorFontSizeValue(size, "");
+  if (normalized && typeof editor?.__cc98WysiwygApplyFontSize === "function") {
+    return editor.__cc98WysiwygApplyFontSize(normalized);
+  }
   const textarea = getNativeEditorTextarea(editor);
   if (!(textarea instanceof HTMLTextAreaElement) || !normalized) {
     return false;
@@ -16013,20 +16069,7 @@ function hasInlineUbbFormatting(text) {
 function buildNativeEditorUbbPreview(source) {
   const article = document.createElement("article");
   article.className = "cc98-rebuild-ubb-preview-rendered";
-  String(source ?? "")
-    .split(/\n{2,}/)
-    .map((block) => block.trim())
-    .filter(Boolean)
-    .forEach((block) => {
-      const paragraph = createElement("p", "cc98-rebuild-text-line");
-      block.split(/\n/).forEach((line, index) => {
-        if (index > 0) {
-          paragraph.append(document.createElement("br"));
-        }
-        appendInlineUbbText(paragraph, line);
-      });
-      article.append(paragraph);
-    });
+  appendInlineUbbText(article, String(source ?? ""));
   return article;
 }
 
@@ -16193,6 +16236,586 @@ function stabilizeEditorTagDropdown(editor) {
   });
 }
 
+function bindDualUbbPaneDivider(workspace, upperPane, lowerPane, divider) {
+  if (
+    !(workspace instanceof HTMLElement)
+    || !(upperPane instanceof HTMLElement)
+    || !(lowerPane instanceof HTMLElement)
+    || !(divider instanceof HTMLElement)
+    || divider.dataset.cc98DualDividerBound === "true"
+  ) {
+    return;
+  }
+  divider.dataset.cc98DualDividerBound = "true";
+  const minimumUpperHeight = 180;
+  const minimumLowerHeight = 120;
+  const resizeBy = (requestedDelta, initialUpper = null, initialLower = null) => {
+    const upperHeight = Number.isFinite(initialUpper)
+      ? initialUpper
+      : upperPane.getBoundingClientRect().height;
+    const lowerHeight = Number.isFinite(initialLower)
+      ? initialLower
+      : lowerPane.getBoundingClientRect().height;
+    const delta = Math.max(
+      minimumUpperHeight - upperHeight,
+      Math.min(lowerHeight - minimumLowerHeight, Number(requestedDelta) || 0)
+    );
+    upperPane.style.setProperty("height", `${Math.round(upperHeight + delta)}px`, "important");
+    lowerPane.style.setProperty("height", `${Math.round(lowerHeight - delta)}px`, "important");
+    workspace.dispatchEvent(new CustomEvent("cc98:dual-editor-resize", { bubbles: true }));
+  };
+  divider.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0 || lowerPane.hidden) {
+      return;
+    }
+    event.preventDefault();
+    const startY = event.clientY;
+    const startUpperHeight = upperPane.getBoundingClientRect().height;
+    const startLowerHeight = lowerPane.getBoundingClientRect().height;
+    divider.classList.add("is-dragging");
+    document.documentElement.classList.add("cc98-rebuild-dual-editor-resizing");
+    const move = (moveEvent) => {
+      resizeBy(moveEvent.clientY - startY, startUpperHeight, startLowerHeight);
+    };
+    const release = () => {
+      divider.classList.remove("is-dragging");
+      document.documentElement.classList.remove("cc98-rebuild-dual-editor-resizing");
+      document.removeEventListener("pointermove", move, true);
+      document.removeEventListener("pointerup", release, true);
+      document.removeEventListener("pointercancel", release, true);
+    };
+    document.addEventListener("pointermove", move, true);
+    document.addEventListener("pointerup", release, true);
+    document.addEventListener("pointercancel", release, true);
+  });
+  divider.addEventListener("keydown", (event) => {
+    if (!["ArrowUp", "ArrowDown"].includes(event.key) || lowerPane.hidden) {
+      return;
+    }
+    event.preventDefault();
+    resizeBy(event.key === "ArrowUp" ? -12 : 12);
+  });
+}
+
+function getNativeDualUbbToolbarCommand(control) {
+  if (!(control instanceof HTMLElement)) {
+    return null;
+  }
+  const label = String(control.dataset.cc98ToolbarLabel || "").trim();
+  const signature = getNativeEditorToolbarControlSignature(control);
+  const rules = [
+    { label: "B", pattern: /(?:fa-bold|\b加粗\b|\bbold\b)/i, tag: "b", command: "bold" },
+    { label: "I", pattern: /(?:fa-italic|\b斜体\b|\bitalic\b)/i, tag: "i", command: "italic" },
+    { label: "U", pattern: /(?:fa-underline|\b下划线\b|\bunderline\b)/i, tag: "u", command: "underline" },
+    { label: "S", pattern: /(?:fa-strikethrough|\b删除线\b|\bstrike\b)/i, tag: "del", command: "strikeThrough" },
+    { label: "左", pattern: /(?:fa-align-left|左对齐|align.*left)/i, tag: "align", value: "left", command: "justifyLeft" },
+    { label: "中", pattern: /(?:fa-align-center|居中|align.*center)/i, tag: "align", value: "center", command: "justifyCenter" },
+    { label: "右", pattern: /(?:fa-align-right|右对齐|align.*right)/i, tag: "align", value: "right", command: "justifyRight" },
+    { label: "隐", pattern: /(?:fa-eye-slash|回复后可见|replyview)/i, tag: "replyview", command: "" }
+  ];
+  return rules.find((rule) => label === rule.label || rule.pattern.test(signature)) || null;
+}
+
+function isNativeDualUbbSourceActive(state) {
+  return Boolean(
+    state
+    && state.activeSurface === "source"
+    && state.sourceEditor instanceof HTMLElement
+  );
+}
+
+function handleNativeDualUbbToolbarControl(editor, target, event) {
+  const state = editor?.__cc98DualUbbState;
+  if (!state || state.workspace?.hidden || !(target instanceof Element)) {
+    return false;
+  }
+  const control = target.closest(".ubb-buttons .ubb-button");
+  const command = getNativeDualUbbToolbarCommand(control);
+  if (!command) {
+    return false;
+  }
+  stopNativeEditorToolbarEvent(event);
+  state.applyToolbarCommand(command);
+  scheduleNativeEditorDraftSave(editor);
+  return true;
+}
+
+function teardownNativeDualUbbEditor(editor) {
+  const state = editor?.__cc98DualUbbState;
+  if (!state) {
+    return;
+  }
+  state.workspace?.remove();
+  state.ubbEditor?.classList?.remove("cc98-rebuild-dual-ubb-native-shell");
+  if (state.textarea instanceof HTMLTextAreaElement) {
+    state.textarea.classList.remove("cc98-rebuild-dual-ubb-native-textarea");
+    delete state.textarea.dataset.cc98DualUbbNative;
+    state.textarea.removeAttribute("aria-hidden");
+    state.textarea.tabIndex = state.originalTabIndex;
+  }
+  delete editor.__cc98DualUbbState;
+}
+
+function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
+  const workspace = createElement(
+    "div",
+    "cc98-rebuild-dual-ubb-workspace cc98-rebuild-native-dual-ubb-workspace"
+  );
+  workspace.setAttribute("aria-label", "双向 UBB 编辑器");
+  const visualPane = createElement(
+    "section",
+    "cc98-rebuild-dual-ubb-visual-pane cc98-rebuild-message-editor-preview"
+  );
+  const visualHeader = createElement("div", "cc98-rebuild-dual-ubb-header");
+  const visualTitle = createElement("span", "cc98-rebuild-dual-ubb-title", "上下都可以编辑哦~");
+  const visualMeta = createElement("span", "cc98-rebuild-dual-ubb-meta");
+  const visual = createElement(
+    "div",
+    "cc98-rebuild-dual-ubb-visual cc98-rebuild-profile-signature-wysiwyg"
+  );
+  visual.contentEditable = "true";
+  visual.spellcheck = true;
+  visual.setAttribute("role", "textbox");
+  visual.setAttribute("aria-multiline", "true");
+  visual.setAttribute("aria-label", "可视化 UBB 编辑器");
+  visual.dataset.placeholder = "在这里直接编辑内容";
+  visualHeader.append(visualTitle, visualMeta);
+  visualPane.append(visualHeader, visual);
+
+  const divider = createElement("div", "cc98-rebuild-dual-editor-divider");
+  divider.setAttribute("role", "separator");
+  divider.setAttribute("aria-orientation", "horizontal");
+  divider.setAttribute("aria-label", "调整上下编辑区高度");
+  divider.tabIndex = 0;
+
+  const sourcePane = createElement("section", "cc98-rebuild-dual-ubb-source-pane");
+  const sourceEditor = createElement(
+    "pre",
+    "cc98-rebuild-dual-ubb-source cc98-rebuild-profile-signature-syntax-layer"
+  );
+  sourceEditor.contentEditable = "true";
+  sourceEditor.spellcheck = false;
+  sourceEditor.setAttribute("role", "textbox");
+  sourceEditor.setAttribute("aria-multiline", "true");
+  sourceEditor.setAttribute("aria-label", "UBB 源码编辑器");
+  sourceEditor.tabIndex = 0;
+  sourcePane.append(sourceEditor);
+  workspace.append(visualPane, divider, sourcePane);
+
+  const state = {
+    editor,
+    ubbEditor,
+    textarea,
+    workspace,
+    visualPane,
+    visual,
+    visualMeta,
+    divider,
+    sourcePane,
+    sourceEditor,
+    activeSurface: "visual",
+    sourceSelection: null,
+    syncingNativeSource: false,
+    sourceIsComposing: false,
+    visualIsComposing: false,
+    sourceHighlightFrame: 0,
+    originalTabIndex: textarea.tabIndex,
+    lastNativeValue: textarea.value
+  };
+
+  const updateVisualMeta = () => {
+    const textLength = String(visual.textContent || "").replace(/\u200b/g, "").length;
+    visualMeta.textContent = `${textLength} 字符`;
+  };
+  const renderSource = (preserveSelection = true) => {
+    renderEditableProfileSignatureSource(sourceEditor, textarea.value, preserveSelection);
+  };
+  const renderVisual = () => {
+    renderProfileSignatureWysiwygFromUbb(visual, textarea.value);
+    updateVisualMeta();
+  };
+  const writeNativeSource = (nextValue) => {
+    const normalized = String(nextValue ?? "");
+    state.lastNativeValue = normalized;
+    if (textarea.value === normalized) {
+      return;
+    }
+    state.syncingNativeSource = true;
+    setNativeMessageInputValue(textarea, normalized);
+    state.syncingNativeSource = false;
+  };
+  const scheduleSourceHighlight = (immediate = false) => {
+    if (state.sourceHighlightFrame) {
+      window.cancelAnimationFrame(state.sourceHighlightFrame);
+      state.sourceHighlightFrame = 0;
+    }
+    const run = () => {
+      state.sourceHighlightFrame = 0;
+      renderSource(true);
+    };
+    if (immediate) {
+      run();
+    } else {
+      state.sourceHighlightFrame = window.requestAnimationFrame(run);
+    }
+  };
+  const rememberSelection = () => {
+    const sourceSelection = getProfileSignatureSourceSelection(sourceEditor);
+    if (sourceSelection) {
+      state.activeSurface = "source";
+      state.sourceSelection = sourceSelection;
+      return sourceSelection;
+    }
+    const visualRange = getProfileSignatureWysiwygRange(visual);
+    if (visualRange) {
+      state.activeSurface = "visual";
+      rememberProfileSignatureWysiwygRange(editor, visual);
+      return visualRange;
+    }
+    return null;
+  };
+  const refreshFromNative = (preserveSourceSelection = document.activeElement === sourceEditor) => {
+    state.lastNativeValue = textarea.value;
+    renderVisual();
+    renderSource(preserveSourceSelection);
+    if (state.activeSurface === "visual") {
+      editor.__cc98WysiwygRange = null;
+    }
+  };
+  const syncFromVisual = () => {
+    if (state.visualIsComposing) {
+      return;
+    }
+    const nextValue = serializeProfileSignatureWysiwyg(visual);
+    writeNativeSource(nextValue);
+    updateVisualMeta();
+    renderSource(false);
+    scheduleNativeEditorDraftSave(editor);
+  };
+  const syncFromSource = (rehighlight = !state.sourceIsComposing) => {
+    const nextValue = getProfileSignatureSourceText(sourceEditor);
+    writeNativeSource(nextValue);
+    renderProfileSignatureWysiwygFromUbb(visual, nextValue);
+    editor.__cc98WysiwygRange = null;
+    updateVisualMeta();
+    state.sourceSelection = getProfileSignatureSourceSelection(sourceEditor) || state.sourceSelection;
+    if (rehighlight) {
+      scheduleSourceHighlight();
+    }
+    scheduleNativeEditorDraftSave(editor);
+  };
+  const getSourceSelection = () => {
+    const current = getProfileSignatureSourceSelection(sourceEditor);
+    if (current) {
+      state.sourceSelection = current;
+      return current;
+    }
+    return state.sourceSelection || {
+      start: textarea.value.length,
+      end: textarea.value.length
+    };
+  };
+  const replaceSourceSelection = (before, after = "", requireSelection = false) => {
+    const selection = getSourceSelection();
+    const start = Math.max(0, Math.min(textarea.value.length, selection.start));
+    const end = Math.max(start, Math.min(textarea.value.length, selection.end));
+    const selected = textarea.value.slice(start, end);
+    if (requireSelection && !selected) {
+      return false;
+    }
+    const inserted = `${before}${selected}${after}`;
+    const nextValue = `${textarea.value.slice(0, start)}${inserted}${textarea.value.slice(end)}`;
+    writeNativeSource(nextValue);
+    renderProfileSignatureWysiwygFromUbb(visual, nextValue);
+    updateVisualMeta();
+    renderSource(false);
+    const nextSelection = selected
+      ? { start: start + before.length, end: start + before.length + selected.length }
+      : { start: start + before.length, end: start + before.length };
+    sourceEditor.focus({ preventScroll: true });
+    restoreProfileSignatureSourceSelection(sourceEditor, nextSelection);
+    state.activeSurface = "source";
+    state.sourceSelection = nextSelection;
+    scheduleNativeEditorDraftSave(editor);
+    return true;
+  };
+  const replaceSourceWithText = (replacement, requireSelection = false) => {
+    const selection = getSourceSelection();
+    const start = Math.max(0, Math.min(textarea.value.length, selection.start));
+    const end = Math.max(start, Math.min(textarea.value.length, selection.end));
+    if (requireSelection && start === end) {
+      return false;
+    }
+    const inserted = String(replacement ?? "");
+    const nextValue = `${textarea.value.slice(0, start)}${inserted}${textarea.value.slice(end)}`;
+    writeNativeSource(nextValue);
+    renderProfileSignatureWysiwygFromUbb(visual, nextValue);
+    updateVisualMeta();
+    renderSource(false);
+    const caret = start + inserted.length;
+    const nextSelection = { start: caret, end: caret };
+    sourceEditor.focus({ preventScroll: true });
+    restoreProfileSignatureSourceSelection(sourceEditor, nextSelection);
+    state.activeSurface = "source";
+    state.sourceSelection = nextSelection;
+    scheduleNativeEditorDraftSave(editor);
+    return true;
+  };
+  const applySourceTag = (tag, value = "", requireSelection = false) => {
+    const suffix = value ? `=${String(value).replace(/\]/g, "")}` : "";
+    return replaceSourceSelection(`[${tag}${suffix}]`, `[/${tag}]`, requireSelection);
+  };
+  const insertSourceText = (text) => replaceSourceWithText(String(text || ""));
+  const applyToolbarCommand = ({ tag, value = "", command = "" }) => {
+    if (isNativeDualUbbSourceActive(state)) {
+      return applySourceTag(tag, value);
+    }
+    state.activeSurface = "visual";
+    if (command) {
+      return applyProfileSignatureWysiwygCommand(editor, visual, command);
+    }
+    return applyProfileSignatureWysiwygInlineTag(editor, visual, tag, value);
+  };
+  const applyInlineTag = (tag, value, style = {}) => {
+    if (isNativeDualUbbSourceActive(state)) {
+      return applySourceTag(tag, value);
+    }
+    state.activeSurface = "visual";
+    return applyProfileSignatureWysiwygInlineTag(editor, visual, tag, value, style);
+  };
+  const applyGradient = (stops, density) => {
+    if (isNativeDualUbbSourceActive(state)) {
+      const selection = getSourceSelection();
+      const selected = textarea.value.slice(selection.start, selection.end);
+      if (!selected) {
+        return false;
+      }
+      const gradient = buildEditorGradientUbb(selected, stops, density);
+      return replaceSourceWithText(gradient, true);
+    }
+    state.activeSurface = "visual";
+    return applyProfileSignatureWysiwygGradient(editor, visual, stops, density);
+  };
+  const insertEmoji = (item) => {
+    if (isNativeDualUbbSourceActive(state)) {
+      return insertSourceText(item?.insertText || "");
+    }
+    const emotionTag = String(item?.insertText || "").replace(/^\[/, "").replace(/\]$/, "");
+    if (!emotionTag || !item?.src) {
+      return false;
+    }
+    const wrap = createElement("span", "cc98-rebuild-inline-emoji-wrap");
+    wrap.dataset.cc98UbbEmotionTag = emotionTag;
+    wrap.contentEditable = "false";
+    const image = createContentImageFromUrl(item.src, "");
+    markRebuiltEmojiImage(image, item.src);
+    image.draggable = false;
+    wrap.append(image);
+    state.activeSurface = "visual";
+    return insertProfileSignatureWysiwygNode(editor, visual, wrap);
+  };
+  const insertLink = () => {
+    if (!isNativeDualUbbSourceActive(state)) {
+      state.activeSurface = "visual";
+      return insertProfileSignatureWysiwygLink(editor, visual);
+    }
+    const selection = getSourceSelection();
+    const selected = textarea.value.slice(selection.start, selection.end);
+    const defaultUrl = /^https?:\/\//i.test(selected) ? selected : "";
+    const url = promptPrivateMessageValue("请输入链接地址", defaultUrl);
+    if (!url) {
+      return false;
+    }
+    const label = selected || promptPrivateMessageValue("请输入显示文字（可留空）", url) || url;
+    return replaceSourceWithText(`[url=${url}]${label}[/url]`);
+  };
+  const insertMedia = (requestedTag) => {
+    const tag = requestedTag === "image"
+      ? "img"
+      : (requestedTag === "bilibili" ? "bilibili" : requestedTag);
+    const promptLabels = {
+      img: "请输入图片地址",
+      video: "请输入视频地址",
+      bilibili: "请输入 Bilibili 地址或 BV 号",
+      audio: "请输入音频地址"
+    };
+    if (!promptLabels[tag]) {
+      return false;
+    }
+    if (!isNativeDualUbbSourceActive(state)) {
+      state.activeSurface = "visual";
+      return insertProfileSignatureWysiwygMedia(editor, visual, tag, promptLabels[tag]);
+    }
+    const url = promptPrivateMessageValue(promptLabels[tag], "");
+    return url ? insertSourceText(`[${tag}]${url}[/${tag}]`) : false;
+  };
+
+  state.updateVisualMeta = updateVisualMeta;
+  state.renderSource = renderSource;
+  state.renderVisual = renderVisual;
+  state.refreshFromNative = refreshFromNative;
+  state.rememberSelection = rememberSelection;
+  state.applyToolbarCommand = applyToolbarCommand;
+  state.applySourceTag = applySourceTag;
+
+  editor.__cc98DualUbbState = state;
+  editor.__cc98WysiwygSyncSource = syncFromVisual;
+  editor.__cc98WysiwygRememberSelection = rememberSelection;
+  editor.__cc98WysiwygApplyColor = (color) => {
+    const normalized = String(color || "").trim().toLowerCase();
+    if (normalized !== "transparent" && !/^#[0-9a-f]{6}$/i.test(normalized)) {
+      return false;
+    }
+    return applyInlineTag("color", normalized, { color: normalized });
+  };
+  editor.__cc98WysiwygApplyGradient = applyGradient;
+  editor.__cc98WysiwygApplyFontSize = (size) => {
+    const normalized = normalizeEditorFontSizeValue(size, "");
+    return normalized
+      ? applyInlineTag(
+        "size",
+        normalized,
+        { "font-size": `${0.72 + Number(normalized) * 0.14}em` }
+      )
+      : false;
+  };
+  editor.__cc98WysiwygInsertEmoji = insertEmoji;
+  editor.__cc98WysiwygInsertLink = insertLink;
+  editor.__cc98WysiwygInsertMedia = insertMedia;
+
+  textarea.dataset.cc98DualUbbNative = "true";
+  textarea.classList.add("cc98-rebuild-dual-ubb-native-textarea");
+  textarea.tabIndex = -1;
+  textarea.setAttribute("aria-hidden", "true");
+  ubbEditor.classList.add("cc98-rebuild-dual-ubb-native-shell");
+  ubbEditor.after(workspace);
+  bindDualUbbPaneDivider(workspace, visualPane, sourcePane, divider);
+
+  textarea.addEventListener("input", () => {
+    if (state.syncingNativeSource) {
+      return;
+    }
+    refreshFromNative(document.activeElement === sourceEditor);
+  });
+  sourceEditor.addEventListener("focus", () => {
+    state.activeSurface = "source";
+    state.sourceSelection = getProfileSignatureSourceSelection(sourceEditor) || state.sourceSelection;
+  });
+  ["keyup", "mouseup"].forEach((type) => {
+    sourceEditor.addEventListener(type, () => {
+      state.activeSurface = "source";
+      state.sourceSelection = getProfileSignatureSourceSelection(sourceEditor) || state.sourceSelection;
+    });
+  });
+  sourceEditor.addEventListener("input", () => syncFromSource(!state.sourceIsComposing));
+  sourceEditor.addEventListener("compositionstart", () => {
+    state.sourceIsComposing = true;
+  });
+  sourceEditor.addEventListener("compositionend", () => {
+    state.sourceIsComposing = false;
+    syncFromSource(true);
+  });
+  sourceEditor.addEventListener("keydown", (event) => {
+    if (!["Tab", "Enter"].includes(event.key)) {
+      return;
+    }
+    if (event.key === "Enter" && (event.isComposing || event.ctrlKey || event.metaKey || event.altKey)) {
+      return;
+    }
+    event.preventDefault();
+    if (insertProfileSignatureSourceTextAtSelection(sourceEditor, event.key === "Tab" ? "\t" : "\n")) {
+      syncFromSource(true);
+    }
+  });
+  sourceEditor.addEventListener("paste", (event) => {
+    const plainText = event.clipboardData?.getData("text/plain");
+    if (typeof plainText !== "string") {
+      return;
+    }
+    event.preventDefault();
+    document.execCommand("insertText", false, plainText);
+    syncFromSource(true);
+  });
+  sourceEditor.addEventListener("blur", () => {
+    state.sourceSelection = getProfileSignatureSourceSelection(sourceEditor) || state.sourceSelection;
+    if (!state.sourceIsComposing) {
+      scheduleSourceHighlight(true);
+    }
+  });
+  visual.addEventListener("focus", () => {
+    state.activeSurface = "visual";
+    rememberProfileSignatureWysiwygRange(editor, visual);
+  });
+  ["keyup", "mouseup"].forEach((type) => {
+    visual.addEventListener(type, () => {
+      state.activeSurface = "visual";
+      rememberProfileSignatureWysiwygRange(editor, visual);
+    });
+  });
+  visual.addEventListener("compositionstart", () => {
+    state.visualIsComposing = true;
+  });
+  visual.addEventListener("compositionend", () => {
+    state.visualIsComposing = false;
+    syncFromVisual();
+  });
+  visual.addEventListener("input", syncFromVisual);
+  visual.addEventListener("paste", (event) => {
+    const plainText = event.clipboardData?.getData("text/plain");
+    if (typeof plainText !== "string") {
+      return;
+    }
+    event.preventDefault();
+    restoreProfileSignatureWysiwygRange(editor, visual);
+    document.execCommand("insertText", false, plainText);
+    rememberProfileSignatureWysiwygRange(editor, visual);
+    syncFromVisual();
+  });
+  visual.addEventListener("click", (event) => {
+    if (event.target instanceof Element && event.target.closest("a[href]")) {
+      event.preventDefault();
+    }
+  });
+  renderVisual();
+  renderSource(false);
+  return state;
+}
+
+function stabilizeNativeDualUbbEditor(editor) {
+  if (!(editor instanceof HTMLElement) || editor.dataset.cc98ProfileSignatureEditor === "true") {
+    return;
+  }
+  const existingState = editor.__cc98DualUbbState;
+  const markdownActive = Boolean(editor.querySelector(".react-mde"));
+  const ubbEditor = markdownActive ? null : editor.querySelector(".ubb-editor");
+  const textarea = ubbEditor?.querySelector(":scope > textarea");
+  if (!(ubbEditor instanceof HTMLElement) || !(textarea instanceof HTMLTextAreaElement)) {
+    if (existingState?.workspace instanceof HTMLElement) {
+      existingState.workspace.hidden = true;
+    }
+    return;
+  }
+  if (
+    existingState
+    && existingState.textarea === textarea
+    && existingState.workspace?.isConnected
+  ) {
+    existingState.workspace.hidden = false;
+    if (
+      !existingState.sourceIsComposing
+      && !existingState.visualIsComposing
+      && existingState.lastNativeValue !== textarea.value
+    ) {
+      existingState.refreshFromNative(document.activeElement === existingState.sourceEditor);
+    }
+    return;
+  }
+  if (existingState) {
+    teardownNativeDualUbbEditor(editor);
+  }
+  createNativeDualUbbEditor(editor, ubbEditor, textarea);
+}
+
 function stabilizeNativeEditor(editor) {
   if (!editor) {
     return;
@@ -16202,6 +16825,7 @@ function stabilizeNativeEditor(editor) {
   labelEditorToolbarButtons(editor);
   labelEditorToolbarButtonsWithUnicode(editor);
   stabilizeMarkdownEditor(editor);
+  stabilizeNativeDualUbbEditor(editor);
   stabilizeEditorFontSizeButton(editor);
   stabilizeEditorColorButton(editor);
   stabilizeEditorTagDropdown(editor);
@@ -16307,7 +16931,15 @@ function bindNativeEditorStabilizer(editor) {
     if (event.target?.closest?.(".cc98-rebuild-message-emoji-panel")) {
       return;
     }
+    const dualToolbarControl = event.target?.closest?.(".ubb-buttons .ubb-button");
+    if (getNativeDualUbbToolbarCommand(dualToolbarControl)) {
+      editor.__cc98DualUbbState?.rememberSelection?.();
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
     if (isEditorEmojiButtonTarget(event.target)) {
+      editor.__cc98DualUbbState?.rememberSelection?.();
       event.preventDefault();
       event.stopPropagation();
       hideNativeEditorLegacyEmojiPanel(editor);
@@ -16325,6 +16957,7 @@ function bindNativeEditorStabilizer(editor) {
     }
     const passthroughControl = getNativeEditorPassthroughControl(event.target);
     if (passthroughControl) {
+      editor.__cc98DualUbbState?.rememberSelection?.();
       if (getNativeEditorInsertControlKind(passthroughControl) !== "file") {
         event.preventDefault();
         event.stopPropagation();
@@ -16359,6 +16992,9 @@ function bindNativeEditorStabilizer(editor) {
         event.preventDefault();
         event.stopImmediatePropagation();
       }
+      return;
+    }
+    if (handleNativeDualUbbToolbarControl(editor, event.target, event)) {
       return;
     }
     if (event.target?.closest?.(".cc98-rebuild-message-emoji-panel img")) {
@@ -16827,8 +17463,12 @@ function ensurePrivateMessageEmojiPanel(editor, textarea, options = {}) {
     category.items.forEach((item, index) => {
       const button = createButton("cc98-rebuild-message-emoji-option", "", (event) => {
         event?.preventDefault?.();
-        const targetTextarea = panel.__cc98EmojiTextarea instanceof HTMLTextAreaElement ? panel.__cc98EmojiTextarea : textarea;
-        insertPrivateMessageText(targetTextarea, item.insertText);
+        if (typeof editor.__cc98WysiwygInsertEmoji === "function") {
+          editor.__cc98WysiwygInsertEmoji(item);
+        } else {
+          const targetTextarea = panel.__cc98EmojiTextarea instanceof HTMLTextAreaElement ? panel.__cc98EmojiTextarea : textarea;
+          insertPrivateMessageText(targetTextarea, item.insertText);
+        }
         panel.hidden = true;
         editor.classList.remove("cc98-rebuild-message-emoji-open", "cc98-rebuild-emoji-panel-open");
         if (panel.dataset.cc98NativeEditorEmoji === "true") {
@@ -17986,6 +18626,686 @@ function insertProfileSignatureTaggedUrl(textarea, tag, label) {
   insertPrivateMessageText(textarea, `[${tag}]${url}[/${tag}]`);
 }
 
+const PROFILE_SIGNATURE_UBB_CONTAINER_TAG_SOURCE = String.raw`\[(\/?)(b|i|u|s|del|url|color|size|align|audio|mp3|video|bili|bilibili)(?:=[^\]]+)?\]`;
+const PROFILE_SIGNATURE_UBB_SYNTAX_TOKEN_SOURCE = String.raw`\[(\/?)(b|i|u|s|del|url|color|size|align|audio|mp3|video|bili|bilibili|img)(?:=([^\]]+))?\]|\[(cc98\d{2}|ac(?:\d{2}|\d{4})|[acf]:\d{3}|tb\d{2}|ms\d{2}|em\d{2})\]`;
+
+function updateProfileSignatureUbbStack(stack, isClosing, tag) {
+  const normalizedTag = String(tag || "").toLowerCase();
+  if (!normalizedTag) {
+    return;
+  }
+  if (!isClosing) {
+    stack.push(normalizedTag);
+    return;
+  }
+  const index = stack.lastIndexOf(normalizedTag);
+  if (index >= 0) {
+    stack.length = index;
+  }
+}
+
+function getProfileSignatureUbbLineDepths(source) {
+  const stack = [];
+  return String(source ?? "")
+    .replace(/\r\n?/g, "\n")
+    .split("\n")
+    .map((line) => {
+      const pattern = new RegExp(PROFILE_SIGNATURE_UBB_CONTAINER_TAG_SOURCE, "gi");
+      let depth = stack.length;
+      let leading = true;
+      let cursor = 0;
+      let match;
+      while ((match = pattern.exec(line))) {
+        if (line.slice(cursor, match.index).trim()) {
+          leading = false;
+        }
+        const isClosing = Boolean(match[1]);
+        updateProfileSignatureUbbStack(stack, isClosing, match[2]);
+        if (isClosing && leading) {
+          depth = stack.length;
+        }
+        cursor = match.index + match[0].length;
+      }
+      return depth;
+    });
+}
+
+function getProfileSignatureUbbScope(source, position) {
+  const value = String(source ?? "");
+  const safePosition = Math.max(0, Math.min(value.length, Number(position) || 0));
+  const pattern = new RegExp(PROFILE_SIGNATURE_UBB_CONTAINER_TAG_SOURCE, "gi");
+  const stack = [];
+  const prefix = value.slice(0, safePosition);
+  let match;
+  while ((match = pattern.exec(prefix))) {
+    updateProfileSignatureUbbStack(stack, Boolean(match[1]), match[2]);
+  }
+  return stack;
+}
+
+function appendProfileSignatureSyntaxToken(target, match, colorIndex = null) {
+  const emotionTag = match[4];
+  if (emotionTag) {
+    target.append(createElement(
+      "span",
+      "cc98-rebuild-profile-signature-syntax-token is-emoji",
+      `[${emotionTag}]`
+    ));
+    return;
+  }
+
+  const closing = match[1] || "";
+  const tag = String(match[2] || "").toLowerCase();
+  const value = match[3];
+  const pairClass = Number.isInteger(colorIndex)
+    ? ` is-pair-${Math.abs(colorIndex) % 8}`
+    : "";
+  const token = createElement(
+    "span",
+    `cc98-rebuild-profile-signature-syntax-token${pairClass}`
+  );
+  token.dataset.cc98SyntaxTag = tag;
+  token.append(createElement("span", "cc98-rebuild-profile-signature-syntax-bracket", "["));
+  if (closing) {
+    token.append(createElement("span", "cc98-rebuild-profile-signature-syntax-bracket", "/"));
+  }
+  token.append(createElement("span", "cc98-rebuild-profile-signature-syntax-name", tag));
+  if (value !== undefined) {
+    token.append(createElement("span", "cc98-rebuild-profile-signature-syntax-symbol", "="));
+    token.append(createElement("span", "cc98-rebuild-profile-signature-syntax-value", value));
+  }
+  token.append(createElement("span", "cc98-rebuild-profile-signature-syntax-bracket", "]"));
+  target.append(token);
+}
+
+function appendProfileSignatureSyntaxPlainText(target, value = "", boundary = false) {
+  const span = createElement(
+    "span",
+    boundary
+      ? "cc98-rebuild-profile-signature-syntax-boundary"
+      : "cc98-rebuild-profile-signature-syntax-plain",
+    boundary ? "\u200b" : value
+  );
+  target.append(span);
+  return span;
+}
+
+function renderProfileSignatureSyntaxLayer(layer, source) {
+  if (!(layer instanceof HTMLElement)) {
+    return [];
+  }
+  const value = String(source ?? "").replace(/\r\n?/g, "\n");
+  if (layer.__cc98SignatureSyntaxSource === value) {
+    return [...layer.querySelectorAll(".cc98-rebuild-profile-signature-syntax-line")];
+  }
+  layer.__cc98SignatureSyntaxSource = value;
+  const fragment = document.createDocumentFragment();
+  const stack = [];
+  let nextColorIndex = 0;
+  const lines = value.split("\n");
+  lines.forEach((line, lineIndex) => {
+    const lineNode = createElement("span", "cc98-rebuild-profile-signature-syntax-line");
+    appendProfileSignatureSyntaxPlainText(lineNode, "", true);
+    const pattern = new RegExp(PROFILE_SIGNATURE_UBB_SYNTAX_TOKEN_SOURCE, "gi");
+    let cursor = 0;
+    let match;
+    while ((match = pattern.exec(line))) {
+      if (match.index > cursor) {
+        appendProfileSignatureSyntaxPlainText(lineNode, line.slice(cursor, match.index));
+      }
+      appendProfileSignatureSyntaxPlainText(lineNode, "", true);
+      let colorIndex = null;
+      if (!match[4]) {
+        const isClosing = Boolean(match[1]);
+        const tag = String(match[2] || "").toLowerCase();
+        if (isClosing) {
+          const index = stack.map((item) => item.tag).lastIndexOf(tag);
+          if (index >= 0) {
+            colorIndex = stack[index].colorIndex;
+            stack.length = index;
+          } else {
+            colorIndex = nextColorIndex % 8;
+            nextColorIndex += 1;
+          }
+        } else {
+          colorIndex = nextColorIndex % 8;
+          nextColorIndex += 1;
+          stack.push({ tag, colorIndex });
+        }
+      }
+      appendProfileSignatureSyntaxToken(lineNode, match, colorIndex);
+      appendProfileSignatureSyntaxPlainText(lineNode, "", true);
+      cursor = match.index + match[0].length;
+    }
+    if (cursor < line.length) {
+      appendProfileSignatureSyntaxPlainText(lineNode, line.slice(cursor));
+    }
+    appendProfileSignatureSyntaxPlainText(lineNode, "", true);
+    fragment.append(lineNode);
+    if (lineIndex < lines.length - 1) {
+      fragment.append(document.createTextNode("\n"));
+    }
+  });
+  layer.replaceChildren(fragment);
+  return [...layer.querySelectorAll(".cc98-rebuild-profile-signature-syntax-line")];
+}
+
+function getProfileSignatureSourceText(sourceEditor) {
+  if (!(sourceEditor instanceof HTMLElement)) {
+    return "";
+  }
+  return String(sourceEditor.textContent || "")
+    .replace(/\r\n?/g, "\n")
+    .replace(/\u200b/g, "");
+}
+
+function getProfileSignatureSourceSelection(sourceEditor) {
+  if (!(sourceEditor instanceof HTMLElement)) {
+    return null;
+  }
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount <= 0) {
+    return null;
+  }
+  const range = selection.getRangeAt(0);
+  const container = range.commonAncestorContainer;
+  if (!(container === sourceEditor || sourceEditor.contains(container))) {
+    return null;
+  }
+  const offsetTo = (node, offset) => {
+    const measure = document.createRange();
+    measure.selectNodeContents(sourceEditor);
+    try {
+      measure.setEnd(node, offset);
+    } catch {
+      measure.collapse(false);
+    }
+    return measure.toString().replace(/\u200b/g, "").length;
+  };
+  return {
+    start: offsetTo(range.startContainer, range.startOffset),
+    end: offsetTo(range.endContainer, range.endOffset)
+  };
+}
+
+function resolveProfileSignatureSourceOffset(sourceEditor, targetOffset, preferNeutralBoundary = true) {
+  const safeOffset = Math.max(0, Number(targetOffset) || 0);
+  const walker = document.createTreeWalker(sourceEditor, NodeFilter.SHOW_TEXT);
+  let remaining = safeOffset;
+  let lastTextNode = null;
+  while (walker.nextNode()) {
+    const textNode = walker.currentNode;
+    const textLength = String(textNode.nodeValue || "").replace(/\u200b/g, "").length;
+    lastTextNode = textNode;
+    const isNeutralBoundary = textNode.parentElement?.classList?.contains(
+      "cc98-rebuild-profile-signature-syntax-boundary"
+    );
+    if (preferNeutralBoundary && isNeutralBoundary && remaining === 0) {
+      return {
+        node: textNode,
+        offset: 0
+      };
+    }
+    if (remaining < textLength || (!preferNeutralBoundary && remaining === textLength)) {
+      return {
+        node: textNode,
+        offset: Math.min(String(textNode.nodeValue || "").length, remaining)
+      };
+    }
+    remaining -= textLength;
+  }
+  if (lastTextNode) {
+    return {
+      node: lastTextNode,
+      offset: String(lastTextNode.nodeValue || "").length
+    };
+  }
+  return { node: sourceEditor, offset: sourceEditor.childNodes.length };
+}
+
+function restoreProfileSignatureSourceSelection(sourceEditor, selectionState) {
+  if (!(sourceEditor instanceof HTMLElement) || !selectionState) {
+    return;
+  }
+  const start = resolveProfileSignatureSourceOffset(sourceEditor, selectionState.start, true);
+  const end = resolveProfileSignatureSourceOffset(sourceEditor, selectionState.end, true);
+  const range = document.createRange();
+  try {
+    range.setStart(start.node, start.offset);
+    range.setEnd(end.node, end.offset);
+  } catch {
+    range.selectNodeContents(sourceEditor);
+    range.collapse(false);
+  }
+  const selection = window.getSelection();
+  selection?.removeAllRanges();
+  selection?.addRange(range);
+}
+
+function insertProfileSignatureSourceTextAtSelection(sourceEditor, value) {
+  if (!(sourceEditor instanceof HTMLElement)) {
+    return false;
+  }
+  const selection = window.getSelection();
+  let range = null;
+  if (selection && selection.rangeCount > 0) {
+    const candidate = selection.getRangeAt(0);
+    const container = candidate.commonAncestorContainer;
+    if (container === sourceEditor || sourceEditor.contains(container)) {
+      range = candidate;
+    }
+  }
+  if (!(range instanceof Range)) {
+    range = document.createRange();
+    range.selectNodeContents(sourceEditor);
+    range.collapse(false);
+  }
+  range.deleteContents();
+  const textNode = document.createTextNode(String(value ?? ""));
+  range.insertNode(textNode);
+  range.setStartAfter(textNode);
+  range.collapse(true);
+  selection?.removeAllRanges();
+  selection?.addRange(range);
+  sourceEditor.focus({ preventScroll: true });
+  return true;
+}
+
+function renderEditableProfileSignatureSource(sourceEditor, source, preserveSelection = true) {
+  if (!(sourceEditor instanceof HTMLElement)) {
+    return;
+  }
+  const selectionState = preserveSelection && document.activeElement === sourceEditor
+    ? getProfileSignatureSourceSelection(sourceEditor)
+    : null;
+  const scrollTop = sourceEditor.scrollTop;
+  const scrollLeft = sourceEditor.scrollLeft;
+  renderProfileSignatureSyntaxLayer(sourceEditor, source);
+  sourceEditor.scrollTop = scrollTop;
+  sourceEditor.scrollLeft = scrollLeft;
+  if (selectionState) {
+    restoreProfileSignatureSourceSelection(sourceEditor, selectionState);
+  }
+}
+
+function renderProfileSignatureCodeChrome(gutter, positionLabel, scopeLabel, textarea, syntaxLayer) {
+  if (!(gutter instanceof HTMLElement) || !(textarea instanceof HTMLTextAreaElement)) {
+    return;
+  }
+  const value = textarea.value || "";
+  const generatedSource = textarea.dataset.cc98GeneratedSource === "true";
+  const previousSyntaxScrollTop = syntaxLayer instanceof HTMLElement ? syntaxLayer.scrollTop : 0;
+  const previousSyntaxScrollLeft = syntaxLayer instanceof HTMLElement ? syntaxLayer.scrollLeft : 0;
+  const syntaxLines = renderProfileSignatureSyntaxLayer(syntaxLayer, value);
+  const computedLineHeight = Number.parseFloat(window.getComputedStyle(textarea).lineHeight) || 24;
+  const caret = Number.isFinite(textarea.selectionStart) ? textarea.selectionStart : value.length;
+  const beforeCaret = value.slice(0, caret);
+  const activeLine = generatedSource ? -1 : beforeCaret.split("\n").length - 1;
+  const lineStart = beforeCaret.lastIndexOf("\n") + 1;
+  const depths = getProfileSignatureUbbLineDepths(value);
+  const fragment = document.createDocumentFragment();
+
+  depths.forEach((depth, index) => {
+    const row = createElement("div", "cc98-rebuild-profile-signature-code-gutter-row");
+    row.classList.toggle("is-active", index === activeLine);
+    const number = createElement("span", "cc98-rebuild-profile-signature-code-line-number", String(index + 1));
+    const guides = createElement("span", "cc98-rebuild-profile-signature-code-depth-guides");
+    const visibleDepth = Math.min(6, Math.max(0, depth));
+    for (let guideIndex = 0; guideIndex < visibleDepth; guideIndex += 1) {
+      guides.append(createElement("span", "cc98-rebuild-profile-signature-code-depth-guide"));
+    }
+    if (depth > visibleDepth) {
+      guides.append(createElement("span", "cc98-rebuild-profile-signature-code-depth-overflow", `+${depth - visibleDepth}`));
+    }
+    const syntaxLineHeight = syntaxLines[index]?.getBoundingClientRect().height || 0;
+    row.style.setProperty(
+      "--cc98-signature-code-row-height",
+      `${Math.max(computedLineHeight, syntaxLineHeight)}px`
+    );
+    row.append(number, guides);
+    fragment.append(row);
+  });
+
+  gutter.replaceChildren(fragment);
+  gutter.scrollTop = generatedSource ? previousSyntaxScrollTop : textarea.scrollTop;
+  if (syntaxLayer instanceof HTMLElement) {
+    syntaxLayer.scrollTop = generatedSource ? previousSyntaxScrollTop : textarea.scrollTop;
+    syntaxLayer.scrollLeft = generatedSource ? previousSyntaxScrollLeft : textarea.scrollLeft;
+  }
+  if (positionLabel instanceof HTMLElement) {
+    positionLabel.textContent = generatedSource
+      ? `${depths.length} \u884c \u00b7 \u81ea\u52a8\u751f\u6210`
+      : `${activeLine + 1} \u884c \u00b7 ${caret - lineStart + 1} \u5217`;
+  }
+  if (scopeLabel instanceof HTMLElement) {
+    const scope = generatedSource ? [] : getProfileSignatureUbbScope(value, caret);
+    scopeLabel.textContent = generatedSource
+      ? "UBB \u6e90\u7801"
+      : (scope.length
+        ? `UBB \u5c42\u7ea7\uff1a${scope.map((tag) => `[${tag}]`).join(" \u203a ")}`
+        : "UBB \u5c42\u7ea7\uff1a\u6839\u7ea7");
+    scopeLabel.title = scopeLabel.textContent;
+  }
+}
+
+function isProfileSignatureWysiwygBlock(node) {
+  if (!(node instanceof HTMLElement)) {
+    return false;
+  }
+  if (node.dataset.cc98UbbTag === "align") {
+    return true;
+  }
+  return /^(?:address|article|aside|blockquote|div|footer|h[1-6]|header|main|nav|p|pre|section)$/i.test(node.tagName);
+}
+
+function wrapProfileSignatureUbb(tag, value, content) {
+  const normalizedTag = String(tag || "").toLowerCase();
+  if (!normalizedTag) {
+    return content;
+  }
+  const suffix = value ? `=${String(value).replace(/\]/g, "")}` : "";
+  return `[${normalizedTag}${suffix}]${content}[/${normalizedTag}]`;
+}
+
+function serializeProfileSignatureWysiwygChildren(parent) {
+  const children = [...(parent?.childNodes || [])];
+  let output = "";
+  children.forEach((child, index) => {
+    const block = isProfileSignatureWysiwygBlock(child);
+    if (block && output && !output.endsWith("\n")) {
+      output += "\n";
+    }
+    output += serializeProfileSignatureWysiwygNode(child);
+    if (block && index < children.length - 1 && !output.endsWith("\n")) {
+      output += "\n";
+    }
+  });
+  return output;
+}
+
+function serializeProfileSignatureWysiwygNode(node) {
+  if (node instanceof Text) {
+    return String(node.nodeValue || "")
+      .replace(/\u200b/g, "")
+      .replace(/\u00a0/g, " ");
+  }
+  if (!(node instanceof HTMLElement)) {
+    return "";
+  }
+
+  const emotionTag = node.dataset.cc98UbbEmotionTag;
+  if (emotionTag) {
+    return `[${emotionTag}]`;
+  }
+
+  const tagName = node.tagName.toLowerCase();
+  if (tagName === "br") {
+    return "\n";
+  }
+
+  const explicitTag = String(node.dataset.cc98UbbTag || "").toLowerCase();
+  const explicitValue = node.dataset.cc98UbbValue || "";
+  if (explicitTag === "img" || tagName === "img") {
+    const src = explicitValue || node.getAttribute("src") || "";
+    return src ? `[img]${src}[/img]` : "";
+  }
+  if (/^(?:audio|mp3|video|bili|bilibili)$/i.test(explicitTag)) {
+    return explicitValue ? wrapProfileSignatureUbb(explicitTag, "", explicitValue) : "";
+  }
+
+  let content = serializeProfileSignatureWysiwygChildren(node);
+  if (explicitTag && /^(?:b|i|u|s|del|url|color|size|align|replyview)$/i.test(explicitTag)) {
+    return wrapProfileSignatureUbb(explicitTag, explicitValue, content);
+  }
+
+  const styleText = node.getAttribute("style") || "";
+  const fontWeight = node.style.fontWeight || "";
+  const fontStyle = node.style.fontStyle || "";
+  const decoration = `${node.style.textDecoration || ""} ${node.style.textDecorationLine || ""}`;
+  const directColor = node.style.color || node.getAttribute("color") || "";
+  const directSize = node.getAttribute("size") || "";
+  const directAlign = node.style.textAlign || node.getAttribute("align") || "";
+
+  if (tagName === "a") {
+    const href = node.getAttribute("href") || "";
+    content = wrapProfileSignatureUbb("url", href, content || href);
+  }
+  if (tagName === "b" || tagName === "strong" || /^(?:bold|[6-9]00)$/i.test(fontWeight)) {
+    content = wrapProfileSignatureUbb("b", "", content);
+  }
+  if (tagName === "i" || tagName === "em" || /italic/i.test(fontStyle)) {
+    content = wrapProfileSignatureUbb("i", "", content);
+  }
+  if (tagName === "u" || /underline/i.test(decoration)) {
+    content = wrapProfileSignatureUbb("u", "", content);
+  }
+  if (/^(?:s|del|strike)$/i.test(tagName) || /line-through/i.test(decoration)) {
+    content = wrapProfileSignatureUbb("del", "", content);
+  }
+  if (directSize && EDITOR_FONT_SIZE_VALUES.includes(String(directSize))) {
+    content = wrapProfileSignatureUbb("size", directSize, content);
+  }
+  if (directColor) {
+    const normalizedColor = directColor.trim().toLowerCase() === "transparent"
+      ? "transparent"
+      : normalizeHexColor(directColor, "");
+    if (normalizedColor) {
+      content = wrapProfileSignatureUbb("color", normalizedColor, content);
+    }
+  }
+  if (/^(?:left|center|right)$/i.test(directAlign)) {
+    content = wrapProfileSignatureUbb("align", directAlign.toLowerCase(), content);
+  } else {
+    const alignMatch = styleText.match(/text-align\s*:\s*(left|center|right)/i);
+    if (alignMatch) {
+      content = wrapProfileSignatureUbb("align", alignMatch[1].toLowerCase(), content);
+    }
+  }
+  return content;
+}
+
+function serializeProfileSignatureWysiwyg(root) {
+  const output = serializeProfileSignatureWysiwygChildren(root)
+    .replace(/\r\n?/g, "\n")
+    .replace(/\u200b/g, "");
+  const hasMedia = Boolean(root?.querySelector?.(
+    "img, audio, video, [data-cc98-ubb-emotion-tag], [data-cc98-ubb-tag='audio'], [data-cc98-ubb-tag='video'], [data-cc98-ubb-tag='bili'], [data-cc98-ubb-tag='bilibili']"
+  ));
+  return !hasMedia && !String(root?.textContent || "").replace(/\u200b/g, "").trim()
+    ? ""
+    : output;
+}
+
+function renderProfileSignatureWysiwygFromUbb(wysiwyg, source) {
+  if (!(wysiwyg instanceof HTMLElement)) {
+    return;
+  }
+  const article = buildNativeEditorUbbPreview(source);
+  markInlineUbbStyleClasses(article);
+  strengthenInlineTextStyles(article);
+  markInlineEmojiContainers(article);
+  stabilizeEmojiRendering(article);
+  const fragment = document.createDocumentFragment();
+  while (article.firstChild) {
+    fragment.append(article.firstChild);
+  }
+  wysiwyg.replaceChildren(fragment);
+  wysiwyg.querySelectorAll("img, audio, video, .aplayer").forEach((media) => {
+    if (media instanceof HTMLElement) {
+      media.contentEditable = "false";
+      media.draggable = false;
+    }
+  });
+}
+
+function getProfileSignatureWysiwygRange(wysiwyg) {
+  if (!(wysiwyg instanceof HTMLElement)) {
+    return null;
+  }
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount <= 0) {
+    return null;
+  }
+  const range = selection.getRangeAt(0);
+  const container = range.commonAncestorContainer;
+  return (container === wysiwyg || wysiwyg.contains(container)) ? range : null;
+}
+
+function rememberProfileSignatureWysiwygRange(editor, wysiwyg) {
+  const range = getProfileSignatureWysiwygRange(wysiwyg);
+  if (range) {
+    editor.__cc98WysiwygRange = range.cloneRange();
+  }
+  return range;
+}
+
+function restoreProfileSignatureWysiwygRange(editor, wysiwyg) {
+  let range = editor.__cc98WysiwygRange;
+  if (
+    !(range instanceof Range)
+    || !range.startContainer?.isConnected
+    || !(range.commonAncestorContainer === wysiwyg || wysiwyg.contains(range.commonAncestorContainer))
+  ) {
+    range = document.createRange();
+    range.selectNodeContents(wysiwyg);
+    range.collapse(false);
+  }
+  const selection = window.getSelection();
+  selection?.removeAllRanges();
+  selection?.addRange(range);
+  wysiwyg.focus({ preventScroll: true });
+  return range;
+}
+
+function selectProfileSignatureInsertedNode(editor, wysiwyg, node, selectContents = false) {
+  const range = document.createRange();
+  if (selectContents && node instanceof HTMLElement) {
+    range.selectNodeContents(node);
+  } else {
+    range.setStartAfter(node);
+    range.collapse(true);
+  }
+  const selection = window.getSelection();
+  selection?.removeAllRanges();
+  selection?.addRange(range);
+  editor.__cc98WysiwygRange = range.cloneRange();
+  wysiwyg.focus({ preventScroll: true });
+}
+
+function insertProfileSignatureWysiwygNode(editor, wysiwyg, node, preserveSelection = false) {
+  if (!(node instanceof Node)) {
+    return false;
+  }
+  const range = restoreProfileSignatureWysiwygRange(editor, wysiwyg);
+  range.deleteContents();
+  range.insertNode(node);
+  selectProfileSignatureInsertedNode(editor, wysiwyg, node, preserveSelection);
+  editor.__cc98WysiwygSyncSource?.();
+  return true;
+}
+
+function applyProfileSignatureWysiwygCommand(editor, wysiwyg, command, value = null) {
+  restoreProfileSignatureWysiwygRange(editor, wysiwyg);
+  let applied = false;
+  try {
+    applied = document.execCommand(command, false, value);
+  } catch {
+    applied = false;
+  }
+  rememberProfileSignatureWysiwygRange(editor, wysiwyg);
+  editor.__cc98WysiwygSyncSource?.();
+  return applied;
+}
+
+function applyProfileSignatureWysiwygInlineTag(editor, wysiwyg, tag, value, style = {}) {
+  const range = restoreProfileSignatureWysiwygRange(editor, wysiwyg);
+  const span = document.createElement("span");
+  span.dataset.cc98UbbTag = tag;
+  if (value) {
+    span.dataset.cc98UbbValue = value;
+  }
+  Object.entries(style).forEach(([property, propertyValue]) => {
+    span.style.setProperty(property, propertyValue, "important");
+  });
+  if (range.collapsed) {
+    span.append(document.createTextNode("\u200b"));
+  } else {
+    span.append(range.extractContents());
+  }
+  range.insertNode(span);
+  selectProfileSignatureInsertedNode(editor, wysiwyg, span, true);
+  editor.__cc98WysiwygSyncSource?.();
+  return true;
+}
+
+function applyProfileSignatureWysiwygGradient(editor, wysiwyg, stops, density = 1) {
+  const range = restoreProfileSignatureWysiwygRange(editor, wysiwyg);
+  const selected = range.toString();
+  if (!selected) {
+    return false;
+  }
+  const article = buildNativeEditorUbbPreview(buildEditorGradientUbb(selected, stops, density));
+  const nodes = [...article.childNodes];
+  if (!nodes.length) {
+    return false;
+  }
+  const fragment = document.createDocumentFragment();
+  nodes.forEach((node) => fragment.append(node));
+  range.deleteContents();
+  range.insertNode(fragment);
+  selectProfileSignatureInsertedNode(editor, wysiwyg, nodes.at(-1));
+  editor.__cc98WysiwygSyncSource?.();
+  return true;
+}
+
+function insertProfileSignatureWysiwygLink(editor, wysiwyg) {
+  const range = restoreProfileSignatureWysiwygRange(editor, wysiwyg);
+  const selected = range.toString();
+  const defaultUrl = /^https?:\/\//i.test(selected) ? selected : "";
+  const url = promptPrivateMessageValue("\u8bf7\u8f93\u5165\u94fe\u63a5\u5730\u5740", defaultUrl);
+  if (!url) {
+    return false;
+  }
+  const link = document.createElement("a");
+  link.dataset.cc98UbbTag = "url";
+  link.dataset.cc98UbbValue = url;
+  link.href = makeAbsoluteCc98Url(url);
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  if (range.collapsed) {
+    const label = promptPrivateMessageValue("\u8bf7\u8f93\u5165\u663e\u793a\u6587\u5b57\uff08\u53ef\u7559\u7a7a\uff09", url) || url;
+    link.textContent = label;
+  } else {
+    link.append(range.extractContents());
+  }
+  range.deleteContents();
+  range.insertNode(link);
+  selectProfileSignatureInsertedNode(editor, wysiwyg, link);
+  editor.__cc98WysiwygSyncSource?.();
+  return true;
+}
+
+function insertProfileSignatureWysiwygMedia(editor, wysiwyg, tag, promptLabel) {
+  const url = promptPrivateMessageValue(promptLabel, "");
+  if (!url) {
+    return false;
+  }
+  let node = null;
+  if (tag === "img") {
+    node = createContentImageFromUrl(makeAbsoluteCc98Url(url), "");
+    node.dataset.cc98UbbTag = "img";
+    node.dataset.cc98UbbValue = url;
+  } else {
+    node = createUbbMediaPreviewNode(tag, url);
+  }
+  if (!(node instanceof HTMLElement)) {
+    return false;
+  }
+  node.contentEditable = "false";
+  node.draggable = false;
+  return insertProfileSignatureWysiwygNode(editor, wysiwyg, node);
+}
+
 function stabilizeProfileSignatureToolbar(router) {
   const config = router.querySelector(".user-center-config") || router;
   const textareas = [...config.querySelectorAll("textarea")]
@@ -18004,72 +19324,258 @@ function stabilizeProfileSignatureToolbar(router) {
       const editor = createElement("div", "cc98-rebuild-profile-signature-editor");
       editor.dataset.cc98ProfileSignatureEditor = "true";
       const toolbar = createElement("div", "cc98-rebuild-message-editor-toolbar");
-      const preview = createElement("div", "cc98-rebuild-message-editor-preview");
-      preview.hidden = true;
+      const workspace = createElement(
+        "div",
+        "cc98-rebuild-profile-signature-workspace cc98-rebuild-dual-ubb-workspace"
+      );
+      const wysiwygPane = createElement(
+        "div",
+        "cc98-rebuild-message-editor-preview cc98-rebuild-profile-signature-wysiwyg-pane cc98-rebuild-dual-ubb-visual-pane"
+      );
+      const wysiwygHeader = createElement("div", "cc98-rebuild-profile-signature-preview-header");
+      const wysiwygTitle = createElement("span", "cc98-rebuild-profile-signature-preview-title", "上下都可以编辑哦~");
+      const wysiwygMeta = createElement("span", "cc98-rebuild-profile-signature-preview-meta");
+      const wysiwyg = createElement(
+        "div",
+        "cc98-rebuild-profile-signature-preview-body cc98-rebuild-profile-signature-wysiwyg cc98-rebuild-dual-ubb-visual"
+      );
+      wysiwyg.contentEditable = "true";
+      wysiwyg.spellcheck = true;
+      wysiwyg.setAttribute("role", "textbox");
+      wysiwyg.setAttribute("aria-multiline", "true");
+      wysiwyg.setAttribute("aria-label", "签名档可视化编辑器");
+      wysiwyg.dataset.placeholder = "在这里直接编辑签名档";
+      wysiwygHeader.append(wysiwygTitle, wysiwygMeta);
+      wysiwygPane.append(wysiwygHeader, wysiwyg);
 
-      const refreshPreview = () => {
-        if (!preview.hidden) {
-          renderPrivateMessageEditorPreview(preview, textarea.value || "");
+      const divider = createElement("div", "cc98-rebuild-dual-editor-divider");
+      divider.setAttribute("role", "separator");
+      divider.setAttribute("aria-orientation", "horizontal");
+      divider.setAttribute("aria-label", "调整上下编辑区高度");
+      divider.tabIndex = 0;
+      const codePane = createElement(
+        "div",
+        "cc98-rebuild-profile-signature-code-pane cc98-rebuild-dual-ubb-source-pane"
+      );
+      const syntaxLayer = createElement(
+        "pre",
+        "cc98-rebuild-profile-signature-syntax-layer cc98-rebuild-dual-ubb-source"
+      );
+      let syncingNativeSource = false;
+      let sourceIsComposing = false;
+      let sourceHighlightFrame = 0;
+      let activeSurface = "visual";
+      let sourceSelection = null;
+
+      const refreshCodeChrome = (preserveSelection = true) => {
+        renderEditableProfileSignatureSource(syntaxLayer, textarea.value, preserveSelection);
+      };
+      const updateWysiwygMeta = () => {
+        const textLength = String(wysiwyg.textContent || "").replace(/\u200b/g, "").length;
+        wysiwygMeta.textContent = `${textLength} 字符`;
+      };
+      const writeNativeSource = (nextValue) => {
+        if (textarea.value === nextValue) {
+          return;
+        }
+        syncingNativeSource = true;
+        setNativeMessageInputValue(textarea, nextValue);
+        syncingNativeSource = false;
+      };
+      const syncGeneratedSource = () => {
+        activeSurface = "visual";
+        const nextValue = serializeProfileSignatureWysiwyg(wysiwyg);
+        writeNativeSource(nextValue);
+        updateWysiwygMeta();
+        refreshCodeChrome();
+      };
+      const scheduleSourceHighlight = (immediate = false) => {
+        if (sourceHighlightFrame) {
+          window.cancelAnimationFrame(sourceHighlightFrame);
+          sourceHighlightFrame = 0;
+        }
+        const run = () => {
+          sourceHighlightFrame = 0;
+          refreshCodeChrome(true);
+        };
+        if (immediate) {
+          run();
+        } else {
+          sourceHighlightFrame = window.requestAnimationFrame(run);
         }
       };
-      const runInsert = (callback) => {
-        callback();
-        refreshPreview();
+      const syncFromSourceEditor = (rehighlight = !sourceIsComposing) => {
+        activeSurface = "source";
+        sourceSelection = getProfileSignatureSourceSelection(syntaxLayer) || sourceSelection;
+        const nextValue = getProfileSignatureSourceText(syntaxLayer);
+        writeNativeSource(nextValue);
+        renderProfileSignatureWysiwygFromUbb(wysiwyg, nextValue);
+        editor.__cc98WysiwygRange = null;
+        updateWysiwygMeta();
+        if (rehighlight) {
+          scheduleSourceHighlight();
+        }
       };
-      const addButton = (label, title, before, after = before) => {
+      const rememberActiveSelection = () => {
+        const currentSourceSelection = getProfileSignatureSourceSelection(syntaxLayer);
+        if (currentSourceSelection) {
+          activeSurface = "source";
+          sourceSelection = currentSourceSelection;
+          return currentSourceSelection;
+        }
+        const visualRange = getProfileSignatureWysiwygRange(wysiwyg);
+        if (visualRange) {
+          activeSurface = "visual";
+          rememberProfileSignatureWysiwygRange(editor, wysiwyg);
+          return visualRange;
+        }
+        return null;
+      };
+      const getActiveSourceSelection = () => {
+        const current = getProfileSignatureSourceSelection(syntaxLayer);
+        if (current) {
+          sourceSelection = current;
+          return current;
+        }
+        return sourceSelection || {
+          start: textarea.value.length,
+          end: textarea.value.length
+        };
+      };
+      const replaceSourceSelection = (before, after = "", requireSelection = false) => {
+        const selection = getActiveSourceSelection();
+        const start = Math.max(0, Math.min(textarea.value.length, selection.start));
+        const end = Math.max(start, Math.min(textarea.value.length, selection.end));
+        const selected = textarea.value.slice(start, end);
+        if (requireSelection && !selected) {
+          return false;
+        }
+        const inserted = `${before}${selected}${after}`;
+        const nextValue = `${textarea.value.slice(0, start)}${inserted}${textarea.value.slice(end)}`;
+        writeNativeSource(nextValue);
+        renderProfileSignatureWysiwygFromUbb(wysiwyg, nextValue);
+        updateWysiwygMeta();
+        refreshCodeChrome(false);
+        const nextSelection = selected
+          ? { start: start + before.length, end: start + before.length + selected.length }
+          : { start: start + before.length, end: start + before.length };
+        activeSurface = "source";
+        sourceSelection = nextSelection;
+        syntaxLayer.focus({ preventScroll: true });
+        restoreProfileSignatureSourceSelection(syntaxLayer, nextSelection);
+        return true;
+      };
+      const replaceSourceText = (replacement, requireSelection = false) => {
+        const selection = getActiveSourceSelection();
+        const start = Math.max(0, Math.min(textarea.value.length, selection.start));
+        const end = Math.max(start, Math.min(textarea.value.length, selection.end));
+        if (requireSelection && start === end) {
+          return false;
+        }
+        const inserted = String(replacement ?? "");
+        const nextValue = `${textarea.value.slice(0, start)}${inserted}${textarea.value.slice(end)}`;
+        writeNativeSource(nextValue);
+        renderProfileSignatureWysiwygFromUbb(wysiwyg, nextValue);
+        updateWysiwygMeta();
+        refreshCodeChrome(false);
+        const caret = start + inserted.length;
+        const nextSelection = { start: caret, end: caret };
+        activeSurface = "source";
+        sourceSelection = nextSelection;
+        syntaxLayer.focus({ preventScroll: true });
+        restoreProfileSignatureSourceSelection(syntaxLayer, nextSelection);
+        return true;
+      };
+      editor.__cc98WysiwygSyncSource = syncGeneratedSource;
+      editor.__cc98WysiwygRememberSelection = rememberActiveSelection;
+      editor.__cc98WysiwygApplyColor = (color) => {
+        const normalized = String(color || "").trim().toLowerCase();
+        if (normalized !== "transparent" && !/^#[0-9a-f]{6}$/i.test(normalized)) {
+          return false;
+        }
+        if (activeSurface === "source") {
+          return replaceSourceSelection(`[color=${normalized}]`, "[/color]");
+        }
+        return applyProfileSignatureWysiwygInlineTag(
+          editor,
+          wysiwyg,
+          "color",
+          normalized,
+          { color: normalized }
+        );
+      };
+      editor.__cc98WysiwygApplyGradient = (stops, density) => {
+        if (activeSurface === "source") {
+          const selection = getActiveSourceSelection();
+          const selected = textarea.value.slice(selection.start, selection.end);
+          if (!selected) {
+            return false;
+          }
+          return replaceSourceText(buildEditorGradientUbb(selected, stops, density), true);
+        }
+        return applyProfileSignatureWysiwygGradient(editor, wysiwyg, stops, density);
+      };
+
+      const preserveWysiwygSelection = (control) => {
+        control.addEventListener("pointerdown", (event) => {
+          rememberActiveSelection();
+          event.preventDefault();
+        });
+      };
+      const addCommandButton = (label, title, command) => {
         const button = createButton("cc98-rebuild-message-editor-button", label, (event) => {
           event.preventDefault();
-          runInsert(() => insertPrivateMessageUbb(textarea, before, after));
+          applyProfileSignatureWysiwygCommand(editor, wysiwyg, command);
         });
         button.title = title;
+        preserveWysiwygSelection(button);
         toolbar.append(button);
+        return button;
       };
       const addActionButton = (label, title, onClick) => {
         const button = createButton("cc98-rebuild-message-editor-button", label, (event) => {
           event.preventDefault();
           onClick(event);
-          refreshPreview();
         });
         button.title = title;
+        preserveWysiwygSelection(button);
         toolbar.append(button);
         return button;
       };
 
-      addButton("B", "\u7c97\u4f53", "[b]", "[/b]");
-      addButton("I", "\u659c\u4f53", "[i]", "[/i]");
-      addButton("U", "\u4e0b\u5212\u7ebf", "[u]", "[/u]");
-      addButton("S", "\u5220\u9664\u7ebf", "[del]", "[/del]");
-      addButton("\u5de6", "\u5de6\u5bf9\u9f50", "[align=left]", "[/align]");
-      addButton("\u4e2d", "\u5c45\u4e2d", "[align=center]", "[/align]");
-      addButton("\u53f3", "\u53f3\u5bf9\u9f50", "[align=right]", "[/align]");
-      addActionButton("\u94fe", "\u63d2\u5165\u94fe\u63a5", () => insertProfileSignatureLink(textarea));
-      addActionButton("\u56fe", "\u63d2\u5165\u56fe\u7247", () => insertProfileSignatureTaggedUrl(textarea, "img", "\u8bf7\u8f93\u5165\u56fe\u7247\u5730\u5740"));
-      addActionButton("\u5f71", "\u63d2\u5165\u89c6\u9891", () => insertProfileSignatureTaggedUrl(textarea, "video", "\u8bf7\u8f93\u5165\u89c6\u9891\u5730\u5740"));
-      addActionButton("Bili", "\u63d2\u5165 Bilibili \u89c6\u9891", () => insertProfileSignatureTaggedUrl(textarea, "bilibili", "\u8bf7\u8f93\u5165 Bilibili \u5730\u5740\u6216 BV \u53f7"));
-      addActionButton("\u97f3", "\u63d2\u5165\u97f3\u9891", () => insertProfileSignatureTaggedUrl(textarea, "audio", "\u8bf7\u8f93\u5165\u97f3\u9891\u5730\u5740"));
-      addActionButton("\u8868", "\u63d2\u5165\u8868\u60c5", (event) => {
-        const panel = ensurePrivateMessageEmojiPanel(editor, textarea);
-        if (panel instanceof HTMLElement) {
-          const willOpen = panel.hidden;
-          panel.hidden = !willOpen;
-          editor.classList.toggle("cc98-rebuild-message-emoji-open", willOpen);
-          if (willOpen) {
-            positionPrivateMessageEmojiPanel(editor, panel, event?.currentTarget);
-            [60, 180].forEach((delay) => window.setTimeout(() => {
-              positionPrivateMessageEmojiPanel(editor, panel, event?.currentTarget);
-            }, delay));
-          }
-        }
-      });
-      addActionButton("\u9884", "\u9884\u89c8", () => {
-        const willShow = preview.hidden;
+      addCommandButton("B", "\u7c97\u4f53", "bold");
+      addCommandButton("I", "\u659c\u4f53", "italic");
+      addCommandButton("U", "\u4e0b\u5212\u7ebf", "underline");
+      addCommandButton("S", "\u5220\u9664\u7ebf", "strikeThrough");
+      addCommandButton("\u5de6", "\u5de6\u5bf9\u9f50", "justifyLeft");
+      addCommandButton("\u4e2d", "\u5c45\u4e2d", "justifyCenter");
+      addCommandButton("\u53f3", "\u53f3\u5bf9\u9f50", "justifyRight");
+      addActionButton("\u94fe", "\u63d2\u5165\u94fe\u63a5", () => insertProfileSignatureWysiwygLink(editor, wysiwyg));
+      addActionButton("\u56fe", "\u63d2\u5165\u56fe\u7247", () => (
+        insertProfileSignatureWysiwygMedia(editor, wysiwyg, "img", "\u8bf7\u8f93\u5165\u56fe\u7247\u5730\u5740")
+      ));
+      addActionButton("\u5f71", "\u63d2\u5165\u89c6\u9891", () => (
+        insertProfileSignatureWysiwygMedia(editor, wysiwyg, "video", "\u8bf7\u8f93\u5165\u89c6\u9891\u5730\u5740")
+      ));
+      addActionButton("Bili", "\u63d2\u5165 Bilibili \u89c6\u9891", () => (
+        insertProfileSignatureWysiwygMedia(editor, wysiwyg, "bilibili", "\u8bf7\u8f93\u5165 Bilibili \u5730\u5740\u6216 BV \u53f7")
+      ));
+      addActionButton("\u97f3", "\u63d2\u5165\u97f3\u9891", () => (
+        insertProfileSignatureWysiwygMedia(editor, wysiwyg, "audio", "\u8bf7\u8f93\u5165\u97f3\u9891\u5730\u5740")
+      ));
+      const sourceButton = addActionButton("\u6e90\u7801", "\u663e\u793a\u6216\u9690\u85cf\u53ef\u76f4\u63a5\u7f16\u8f91\u7684 UBB \u6e90\u7801", () => {
+        const willShow = codePane.hidden;
+        codePane.hidden = !willShow;
+        divider.hidden = !willShow;
+        workspace.classList.toggle("is-source-hidden", !willShow);
+        sourceButton.classList.toggle("is-active", willShow);
+        sourceButton.setAttribute("aria-pressed", String(willShow));
         if (willShow) {
-          renderPrivateMessageEditorPreview(preview, textarea.value || "");
-        } else {
-          preview.hidden = true;
+          refreshCodeChrome();
         }
-        editor.classList.toggle("cc98-rebuild-message-preview-open", willShow);
       });
+      sourceButton.classList.add("is-active");
+      sourceButton.setAttribute("aria-pressed", "true");
 
       const size = document.createElement("select");
       size.className = "cc98-rebuild-message-editor-select";
@@ -18084,9 +19590,22 @@ function stabilizeProfileSignatureToolbar(router) {
         if (!size.value) {
           return;
         }
-        insertPrivateMessageUbb(textarea, `[size=${size.value}]`, "[/size]");
+        const fontSize = `${0.72 + Number(size.value) * 0.14}em`;
+        if (activeSurface === "source") {
+          replaceSourceSelection(`[size=${size.value}]`, "[/size]");
+        } else {
+          applyProfileSignatureWysiwygInlineTag(
+            editor,
+            wysiwyg,
+            "size",
+            size.value,
+            { "font-size": fontSize }
+          );
+        }
         size.value = "";
-        refreshPreview();
+      });
+      size.addEventListener("pointerdown", () => {
+        rememberActiveSelection();
       });
       toolbar.append(size);
 
@@ -18096,6 +19615,7 @@ function stabilizeProfileSignatureToolbar(router) {
         rememberEditorSelection(editor, colorButton);
         openEditorColorPicker(colorButton, editor);
       });
+      preserveWysiwygSelection(colorButton);
       colorButton.title = "\u6587\u5b57\u989c\u8272";
       colorButton.setAttribute("aria-label", "\u6587\u5b57\u989c\u8272");
       colorButton.append(createElement("span", "cc98-rebuild-message-editor-color-label", "\u8272"));
@@ -18106,12 +19626,123 @@ function stabilizeProfileSignatureToolbar(router) {
       updateEditorColorButtonPreview(colorButton, "#ff6666");
 
       parent.insertBefore(editor, textarea);
-      editor.append(toolbar, textarea, preview);
+      textarea.readOnly = true;
+      textarea.dataset.cc98GeneratedSource = "true";
+      textarea.tabIndex = -1;
+      textarea.setAttribute("aria-hidden", "true");
+      textarea.spellcheck = false;
+      syntaxLayer.contentEditable = "true";
+      syntaxLayer.spellcheck = false;
+      syntaxLayer.setAttribute("role", "textbox");
+      syntaxLayer.setAttribute("aria-multiline", "true");
+      syntaxLayer.setAttribute("aria-label", "UBB 源码编辑器");
+      syntaxLayer.tabIndex = 0;
+      codePane.append(syntaxLayer, textarea);
+      workspace.append(wysiwygPane, divider, codePane);
+      editor.append(toolbar, workspace);
+      bindDualUbbPaneDivider(workspace, wysiwygPane, codePane, divider);
       textarea.classList.add("cc98-rebuild-profile-signature-textarea");
-      textarea.addEventListener("input", refreshPreview);
-      ["keyup", "mouseup", "select", "focus"].forEach((type) => {
-        textarea.addEventListener(type, () => rememberEditorSelection(editor, colorButton));
+      textarea.addEventListener("input", () => {
+        if (syncingNativeSource) {
+          return;
+        }
+        renderProfileSignatureWysiwygFromUbb(wysiwyg, textarea.value);
+        editor.__cc98WysiwygRange = null;
+        updateWysiwygMeta();
+        refreshCodeChrome(document.activeElement === syntaxLayer);
       });
+      syntaxLayer.addEventListener("input", () => {
+        syncFromSourceEditor(!sourceIsComposing);
+      });
+      syntaxLayer.addEventListener("focus", () => {
+        activeSurface = "source";
+        sourceSelection = getProfileSignatureSourceSelection(syntaxLayer) || sourceSelection;
+      });
+      ["keyup", "mouseup"].forEach((type) => {
+        syntaxLayer.addEventListener(type, () => {
+          activeSurface = "source";
+          sourceSelection = getProfileSignatureSourceSelection(syntaxLayer) || sourceSelection;
+        });
+      });
+      syntaxLayer.addEventListener("compositionstart", () => {
+        sourceIsComposing = true;
+      });
+      syntaxLayer.addEventListener("compositionend", () => {
+        sourceIsComposing = false;
+        syncFromSourceEditor(true);
+      });
+      syntaxLayer.addEventListener("keydown", (event) => {
+        if (!["Tab", "Enter"].includes(event.key)) {
+          return;
+        }
+        if (event.key === "Enter" && (event.isComposing || event.ctrlKey || event.metaKey || event.altKey)) {
+          return;
+        }
+        event.preventDefault();
+        if (insertProfileSignatureSourceTextAtSelection(syntaxLayer, event.key === "Tab" ? "\t" : "\n")) {
+          syncFromSourceEditor(true);
+        }
+      });
+      syntaxLayer.addEventListener("paste", (event) => {
+        const plainText = event.clipboardData?.getData("text/plain");
+        if (typeof plainText !== "string") {
+          return;
+        }
+        event.preventDefault();
+        document.execCommand("insertText", false, plainText);
+        syncFromSourceEditor(true);
+      });
+      syntaxLayer.addEventListener("blur", () => {
+        if (!sourceIsComposing) {
+          scheduleSourceHighlight(true);
+        }
+      });
+      wysiwyg.addEventListener("input", syncGeneratedSource);
+      wysiwyg.addEventListener("compositionend", syncGeneratedSource);
+      wysiwyg.addEventListener("paste", (event) => {
+        const plainText = event.clipboardData?.getData("text/plain");
+        if (typeof plainText !== "string") {
+          return;
+        }
+        event.preventDefault();
+        restoreProfileSignatureWysiwygRange(editor, wysiwyg);
+        document.execCommand("insertText", false, plainText);
+        rememberProfileSignatureWysiwygRange(editor, wysiwyg);
+        syncGeneratedSource();
+      });
+      ["keyup", "mouseup", "focus"].forEach((type) => {
+        wysiwyg.addEventListener(type, () => {
+          activeSurface = "visual";
+          rememberProfileSignatureWysiwygRange(editor, wysiwyg);
+        });
+      });
+      wysiwyg.addEventListener("click", (event) => {
+        if (event.target instanceof Element && event.target.closest("a[href]")) {
+          event.preventDefault();
+        }
+      });
+      editor.classList.add("cc98-rebuild-message-preview-open");
+      renderProfileSignatureWysiwygFromUbb(wysiwyg, textarea.value);
+      updateWysiwygMeta();
+      refreshCodeChrome();
+      if (typeof ResizeObserver === "function") {
+        let resizeFrame = 0;
+        const resizeObserver = new ResizeObserver(() => {
+          if (!editor.isConnected) {
+            resizeObserver.disconnect();
+            return;
+          }
+          if (resizeFrame) {
+            window.cancelAnimationFrame(resizeFrame);
+          }
+          resizeFrame = window.requestAnimationFrame(() => {
+            resizeFrame = 0;
+            refreshCodeChrome();
+          });
+        });
+        resizeObserver.observe(codePane);
+        resizeObserver.observe(wysiwyg);
+      }
     });
 }
 
@@ -22618,20 +24249,85 @@ function isSeamlessNativeContentMutation(record, app = document.querySelector("#
   });
 }
 
-function refreshRebuiltFromLoadedNativeContent(button, options = {}) {
-  if (isRebuilding || !lastSettings?.enabled || !lastSettings.rebuildUi) {
+function setRebuiltRefreshButtonBusy(button, busy, idleLabel = "刷新") {
+  if (!(button instanceof HTMLButtonElement)) {
     return;
   }
-  const automatic = Boolean(options.automatic);
-  const interactionRevision = seamlessScrollInteractionRevision;
-  const scrollState = captureSeamlessRebuildScrollState();
-  if (button instanceof HTMLButtonElement) {
-    button.disabled = true;
+  button.disabled = busy;
+  button.classList.toggle("is-syncing", busy);
+  if (busy) {
     button.setAttribute("aria-busy", "true");
-    button.textContent = "同步中";
+    button.textContent = "同步中…";
+    return;
+  }
+  button.removeAttribute("aria-busy");
+  button.textContent = idleLabel || "刷新";
+}
+
+function refreshRebuiltFromLoadedNativeContent(button, options = {}) {
+  const automatic = Boolean(options.automatic);
+  if (isRebuilding) {
+    if (!automatic && button instanceof HTMLButtonElement) {
+      showRebuiltTransientToast(button, "页面正在同步，请稍候");
+    }
+    return;
+  }
+  if (!lastSettings?.enabled || !lastSettings.rebuildUi) {
+    if (!automatic && button instanceof HTMLButtonElement) {
+      showRebuiltTransientToast(button, "当前页面暂时无法同步");
+    }
+    return;
   }
 
-  renderRebuiltUi({ preserveScroll: automatic });
+  const routeKey = getRoutePageKey();
+  const interactionRevision = seamlessScrollInteractionRevision;
+  const scrollState = captureSeamlessRebuildScrollState();
+  const operationToken = String(++rebuiltRefreshSequence);
+  const idleLabel = button instanceof HTMLButtonElement
+    ? (button.textContent?.trim() || "刷新")
+    : "刷新";
+  let feedbackFinished = false;
+
+  if (button instanceof HTMLButtonElement) {
+    button.dataset.cc98RefreshOperation = operationToken;
+    setRebuiltRefreshButtonBusy(button, true, idleLabel);
+  }
+
+  const finishFeedback = (success) => {
+    if (feedbackFinished || automatic) {
+      return;
+    }
+    feedbackFinished = true;
+    const app = document.querySelector("#cc98-comfort-app");
+    const currentButton = app?.querySelector(".cc98-rebuild-refresh-button");
+    const controls = new Set([button, currentButton]);
+    controls.forEach((control) => {
+      if (!(control instanceof HTMLButtonElement)) {
+        return;
+      }
+      if (control !== button
+        && control.dataset.cc98RefreshOperation
+        && control.dataset.cc98RefreshOperation !== operationToken) {
+        return;
+      }
+      setRebuiltRefreshButtonBusy(control, false, idleLabel);
+      delete control.dataset.cc98RefreshOperation;
+    });
+    if (getRoutePageKey() !== routeKey) {
+      return;
+    }
+    const anchor = currentButton instanceof HTMLButtonElement && currentButton.isConnected
+      ? currentButton
+      : (button instanceof HTMLButtonElement && button.isConnected ? button : null);
+    showRebuiltTransientToast(anchor, success ? "已同步原页面内容" : "同步未完成，请稍后重试");
+  };
+
+  try {
+    renderRebuiltUi({ preserveScroll: automatic });
+  } catch {
+    finishFeedback(false);
+    return;
+  }
   const restore = () => restoreSeamlessRebuildScrollState(
     scrollState,
     interactionRevision,
@@ -22646,6 +24342,17 @@ function refreshRebuiltFromLoadedNativeContent(button, options = {}) {
       restore();
     }, delay);
   });
+  if (!automatic) {
+    window.setTimeout(() => {
+      const app = document.querySelector("#cc98-comfort-app");
+      const ready = app instanceof HTMLElement
+        && app.dataset.routeKey === routeKey
+        && document.documentElement.dataset.cc98ComfortRebuildReady === "true"
+        && !isRebuilding;
+      finishFeedback(ready);
+    }, 360);
+    window.setTimeout(() => finishFeedback(false), 1800);
+  }
 }
 
 function renderRebuiltUi(options = {}) {

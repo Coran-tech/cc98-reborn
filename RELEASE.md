@@ -1,6 +1,6 @@
 # Release Checklist
 
-Current release target: `0.3.0`.
+Current release target: `0.3.1`.
 
 1. Confirm `manifest.json` version.
 2. Run validation:
@@ -12,6 +12,8 @@ node --check .\src\openid-webvpn-bridge.js
 node --check .\src\page-submit-monitor.js
 node --check .\popup\popup.js
 node -e "JSON.parse(require('fs').readFileSync('manifest.json','utf8')); console.log('manifest ok')"
+node .\tests\page-submit-monitor.test.js
+node .\tests\openid-refresh.test.js
 ```
 
 3. Build the zip:

@@ -1572,6 +1572,16 @@
   font-size: 0.92rem !important;
 }
 
+:root.cc98-comfort .cc98-rebuild-search .cc98-rebuild-refresh-button {
+  min-width: 74px;
+  white-space: nowrap;
+}
+
+:root.cc98-comfort .cc98-rebuild-search .cc98-rebuild-refresh-button.is-syncing {
+  cursor: wait !important;
+  opacity: 0.78;
+}
+
 :root.cc98-comfort .cc98-rebuild-search-suggestions {
   position: absolute;
   top: calc(100% + 7px);
@@ -9321,7 +9331,7 @@
 }
 
 :root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-editor {
-  width: min(760px, 100%) !important;
+  width: min(1120px, 100%) !important;
   min-width: 0 !important;
   display: grid !important;
   gap: 0 !important;
@@ -9367,6 +9377,12 @@
   color: var(--cc98-comfort-accent) !important;
 }
 
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-editor .cc98-rebuild-message-editor-button.is-active {
+  border-color: color-mix(in srgb, var(--cc98-comfort-accent) 54%, var(--cc98-comfort-border)) !important;
+  background: var(--cc98-comfort-accent-2) !important;
+  color: var(--cc98-comfort-accent) !important;
+}
+
 :root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-editor .cc98-rebuild-message-editor-select {
   height: 30px !important;
   min-height: 30px !important;
@@ -9390,40 +9406,461 @@
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22) !important;
 }
 
-:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-editor textarea.cc98-rebuild-profile-signature-textarea {
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-workspace {
   width: 100% !important;
   min-width: 0 !important;
-  min-height: 160px !important;
-  border: 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto 10px auto !important;
+  align-items: stretch !important;
+  overflow: visible !important;
   border-radius: 0 0 14px 14px !important;
-  outline: 0 !important;
+  background: var(--cc98-comfort-surface) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-workspace.is-source-hidden {
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-code-pane {
+  --cc98-signature-code-line-height: 1.55rem;
+  position: relative !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 190px !important;
+  height: 220px;
+  display: block !important;
+  overflow: hidden !important;
+  resize: vertical !important;
+  border-right: 0 !important;
+  border-top: 1px solid var(--cc98-comfort-border) !important;
+  border-bottom: 0 !important;
+  border-radius: 0 0 14px 14px !important;
+  background: color-mix(in srgb, var(--cc98-comfort-surface) 94%, var(--cc98-comfort-bg)) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-code-pane[hidden] {
+  display: none !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-code-pane:focus-within {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cc98-comfort-accent) 58%, transparent) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-workspace.is-source-hidden .cc98-rebuild-profile-signature-code-pane {
+  border-right: 0 !important;
+  border-bottom: 0 !important;
+  border-radius: 0 0 14px 14px !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-code-gutter {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  padding: 20px 8px 20px 6px !important;
+  border-right: 1px solid color-mix(in srgb, var(--cc98-comfort-border) 72%, transparent) !important;
+  background: color-mix(in srgb, var(--cc98-comfort-surface-2) 76%, var(--cc98-comfort-bg)) !important;
+  color: var(--cc98-comfort-muted) !important;
+  font-family: var(--cc98-comfort-font-mono) !important;
+  font-size: 0.74rem !important;
+  line-height: var(--cc98-signature-code-line-height) !important;
+  scrollbar-width: none;
+  user-select: none;
+  pointer-events: none;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-code-gutter::-webkit-scrollbar {
+  display: none;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-code-gutter-row {
+  width: 100% !important;
+  height: var(--cc98-signature-code-row-height, var(--cc98-signature-code-line-height)) !important;
+  min-height: var(--cc98-signature-code-line-height) !important;
+  display: grid !important;
+  grid-template-columns: 30px minmax(0, 1fr) !important;
+  align-items: stretch !important;
+  border-radius: 5px !important;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-code-gutter-row.is-active {
+  background: var(--cc98-comfort-accent-2) !important;
+  color: var(--cc98-comfort-accent) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-code-line-number {
+  display: block !important;
+  padding-right: 7px !important;
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.82;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-code-depth-guides {
+  min-width: 0 !important;
+  display: flex !important;
+  align-items: stretch !important;
+  overflow: hidden !important;
+  padding-left: 4px !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-code-depth-guide {
+  width: 11px !important;
+  flex: 0 0 11px !important;
+  border-left: 1px solid color-mix(in srgb, var(--cc98-comfort-accent) 46%, var(--cc98-comfort-border)) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-code-depth-overflow {
+  align-self: center !important;
+  color: var(--cc98-comfort-accent) !important;
+  font-size: 0.65rem !important;
+  line-height: 1 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-syntax-layer {
+  display: block !important;
+  z-index: 1;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 190px !important;
+  max-height: none !important;
+  box-sizing: border-box !important;
+  overflow: auto !important;
+  overflow-x: hidden !important;
+  scrollbar-gutter: stable;
+  margin: 0 !important;
+  padding: 20px 18px !important;
+  border: 0 !important;
   background: transparent !important;
   color: var(--cc98-comfort-text) !important;
-  padding: 12px 14px !important;
-  line-height: 1.65 !important;
-  resize: vertical !important;
+  font-family: var(--cc98-comfort-font-mono) !important;
+  font-size: 0.94rem !important;
+  font-weight: 400 !important;
+  font-style: normal !important;
+  font-variant: normal !important;
+  line-height: var(--cc98-signature-code-line-height) !important;
+  letter-spacing: 0 !important;
+  text-align: left !important;
+  text-indent: 0 !important;
+  text-transform: none !important;
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+  tab-size: 2;
+  pointer-events: auto !important;
+  user-select: text !important;
+  cursor: text !important;
+  caret-color: var(--cc98-comfort-accent) !important;
+  outline: 0 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-syntax-layer:focus {
+  background: color-mix(in srgb, var(--cc98-comfort-surface) 94%, var(--cc98-comfort-accent-2)) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-syntax-layer::selection,
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-syntax-layer *::selection {
+  background: color-mix(in srgb, var(--cc98-comfort-accent) 28%, transparent) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-syntax-line {
+  display: inline !important;
+  width: auto !important;
+  min-height: 0 !important;
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-profile-signature-syntax-layer :is(
+  .cc98-rebuild-profile-signature-syntax-plain,
+  .cc98-rebuild-profile-signature-syntax-boundary
+) {
+  display: inline !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--cc98-comfort-text) !important;
+  font: inherit !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-profile-signature-syntax-boundary {
+  width: 0 !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-syntax-token {
+  display: inline !important;
+  width: auto !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: var(--cc98-comfort-accent) !important;
+  font: inherit !important;
+  white-space: nowrap !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-syntax-token.is-pair-0 {
+  color: color-mix(in srgb, #d63384 80%, var(--cc98-comfort-text)) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-syntax-token.is-pair-1 {
+  color: color-mix(in srgb, #2979d6 78%, var(--cc98-comfort-text)) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-syntax-token.is-pair-2 {
+  color: color-mix(in srgb, #23845b 78%, var(--cc98-comfort-text)) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-syntax-token.is-pair-3 {
+  color: color-mix(in srgb, #d06a24 80%, var(--cc98-comfort-text)) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-syntax-token.is-pair-4 {
+  color: color-mix(in srgb, #7a4fd0 78%, var(--cc98-comfort-text)) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-syntax-token.is-pair-5 {
+  color: color-mix(in srgb, #008c9e 80%, var(--cc98-comfort-text)) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-syntax-token.is-pair-6 {
+  color: color-mix(in srgb, #a36a00 80%, var(--cc98-comfort-text)) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-syntax-token.is-pair-7 {
+  color: color-mix(in srgb, #c14646 80%, var(--cc98-comfort-text)) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-syntax-token.is-emoji {
+  color: color-mix(in srgb, #c58a10 80%, var(--cc98-comfort-text)) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-syntax-bracket,
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-syntax-symbol {
+  display: inline !important;
+  width: auto !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  position: static !important;
+  float: none !important;
+  color: inherit !important;
+  opacity: 0.68 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-syntax-name {
+  display: inline !important;
+  width: auto !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: inherit !important;
+  font: inherit !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-syntax-value {
+  display: inline !important;
+  width: auto !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: inherit !important;
+  font: inherit !important;
+  opacity: 0.9 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-code-status {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  min-width: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+  overflow: hidden !important;
+  padding: 0 12px !important;
+  border-top: 1px solid color-mix(in srgb, var(--cc98-comfort-border) 72%, transparent) !important;
+  background: color-mix(in srgb, var(--cc98-comfort-surface-2) 82%, var(--cc98-comfort-bg)) !important;
+  color: var(--cc98-comfort-muted) !important;
+  font-family: var(--cc98-comfort-font-mono) !important;
+  font-size: 0.7rem !important;
+  line-height: 1 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-code-position {
+  flex: 0 0 auto !important;
+  color: var(--cc98-comfort-accent) !important;
+  font-variant-numeric: tabular-nums;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-code-scope {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  text-align: right !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-editor textarea.cc98-rebuild-profile-signature-textarea {
+  position: absolute !important;
+  z-index: -1 !important;
+  width: 1px !important;
+  min-width: 1px !important;
+  max-width: 1px !important;
+  height: 1px !important;
+  min-height: 1px !important;
+  max-height: 1px !important;
+  inset: auto auto 0 0 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  outline: 0 !important;
+  background: transparent !important;
+  color: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  line-height: 1px !important;
+  letter-spacing: 0 !important;
+  font-weight: 400 !important;
+  font-style: normal !important;
+  font-variant: normal !important;
+  text-align: left !important;
+  text-indent: 0 !important;
+  text-transform: none !important;
+  resize: none !important;
+  white-space: nowrap !important;
   box-shadow: none !important;
+  font-family: var(--cc98-comfort-font-mono) !important;
+  font-size: 0.94rem !important;
+  tab-size: 2;
+  caret-color: transparent !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+  clip-path: inset(50%) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-editor textarea.cc98-rebuild-profile-signature-textarea::placeholder {
+  color: var(--cc98-comfort-muted) !important;
+  -webkit-text-fill-color: var(--cc98-comfort-muted) !important;
+  opacity: 0.78 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-editor textarea.cc98-rebuild-profile-signature-textarea::selection {
+  color: transparent !important;
+  background: color-mix(in srgb, var(--cc98-comfort-accent) 28%, transparent) !important;
 }
 
 :root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-editor .cc98-rebuild-message-editor-preview {
-  max-height: min(360px, 48vh) !important;
-  overflow: auto !important;
-  padding: 14px 16px !important;
-  border-top: 1px solid var(--cc98-comfort-border) !important;
-  background: color-mix(in srgb, var(--cc98-comfort-surface) 92%, var(--cc98-comfort-bg)) !important;
+  height: 360px;
+  min-height: 360px !important;
+  max-height: none !important;
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) !important;
+  overflow: hidden !important;
+  resize: vertical !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: color-mix(in srgb, var(--cc98-comfort-surface-2) 78%, var(--cc98-comfort-bg)) !important;
   color: var(--cc98-comfort-text) !important;
   font-family: var(--cc98-comfort-font-reading) !important;
   font-size: 1rem !important;
   line-height: 1.68 !important;
 }
 
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-wysiwyg-pane {
+  border-radius: 0 !important;
+}
+
 :root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-editor .cc98-rebuild-message-editor-preview[hidden] {
   display: none !important;
 }
 
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-preview-header {
+  min-height: 42px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  padding: 0 18px !important;
+  border-bottom: 1px solid var(--cc98-comfort-border) !important;
+  background: color-mix(in srgb, var(--cc98-comfort-surface) 88%, var(--cc98-comfort-accent-2)) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-preview-title {
+  color: var(--cc98-comfort-text) !important;
+  font-size: 0.84rem !important;
+  font-weight: 800 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-preview-meta {
+  color: var(--cc98-comfort-muted) !important;
+  font-size: 0.76rem !important;
+  font-variant-numeric: tabular-nums;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-preview-body {
+  min-width: 0 !important;
+  min-height: 310px !important;
+  overflow: auto !important;
+  padding: 24px 26px !important;
+  background: var(--cc98-comfort-surface) !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cc98-comfort-border) 48%, transparent) !important;
+  overscroll-behavior: contain;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-wysiwyg {
+  position: relative !important;
+  display: block !important;
+  cursor: text !important;
+  outline: 0 !important;
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+  caret-color: var(--cc98-comfort-accent) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-wysiwyg:focus {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--cc98-comfort-accent) 54%, transparent) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-wysiwyg:empty::before {
+  content: attr(data-placeholder);
+  color: var(--cc98-comfort-muted) !important;
+  pointer-events: none;
+  opacity: 0.72;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-wysiwyg :is(b, strong),
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-wysiwyg .cc98-rebuild-preview-bold {
+  font-weight: 800 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-wysiwyg :is(i, em),
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-wysiwyg .cc98-rebuild-preview-italic {
+  font-style: italic !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-wysiwyg :is(u, .cc98-rebuild-preview-underline) {
+  text-decoration-line: underline !important;
+  text-underline-offset: 0.14em !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-wysiwyg :is(s, del, strike, .cc98-rebuild-preview-strike) {
+  text-decoration-line: line-through !important;
+}
+
 :root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-editor .cc98-rebuild-message-editor-preview .cc98-rebuild-ubb-preview-rendered {
-  display: grid !important;
-  gap: 0.45em !important;
+  display: block !important;
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
   margin: 0 !important;
   color: inherit !important;
 }
@@ -9475,6 +9912,339 @@
 :root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-editor .cc98-rebuild-message-editor-preview img {
   max-width: min(100%, 760px) !important;
   height: auto !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-ubb-workspace {
+  width: 100% !important;
+  min-width: 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto 10px auto !important;
+  align-items: stretch !important;
+  overflow: visible !important;
+  border: 1px solid var(--cc98-comfort-border) !important;
+  border-radius: 0 0 14px 14px !important;
+  background: var(--cc98-comfort-surface) !important;
+  box-sizing: border-box !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-ubb-workspace.is-source-hidden {
+  grid-template-rows: auto !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-ubb-visual-pane {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 180px !important;
+  height: 360px;
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) !important;
+  overflow: hidden !important;
+  resize: vertical !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--cc98-comfort-surface) !important;
+  color: var(--cc98-comfort-text) !important;
+  box-sizing: border-box !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-ubb-header {
+  min-height: 42px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  padding: 0 18px !important;
+  border-bottom: 1px solid var(--cc98-comfort-border) !important;
+  background: color-mix(in srgb, var(--cc98-comfort-surface) 88%, var(--cc98-comfort-accent-2)) !important;
+}
+
+:root.cc98-comfort :is(.cc98-rebuild-dual-ubb-title, .cc98-rebuild-profile-signature-preview-title) {
+  color: var(--cc98-comfort-text) !important;
+  font-size: 0.84rem !important;
+  font-weight: 800 !important;
+}
+
+:root.cc98-comfort :is(.cc98-rebuild-dual-ubb-meta, .cc98-rebuild-profile-signature-preview-meta) {
+  color: var(--cc98-comfort-muted) !important;
+  font-size: 0.76rem !important;
+  font-variant-numeric: tabular-nums;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-ubb-visual {
+  min-width: 0 !important;
+  min-height: 0 !important;
+  overflow: auto !important;
+  padding: 22px 24px !important;
+  border: 0 !important;
+  outline: 0 !important;
+  background: var(--cc98-comfort-surface) !important;
+  color: var(--cc98-comfort-text) !important;
+  font-family: var(--cc98-comfort-font-reading) !important;
+  font-size: 1rem !important;
+  line-height: 1.72 !important;
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+  caret-color: var(--cc98-comfort-accent) !important;
+  overscroll-behavior: contain;
+  box-sizing: border-box !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-ubb-visual:focus {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--cc98-comfort-accent) 54%, transparent) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-ubb-visual:empty::before {
+  content: attr(data-placeholder);
+  color: var(--cc98-comfort-muted) !important;
+  pointer-events: none;
+  opacity: 0.72;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-editor-divider {
+  position: relative !important;
+  z-index: 4 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 10px !important;
+  min-height: 10px !important;
+  display: block !important;
+  border: 0 !important;
+  border-top: 1px solid var(--cc98-comfort-border) !important;
+  border-bottom: 1px solid var(--cc98-comfort-border) !important;
+  background: color-mix(in srgb, var(--cc98-comfort-surface-2) 86%, var(--cc98-comfort-bg)) !important;
+  cursor: row-resize !important;
+  touch-action: none;
+  box-sizing: border-box !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-editor-divider::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 46px;
+  height: 3px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--cc98-comfort-muted) 70%, transparent);
+  transform: translate(-50%, -50%);
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-editor-divider:hover,
+:root.cc98-comfort .cc98-rebuild-dual-editor-divider:focus-visible,
+:root.cc98-comfort .cc98-rebuild-dual-editor-divider.is-dragging {
+  border-color: var(--cc98-comfort-accent) !important;
+  background: var(--cc98-comfort-accent-2) !important;
+  outline: 0 !important;
+}
+
+:root.cc98-comfort.cc98-rebuild-dual-editor-resizing,
+:root.cc98-comfort.cc98-rebuild-dual-editor-resizing * {
+  cursor: row-resize !important;
+  user-select: none !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-ubb-source-pane {
+  position: relative !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 120px !important;
+  height: 220px;
+  display: block !important;
+  overflow: hidden !important;
+  resize: vertical !important;
+  border: 0 !important;
+  border-radius: 0 0 14px 14px !important;
+  background: color-mix(in srgb, var(--cc98-comfort-surface) 94%, var(--cc98-comfort-bg)) !important;
+  box-sizing: border-box !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-ubb-source-pane[hidden],
+:root.cc98-comfort .cc98-rebuild-dual-editor-divider[hidden] {
+  display: none !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-ubb-source {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  display: block !important;
+  overflow: auto !important;
+  overflow-x: hidden !important;
+  margin: 0 !important;
+  padding: 18px 20px !important;
+  border: 0 !important;
+  outline: 0 !important;
+  background: transparent !important;
+  color: var(--cc98-comfort-text) !important;
+  font-family: var(--cc98-comfort-font-mono) !important;
+  font-size: 0.94rem !important;
+  font-weight: 400 !important;
+  font-style: normal !important;
+  line-height: 1.55rem !important;
+  letter-spacing: 0 !important;
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+  tab-size: 2;
+  caret-color: var(--cc98-comfort-accent) !important;
+  scrollbar-gutter: stable;
+  box-sizing: border-box !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-ubb-source:focus {
+  background: color-mix(in srgb, var(--cc98-comfort-surface) 94%, var(--cc98-comfort-accent-2)) !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cc98-comfort-accent) 58%, transparent) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-ubb-workspace .cc98-rebuild-profile-signature-syntax-line {
+  display: inline !important;
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-ubb-workspace .cc98-rebuild-profile-signature-syntax-token {
+  display: inline !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  font: inherit !important;
+  white-space: nowrap !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-ubb-workspace .cc98-rebuild-profile-signature-syntax-token.is-pair-0 {
+  color: color-mix(in srgb, #d63384 80%, var(--cc98-comfort-text)) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-ubb-workspace .cc98-rebuild-profile-signature-syntax-token.is-pair-1 {
+  color: color-mix(in srgb, #2979d6 78%, var(--cc98-comfort-text)) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-ubb-workspace .cc98-rebuild-profile-signature-syntax-token.is-pair-2 {
+  color: color-mix(in srgb, #23845b 78%, var(--cc98-comfort-text)) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-ubb-workspace .cc98-rebuild-profile-signature-syntax-token.is-pair-3 {
+  color: color-mix(in srgb, #d06a24 80%, var(--cc98-comfort-text)) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-ubb-workspace .cc98-rebuild-profile-signature-syntax-token.is-pair-4 {
+  color: color-mix(in srgb, #7a4fd0 78%, var(--cc98-comfort-text)) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-ubb-workspace .cc98-rebuild-profile-signature-syntax-token.is-pair-5 {
+  color: color-mix(in srgb, #008c9e 80%, var(--cc98-comfort-text)) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-ubb-workspace .cc98-rebuild-profile-signature-syntax-token.is-pair-6 {
+  color: color-mix(in srgb, #a36a00 80%, var(--cc98-comfort-text)) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-ubb-workspace .cc98-rebuild-profile-signature-syntax-token.is-pair-7 {
+  color: color-mix(in srgb, #c14646 80%, var(--cc98-comfort-text)) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-ubb-workspace .cc98-rebuild-profile-signature-syntax-token.is-emoji {
+  color: color-mix(in srgb, #c58a10 80%, var(--cc98-comfort-text)) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-ubb-workspace :is(
+  .cc98-rebuild-profile-signature-syntax-bracket,
+  .cc98-rebuild-profile-signature-syntax-symbol
+) {
+  color: inherit !important;
+  opacity: 0.68 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-ubb-workspace .cc98-rebuild-profile-signature-syntax-value {
+  color: inherit !important;
+  opacity: 0.9 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-editor .ubb-editor.cc98-rebuild-dual-ubb-native-shell {
+  min-height: 0 !important;
+  grid-template-rows: auto auto auto auto !important;
+  border-radius: 14px 14px 0 0 !important;
+  margin-bottom: 0 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-editor .cc98-rebuild-native-dual-ubb-workspace {
+  margin-top: -1px !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-editor .ubb-editor > textarea.cc98-rebuild-dual-ubb-native-textarea {
+  position: absolute !important;
+  z-index: -1 !important;
+  width: 1px !important;
+  min-width: 1px !important;
+  max-width: 1px !important;
+  height: 1px !important;
+  min-height: 1px !important;
+  max-height: 1px !important;
+  inset: auto auto 0 0 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  color: transparent !important;
+  background: transparent !important;
+  resize: none !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+  clip-path: inset(50%) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-editor .ubb-editor.cc98-rebuild-dual-ubb-native-shell .ubb-button[title*="切换预览"] {
+  display: none !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-editor .cc98-rebuild-dual-ubb-visual :is(img, video, audio) {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+@media (max-width: 980px) {
+  :root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-workspace {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  :root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-editor textarea.cc98-rebuild-profile-signature-textarea {
+    min-height: 1px !important;
+  }
+
+  :root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-code-pane {
+    min-height: 170px !important;
+    border-right: 0 !important;
+    border-top: 1px solid var(--cc98-comfort-border) !important;
+    border-bottom: 0 !important;
+  }
+
+  :root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-syntax-layer {
+    min-height: 170px !important;
+    max-height: none !important;
+    padding: 16px !important;
+  }
+
+  :root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-editor .cc98-rebuild-message-editor-preview {
+    height: 300px;
+    min-height: 300px !important;
+  }
+
+  :root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-preview-body {
+    min-height: 250px !important;
+    padding: 18px !important;
+  }
+
+  :root.cc98-comfort .cc98-rebuild-dual-ubb-visual-pane {
+    height: 300px;
+  }
+
+  :root.cc98-comfort .cc98-rebuild-dual-ubb-source-pane {
+    height: 190px;
+  }
 }
 
 :root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-editor .cc98-rebuild-message-editor-preview .cc98-rebuild-inline-emoji {
@@ -11553,8 +12323,9 @@
 }
 
 :root.cc98-comfort .cc98-rebuild-native-message .cc98-rebuild-message-editor-preview .cc98-rebuild-ubb-preview-rendered {
-  display: grid !important;
-  gap: 0.45em !important;
+  display: block !important;
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
   margin: 0 !important;
   color: inherit !important;
 }

@@ -357,6 +357,352 @@
         colorTextarea.value
       );
 
+      const crossLinePreview = buildNativeEditorUbbPreview("[b]first line\nsecond line[/b]");
+      check(
+        "cross-line UBB keeps one formatting scope",
+        crossLinePreview.querySelector("strong")?.textContent === "first line\nsecond line",
+        crossLinePreview.textContent
+      );
+
+      const dualNativeEditor = document.createElement("div");
+      dualNativeEditor.className = "createTopic";
+      const dualNativeShell = document.createElement("div");
+      dualNativeShell.className = "ubb-editor";
+      const dualNativeToolbar = document.createElement("div");
+      dualNativeToolbar.className = "ubb-buttons";
+      const dualNativeBold = document.createElement("button");
+      dualNativeBold.type = "button";
+      dualNativeBold.className = "fa fa-bold ubb-button";
+      dualNativeBold.title = "加粗";
+      const dualNativeTextarea = document.createElement("textarea");
+      dualNativeTextarea.value = "双向编辑";
+      dualNativeToolbar.append(dualNativeBold);
+      dualNativeShell.append(dualNativeToolbar, dualNativeTextarea);
+      dualNativeEditor.append(dualNativeShell);
+      document.body.append(dualNativeEditor);
+      bindNativeEditorStabilizer(dualNativeEditor);
+      await waitForRegression(100);
+      const dualWorkspace = dualNativeEditor.querySelector(".cc98-rebuild-native-dual-ubb-workspace");
+      const dualVisualPane = dualWorkspace?.querySelector(".cc98-rebuild-dual-ubb-visual-pane");
+      const dualVisual = dualWorkspace?.querySelector(".cc98-rebuild-dual-ubb-visual");
+      const dualDivider = dualWorkspace?.querySelector(".cc98-rebuild-dual-editor-divider");
+      const dualSourcePane = dualWorkspace?.querySelector(".cc98-rebuild-dual-ubb-source-pane");
+      const dualSource = dualWorkspace?.querySelector(".cc98-rebuild-dual-ubb-source");
+      check(
+        "native UBB editor gains two editable surfaces",
+        dualVisual?.getAttribute("contenteditable") === "true"
+          && dualSource?.getAttribute("contenteditable") === "true",
+        `${dualVisual?.getAttribute("contenteditable")}/${dualSource?.getAttribute("contenteditable")}`
+      );
+      check(
+        "dual editor uses the requested guidance text",
+        dualWorkspace?.querySelector(".cc98-rebuild-dual-ubb-title")?.textContent === "上下都可以编辑哦~",
+        dualWorkspace?.querySelector(".cc98-rebuild-dual-ubb-title")?.textContent || ""
+      );
+      check(
+        "native React textarea remains available as the data bridge",
+        !dualNativeTextarea.readOnly
+          && dualNativeTextarea.dataset.cc98DualUbbNative === "true"
+          && getNativeEditorTextarea(dualNativeEditor) === dualNativeTextarea,
+        `${dualNativeTextarea.readOnly}/${dualNativeTextarea.dataset.cc98DualUbbNative || ""}`
+      );
+      if (dualVisual instanceof HTMLElement) {
+        dualVisual.textContent = "上方编辑";
+        dualVisual.dispatchEvent(new InputEvent("input", {
+          bubbles: true,
+          inputType: "insertText",
+          data: "上方编辑"
+        }));
+      }
+      check(
+        "visual native editor updates the original field",
+        dualNativeTextarea.value === "上方编辑",
+        dualNativeTextarea.value
+      );
+      if (dualSource instanceof HTMLElement) {
+        dualSource.textContent = "下方[color=#ff0000]编辑[/color]";
+        dualSource.dispatchEvent(new InputEvent("input", {
+          bubbles: true,
+          inputType: "insertText",
+          data: "编辑"
+        }));
+        await waitForRegression(80);
+      }
+      check(
+        "source native editor updates the original field and visual surface",
+        dualNativeTextarea.value === "下方[color=#ff0000]编辑[/color]"
+          && dualVisual?.textContent === "下方编辑"
+          && Boolean(dualVisual?.querySelector("[style*='color']")),
+        `${dualNativeTextarea.value}/${dualVisual?.innerHTML || ""}`
+      );
+      if (dualSource instanceof HTMLElement) {
+        dualSource.focus();
+        restoreProfileSignatureSourceSelection(dualSource, { start: 0, end: 2 });
+        dualNativeEditor.__cc98DualUbbState?.rememberSelection?.();
+        dualNativeEditor.__cc98WysiwygApplyColor?.("transparent");
+      }
+      check(
+        "transparent color wraps the active native source selection",
+        dualNativeTextarea.value === "[color=transparent]下方[/color][color=#ff0000]编辑[/color]",
+        dualNativeTextarea.value
+      );
+      if (dualSource instanceof HTMLElement) {
+        dualSource.textContent = "[b]标签[/b]正文";
+        dualSource.dispatchEvent(new InputEvent("input", {
+          bubbles: true,
+          inputType: "insertText",
+          data: "正文"
+        }));
+        await waitForRegression(80);
+        dualSource.focus();
+        restoreProfileSignatureSourceSelection(dualSource, {
+          start: "[b]标签[/b]".length,
+          end: "[b]标签[/b]".length
+        });
+      }
+      const dualSourceCaretParent = window.getSelection()?.anchorNode?.parentElement;
+      check(
+        "source caret at a tag boundary does not inherit syntax color",
+        Boolean(
+          dualSourceCaretParent?.closest(".cc98-rebuild-profile-signature-syntax-boundary")
+          && !dualSourceCaretParent?.closest(".cc98-rebuild-profile-signature-syntax-token")
+        ),
+        dualSourceCaretParent?.className || ""
+      );
+      if (dualSource instanceof HTMLElement) {
+        dualSource.dispatchEvent(new KeyboardEvent("keydown", {
+          bubbles: true,
+          cancelable: true,
+          key: "Enter"
+        }));
+        await waitForRegression(80);
+      }
+      check(
+        "native UBB source Enter inserts a real newline",
+        dualNativeTextarea.value === "[b]标签[/b]\n正文",
+        JSON.stringify(dualNativeTextarea.value)
+      );
+      if (dualVisual instanceof HTMLElement) {
+        dualVisual.textContent = "工具栏";
+        dualVisual.dispatchEvent(new InputEvent("input", {
+          bubbles: true,
+          inputType: "insertText",
+          data: "工具栏"
+        }));
+        const textNode = dualVisual.firstChild;
+        if (textNode instanceof Text) {
+          const range = document.createRange();
+          range.selectNodeContents(textNode);
+          const selection = window.getSelection();
+          selection.removeAllRanges();
+          selection.addRange(range);
+          dualVisual.focus();
+          dualNativeEditor.__cc98DualUbbState?.rememberSelection?.();
+          dualNativeBold.click();
+        }
+      }
+      check(
+        "native toolbar formats the active visual surface",
+        dualNativeTextarea.value === "[b]工具栏[/b]",
+        dualNativeTextarea.value
+      );
+      if (
+        dualVisualPane instanceof HTMLElement
+        && dualSourcePane instanceof HTMLElement
+        && dualDivider instanceof HTMLElement
+      ) {
+        dualVisualPane.style.setProperty("height", "300px", "important");
+        dualSourcePane.style.setProperty("height", "200px", "important");
+        dualDivider.dispatchEvent(new KeyboardEvent("keydown", {
+          bubbles: true,
+          cancelable: true,
+          key: "ArrowDown"
+        }));
+      }
+      check(
+        "dual editor divider changes both pane heights",
+        dualVisualPane?.style.height === "312px" && dualSourcePane?.style.height === "188px",
+        `${dualVisualPane?.style.height || ""}/${dualSourcePane?.style.height || ""}`
+      );
+      const dualVisualResize = dualVisualPane instanceof HTMLElement ? getComputedStyle(dualVisualPane).resize : "";
+      const dualSourceResize = dualSourcePane instanceof HTMLElement ? getComputedStyle(dualSourcePane).resize : "";
+      check(
+        "both dual editor panes support individual vertical resizing",
+        dualVisualResize === "vertical" && dualSourceResize === "vertical",
+        `${dualVisualResize}/${dualSourceResize}`
+      );
+      if (!new URLSearchParams(location.search).has("showDualEditor")) {
+        dualNativeEditor.remove();
+      }
+
+      const signatureSyntaxLayer = document.createElement("pre");
+      document.body.append(signatureSyntaxLayer);
+      renderProfileSignatureSyntaxLayer(
+        signatureSyntaxLayer,
+        "[align=center][b]first[/b][/align]\n[color=#ff0000]second[/color]"
+      );
+      const signatureSyntaxTokens = [...signatureSyntaxLayer.querySelectorAll(".cc98-rebuild-profile-signature-syntax-token")];
+      const tokenPairClass = (token) => [...(token?.classList || [])].find((name) => name.startsWith("is-pair-")) || "";
+      check(
+        "matching UBB tags share one structural color",
+        tokenPairClass(signatureSyntaxTokens[1]) === tokenPairClass(signatureSyntaxTokens[2]),
+        signatureSyntaxTokens.map((token) => `${token.textContent}:${tokenPairClass(token)}`).join(", ")
+      );
+      check(
+        "independent UBB blocks rotate structural colors",
+        tokenPairClass(signatureSyntaxTokens[0]) !== tokenPairClass(signatureSyntaxTokens[1])
+          && tokenPairClass(signatureSyntaxTokens[4]) !== tokenPairClass(signatureSyntaxTokens[0]),
+        signatureSyntaxTokens.map((token) => `${token.textContent}:${tokenPairClass(token)}`).join(", ")
+      );
+      check(
+        "syntax layer keeps logical source line count",
+        signatureSyntaxLayer.querySelectorAll(".cc98-rebuild-profile-signature-syntax-line").length === 2
+      );
+      check(
+        "syntax color boundaries never change the logical UBB source",
+        getProfileSignatureSourceText(signatureSyntaxLayer)
+          === "[align=center][b]first[/b][/align]\n[color=#ff0000]second[/color]",
+        getProfileSignatureSourceText(signatureSyntaxLayer)
+      );
+      signatureSyntaxLayer.remove();
+
+      const signatureRouter = document.createElement("section");
+      signatureRouter.className = "cc98-rebuild-native-user-router";
+      const signatureConfig = document.createElement("div");
+      signatureConfig.className = "user-center-config";
+      const signatureField = document.createElement("div");
+      const signatureLabel = document.createElement("p");
+      signatureLabel.textContent = "修改签名档";
+      const signatureTextarea = document.createElement("textarea");
+      signatureTextarea.name = "signature";
+      signatureTextarea.value = "选择这两个字";
+      signatureField.append(signatureLabel, signatureTextarea);
+      signatureConfig.append(signatureField);
+      signatureRouter.append(signatureConfig);
+      document.body.append(signatureRouter);
+      stabilizeProfileSignatureToolbar(signatureRouter);
+      const signatureEditor = signatureRouter.querySelector(".cc98-rebuild-profile-signature-editor");
+      const signatureWysiwyg = signatureEditor?.querySelector(".cc98-rebuild-profile-signature-wysiwyg");
+      const signatureBoldButton = [...(signatureEditor?.querySelectorAll(".cc98-rebuild-message-editor-button") || [])]
+        .find((button) => button.textContent === "B");
+      const signatureTextNode = signatureWysiwyg?.firstChild;
+      if (signatureEditor && signatureWysiwyg && signatureBoldButton && signatureTextNode instanceof Text) {
+        const signatureRange = document.createRange();
+        signatureRange.setStart(signatureTextNode, 2);
+        signatureRange.setEnd(signatureTextNode, 4);
+        const signatureSelection = window.getSelection();
+        signatureSelection.removeAllRanges();
+        signatureSelection.addRange(signatureRange);
+        rememberProfileSignatureWysiwygRange(signatureEditor, signatureWysiwyg);
+        signatureBoldButton.click();
+      }
+      check(
+        "profile signature editor applies formatting in the editable preview",
+        Boolean(signatureWysiwyg?.querySelector("b, strong, [style*='font-weight']")),
+        signatureWysiwyg?.innerHTML || ""
+      );
+      check(
+        "profile signature editor generates UBB for the native field",
+        signatureTextarea.value.includes("[b]这两[/b]"),
+        signatureTextarea.value
+      );
+      check(
+        "profile signature native textarea no longer overlays the editor",
+        signatureTextarea.readOnly
+          && signatureTextarea.dataset.cc98GeneratedSource === "true"
+          && getComputedStyle(signatureTextarea).pointerEvents === "none",
+        getComputedStyle(signatureTextarea).pointerEvents
+      );
+      const signatureSourceEditor = signatureEditor?.querySelector(".cc98-rebuild-profile-signature-syntax-layer");
+      check(
+        "profile signature editor does not expose an unsupported emoji picker",
+        !signatureEditor?.querySelector(".cc98-rebuild-message-editor-toolbar button[title='插入表情']")
+          && typeof signatureEditor?.__cc98WysiwygInsertEmoji !== "function"
+      );
+      check(
+        "profile signature source is directly editable",
+        signatureSourceEditor?.getAttribute("contenteditable") === "true"
+          && !signatureEditor?.querySelector(".cc98-rebuild-profile-signature-code-gutter"),
+        signatureSourceEditor?.getAttribute("contenteditable") || ""
+      );
+      const signatureVisualPane = signatureEditor?.querySelector(".cc98-rebuild-dual-ubb-visual-pane");
+      const signatureSourcePane = signatureEditor?.querySelector(".cc98-rebuild-dual-ubb-source-pane");
+      check(
+        "profile signature editor has a movable divider and resizable panes",
+        signatureEditor?.querySelector(".cc98-rebuild-dual-editor-divider")
+          && signatureVisualPane instanceof HTMLElement
+          && signatureSourcePane instanceof HTMLElement
+          && getComputedStyle(signatureVisualPane).resize === "vertical"
+          && getComputedStyle(signatureSourcePane).resize === "vertical"
+      );
+      check(
+        "profile signature guidance no longer says WYSIWYG",
+        signatureEditor?.querySelector(".cc98-rebuild-profile-signature-preview-title")?.textContent === "上下都可以编辑哦~",
+        signatureEditor?.querySelector(".cc98-rebuild-profile-signature-preview-title")?.textContent || ""
+      );
+      if (signatureSourceEditor instanceof HTMLElement) {
+        signatureSourceEditor.textContent = "源码[color=#ff0000]修改[/color]";
+        signatureSourceEditor.dispatchEvent(new InputEvent("input", {
+          bubbles: true,
+          inputType: "insertText",
+          data: "修改"
+        }));
+        await waitForRegression(80);
+      }
+      check(
+        "profile signature source edits update the native field",
+        signatureTextarea.value === "源码[color=#ff0000]修改[/color]",
+        signatureTextarea.value
+      );
+      check(
+        "profile signature source edits update the WYSIWYG surface",
+        signatureWysiwyg?.textContent === "源码修改"
+          && Boolean(signatureWysiwyg?.querySelector("[style*='color']")),
+        signatureWysiwyg?.innerHTML || ""
+      );
+      if (signatureSourceEditor instanceof HTMLElement) {
+        signatureSourceEditor.focus();
+        restoreProfileSignatureSourceSelection(signatureSourceEditor, { start: 0, end: 2 });
+        signatureEditor?.__cc98WysiwygRememberSelection?.();
+        signatureEditor?.__cc98WysiwygApplyColor?.("transparent");
+      }
+      check(
+        "transparent color wraps the active signature source selection",
+        signatureTextarea.value === "[color=transparent]源码[/color][color=#ff0000]修改[/color]",
+        signatureTextarea.value
+      );
+      check(
+        "profile signature source stays flat while keeping syntax colors",
+        getComputedStyle(signatureSourceEditor?.querySelector(".cc98-rebuild-profile-signature-syntax-line")).display === "inline"
+          && Boolean(signatureSourceEditor?.querySelector(".cc98-rebuild-profile-signature-syntax-token")),
+        signatureSourceEditor?.innerHTML || ""
+      );
+      if (signatureSourceEditor instanceof HTMLElement) {
+        signatureSourceEditor.textContent = "第一行第二行";
+        signatureSourceEditor.dispatchEvent(new InputEvent("input", {
+          bubbles: true,
+          inputType: "insertText",
+          data: "第一行第二行"
+        }));
+        await waitForRegression(80);
+        signatureSourceEditor.focus();
+        restoreProfileSignatureSourceSelection(signatureSourceEditor, { start: 3, end: 3 });
+        signatureSourceEditor.dispatchEvent(new KeyboardEvent("keydown", {
+          bubbles: true,
+          cancelable: true,
+          key: "Enter"
+        }));
+        await waitForRegression(80);
+      }
+      check(
+        "profile signature source Enter inserts a real newline",
+        signatureTextarea.value === "第一行\n第二行",
+        JSON.stringify(signatureTextarea.value)
+      );
+      if (!new URLSearchParams(location.search).has("showSignature")) {
+        signatureRouter.remove();
+      }
+
       results.replaceChildren();
       checks.forEach((item) => {
         const row = document.createElement("p");
