@@ -8,7 +8,7 @@ const SEARCH_HISTORY_CHANGE_EVENT = "cc98-reborn-search-history-change";
 const SEARCH_HISTORY_LIMIT = 12;
 const READ_LATER_ROUTE_HASH = "#cc98-reborn-read-later";
 const BLACKLIST_ROUTE_HASH = "#cc98-reborn-blacklist";
-const EXTENSION_VERSION = "0.3.1";
+const EXTENSION_VERSION = "0.3.2";
 const LOGIN_REDIRECT_MARK_KEY = "cc98RebornLoginRedirectStartedAt";
 const LOGIN_REDIRECT_SNAPSHOT_KEY = "cc98RebornLoginRedirectSnapshot";
 const LOGIN_HOME_REFRESH_MARK_KEY = "cc98RebornLoginHomeRefreshPendingAt";
@@ -24,6 +24,8 @@ const VOTE_OPTIMISTIC_STATE_TTL = 2600;
 const HOME_HOT_RANK_CACHE_KEY_PREFIX = "cc98RebornHomeHotRanking:v1:";
 const SEARCH_EMPTY_INITIAL_GRACE_MS = 2600;
 const SEARCH_EMPTY_LOADING_GRACE_MS = 7000;
+const NEW_TOPICS_INITIAL_GRACE_MS = 3600;
+const NEW_TOPICS_LOADING_GRACE_MS = 8000;
 const SEAMLESS_SCROLL_SYNC_DELAY = 160;
 const SEAMLESS_SCROLL_SYNC_FOLLOWUP_DELAY = 820;
 const SEAMLESS_SCROLL_SYNC_MIN_INTERVAL = 520;
@@ -66,6 +68,7 @@ const DEFAULT_SETTINGS = {
   rebuildUi: true,
   roundUi: true,
   cornerRadius: 10,
+  prewarmPostImages: false,
   imageLoadDuration: 2100,
   previsitFirstPageForTopicImages: false,
   openLinksInNewTab: false,
@@ -73,6 +76,7 @@ const DEFAULT_SETTINGS = {
   replyRebornTail: true,
   minimalMode: false,
   homeHotOnly: false,
+  expandTopicCardsByDefault: false,
   softenAvatars: true,
   hideSticky: false,
   focusReading: false,
@@ -233,6 +237,9 @@ let newTopicModeSyncTimers = [];
 let newTopicAutoRefreshVisitActive = false;
 let newTopicAutoRefreshTriggered = false;
 let newTopicAutoRefreshTimer = null;
+let newTopicPageRouteKey = "";
+let newTopicPageRouteFirstSeenAt = 0;
+let newTopicPendingRecheckTimer = null;
 let topicContentCaptureGraceRouteKey = "";
 let topicContentCaptureGraceUntil = 0;
 let topicContentCaptureFallbackTimer = null;
@@ -413,11 +420,15 @@ function normalizeSettings(settings = {}) {
     advancedFuzzySearch: false,
     fontScale: clampNumber(settings.fontScale, 90, 120, DEFAULT_SETTINGS.fontScale),
     emojiScale: clampNumber(settings.emojiScale, 70, 200, DEFAULT_SETTINGS.emojiScale),
+    prewarmPostImages: Boolean(settings.prewarmPostImages),
     imageLoadDuration: clampNumber(settings.imageLoadDuration, 800, 8000, DEFAULT_SETTINGS.imageLoadDuration),
     previsitFirstPageForTopicImages: Boolean(settings.previsitFirstPageForTopicImages),
     openLinksInNewTab: Boolean(settings.openLinksInNewTab),
     sideTopbar: Boolean(settings.sideTopbar),
     replyRebornTail: Boolean(settings.replyRebornTail ?? DEFAULT_SETTINGS.replyRebornTail),
+    expandTopicCardsByDefault: Boolean(
+      settings.expandTopicCardsByDefault ?? DEFAULT_SETTINGS.expandTopicCardsByDefault
+    ),
     aiSearchSuggestProvider: ["openai", "deepseek"].includes(settings.aiSearchSuggestProvider)
       ? settings.aiSearchSuggestProvider
       : DEFAULT_SETTINGS.aiSearchSuggestProvider,
@@ -462,6 +473,10 @@ function getThemeLoadingColors() {
 
 function applySettings(settings) {
   lastSettings = normalizeSettings(settings);
+  if (!lastSettings.prewarmPostImages && topicContentCaptureFallbackTimer) {
+    window.clearTimeout(topicContentCaptureFallbackTimer);
+    topicContentCaptureFallbackTimer = null;
+  }
   ensureSecurityWatermark();
   enforceRecentLogoutRedirectIntent();
   bindGlobalTopbarAuthRedirects();
@@ -480,6 +495,8 @@ function applySettings(settings) {
   root.dataset.cc98ComfortRound = String(lastSettings.roundUi);
   root.dataset.cc98ComfortMinimal = String(lastSettings.minimalMode);
   root.dataset.cc98ComfortHomeHotOnly = String(lastSettings.homeHotOnly);
+  root.dataset.cc98ComfortExpandTopicCards = String(lastSettings.expandTopicCardsByDefault);
+  root.dataset.cc98ComfortPrewarmPostImages = String(lastSettings.prewarmPostImages);
   root.dataset.cc98ComfortPrevisitFirstPage = String(lastSettings.previsitFirstPageForTopicImages);
   root.dataset.cc98ComfortOpenLinksInNewTab = String(lastSettings.openLinksInNewTab);
   root.dataset.cc98ComfortSideTopbar = String(lastSettings.sideTopbar);
@@ -4741,6 +4758,9 @@ function waitForNativeImage(image, timeout = 900) {
 }
 
 async function prewarmNativeLazyMedia() {
+  if (!isPostImagePrewarmEnabled()) {
+    return;
+  }
   const pageKey = getLazyPrewarmPageKey();
   if (lazyPrewarmedPageKey === pageKey) {
     return;
@@ -5379,6 +5399,7 @@ function getRebuildTransitionRoutePath(value = location.href) {
 function isRebuildTransitionVeilTarget(value = location.href) {
   const path = getRebuildTransitionRoutePath(value).replace(/\/+$/, "") || "/";
   return path === "/"
+    || /^\/(?:newTopics|focus|recommendedTopics)(?:\/|$)/i.test(path)
     || /^\/user\/(?:id|name)(?:\/|$)/i.test(path)
     || /^\/usercenter(?:\/|$)/i.test(path);
 }
@@ -5779,7 +5800,8 @@ function showLoadingOverlay(message = "\u6b63\u5728\u52a0\u8f7d\u5e16\u5b50\u56f
   if (!options.allowUserCenter && clearUserCenterStaleLoadingOverlay(getPageKind())) {
     return;
   }
-  const nextSoft = isSoftLoadingOverlayMessage(message)
+  const nextSoft = !options.opaque
+    && isSoftLoadingOverlayMessage(message)
     && !editorSubmitOverlayAwaitingRebuild
     && !firstPagePrevisitInProgress
     && document.documentElement.dataset.cc98ComfortOriginalPrewarming !== "true"
@@ -5947,6 +5969,7 @@ function withTimeout(promise, timeout, label) {
 function shouldPrewarmOriginalBeforeRebuild() {
   const eligible = lastSettings?.enabled
     && lastSettings.rebuildUi
+    && lastSettings.prewarmPostImages
     && getPageKind() === "post"
     && !isNativeErrorPage()
     && lazyPrewarmedPageKey !== getLazyPrewarmPageKey();
@@ -6108,7 +6131,7 @@ function startHomeAvatarPrewarm() {
 
   const useShortWebVpnOverlay = isWebVpnHost();
   if (useShortWebVpnOverlay) {
-    showLoadingOverlay("\u6b63\u5728\u901a\u8fc7 WebVPN \u52a0\u8f7d\u9996\u9875\u5934\u50cf...");
+    showLoadingOverlay("\u6b63\u5728\u901a\u8fc7 WebVPN \u52a0\u8f7d\u9996\u9875\u5934\u50cf...", { opaque: true });
   }
 
   homeAvatarPrewarmPromise = (async () => {
@@ -6177,7 +6200,18 @@ function getOriginalPagePrewarmDuration() {
   return isWebVpnHost() ? Math.min(configured, 3200) : configured;
 }
 
+function isPostImagePrewarmEnabled() {
+  return Boolean(lastSettings?.enabled
+    && lastSettings.rebuildUi
+    && lastSettings.prewarmPostImages
+    && getPageKind() === "post"
+    && !isNativeErrorPage());
+}
+
 function startOriginalPagePrewarm() {
+  if (!isPostImagePrewarmEnabled()) {
+    return Promise.resolve();
+  }
   const pageKey = getLazyPrewarmPageKey();
   if (originalPagePrewarmPageKey === pageKey && originalPagePrewarmPromise) {
     return originalPagePrewarmPromise;
@@ -6200,15 +6234,18 @@ function startOriginalPagePrewarm() {
   let prewarmAborted = false;
   const prewarmWork = (async () => {
     await waitForDomReady();
-    if (prewarmAborted) {
+    if (prewarmAborted || !isPostImagePrewarmEnabled()) {
       return;
     }
     await wait(450);
-    if (prewarmAborted) {
+    if (prewarmAborted || !isPostImagePrewarmEnabled()) {
       return;
     }
-    await scrollOriginalPageForLazyMedia(prewarmDuration, () => prewarmAborted);
-    if (prewarmAborted) {
+    await scrollOriginalPageForLazyMedia(
+      prewarmDuration,
+      () => prewarmAborted || !isPostImagePrewarmEnabled()
+    );
+    if (prewarmAborted || !isPostImagePrewarmEnabled()) {
       return;
     }
     showLoadingOverlay("\u6b63\u5728\u6574\u7406\u9605\u8bfb\u754c\u9762...");
@@ -6299,7 +6336,11 @@ function setupRebuiltImagePlaceholders(root) {
 }
 
 function startPostLazyFallbackPrewarm() {
-  if (getPageKind() !== "post" || isNativeErrorPage()) {
+  if (!isPostImagePrewarmEnabled()) {
+    if (topicContentCaptureFallbackTimer) {
+      window.clearTimeout(topicContentCaptureFallbackTimer);
+      topicContentCaptureFallbackTimer = null;
+    }
     return;
   }
   if (lazyPrewarmedPageKey === getLazyPrewarmPageKey() || hasCapturedCurrentTopicContentPage()) {
@@ -6311,8 +6352,7 @@ function startPostLazyFallbackPrewarm() {
   const remaining = Math.max(0, ensureTopicContentCaptureGraceWindow() - Date.now());
   topicContentCaptureFallbackTimer = window.setTimeout(() => {
     topicContentCaptureFallbackTimer = null;
-    if (getPageKind() !== "post"
-      || isNativeErrorPage()
+    if (!isPostImagePrewarmEnabled()
       || hasCapturedCurrentTopicContentPage()
       || lazyPrewarmedPageKey === getLazyPrewarmPageKey()) {
       return;
@@ -6502,6 +6542,9 @@ function getPageKind() {
   if (isPublicUserProfilePage() || isUserCenterRoutePath(cc98RoutePath) || document.querySelector(".user-center")) {
     return "userCenter";
   }
+  if (/^\/(?:newTopics|focus|recommendedTopics)(?:\/|$)/i.test(cc98RoutePath)) {
+    return "topics";
+  }
   if (document.querySelector(".focus-topic, .card-topic")) {
     return document.title.includes("搜索") ? "search" : "topics";
   }
@@ -6517,6 +6560,45 @@ function isReadLaterSidebarTopicsPage() {
 
 function isNewTopicsPage() {
   return /^\/newTopics(?:\/|$)/i.test(getCurrentCc98RoutePath());
+}
+
+function getNewTopicsRouteAge() {
+  const routeKey = getRoutePageKey();
+  if (newTopicPageRouteKey !== routeKey) {
+    newTopicPageRouteKey = routeKey;
+    newTopicPageRouteFirstSeenAt = Date.now();
+  }
+  return Date.now() - newTopicPageRouteFirstSeenAt;
+}
+
+function hasNativeNewTopicsReadySignal() {
+  return Boolean(document.querySelector(
+    ".focus-topic, .card-topic, .noResultText, #focus-topic-getMore"
+  ));
+}
+
+function shouldDeferNewTopicsRebuild() {
+  if (!isNewTopicsPage() || hasNativeNewTopicsReadySignal()) {
+    return false;
+  }
+  const age = getNewTopicsRouteAge();
+  if (document.readyState === "loading" || age < NEW_TOPICS_INITIAL_GRACE_MS) {
+    return true;
+  }
+  return hasNativeSearchLoadingSignal() && age < NEW_TOPICS_LOADING_GRACE_MS;
+}
+
+function scheduleNewTopicsPendingRecheck() {
+  window.clearTimeout(newTopicPendingRecheckTimer);
+  const age = getNewTopicsRouteAge();
+  const initialRemaining = NEW_TOPICS_INITIAL_GRACE_MS - age;
+  const delay = initialRemaining > 0
+    ? Math.max(120, Math.min(420, initialRemaining))
+    : 520;
+  newTopicPendingRecheckTimer = window.setTimeout(() => {
+    newTopicPendingRecheckTimer = null;
+    scheduleRebuild();
+  }, delay);
 }
 
 function getNativeNewTopicControl(id) {
@@ -7903,6 +7985,10 @@ function markInlineEmojiContainers(root) {
     let parent = image.parentElement;
     while (parent && parent !== root && parent.childElementCount === 1 && cleanupPostText(parent.textContent) === "") {
       if (!/^(DIV|SPAN|P)$/i.test(parent.tagName)) {
+        break;
+      }
+      if (parent.dataset.cc98UbbTag === "align"
+        || parent.classList.contains("cc98-rebuild-preview-align")) {
         break;
       }
       parent.classList.add("cc98-rebuild-inline-emoji-wrap");
@@ -16345,6 +16431,7 @@ function teardownNativeDualUbbEditor(editor) {
   if (!state) {
     return;
   }
+  state.gutterResizeObserver?.disconnect?.();
   state.workspace?.remove();
   state.ubbEditor?.classList?.remove("cc98-rebuild-dual-ubb-native-shell");
   if (state.textarea instanceof HTMLTextAreaElement) {
@@ -16378,7 +16465,8 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
   visual.setAttribute("role", "textbox");
   visual.setAttribute("aria-multiline", "true");
   visual.setAttribute("aria-label", "可视化 UBB 编辑器");
-  visual.dataset.placeholder = "在这里直接编辑内容";
+  visual.setAttribute("aria-placeholder", "在这里直接编辑并预览内容");
+  visual.dataset.placeholder = "在这里直接编辑并预览内容";
   visualHeader.append(visualTitle, visualMeta);
   visualPane.append(visualHeader, visual);
 
@@ -16389,6 +16477,8 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
   divider.tabIndex = 0;
 
   const sourcePane = createElement("section", "cc98-rebuild-dual-ubb-source-pane");
+  const sourceGutter = createElement("div", "cc98-rebuild-dual-ubb-source-gutter");
+  sourceGutter.setAttribute("aria-hidden", "true");
   const sourceEditor = createElement(
     "pre",
     "cc98-rebuild-dual-ubb-source cc98-rebuild-profile-signature-syntax-layer"
@@ -16398,8 +16488,10 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
   sourceEditor.setAttribute("role", "textbox");
   sourceEditor.setAttribute("aria-multiline", "true");
   sourceEditor.setAttribute("aria-label", "UBB 源码编辑器");
+  sourceEditor.setAttribute("aria-placeholder", "在这里以经典代码形式编辑内容");
+  sourceEditor.dataset.placeholder = "在这里以经典代码形式编辑内容";
   sourceEditor.tabIndex = 0;
-  sourcePane.append(sourceEditor);
+  sourcePane.append(sourceGutter, sourceEditor);
   workspace.append(visualPane, divider, sourcePane);
 
   const state = {
@@ -16412,6 +16504,7 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
     visualMeta,
     divider,
     sourcePane,
+    sourceGutter,
     sourceEditor,
     activeSurface: "visual",
     sourceSelection: null,
@@ -16427,8 +16520,10 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
     const textLength = String(visual.textContent || "").replace(/\u200b/g, "").length;
     visualMeta.textContent = `${textLength} 字符`;
   };
+  let refreshSourceGutter = null;
   const renderSource = (preserveSelection = true) => {
     renderEditableProfileSignatureSource(sourceEditor, textarea.value, preserveSelection);
+    renderDualUbbLogicalLineGutter(sourceGutter, sourceEditor, textarea.value);
   };
   const renderVisual = () => {
     renderProfileSignatureWysiwygFromUbb(visual, textarea.value);
@@ -16690,6 +16785,11 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
   ubbEditor.classList.add("cc98-rebuild-dual-ubb-native-shell");
   ubbEditor.after(workspace);
   bindDualUbbPaneDivider(workspace, visualPane, sourcePane, divider);
+  refreshSourceGutter = bindDualUbbLogicalLineGutter(
+    sourceGutter,
+    sourceEditor,
+    () => textarea.value
+  );
 
   textarea.addEventListener("input", () => {
     if (state.syncingNativeSource) {
@@ -16776,6 +16876,24 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
       event.preventDefault();
     }
   });
+  if (typeof ResizeObserver === "function") {
+    let gutterResizeFrame = 0;
+    const gutterResizeObserver = new ResizeObserver(() => {
+      if (!workspace.isConnected) {
+        gutterResizeObserver.disconnect();
+        return;
+      }
+      if (gutterResizeFrame) {
+        window.cancelAnimationFrame(gutterResizeFrame);
+      }
+      gutterResizeFrame = window.requestAnimationFrame(() => {
+        gutterResizeFrame = 0;
+        refreshSourceGutter?.();
+      });
+    });
+    gutterResizeObserver.observe(sourcePane);
+    state.gutterResizeObserver = gutterResizeObserver;
+  }
   renderVisual();
   renderSource(false);
   return state;
@@ -18915,17 +19033,82 @@ function renderEditableProfileSignatureSource(sourceEditor, source, preserveSele
   if (!(sourceEditor instanceof HTMLElement)) {
     return;
   }
+  const normalizedSource = String(source ?? "").replace(/\r\n?/g, "\n");
   const selectionState = preserveSelection && document.activeElement === sourceEditor
     ? getProfileSignatureSourceSelection(sourceEditor)
     : null;
   const scrollTop = sourceEditor.scrollTop;
   const scrollLeft = sourceEditor.scrollLeft;
-  renderProfileSignatureSyntaxLayer(sourceEditor, source);
+  sourceEditor.dataset.cc98SourceEmpty = normalizedSource.length ? "false" : "true";
+  renderProfileSignatureSyntaxLayer(sourceEditor, normalizedSource);
   sourceEditor.scrollTop = scrollTop;
   sourceEditor.scrollLeft = scrollLeft;
   if (selectionState) {
     restoreProfileSignatureSourceSelection(sourceEditor, selectionState);
   }
+}
+
+function getDualUbbSourceActiveLine(sourceEditor, source) {
+  const selection = getProfileSignatureSourceSelection(sourceEditor);
+  if (!selection) {
+    return -1;
+  }
+  const offset = Math.max(0, Math.min(String(source ?? "").length, selection.end));
+  return String(source ?? "").slice(0, offset).split("\n").length - 1;
+}
+
+function renderDualUbbLogicalLineGutter(gutter, sourceEditor, source) {
+  if (!(gutter instanceof HTMLElement) || !(sourceEditor instanceof HTMLElement)) {
+    return;
+  }
+  const normalizedSource = String(source ?? "").replace(/\r\n?/g, "\n");
+  const logicalLines = normalizedSource.split("\n");
+  const syntaxLines = [...sourceEditor.querySelectorAll(
+    ".cc98-rebuild-profile-signature-syntax-line"
+  )];
+  const computedLineHeight = Number.parseFloat(getComputedStyle(sourceEditor).lineHeight) || 24;
+  const activeLine = getDualUbbSourceActiveLine(sourceEditor, normalizedSource);
+  const fragment = document.createDocumentFragment();
+
+  logicalLines.forEach((_line, index) => {
+    const row = createElement("div", "cc98-rebuild-dual-ubb-source-gutter-row");
+    row.classList.toggle("is-active", index === activeLine);
+    const measuredHeight = syntaxLines[index]?.getBoundingClientRect?.().height || 0;
+    row.style.setProperty(
+      "--cc98-dual-source-logical-line-height",
+      `${Math.max(computedLineHeight, Math.ceil(measuredHeight))}px`
+    );
+    row.append(createElement(
+      "span",
+      "cc98-rebuild-dual-ubb-source-line-number",
+      String(index + 1)
+    ));
+    fragment.append(row);
+  });
+
+  gutter.replaceChildren(fragment);
+  gutter.scrollTop = sourceEditor.scrollTop;
+}
+
+function bindDualUbbLogicalLineGutter(gutter, sourceEditor, getSource) {
+  if (!(gutter instanceof HTMLElement)
+    || !(sourceEditor instanceof HTMLElement)
+    || gutter.dataset.cc98DualSourceGutterBound === "true") {
+    return;
+  }
+  gutter.dataset.cc98DualSourceGutterBound = "true";
+  const refresh = () => renderDualUbbLogicalLineGutter(
+    gutter,
+    sourceEditor,
+    typeof getSource === "function" ? getSource() : ""
+  );
+  sourceEditor.addEventListener("scroll", () => {
+    gutter.scrollTop = sourceEditor.scrollTop;
+  }, { passive: true });
+  ["focus", "keyup", "mouseup"].forEach((type) => {
+    sourceEditor.addEventListener(type, refresh);
+  });
+  return refresh;
 }
 
 function renderProfileSignatureCodeChrome(gutter, positionLabel, scopeLabel, textarea, syntaxLayer) {
@@ -19344,7 +19527,8 @@ function stabilizeProfileSignatureToolbar(router) {
       wysiwyg.setAttribute("role", "textbox");
       wysiwyg.setAttribute("aria-multiline", "true");
       wysiwyg.setAttribute("aria-label", "签名档可视化编辑器");
-      wysiwyg.dataset.placeholder = "在这里直接编辑签名档";
+      wysiwyg.setAttribute("aria-placeholder", "在这里直接编辑并预览内容");
+      wysiwyg.dataset.placeholder = "在这里直接编辑并预览内容";
       wysiwygHeader.append(wysiwygTitle, wysiwygMeta);
       wysiwygPane.append(wysiwygHeader, wysiwyg);
 
@@ -19357,6 +19541,8 @@ function stabilizeProfileSignatureToolbar(router) {
         "div",
         "cc98-rebuild-profile-signature-code-pane cc98-rebuild-dual-ubb-source-pane"
       );
+      const codeGutter = createElement("div", "cc98-rebuild-dual-ubb-source-gutter");
+      codeGutter.setAttribute("aria-hidden", "true");
       const syntaxLayer = createElement(
         "pre",
         "cc98-rebuild-profile-signature-syntax-layer cc98-rebuild-dual-ubb-source"
@@ -19366,9 +19552,11 @@ function stabilizeProfileSignatureToolbar(router) {
       let sourceHighlightFrame = 0;
       let activeSurface = "visual";
       let sourceSelection = null;
+      let refreshSourceGutter = null;
 
       const refreshCodeChrome = (preserveSelection = true) => {
         renderEditableProfileSignatureSource(syntaxLayer, textarea.value, preserveSelection);
+        renderDualUbbLogicalLineGutter(codeGutter, syntaxLayer, textarea.value);
       };
       const updateWysiwygMeta = () => {
         const textLength = String(wysiwyg.textContent || "").replace(/\u200b/g, "").length;
@@ -19636,11 +19824,18 @@ function stabilizeProfileSignatureToolbar(router) {
       syntaxLayer.setAttribute("role", "textbox");
       syntaxLayer.setAttribute("aria-multiline", "true");
       syntaxLayer.setAttribute("aria-label", "UBB 源码编辑器");
+      syntaxLayer.setAttribute("aria-placeholder", "在这里以经典代码形式编辑内容");
+      syntaxLayer.dataset.placeholder = "在这里以经典代码形式编辑内容";
       syntaxLayer.tabIndex = 0;
-      codePane.append(syntaxLayer, textarea);
+      codePane.append(codeGutter, syntaxLayer, textarea);
       workspace.append(wysiwygPane, divider, codePane);
       editor.append(toolbar, workspace);
       bindDualUbbPaneDivider(workspace, wysiwygPane, codePane, divider);
+      refreshSourceGutter = bindDualUbbLogicalLineGutter(
+        codeGutter,
+        syntaxLayer,
+        () => textarea.value
+      );
       textarea.classList.add("cc98-rebuild-profile-signature-textarea");
       textarea.addEventListener("input", () => {
         if (syncingNativeSource) {
@@ -19738,6 +19933,7 @@ function stabilizeProfileSignatureToolbar(router) {
           resizeFrame = window.requestAnimationFrame(() => {
             resizeFrame = 0;
             refreshCodeChrome();
+            refreshSourceGutter?.();
           });
         });
         resizeObserver.observe(codePane);
@@ -20933,6 +21129,27 @@ function renderTopics(app) {
     fuzzyTerms.length >= 2
     || (lastSettings?.aiSearchSuggestEnabled && normalizeSuggestionText(searchKeyword).length >= 4)
   ));
+  if (!topics.length && !isSearchPage) {
+    const nativeEmptyMessage = cleanupPostText(document.querySelector(
+      ".noResultText, .focus-empty, [class*='emptyResult'], [class*='noResult']"
+    )?.textContent || "");
+    if (nativeEmptyMessage) {
+      const section = createElement("section", "cc98-rebuild-empty-state");
+      section.append(createElement("h2", "", "暂时没有帖子"));
+      section.append(createElement("p", "", nativeEmptyMessage));
+      app.append(section);
+      return;
+    }
+    if (isNewTopicsPage()) {
+      scheduleNewTopicsPendingRecheck();
+    }
+    const section = createElement("section", "cc98-rebuild-empty-state cc98-rebuild-search-pending");
+    section.append(createElement("div", "cc98-rebuild-search-pending-spinner"));
+    section.append(createElement("h2", "", "正在等待帖子列表"));
+    section.append(createElement("p", "", "原页面仍在加载帖子，内容就绪后会自动应用到新界面。"));
+    app.append(section);
+    return;
+  }
   if (!topics.length && getPageKind() === "search") {
     if (shouldDeferSearchEmptyState()) {
       renderSearchPendingState(app);
@@ -20980,7 +21197,7 @@ function renderTopics(app) {
       sideColumn.append(modeControls);
       layout.classList.add("has-new-topic-controls");
     }
-    sideColumn.append(readLaterSidebar);
+    sideColumn.append(readLaterSidebar, createRebuiltBackToTopControl());
     layout.append(feed, sideColumn);
     app.append(layout);
     return;
@@ -23567,6 +23784,19 @@ function createReadLaterSidebar() {
   return sidebar;
 }
 
+function createRebuiltBackToTopControl() {
+  const button = createButton("cc98-rebuild-back-to-top", "", () => {
+    seamlessScrollInteractionRevision += 1;
+    window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+  });
+  button.title = "回到页面顶部";
+  button.setAttribute("aria-label", "回到页面顶部");
+  const icon = createElement("span", "cc98-rebuild-back-to-top-icon", "▲");
+  icon.setAttribute("aria-hidden", "true");
+  button.append(icon, createElement("span", "cc98-rebuild-back-to-top-label", "回到顶部"));
+  return button;
+}
+
 function syncReadLaterUi() {
   const items = readReadLaterItems();
   const savedKeys = new Set(items.map((item) => item.key));
@@ -24361,11 +24591,22 @@ function renderRebuiltUi(options = {}) {
   }
   isRebuilding = true;
 
+  const existing = document.querySelector("#cc98-comfort-app");
+  const currentKind = getPageKind();
+  if (currentKind === "topics" && shouldDeferNewTopicsRebuild()) {
+    beginRebuildTransitionVeil(location.href);
+    scheduleNewTopicsPendingRecheck();
+    isRebuilding = false;
+    return;
+  }
+  if (newTopicPendingRecheckTimer) {
+    window.clearTimeout(newTopicPendingRecheckTimer);
+    newTopicPendingRecheckTimer = null;
+  }
+
   document.documentElement.classList.remove("cc98-comfort-rebuild-active");
   document.documentElement.dataset.cc98ComfortRebuildReady = "false";
 
-  const existing = document.querySelector("#cc98-comfort-app");
-  const currentKind = getPageKind();
   updateNewTopicAutoRefreshVisitState();
   clearUserCenterStaleLoadingOverlay(currentKind);
   const preservedMessageScrollState = currentKind === "message"

@@ -14,6 +14,7 @@ const DEFAULT_SETTINGS = {
   rebuildUi: true,
   roundUi: true,
   cornerRadius: 10,
+  prewarmPostImages: false,
   imageLoadDuration: 2100,
   previsitFirstPageForTopicImages: false,
   openLinksInNewTab: false,
@@ -21,6 +22,7 @@ const DEFAULT_SETTINGS = {
   replyRebornTail: true,
   minimalMode: false,
   homeHotOnly: false,
+  expandTopicCardsByDefault: false,
   softenAvatars: true,
   hideSticky: false,
   focusReading: false,
@@ -61,6 +63,8 @@ const fields = {
   themeMoreCurrent: document.querySelector("#themeMoreCurrent"),
   themeMoreMenu: document.querySelector("#themeMoreMenu"),
   homeHotOnly: document.querySelector("#homeHotOnly"),
+  expandTopicCardsByDefault: document.querySelector("#expandTopicCardsByDefault"),
+  prewarmPostImages: document.querySelector("#prewarmPostImages"),
   previsitFirstPageForTopicImages: document.querySelector("#previsitFirstPageForTopicImages"),
   openLinksInNewTab: document.querySelector("#openLinksInNewTab"),
   sideTopbar: document.querySelector("#sideTopbar"),
@@ -147,6 +151,16 @@ function updateThemeDisplay() {
 
 function formatDuration(ms) {
   return `${(Number(ms) / 1000).toFixed(1)}s`;
+}
+
+function updatePostImagePrewarmControls() {
+  const enabled = Boolean(fields.prewarmPostImages?.checked);
+  if (fields.imageLoadDuration) {
+    fields.imageLoadDuration.disabled = !enabled;
+  }
+  const range = fields.imageLoadDuration?.closest(".range");
+  range?.classList.toggle("is-disabled", !enabled);
+  range?.setAttribute("aria-disabled", String(!enabled));
 }
 
 function parseList(value) {
@@ -503,6 +517,8 @@ function hydrate(nextSettings) {
 
   fields.enabled.checked = settings.enabled;
   fields.homeHotOnly.checked = settings.homeHotOnly;
+  fields.expandTopicCardsByDefault.checked = settings.expandTopicCardsByDefault;
+  fields.prewarmPostImages.checked = settings.prewarmPostImages;
   fields.previsitFirstPageForTopicImages.checked = settings.previsitFirstPageForTopicImages;
   fields.openLinksInNewTab.checked = settings.openLinksInNewTab;
   fields.sideTopbar.checked = settings.sideTopbar;
@@ -515,6 +531,7 @@ function hydrate(nextSettings) {
   fields.emojiScaleOutput.value = `${settings.emojiScale}%`;
   fields.imageLoadDuration.value = settings.imageLoadDuration;
   fields.imageLoadDurationOutput.value = formatDuration(settings.imageLoadDuration);
+  updatePostImagePrewarmControls();
   updateBlacklistSummary();
 
   isHydrating = false;
@@ -531,6 +548,7 @@ function collect() {
     rebuildUi: DEFAULT_SETTINGS.rebuildUi,
     roundUi: DEFAULT_SETTINGS.roundUi,
     cornerRadius: DEFAULT_SETTINGS.cornerRadius,
+    prewarmPostImages: fields.prewarmPostImages.checked,
     imageLoadDuration: Number(fields.imageLoadDuration.value),
     previsitFirstPageForTopicImages: fields.previsitFirstPageForTopicImages.checked,
     openLinksInNewTab: fields.openLinksInNewTab.checked,
@@ -538,6 +556,7 @@ function collect() {
     replyRebornTail: fields.replyRebornTail.checked,
     minimalMode: DEFAULT_SETTINGS.minimalMode,
     homeHotOnly: fields.homeHotOnly.checked,
+    expandTopicCardsByDefault: fields.expandTopicCardsByDefault.checked,
     softenAvatars: DEFAULT_SETTINGS.softenAvatars,
     focusReading: DEFAULT_SETTINGS.focusReading,
     hideSticky: DEFAULT_SETTINGS.hideSticky,
@@ -564,6 +583,7 @@ function save() {
   fields.fontScaleOutput.value = `${settings.fontScale}%`;
   fields.emojiScaleOutput.value = `${settings.emojiScale}%`;
   fields.imageLoadDurationOutput.value = formatDuration(settings.imageLoadDuration);
+  updatePostImagePrewarmControls();
   updateThemeDisplay();
   updateBlacklistSummary();
   chrome.storage.local.set({ [STORAGE_KEY]: settings });

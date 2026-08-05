@@ -1,6 +1,6 @@
 # Release Checklist
 
-Current release target: `0.3.1`.
+Current release target: `0.3.2`.
 
 1. Confirm `manifest.json` version.
 2. Run validation:

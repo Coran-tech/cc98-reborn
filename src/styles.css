@@ -952,19 +952,21 @@
 
 :root.cc98-comfort .cc98-rebuild-topbar {
   position: sticky;
-  top: 10px;
+  top: 18px;
   z-index: 20;
   display: grid;
-  grid-template-columns: auto auto minmax(220px, 1fr) auto;
+  grid-template-columns: auto auto minmax(220px, 1fr) minmax(150px, auto);
+  grid-auto-rows: minmax(40px, auto);
   align-items: center;
   gap: 18px;
-  min-height: 54px;
+  min-height: 62px;
   padding: 10px 14px;
   border: 1px solid color-mix(in srgb, var(--cc98-comfort-border) 78%, transparent);
   border-radius: 16px;
   background: color-mix(in srgb, var(--cc98-comfort-surface) 92%, transparent);
   box-shadow: var(--cc98-comfort-shadow);
   backdrop-filter: blur(14px);
+  overflow-anchor: none;
 }
 
 @media (min-width: 1101px) {
@@ -3048,6 +3050,15 @@
   margin-top: 8px;
   opacity: 1;
   transform: translateY(0);
+}
+
+:root.cc98-comfort[data-cc98-comfort-expand-topic-cards="true"] .cc98-rebuild-hover-meta {
+  max-height: none;
+  margin-top: 8px;
+  opacity: 1;
+  overflow: visible;
+  transform: none;
+  transition: none;
 }
 
 :root.cc98-comfort .cc98-rebuild-rank {
@@ -5746,6 +5757,49 @@
   min-height: min(360px, calc(100vh - 156px));
 }
 
+:root.cc98-comfort .cc98-rebuild-back-to-top {
+  width: 100%;
+  min-height: 50px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 14px !important;
+  border: 1px solid var(--cc98-comfort-border) !important;
+  border-radius: 12px !important;
+  background: color-mix(in srgb, var(--cc98-comfort-surface) 96%, var(--cc98-comfort-bg)) !important;
+  box-shadow: var(--cc98-comfort-shadow);
+  color: var(--cc98-comfort-muted) !important;
+  font: inherit;
+  font-size: 1rem !important;
+  font-weight: 750 !important;
+  line-height: 1.2 !important;
+  text-align: center;
+  cursor: pointer;
+}
+
+:root.cc98-comfort .cc98-rebuild-back-to-top-icon {
+  width: 18px;
+  flex: 0 0 18px;
+  color: currentColor !important;
+  font-size: 0.78rem !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-back-to-top-label {
+  color: currentColor !important;
+  font: inherit !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-back-to-top:is(:hover, :focus-visible) {
+  border-color: color-mix(in srgb, var(--cc98-comfort-accent) 52%, var(--cc98-comfort-border)) !important;
+  background: var(--cc98-comfort-accent-2) !important;
+  color: var(--cc98-comfort-accent) !important;
+  outline: none;
+}
+
 :root.cc98-comfort .cc98-rebuild-read-later-sidebar {
   position: sticky;
   top: 84px;
@@ -6123,6 +6177,10 @@
     min-height: 380px;
   }
 
+  :root.cc98-comfort .cc98-rebuild-topics-side-column > .cc98-rebuild-back-to-top {
+    order: -1;
+  }
+
   :root.cc98-comfort .cc98-rebuild-read-later-sidebar {
     position: relative;
     top: auto;
@@ -6148,6 +6206,10 @@
   :root.cc98-comfort[data-cc98-comfort-side-topbar="true"] .cc98-rebuild-topics-side-column > .cc98-rebuild-read-later-sidebar {
     height: min(560px, 72vh);
     min-height: 380px;
+  }
+
+  :root.cc98-comfort[data-cc98-comfort-side-topbar="true"] .cc98-rebuild-topics-side-column > .cc98-rebuild-back-to-top {
+    order: -1;
   }
 
   :root.cc98-comfort[data-cc98-comfort-side-topbar="true"] .cc98-rebuild-read-later-sidebar {
@@ -6319,7 +6381,7 @@
 }
 
 :root.cc98-comfort .cc98-rebuild-reply-panel {
-  width: min(760px, 100%);
+  width: min(920px, 100%);
   display: grid;
   gap: 10px;
   margin: 18px auto 0;
@@ -8775,7 +8837,7 @@
 :root.cc98-comfort .cc98-rebuild-native-user-nav .fa-exchange::before { content: "⇄"; }
 :root.cc98-comfort .cc98-rebuild-native-user-nav .fa-paint-brush::before { content: "◈"; }
 :root.cc98-comfort .cc98-rebuild-native-user-nav .fa-arrow-up::before,
-:root.cc98-comfort .cc98-rebuild-native-user-nav #scrollToTop::before { content: "↑"; }
+:root.cc98-comfort .cc98-rebuild-native-user-nav #scrollToTop::before { content: "▲"; }
 
 :root.cc98-comfort .cc98-rebuild-native-user-nav .center-nav-item,
 :root.cc98-comfort .cc98-rebuild-native-user-nav .top-button-text {
@@ -8819,10 +8881,31 @@
 
 :root.cc98-comfort .cc98-rebuild-native-user-nav #scrollToTop {
   width: 100%;
+  min-height: 50px;
   margin-top: 8px;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 14px;
   border: 1px solid var(--cc98-comfort-border) !important;
   background: var(--cc98-comfort-surface-2) !important;
+  font-weight: 750 !important;
+  line-height: 1.2;
+  text-align: center;
   cursor: pointer;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-nav #scrollToTop::before {
+  width: 18px;
+  flex-basis: 18px;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-nav #scrollToTop .top-button-text {
+  padding: 0;
+  font-size: 1rem !important;
+  font-weight: 750 !important;
+  text-align: center;
 }
 
 :root.cc98-comfort .cc98-rebuild-native-user-router {
@@ -9430,7 +9513,9 @@
   min-width: 0 !important;
   min-height: 190px !important;
   height: 220px;
-  display: block !important;
+  display: grid !important;
+  grid-template-columns: 52px minmax(0, 1fr) !important;
+  grid-template-rows: minmax(0, 1fr) !important;
   overflow: hidden !important;
   resize: vertical !important;
   border-right: 0 !important;
@@ -10002,6 +10087,39 @@
   opacity: 0.72;
 }
 
+:root.cc98-comfort .cc98-rebuild-dual-ubb-visual :is(
+  [data-cc98-ubb-tag="align"],
+  .cc98-rebuild-preview-align,
+  [style*="text-align: right"],
+  [style*="text-align:right"]
+) > .cc98-rebuild-inline-emoji-wrap {
+  display: inline-flex !important;
+  align-items: center !important;
+  max-width: max-content !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  vertical-align: -0.42em !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-ubb-visual :is(
+  [data-cc98-ubb-tag="align"],
+  .cc98-rebuild-preview-align,
+  [style*="text-align: right"],
+  [style*="text-align:right"]
+) > .cc98-rebuild-inline-emoji-wrap:last-child img.cc98-rebuild-inline-emoji {
+  margin-right: 0 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-ubb-visual :is(
+  [data-cc98-ubb-tag="align"],
+  .cc98-rebuild-preview-align,
+  [style*="text-align: right"],
+  [style*="text-align:right"]
+).cc98-rebuild-inline-emoji-wrap {
+  display: block !important;
+  width: 100% !important;
+}
+
 :root.cc98-comfort .cc98-rebuild-dual-editor-divider {
   position: relative !important;
   z-index: 4 !important;
@@ -10051,7 +10169,9 @@
   min-width: 0 !important;
   min-height: 120px !important;
   height: 220px;
-  display: block !important;
+  display: grid !important;
+  grid-template-columns: 52px minmax(0, 1fr) !important;
+  grid-template-rows: minmax(0, 1fr) !important;
   overflow: hidden !important;
   resize: vertical !important;
   border: 0 !important;
@@ -10066,6 +10186,8 @@
 }
 
 :root.cc98-comfort .cc98-rebuild-dual-ubb-source {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
   width: 100% !important;
   height: 100% !important;
   min-width: 0 !important;
@@ -10093,6 +10215,65 @@
   caret-color: var(--cc98-comfort-accent) !important;
   scrollbar-gutter: stable;
   box-sizing: border-box !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-ubb-source[data-cc98-source-empty="true"]::before {
+  content: attr(data-placeholder);
+  color: var(--cc98-comfort-muted) !important;
+  pointer-events: none;
+  opacity: 0.72;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-ubb-source-gutter {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  padding: 18px 5px 18px 4px !important;
+  border-right: 1px solid color-mix(in srgb, var(--cc98-comfort-border) 72%, transparent) !important;
+  background: color-mix(in srgb, var(--cc98-comfort-surface-2) 76%, var(--cc98-comfort-bg)) !important;
+  color: var(--cc98-comfort-muted) !important;
+  font-family: var(--cc98-comfort-font-mono) !important;
+  font-size: 0.74rem !important;
+  line-height: 1.55rem !important;
+  box-sizing: border-box !important;
+  scrollbar-width: none;
+  user-select: none;
+  pointer-events: none;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-code-pane > .cc98-rebuild-dual-ubb-source-gutter {
+  padding-top: 20px !important;
+  padding-bottom: 20px !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-ubb-source-gutter::-webkit-scrollbar {
+  display: none;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-ubb-source-gutter-row {
+  width: 100% !important;
+  height: var(--cc98-dual-source-logical-line-height, 1.55rem) !important;
+  min-height: 1.55rem !important;
+  display: block !important;
+  border-radius: 5px !important;
+  color: inherit !important;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-ubb-source-gutter-row.is-active {
+  background: var(--cc98-comfort-accent-2) !important;
+  color: var(--cc98-comfort-accent) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-dual-ubb-source-line-number {
+  display: block !important;
+  padding-right: 7px !important;
+  color: inherit !important;
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.82;
 }
 
 :root.cc98-comfort .cc98-rebuild-dual-ubb-source:focus {
@@ -10360,8 +10541,8 @@
 
 :root.cc98-comfort .cc98-rebuild-native-user-router .user-center-config-others {
   display: grid !important;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
-  gap: 18px 28px !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 14px !important;
   align-items: start !important;
   padding: 20px !important;
 }
@@ -10375,15 +10556,60 @@
   line-height: 1.55 !important;
 }
 
+:root.cc98-comfort .cc98-rebuild-native-user-router .user-center-config-others > :is(.config-gender, .config-text, .config-introduction) {
+  width: 100% !important;
+  display: grid !important;
+  grid-template-columns: 92px minmax(0, 1fr) !important;
+  gap: 10px 14px !important;
+  align-items: center !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .user-center-config-others > :is(.config-gender, .config-text, .config-introduction) > p:first-child {
+  width: auto !important;
+  margin: 0 !important;
+  justify-self: start !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .user-center-config-others select {
+  box-sizing: border-box !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  padding: 0 12px !important;
+  text-align: center !important;
+  text-align-last: center !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .user-center-config-others select option {
+  text-align: center !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .user-center-config-others #genderSelect {
+  width: 82px !important;
+  min-width: 82px !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .user-center-config-others select[name="DisplayTitleId"] {
+  width: min(210px, 100%) !important;
+  min-width: 112px !important;
+  max-width: 210px !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .user-center-config-others .config-text input {
+  width: min(260px, 100%) !important;
+  min-width: 0 !important;
+}
+
 :root.cc98-comfort .cc98-rebuild-native-user-router .user-center-config-others .config-birthday {
   display: grid !important;
-  grid-template-columns: minmax(92px, auto) auto minmax(68px, auto) auto minmax(68px, auto) auto !important;
+  grid-template-columns: 92px 112px 18px 92px 18px 92px 18px !important;
   align-items: center !important;
   gap: 8px !important;
+  justify-content: start !important;
 }
 
 :root.cc98-comfort .cc98-rebuild-native-user-router .user-center-config-others .config-birthday > p:first-child {
-  grid-column: 1 / -1 !important;
+  grid-column: auto !important;
+  width: auto !important;
   margin: 0 !important;
 }
 
@@ -10393,12 +10619,35 @@
 }
 
 :root.cc98-comfort .cc98-rebuild-native-user-router .user-center-config-others .config-birthday select {
-  width: auto !important;
-  min-width: 68px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .user-center-config-others .config-introduction {
+  align-items: start !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-user-router .user-center-config-others .config-introduction > div {
+  width: min(760px, 100%) !important;
+  min-width: 0 !important;
 }
 
 :root.cc98-comfort .cc98-rebuild-native-user-router .user-center-config-others textarea {
   min-height: 112px !important;
+}
+
+@media (max-width: 560px) {
+  :root.cc98-comfort .cc98-rebuild-native-user-router .user-center-config-others > :is(.config-gender, .config-text, .config-introduction) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  :root.cc98-comfort .cc98-rebuild-native-user-router .user-center-config-others .config-birthday {
+    grid-template-columns: 104px 18px 82px 18px 82px 18px !important;
+  }
+
+  :root.cc98-comfort .cc98-rebuild-native-user-router .user-center-config-others .config-birthday > p:first-child {
+    grid-column: 1 / -1 !important;
+  }
 }
 
 :root.cc98-comfort .cc98-rebuild-native-user-router .user-post,
@@ -12936,6 +13185,12 @@
   max-width: none !important;
 }
 
+:root.cc98-comfort .cc98-rebuild-shell[data-page-kind="message"] .cc98-rebuild-message-hero {
+  width: min(1140px, 100%) !important;
+  margin-right: auto !important;
+  margin-left: auto !important;
+}
+
 :root.cc98-comfort #cc98-comfort-app[data-page-kind="message"] .cc98-rebuild-native-message .message-content {
   grid-template-columns: 172px minmax(0, 1fr) !important;
   gap: 14px !important;
@@ -13822,6 +14077,10 @@
   :root.cc98-comfort .cc98-rebuild-user-layout {
     display: grid;
     grid-template-columns: 1fr;
+  }
+
+  :root.cc98-comfort .cc98-rebuild-topbar {
+    top: 10px;
   }
 
   :root.cc98-comfort .cc98-rebuild-actions {
