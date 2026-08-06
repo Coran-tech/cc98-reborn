@@ -1,6 +1,6 @@
 # Release Checklist
 
-Current release target: `0.3.2`.
+Current release target: `0.3.3`.
 
 1. Confirm `manifest.json` version.
 2. Run validation:
@@ -11,10 +11,19 @@ node --check .\src\background.js
 node --check .\src\openid-webvpn-bridge.js
 node --check .\src\page-submit-monitor.js
 node --check .\popup\popup.js
+node --check .\tests\local-static-server.cjs
 node -e "JSON.parse(require('fs').readFileSync('manifest.json','utf8')); console.log('manifest ok')"
 node .\tests\page-submit-monitor.test.js
 node .\tests\openid-refresh.test.js
 ```
+
+For dual UBB editor changes, start the local regression server and open the fixture in a browser:
+
+```powershell
+node .\tests\local-static-server.cjs 8765
+```
+
+Then visit `http://127.0.0.1:8765/tests/local-ubb-editor.html` and verify the two editing surfaces, legacy preview, manual synchronization, emoji panel, and leading-emoji spacing.
 
 3. Build the zip:
 

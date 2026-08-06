@@ -346,6 +346,12 @@
         colorHexInput.value === "#114E66" && colorPanel.dataset.cc98CurrentColor === "#114e66",
         `${colorHexInput.value}/${colorPanel.dataset.cc98CurrentColor}`
       );
+      const colorHexInputWidth = Number.parseFloat(getComputedStyle(colorHexInput).width);
+      check(
+        "color hex input keeps its compact width",
+        Number.isFinite(colorHexInputWidth) && colorHexInputWidth <= 116,
+        String(colorHexInputWidth)
+      );
       colorTextarea.focus();
       colorTextarea.setSelectionRange(0, 4);
       rememberEditorSelection(colorEditor, colorButton);
@@ -398,6 +404,12 @@
         "dual editor uses the requested guidance text",
         dualWorkspace?.querySelector(".cc98-rebuild-dual-ubb-title")?.textContent === "上下都可以编辑哦~",
         dualWorkspace?.querySelector(".cc98-rebuild-dual-ubb-title")?.textContent || ""
+      );
+      check(
+        "dual editor panes expose the requested placeholders",
+        dualVisual?.dataset.placeholder === "在这里直接编辑并预览内容"
+          && dualSource?.dataset.placeholder === "在这里以经典代码形式编辑内容",
+        `${dualVisual?.dataset.placeholder || ""}/${dualSource?.dataset.placeholder || ""}`
       );
       check(
         "native React textarea remains available as the data bridge",
@@ -481,6 +493,74 @@
         "native UBB source Enter inserts a real newline",
         dualNativeTextarea.value === "[b]标签[/b]\n正文",
         JSON.stringify(dualNativeTextarea.value)
+      );
+      check(
+        "native UBB source gutter numbers logical lines only",
+        dualWorkspace?.querySelectorAll(".cc98-rebuild-dual-ubb-source-gutter-row").length === 2,
+        String(dualWorkspace?.querySelectorAll(".cc98-rebuild-dual-ubb-source-gutter-row").length || 0)
+      );
+      if (dualVisual instanceof HTMLElement) {
+        dualVisual.textContent = "test";
+        dualVisual.dispatchEvent(new InputEvent("input", {
+          bubbles: true,
+          inputType: "insertText",
+          data: "test"
+        }));
+        const colorTextNode = dualVisual.firstChild;
+        if (colorTextNode instanceof Text) {
+          const selectedRange = document.createRange();
+          selectedRange.selectNodeContents(colorTextNode);
+          const selection = window.getSelection();
+          selection.removeAllRanges();
+          selection.addRange(selectedRange);
+          dualNativeEditor.__cc98DualUbbState?.rememberSelection?.();
+
+          // Reproduce the focus transition that used to overwrite the saved
+          // selection with a collapsed caret while opening the color popover.
+          const focusRange = document.createRange();
+          focusRange.setStart(colorTextNode, colorTextNode.length);
+          focusRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(focusRange);
+          dualNativeEditor.__cc98DualUbbState?.rememberSelection?.({
+            preserveNonCollapsed: true
+          });
+          dualNativeEditor.__cc98WysiwygApplyColor?.("#ff0000");
+        }
+      }
+      check(
+        "visual color keeps the selected text instead of inserting an empty tag",
+        dualNativeTextarea.value === "[color=#ff0000]test[/color]",
+        dualNativeTextarea.value
+      );
+      if (dualVisual instanceof HTMLElement) {
+        renderProfileSignatureWysiwygFromUbb(dualVisual, "[align=right]右侧[ac01][/align]");
+      }
+      const alignedEmojiBlock = dualVisual?.querySelector('[data-cc98-ubb-tag="align"]');
+      const alignedEmojiWrap = alignedEmojiBlock?.querySelector(
+        ":scope > .cc98-rebuild-inline-emoji-wrap:last-child"
+      );
+      check(
+        "emoji stays directly rendered and round-trips as one UBB token",
+        alignedEmojiBlock instanceof HTMLElement
+          && alignedEmojiWrap instanceof HTMLElement
+          && Boolean(alignedEmojiWrap.querySelector("img.cc98-rebuild-inline-emoji"))
+          && serializeProfileSignatureWysiwyg(dualVisual) === "[align=right]右侧[ac01][/align]",
+        alignedEmojiBlock?.outerHTML || ""
+      );
+       if (dualVisual instanceof HTMLElement && alignedEmojiWrap instanceof HTMLElement) {
+         const emojiCutRange = document.createRange();
+         emojiCutRange.selectNode(alignedEmojiWrap);
+        emojiCutRange.deleteContents();
+        dualVisual.dispatchEvent(new InputEvent("input", {
+          bubbles: true,
+          inputType: "deleteByCut"
+        }));
+      }
+      check(
+        "editable emoji can be removed as one atomic character",
+        dualNativeTextarea.value === "[align=right]右侧[/align]",
+        dualNativeTextarea.value
       );
       if (dualVisual instanceof HTMLElement) {
         dualVisual.textContent = "工具栏";
@@ -606,6 +686,37 @@
         signatureTextarea.value.includes("[b]这两[/b]"),
         signatureTextarea.value
       );
+      if (signatureWysiwyg instanceof HTMLElement) {
+        signatureWysiwyg.textContent = "test";
+        signatureWysiwyg.dispatchEvent(new InputEvent("input", {
+          bubbles: true,
+          inputType: "insertText",
+          data: "test"
+        }));
+        const profileColorTextNode = signatureWysiwyg.firstChild;
+        if (profileColorTextNode instanceof Text) {
+          const selectedRange = document.createRange();
+          selectedRange.selectNodeContents(profileColorTextNode);
+          const selection = window.getSelection();
+          selection.removeAllRanges();
+          selection.addRange(selectedRange);
+          signatureEditor?.__cc98WysiwygRememberSelection?.();
+          const focusRange = document.createRange();
+          focusRange.setStart(profileColorTextNode, profileColorTextNode.length);
+          focusRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(focusRange);
+          signatureEditor?.__cc98WysiwygRememberSelection?.({
+            preserveNonCollapsed: true
+          });
+          signatureEditor?.__cc98WysiwygApplyColor?.("#ff0000");
+        }
+      }
+      check(
+        "profile color keeps the selected text after focus moves to the picker",
+        signatureTextarea.value === "[color=#ff0000]test[/color]",
+        signatureTextarea.value
+      );
       check(
         "profile signature native textarea no longer overlays the editor",
         signatureTextarea.readOnly
@@ -622,8 +733,14 @@
       check(
         "profile signature source is directly editable",
         signatureSourceEditor?.getAttribute("contenteditable") === "true"
-          && !signatureEditor?.querySelector(".cc98-rebuild-profile-signature-code-gutter"),
+          && Boolean(signatureEditor?.querySelector(".cc98-rebuild-dual-ubb-source-gutter")),
         signatureSourceEditor?.getAttribute("contenteditable") || ""
+      );
+      check(
+        "profile signature panes expose the requested placeholders",
+        signatureWysiwyg?.dataset.placeholder === "在这里直接编辑并预览内容"
+          && signatureSourceEditor?.dataset.placeholder === "在这里以经典代码形式编辑内容",
+        `${signatureWysiwyg?.dataset.placeholder || ""}/${signatureSourceEditor?.dataset.placeholder || ""}`
       );
       const signatureVisualPane = signatureEditor?.querySelector(".cc98-rebuild-dual-ubb-visual-pane");
       const signatureSourcePane = signatureEditor?.querySelector(".cc98-rebuild-dual-ubb-source-pane");
@@ -698,6 +815,11 @@
         "profile signature source Enter inserts a real newline",
         signatureTextarea.value === "第一行\n第二行",
         JSON.stringify(signatureTextarea.value)
+      );
+      check(
+        "profile signature gutter numbers logical lines only",
+        signatureEditor?.querySelectorAll(".cc98-rebuild-dual-ubb-source-gutter-row").length === 2,
+        String(signatureEditor?.querySelectorAll(".cc98-rebuild-dual-ubb-source-gutter-row").length || 0)
       );
       if (!new URLSearchParams(location.search).has("showSignature")) {
         signatureRouter.remove();

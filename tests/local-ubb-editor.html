@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="zh-CN" class="cc98-comfort" data-cc98-comfort-theme="soft" data-cc98-comfort-tone="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CC98 Reborn UBB editor regression</title>
+  <link rel="stylesheet" href="/src/styles.css">
+  <style>
+    :root {
+      --cc98-comfort-bg: #f4f6f5;
+      --cc98-comfort-surface: #ffffff;
+      --cc98-comfort-surface-2: #f0f4f2;
+      --cc98-comfort-text: #24302d;
+      --cc98-comfort-muted: #66736f;
+      --cc98-comfort-border: #d7e0dc;
+      --cc98-comfort-accent: #1f6f66;
+      --cc98-comfort-accent-2: #e5f2ef;
+      --cc98-comfort-shadow: rgba(25, 45, 39, 0.18);
+      --cc98-comfort-font-body: "Segoe UI", sans-serif;
+      --cc98-comfort-font-reading: "Segoe UI", sans-serif;
+      --cc98-comfort-font-mono: Consolas, monospace;
+    }
+
+    body {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 32px;
+      background: var(--cc98-comfort-bg);
+      color: var(--cc98-comfort-text);
+      font-family: var(--cc98-comfort-font-body);
+    }
+
+    #native-editor {
+      width: 100%;
+    }
+  </style>
+  <script>
+    (() => {
+      const localStore = Object.create(null);
+      const resolveStored = (keys) => {
+        if (keys == null) {
+          return { ...localStore };
+        }
+        if (typeof keys === "string") {
+          return { [keys]: localStore[keys] };
+        }
+        if (Array.isArray(keys)) {
+          return Object.fromEntries(keys.map((key) => [key, localStore[key]]));
+        }
+        return Object.fromEntries(
+          Object.entries(keys).map(([key, fallback]) => [
+            key,
+            Object.prototype.hasOwnProperty.call(localStore, key) ? localStore[key] : fallback
+          ])
+        );
+      };
+      window.chrome = {
+        runtime: {
+          id: "local-ubb-regression",
+          lastError: null,
+          getURL(path) {
+            return new URL(`/${String(path || "").replace(/^\/+/, "")}`, location.origin).href;
+          },
+          onMessage: { addListener() {} },
+          sendMessage(message, callback) {
+            const response = message?.type === "CC98_REBORN_GET_WATERMARK"
+              ? { ok: false }
+              : { ok: true };
+            callback?.(response);
+            return Promise.resolve(response);
+          }
+        },
+        storage: {
+          local: {
+            get(keys, callback) {
+              const value = resolveStored(keys);
+              callback?.(value);
+              return Promise.resolve(value);
+            },
+            set(values, callback) {
+              Object.assign(localStore, values || {});
+              callback?.();
+              return Promise.resolve();
+            }
+          },
+          onChanged: { addListener() {} }
+        }
+      };
+    })();
+  </script>
+</head>
+<body>
+  <main>
+    <section id="native-editor" class="createTopic">
+      <div class="ubb-editor">
+        <div class="ubb-buttons">
+          <button type="button" class="ubb-button" title="加粗">B</button>
+          <button type="button" class="ubb-button" title="斜体">I</button>
+          <button type="button" class="ubb-button ubb-emoji-button" title="表情">表情</button>
+        </div>
+        <textarea>[b]alpha[/b]
+[color=#ff0000]red[/color]
+[ac01]</textarea>
+      </div>
+    </section>
+    <section id="blank-editor" class="createTopic" style="margin-top: 28px;">
+      <div class="ubb-editor">
+        <div class="ubb-buttons">
+          <button type="button" class="ubb-button" title="加粗">B</button>
+          <button type="button" class="ubb-button" title="斜体">I</button>
+          <button type="button" class="ubb-button ubb-emoji-button" title="表情">表情</button>
+        </div>
+        <textarea></textarea>
+      </div>
+    </section>
+    <section id="profile-router" class="cc98-rebuild-native-user-router" style="margin-top: 28px;">
+      <div class="user-center-config">
+        <label for="signature-input">签名档</label>
+        <div>
+          <textarea id="signature-input" name="signature">[b]profile preview[/b]
+[ac01]</textarea>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script src="/src/content.js"></script>
+  <script>
+    (() => {
+      document.documentElement.removeAttribute("data-cc98-rebuild-transition-veil");
+      const editor = document.querySelector("#native-editor");
+      const blankEditor = document.querySelector("#blank-editor");
+      const profileRouter = document.querySelector("#profile-router");
+      bindNativeEditorStabilizer(editor);
+      bindNativeEditorStabilizer(blankEditor);
+      stabilizeProfileSignatureToolbar(profileRouter);
+
+      const placeCaretAtEnd = (element) => {
+        const selection = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      };
+
+      window.__ubbRegression = {
+        editor,
+        get state() {
+          return editor.__cc98DualUbbState;
+        },
+        setSource(value) {
+          const source = this.state.sourceEditor;
+          source.textContent = String(value ?? "");
+          source.focus({ preventScroll: true });
+          placeCaretAtEnd(source);
+        },
+        setVisualHtml(value) {
+          const visual = this.state.visual;
+          visual.innerHTML = String(value ?? "");
+          visual.focus({ preventScroll: true });
+          placeCaretAtEnd(visual);
+        },
+        snapshot() {
+          const state = this.state;
+          const legacy = state.legacyPreview;
+          const visualStyle = getComputedStyle(state.visual);
+          const emojiPanel = editor.querySelector(":scope > .cc98-rebuild-message-emoji-panel");
+          return {
+            sourceValue: state.textarea.value,
+            visualText: state.visual.textContent,
+            visualHtml: state.visual.innerHTML,
+            sourceText: state.sourceEditor.textContent,
+            legacyHidden: legacy.hidden,
+            legacyText: legacy.textContent,
+            legacyStrongCount: legacy.querySelectorAll("strong").length,
+            legacyEmojiCount: legacy.querySelectorAll("img.cc98-rebuild-inline-emoji").length,
+            legacyButtonCount: editor.querySelectorAll("[data-cc98-dual-ubb-action='legacy-preview']").length,
+            syncButtonCount: editor.querySelectorAll("[data-cc98-dual-ubb-action='sync']").length,
+            visualPadding: visualStyle.padding,
+            visualMargin: visualStyle.margin,
+            leadingEmojiOnly: state.visual.classList.contains("cc98-rebuild-leading-emoji-only"),
+            emojiPanelOpen: Boolean(emojiPanel && !emojiPanel.hidden)
+          };
+        }
+      };
+    })();
+  </script>
+</body>
+</html>
