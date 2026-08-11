@@ -222,6 +222,72 @@
       check("share bypasses the fragile native proxy", shareNativeClicks === 0, `clicks=${shareNativeClicks}`);
       check("share writes meaningful text", /Regression topic/.test(copiedText), copiedText);
 
+      const stableFeed = document.createElement("div");
+      const stableCard = document.createElement("article");
+      stableCard.textContent = "stable";
+      upsertCard(stableFeed, "topic:stable", stableCard);
+      const originalStableCard = stableFeed.firstElementChild;
+      const equivalentStableCard = document.createElement("article");
+      equivalentStableCard.textContent = "stable";
+      const equivalentChanged = upsertCard(stableFeed, "topic:stable", equivalentStableCard);
+      check(
+        "unchanged synchronized cards keep their DOM identity",
+        equivalentChanged === false && stableFeed.firstElementChild === originalStableCard,
+        `${equivalentChanged}/${stableFeed.firstElementChild === originalStableCard}`
+      );
+      const secondStableCard = document.createElement("article");
+      secondStableCard.textContent = "second";
+      reconcileCardFeed(stableFeed, [
+        { key: "topic:second", card: secondStableCard },
+        { key: "topic:stable", card: equivalentStableCard }
+      ]);
+      check(
+        "card reconciliation updates order without clearing the feed",
+        stableFeed.children.length === 2
+          && stableFeed.children[0].dataset.itemKey === "topic:second"
+          && stableFeed.children[1] === originalStableCard,
+        [...stableFeed.children].map((card) => card.dataset.itemKey).join(",")
+      );
+
+      const previousSettings = lastSettings;
+      const blockedItem = document.createElement("article");
+      blockedItem.className = "focus-topic";
+      blockedItem.innerHTML = '<div class="focus-topic-title">regression blocked keyword</div>';
+      document.body.append(blockedItem);
+      lastSettings = {
+        ...DEFAULT_SETTINGS,
+        enabled: true,
+        blockedTitleKeywords: "blocked keyword"
+      };
+      runFiltering();
+      const firstPlaceholder = blockedItem.previousElementSibling;
+      runFiltering();
+      check(
+        "blacklist filtering preserves an unchanged placeholder",
+        firstPlaceholder?.classList.contains("cc98-comfort-placeholder")
+          && blockedItem.previousElementSibling === firstPlaceholder
+          && document.querySelectorAll(".cc98-comfort-placeholder").length === 1,
+        String(document.querySelectorAll(".cc98-comfort-placeholder").length)
+      );
+      clearBlockedState();
+      blockedItem.remove();
+      lastSettings = previousSettings;
+
+      const messageSource = document.createElement("section");
+      messageSource.innerHTML = '<button class="message-message-person"><span class="message-message-pName">Alice</span></button>';
+      const staleMessageTitle = document.createElement("h1");
+      const activeMessageTitle = document.createElement("h1");
+      bindMessageTitleSync(messageSource, staleMessageTitle, null);
+      bindMessageTitleSync(messageSource, activeMessageTitle, null);
+      staleMessageTitle.textContent = "stale";
+      messageSource.querySelector(".message-message-person").click();
+      check(
+        "message title rebinding removes the stale click listener",
+        staleMessageTitle.textContent === "stale" && activeMessageTitle.textContent === "与 Alice 的私信",
+        `${staleMessageTitle.textContent}/${activeMessageTitle.textContent}`
+      );
+      clearMessageTitleSync();
+
       const editor = document.createElement("div");
       editor.className = "createTopic";
       const textarea = document.createElement("textarea");
@@ -364,10 +430,12 @@
       );
 
       const crossLinePreview = buildNativeEditorUbbPreview("[b]first line\nsecond line[/b]");
+      const crossLineStrong = crossLinePreview.querySelector("strong");
       check(
         "cross-line UBB keeps one formatting scope",
-        crossLinePreview.querySelector("strong")?.textContent === "first line\nsecond line",
-        crossLinePreview.textContent
+        crossLineStrong?.textContent === "first linesecond line"
+          && crossLineStrong.querySelectorAll(":scope > br").length === 1,
+        crossLineStrong?.innerHTML || crossLinePreview.textContent
       );
 
       const dualNativeEditor = document.createElement("div");
@@ -499,6 +567,30 @@
         dualWorkspace?.querySelectorAll(".cc98-rebuild-dual-ubb-source-gutter-row").length === 2,
         String(dualWorkspace?.querySelectorAll(".cc98-rebuild-dual-ubb-source-gutter-row").length || 0)
       );
+      const trailingEmptyLineVisual = document.createElement("div");
+      const trailingEmptyLine = document.createElement("div");
+      trailingEmptyLine.append(document.createElement("br"));
+      trailingEmptyLineVisual.append(document.createTextNode("first"), trailingEmptyLine);
+      check(
+        "one visual Enter serializes to one source newline",
+        serializeProfileSignatureWysiwyg(trailingEmptyLineVisual) === "first\n",
+        JSON.stringify(serializeProfileSignatureWysiwyg(trailingEmptyLineVisual))
+      );
+      const twoTrailingEmptyLinesVisual = document.createElement("div");
+      const firstEmptyLine = document.createElement("div");
+      const secondEmptyLine = document.createElement("div");
+      firstEmptyLine.append(document.createElement("br"));
+      secondEmptyLine.append(document.createElement("br"));
+      twoTrailingEmptyLinesVisual.append(
+        document.createTextNode("first"),
+        firstEmptyLine,
+        secondEmptyLine
+      );
+      check(
+        "consecutive visual empty lines remain distinct",
+        serializeProfileSignatureWysiwyg(twoTrailingEmptyLinesVisual) === "first\n\n",
+        JSON.stringify(serializeProfileSignatureWysiwyg(twoTrailingEmptyLinesVisual))
+      );
       if (dualVisual instanceof HTMLElement) {
         dualVisual.textContent = "test";
         dualVisual.dispatchEvent(new InputEvent("input", {
@@ -561,6 +653,22 @@
         "editable emoji can be removed as one atomic character",
         dualNativeTextarea.value === "[align=right]右侧[/align]",
         dualNativeTextarea.value
+      );
+      if (dualVisual instanceof HTMLElement) {
+        renderProfileSignatureWysiwygFromUbb(dualVisual, "[ac01]");
+        stabilizeEmojiRendering(dualNativeEditor);
+      }
+      const singleEmojiVisualStyle = dualVisual instanceof HTMLElement
+        ? getComputedStyle(dualVisual)
+        : null;
+      check(
+        "single leading emoji keeps the visual editor box model",
+        dualVisual instanceof HTMLElement
+          && dualVisual.classList.contains("cc98-rebuild-leading-emoji-only")
+          && !dualVisual.classList.contains("cc98-rebuild-inline-emoji-wrap")
+          && Number.parseFloat(singleEmojiVisualStyle?.paddingLeft || "0") >= 24
+          && Number.parseFloat(singleEmojiVisualStyle?.marginLeft || "0") >= 5,
+        `${dualVisual?.className || ""}/${singleEmojiVisualStyle?.padding || ""}/${singleEmojiVisualStyle?.margin || ""}`
       );
       if (dualVisual instanceof HTMLElement) {
         dualVisual.textContent = "工具栏";

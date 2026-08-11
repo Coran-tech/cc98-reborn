@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CC98 Reborn code editor regression</title>
+  <link rel="stylesheet" href="/src/extended-ubb.css">
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: system-ui, sans-serif;
+    }
+    body {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 32px;
+      color: #24302d;
+      background: #f5f7f6;
+    }
+    main {
+      padding: 24px;
+      border: 1px solid #d6dedb;
+      background: #fff;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 1.35rem;
+    }
+    #summary {
+      margin-bottom: 18px;
+      font-weight: 700;
+    }
+    #results {
+      display: grid;
+      gap: 8px;
+      padding: 0;
+      list-style: none;
+    }
+    #results li {
+      padding: 10px 12px;
+      border-left: 4px solid #18864b;
+      background: #eef8f1;
+      font-family: Consolas, monospace;
+    }
+    #results li.fail {
+      border-left-color: #c43535;
+      background: #fff0f0;
+    }
+    #fixture {
+      position: fixed;
+      inset: auto auto -10000px -10000px;
+      width: 720px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Editable [code] regression</h1>
+    <p id="summary">Running...</p>
+    <ol id="results"></ol>
+  </main>
+  <div id="fixture"></div>
+  <script src="/__test/chrome-shim.js"></script>
+  <script src="/src/vendor/showdown/showdown.min.js"></script>
+  <script src="/src/extended-ubb-core.js"></script>
+  <script src="/src/extended-ubb.js"></script>
+  <script src="/__test/code-editor-regression.js"></script>
+</body>
+</html>

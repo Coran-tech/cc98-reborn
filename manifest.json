@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "CC98 Reborn",
   "description": "A refreshed reading and browsing interface for CC98.",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsx4AY7VBQLt9+vyQu66ygsM332JqZkzTbXoGodjciunuxrkJ5PmN7qmlyhJQz3hd6rqxIQq7DRwEimcH3SaEYB6ypOh0fSSSWEWhjIbENVOJuVd0j+9ad8Ww9QE+AA/rfGEci0hHx02IvLarBCUBlROqVJjvofOFNg/8rhozdu/3lpcYqPqq+CKzYZWH7J26TC5Tcau0sXodmM27sI/4q5avmL0cFSruuCuqep69delrU/qSBLkJZar53AIpKPwwz48Jj75XQD5PFEpJ/8mTxiSRQ6cgQH2xypLwIiUbbtDMUmkLzVGEo364hUN1/GavubO6h78T5K8ealXNWUqgHQIDAQAB",
   "permissions": [
     "storage",
@@ -35,7 +35,8 @@
         "images/em/*",
         "images/mahjong/animal2017/*",
         "images/mahjong/carton2017/*",
-        "images/mahjong/face2017/*"
+        "images/mahjong/face2017/*",
+        "src/vendor/katex/fonts/*"
       ],
       "matches": [
         "*://*.cc98.org/*",
@@ -88,10 +89,16 @@
         "*://*.webvpn.zju.edu.cn/*/PassKey/LogOn*"
       ],
       "js": [
+        "src/vendor/showdown/showdown.min.js",
+        "src/vendor/katex/katex.min.js",
+        "src/extended-ubb-core.js",
+        "src/extended-ubb.js",
         "src/content.js"
       ],
       "css": [
-        "src/styles.css"
+        "src/vendor/katex/katex.min.css",
+        "src/styles.css",
+        "src/extended-ubb.css"
       ],
       "run_at": "document_start"
     }

@@ -19,6 +19,8 @@ jobs:
       - name: Check JavaScript syntax
         run: |
           node --check src/content.js
+          node --check src/extended-ubb-core.js
+          node --check src/extended-ubb.js
           node --check src/background.js
           node --check src/openid-webvpn-bridge.js
           node --check src/page-submit-monitor.js
@@ -29,3 +31,9 @@ jobs:
 
       - name: Test submit monitor
         run: node tests/page-submit-monitor.test.js
+
+      - name: Test OpenID local binding
+        run: node tests/openid-refresh.test.js
+
+      - name: Test extended UBB core
+        run: node tests/extended-ubb-core.test.js

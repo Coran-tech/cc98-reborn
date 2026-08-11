@@ -7352,79 +7352,6 @@
   flex: 0 0 auto !important;
 }
 
-:root.cc98-comfort .cc98-rebuild-native-editor .cc98-rebuild-dual-ubb-toolbar-actions {
-  min-width: 0 !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 6px !important;
-  margin-left: auto !important;
-  padding-left: 8px !important;
-  border-left: 1px solid color-mix(in srgb, var(--cc98-comfort-border) 76%, transparent) !important;
-}
-
-:root.cc98-comfort .cc98-rebuild-native-editor .cc98-rebuild-dual-ubb-toolbar-button {
-  width: auto !important;
-  min-width: 54px !important;
-  height: 30px !important;
-  min-height: 30px !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  border: 1px solid var(--cc98-comfort-border) !important;
-  border-radius: 8px !important;
-  background: var(--cc98-comfort-surface) !important;
-  color: var(--cc98-comfort-text) !important;
-  padding: 0 9px !important;
-  font-family: var(--cc98-comfort-font-body) !important;
-  font-size: 0.8rem !important;
-  font-weight: 760 !important;
-  line-height: 1 !important;
-  cursor: pointer !important;
-}
-
-:root.cc98-comfort .cc98-rebuild-editor-font-select {
-  width: 116px !important;
-  max-width: min(116px, 100%) !important;
-  height: 30px !important;
-  min-height: 30px !important;
-  min-width: 0 !important;
-  flex: 0 1 116px !important;
-  border: 1px solid var(--cc98-comfort-border) !important;
-  border-radius: 8px !important;
-  background: var(--cc98-comfort-surface) !important;
-  color: var(--cc98-comfort-text) !important;
-  padding: 0 24px 0 8px !important;
-  font-family: var(--cc98-comfort-font-body) !important;
-  font-size: 0.8rem !important;
-  font-weight: 700 !important;
-  line-height: 1 !important;
-  text-align: center !important;
-  text-overflow: ellipsis !important;
-  cursor: pointer !important;
-}
-
-:root.cc98-comfort .cc98-rebuild-editor-font-select:is(:hover, :focus-visible) {
-  border-color: var(--cc98-comfort-accent) !important;
-  outline: 2px solid color-mix(in srgb, var(--cc98-comfort-accent) 18%, transparent) !important;
-  outline-offset: 0 !important;
-}
-
-:root.cc98-comfort[data-cc98-comfort-tone="dark"] .cc98-rebuild-editor-font-select {
-  color-scheme: dark;
-}
-
-:root.cc98-comfort .cc98-rebuild-editor-font-select :is(option, optgroup) {
-  background: var(--cc98-comfort-surface) !important;
-  color: var(--cc98-comfort-text) !important;
-}
-
-:root.cc98-comfort .cc98-rebuild-dual-ubb-toolbar-utility:is(:hover, :focus-visible),
-:root.cc98-comfort .cc98-rebuild-dual-ubb-toolbar-utility.is-active {
-  border-color: color-mix(in srgb, var(--cc98-comfort-accent) 62%, var(--cc98-comfort-border)) !important;
-  background: var(--cc98-comfort-accent-2) !important;
-  color: var(--cc98-comfort-accent) !important;
-}
-
 :root.cc98-comfort .cc98-rebuild-native-editor .ubb-button,
 :root.cc98-comfort .cc98-rebuild-native-editor .ubb-emoji-button {
   width: 32px !important;
@@ -7623,10 +7550,10 @@
 
 :root.cc98-comfort .cc98-rebuild-native-editor .cc98-rebuild-color-popover-row {
   display: grid !important;
-  grid-template-columns: 38px 112px auto !important;
+  grid-template-columns: 38px minmax(112px, 138px) !important;
   align-items: center !important;
   justify-content: start !important;
-  gap: 8px !important;
+  gap: 12px !important;
 }
 
 :root.cc98-comfort .cc98-rebuild-native-editor .cc98-rebuild-color-popover-swatch {
@@ -7639,8 +7566,8 @@
 }
 
 :root.cc98-comfort .cc98-rebuild-native-editor .cc98-rebuild-color-popover-input {
-  width: 112px !important;
-  max-width: 112px !important;
+  width: 138px !important;
+  max-width: 100% !important;
   min-width: 0 !important;
   height: 42px !important;
   padding: 0 10px !important;
@@ -7652,28 +7579,7 @@
   font-size: 0.95rem !important;
   line-height: 42px !important;
   text-transform: uppercase !important;
-  cursor: text !important;
-  box-sizing: border-box !important;
-}
-
-:root.cc98-comfort .cc98-rebuild-native-editor .cc98-rebuild-color-clear {
-  min-width: 76px !important;
-  height: 42px !important;
-  padding: 0 8px !important;
-  border: 1px solid var(--cc98-comfort-border) !important;
-  border-radius: 8px !important;
-  background: var(--cc98-comfort-surface-2) !important;
-  color: var(--cc98-comfort-muted) !important;
-  font-size: 0.76rem !important;
-  font-weight: 760 !important;
-  line-height: 1 !important;
-  white-space: nowrap !important;
   cursor: pointer !important;
-}
-
-:root.cc98-comfort .cc98-rebuild-native-editor .cc98-rebuild-color-clear:hover {
-  border-color: var(--cc98-comfort-accent) !important;
-  color: var(--cc98-comfort-accent) !important;
 }
 
 :root.cc98-comfort .cc98-rebuild-native-editor .cc98-rebuild-color-popover-channels {
@@ -8026,10 +7932,10 @@
 :root .cc98-rebuild-color-popover-row,
 :root.cc98-comfort .cc98-rebuild-color-popover-row {
   display: grid !important;
-  grid-template-columns: 42px 116px auto !important;
+  grid-template-columns: 42px minmax(118px, 146px) !important;
   align-items: center !important;
   justify-content: start !important;
-  gap: 8px !important;
+  gap: 12px !important;
 }
 
 :root .cc98-rebuild-color-popover-swatch,
@@ -8044,8 +7950,8 @@
 
 :root .cc98-rebuild-color-popover-input,
 :root.cc98-comfort .cc98-rebuild-color-popover-input {
-  width: 116px !important;
-  max-width: 116px !important;
+  width: 132px !important;
+  max-width: 100% !important;
   min-width: 0 !important;
   height: 42px !important;
   padding: 0 10px !important;
@@ -8057,30 +7963,6 @@
   font-size: 0.95rem !important;
   line-height: 42px !important;
   text-transform: uppercase !important;
-  box-sizing: border-box !important;
-}
-
-:root .cc98-rebuild-color-clear,
-:root.cc98-comfort .cc98-rebuild-color-clear {
-  min-width: 82px !important;
-  height: 42px !important;
-  padding: 0 8px !important;
-  border: 1px solid var(--cc98-comfort-border) !important;
-  border-radius: 8px !important;
-  background: var(--cc98-comfort-surface-2) !important;
-  color: var(--cc98-comfort-muted) !important;
-  font: inherit !important;
-  font-size: 0.78rem !important;
-  font-weight: 760 !important;
-  line-height: 1 !important;
-  white-space: nowrap !important;
-  cursor: pointer !important;
-}
-
-:root .cc98-rebuild-color-clear:hover,
-:root.cc98-comfort .cc98-rebuild-color-clear:hover {
-  border-color: var(--cc98-comfort-accent) !important;
-  color: var(--cc98-comfort-accent) !important;
 }
 
 :root .cc98-rebuild-gradient-editor,
@@ -9612,7 +9494,7 @@
   min-width: 0 !important;
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) !important;
-  grid-template-rows: var(--cc98-dual-upper-height, auto) var(--cc98-dual-divider-height, 10px) var(--cc98-dual-lower-height, auto) !important;
+  grid-template-rows: auto 10px auto !important;
   align-items: stretch !important;
   overflow: visible !important;
   border-radius: 0 0 14px 14px !important;
@@ -9963,7 +9845,7 @@
 
 :root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-editor .cc98-rebuild-message-editor-preview {
   height: 360px;
-  min-height: 180px !important;
+  min-height: 360px !important;
   max-height: none !important;
   display: grid !important;
   grid-template-rows: auto minmax(0, 1fr) !important;
@@ -10011,8 +9893,7 @@
 
 :root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-preview-body {
   min-width: 0 !important;
-  min-height: 0 !important;
-  box-sizing: border-box !important;
+  min-height: 310px !important;
   overflow: auto !important;
   padding: 24px 26px !important;
   background: var(--cc98-comfort-surface) !important;
@@ -10123,7 +10004,7 @@
   min-width: 0 !important;
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) !important;
-  grid-template-rows: var(--cc98-dual-upper-height, auto) var(--cc98-dual-divider-height, 10px) var(--cc98-dual-lower-height, auto) !important;
+  grid-template-rows: auto 10px auto !important;
   align-items: stretch !important;
   overflow: visible !important;
   border: 1px solid var(--cc98-comfort-border) !important;
@@ -10140,135 +10021,6 @@
 
 :root.cc98-comfort .cc98-rebuild-dual-ubb-workspace.is-source-hidden {
   grid-template-rows: auto !important;
-}
-
-:root.cc98-comfort .cc98-rebuild-dual-ubb-workspace .cc98-rebuild-legacy-ubb-preview {
-  grid-column: 1 / -1 !important;
-  min-width: 0 !important;
-  display: grid !important;
-  grid-template-rows: auto minmax(170px, auto) !important;
-  overflow: hidden !important;
-  border-top: 1px solid var(--cc98-comfort-border) !important;
-  border-radius: 0 0 13px 13px !important;
-  background: var(--cc98-comfort-surface) !important;
-  color: var(--cc98-comfort-text) !important;
-}
-
-:root.cc98-comfort .cc98-rebuild-dual-ubb-workspace .cc98-rebuild-legacy-ubb-preview[hidden] {
-  display: none !important;
-}
-
-:root.cc98-comfort .cc98-rebuild-dual-ubb-workspace.is-legacy-preview-open .cc98-rebuild-dual-ubb-source-pane {
-  border-radius: 0 !important;
-}
-
-:root.cc98-comfort .cc98-rebuild-legacy-ubb-preview-header {
-  min-height: 42px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  gap: 12px !important;
-  padding: 0 12px 0 18px !important;
-  border-bottom: 1px solid var(--cc98-comfort-border) !important;
-  background: color-mix(in srgb, var(--cc98-comfort-surface-2) 84%, var(--cc98-comfort-accent-2)) !important;
-}
-
-:root.cc98-comfort .cc98-rebuild-legacy-ubb-preview-title {
-  color: var(--cc98-comfort-text) !important;
-  font-size: 0.84rem !important;
-  font-weight: 800 !important;
-}
-
-:root.cc98-comfort .cc98-rebuild-legacy-ubb-preview-close {
-  width: 30px !important;
-  min-width: 30px !important;
-  height: 30px !important;
-  min-height: 30px !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  border: 1px solid transparent !important;
-  border-radius: 8px !important;
-  background: transparent !important;
-  color: var(--cc98-comfort-muted) !important;
-  padding: 0 !important;
-  font-size: 1.15rem !important;
-  font-weight: 700 !important;
-  line-height: 1 !important;
-  cursor: pointer !important;
-}
-
-:root.cc98-comfort .cc98-rebuild-legacy-ubb-preview-close:is(:hover, :focus-visible) {
-  border-color: var(--cc98-comfort-border) !important;
-  background: var(--cc98-comfort-surface) !important;
-  color: var(--cc98-comfort-text) !important;
-}
-
-:root.cc98-comfort .cc98-rebuild-legacy-ubb-preview-body {
-  min-width: 0 !important;
-  min-height: 170px !important;
-  max-height: min(52vh, 520px) !important;
-  box-sizing: border-box !important;
-  overflow: auto !important;
-  padding: 24px 28px !important;
-  background: var(--cc98-comfort-surface) !important;
-  color: var(--cc98-comfort-text) !important;
-  font-family: var(--cc98-comfort-font-reading) !important;
-  font-size: 1rem !important;
-  line-height: 1.72 !important;
-  overscroll-behavior: contain;
-}
-
-:root.cc98-comfort .cc98-rebuild-legacy-ubb-preview-body .cc98-rebuild-ubb-preview-rendered {
-  display: block !important;
-  margin: 0 !important;
-  color: inherit !important;
-  white-space: pre-wrap !important;
-  overflow-wrap: anywhere !important;
-  word-break: break-word !important;
-}
-
-:root.cc98-comfort .cc98-rebuild-legacy-ubb-preview-body :is(p, article) {
-  margin: 0 !important;
-}
-
-:root.cc98-comfort .cc98-rebuild-legacy-ubb-preview-body .cc98-rebuild-preview-colored,
-:root.cc98-comfort .cc98-rebuild-legacy-ubb-preview-body .cc98-rebuild-preview-colored * {
-  color: var(--cc98-preview-color) !important;
-}
-
-:root.cc98-comfort .cc98-rebuild-legacy-ubb-preview-body .cc98-rebuild-preview-bold {
-  font-weight: 800 !important;
-}
-
-:root.cc98-comfort .cc98-rebuild-legacy-ubb-preview-body .cc98-rebuild-preview-italic {
-  font-style: italic !important;
-}
-
-:root.cc98-comfort .cc98-rebuild-legacy-ubb-preview-body .cc98-rebuild-preview-underline {
-  text-decoration-line: underline !important;
-  text-underline-offset: 0.14em !important;
-}
-
-:root.cc98-comfort .cc98-rebuild-legacy-ubb-preview-body .cc98-rebuild-preview-strike {
-  text-decoration-line: line-through !important;
-}
-
-:root.cc98-comfort .cc98-rebuild-legacy-ubb-preview-body .cc98-rebuild-preview-underline.cc98-rebuild-preview-strike {
-  text-decoration-line: underline line-through !important;
-}
-
-:root.cc98-comfort .cc98-rebuild-legacy-ubb-preview-body .cc98-rebuild-preview-align {
-  display: block !important;
-  text-align: var(--cc98-preview-align) !important;
-}
-
-:root.cc98-comfort .cc98-rebuild-legacy-ubb-preview-body .cc98-rebuild-preview-size {
-  font-size: var(--cc98-preview-size) !important;
-}
-
-:root.cc98-comfort .cc98-rebuild-legacy-ubb-preview-body :is(img, video, audio, iframe) {
-  max-width: 100% !important;
 }
 
 :root.cc98-comfort .cc98-rebuild-dual-ubb-visual-pane {
@@ -10314,12 +10066,8 @@
   min-width: 0 !important;
   min-height: 0 !important;
   overflow: auto !important;
-  /* Keep a small, invisible breathing room around editable preview content.
-     The transparent border also prevents media/emoji at the edge from
-     visually touching the pane boundary without changing the outer layout. */
-  margin: 5px !important;
-  padding: 24px 28px !important;
-  border: 1px solid transparent !important;
+  padding: 22px 24px !important;
+  border: 0 !important;
   outline: 0 !important;
   background: var(--cc98-comfort-surface) !important;
   color: var(--cc98-comfort-text) !important;
@@ -10334,28 +10082,6 @@
   box-sizing: border-box !important;
 }
 
-/* A contenteditable containing only one leading emoji can inherit the
-   original editor's zero-padding rule because its only child is inline.
-   Keep that edge case aligned with ordinary text in the visual pane. */
-:root.cc98-comfort
-  .cc98-rebuild-dual-ubb-visual.cc98-rebuild-leading-emoji-only {
-  margin: 5px !important;
-  padding: 24px 28px !important;
-  border: 1px solid transparent !important;
-  box-sizing: border-box !important;
-}
-
-:root.cc98-comfort
-  .cc98-rebuild-dual-ubb-visual.cc98-rebuild-leading-emoji-only
-  .cc98-rebuild-inline-emoji-wrap {
-  display: inline-block !important;
-  width: auto !important;
-  margin: 0 0.08em !important;
-  padding: 0 !important;
-  line-height: 1 !important;
-  vertical-align: baseline !important;
-}
-
 :root.cc98-comfort .cc98-rebuild-dual-ubb-visual:focus {
   box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--cc98-comfort-accent) 54%, transparent) !important;
 }
@@ -10365,20 +10091,6 @@
   color: var(--cc98-comfort-muted) !important;
   pointer-events: none;
   opacity: 0.72;
-}
-
-:root.cc98-comfort .cc98-rebuild-color-selection-marker {
-  display: inline-block !important;
-  width: 0 !important;
-  min-width: 0 !important;
-  height: 0 !important;
-  min-height: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  border: 0 !important;
-  overflow: hidden !important;
-  pointer-events: none !important;
-  vertical-align: baseline !important;
 }
 
 :root.cc98-comfort .cc98-rebuild-dual-ubb-visual :is(
@@ -10705,11 +10417,11 @@
 
   :root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-editor .cc98-rebuild-message-editor-preview {
     height: 300px;
-    min-height: 180px !important;
+    min-height: 300px !important;
   }
 
   :root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-profile-signature-preview-body {
-    min-height: 0 !important;
+    min-height: 250px !important;
     padding: 18px !important;
   }
 
@@ -14607,14 +14319,4 @@
   max-width: var(--cc98-editor-emoji-size, 2.2em) !important;
   max-height: var(--cc98-editor-emoji-size, 2.2em) !important;
   object-fit: contain !important;
-}
-
-/* Keep UBB decorations in the same colour as the text they decorate.  The
- * custom property is assigned by content.js when a coloured span is nested
- * inside u/del/s elements. */
-:root.cc98-comfort :is(
-  .cc98-rebuild-preview-underline,
-  .cc98-rebuild-preview-strike
-) {
-  text-decoration-color: var(--cc98-preview-decoration-color, currentColor) !important;
 }

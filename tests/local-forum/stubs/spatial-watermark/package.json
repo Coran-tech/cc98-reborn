@@ -1,0 +1,6 @@
+{
+  "name": "spatial-watermark",
+  "version": "0.0.0-local-test",
+  "main": "index.js",
+  "private": true
+}

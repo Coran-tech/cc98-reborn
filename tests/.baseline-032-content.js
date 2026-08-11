@@ -8,7 +8,7 @@ const SEARCH_HISTORY_CHANGE_EVENT = "cc98-reborn-search-history-change";
 const SEARCH_HISTORY_LIMIT = 12;
 const READ_LATER_ROUTE_HASH = "#cc98-reborn-read-later";
 const BLACKLIST_ROUTE_HASH = "#cc98-reborn-blacklist";
-const EXTENSION_VERSION = "0.3.4";
+const EXTENSION_VERSION = "0.3.2";
 const LOGIN_REDIRECT_MARK_KEY = "cc98RebornLoginRedirectStartedAt";
 const LOGIN_REDIRECT_SNAPSHOT_KEY = "cc98RebornLoginRedirectSnapshot";
 const LOGIN_HOME_REFRESH_MARK_KEY = "cc98RebornLoginHomeRefreshPendingAt";
@@ -30,30 +30,6 @@ const SEAMLESS_SCROLL_SYNC_DELAY = 160;
 const SEAMLESS_SCROLL_SYNC_FOLLOWUP_DELAY = 820;
 const SEAMLESS_SCROLL_SYNC_MIN_INTERVAL = 520;
 const SEAMLESS_SCROLL_SYNC_INTENT_TTL = 1900;
-const NATIVE_ANT_UI_SELECTOR = [
-  ".ant-list",
-  ".ant-list-pagination",
-  ".ant-pagination",
-  ".ant-modal",
-  ".ant-modal-wrap",
-  ".ant-modal-content"
-].join(",");
-const LEGACY_COLOR_PICKER_SELECTOR = [
-  ".sp-container",
-  ".sp-picker-container",
-  ".sp-palette-container",
-  ".sp-replacer",
-  ".ubb-button-color",
-  ".ubb-color-picker",
-  "input[type='color']",
-  "input.cc98-rebuild-native-color-input"
-].join(",");
-// Hash targets can become available a little after the first rebuilt shell is
-// mounted (especially on WebVPN).  Keep the retry window finite so this does
-// not turn into a background scroll loop.
-const REBUILT_HASH_SCROLL_RETRY_DELAYS = [0, 80, 220, 500, 1000, 1800, 3200, 5200];
-const REBUILT_HASH_SCROLL_GUARD_MS = 9000;
-const REBUILT_HASH_SCROLL_GUARD_CHECK_MS = 90;
 const TOPIC_CONTENT_CAPTURE_GRACE_MS = 3600;
 const REBUILD_TRANSITION_VEIL_FAILSAFE_MS = 2800;
 const REBUILD_TRANSITION_VEIL_FADE_MS = 140;
@@ -245,7 +221,6 @@ let syncQueued = false;
 let delayedRebuildTimers = [];
 let historyPatched = false;
 let autoLoadArmed = false;
-let autoLoadScrollFrame = 0;
 let isPokingNativeScroll = false;
 let lastAutoLoadAt = 0;
 let lastSyncScheduledAt = 0;
@@ -253,22 +228,9 @@ let seamlessScrollSyncTimer = null;
 let seamlessScrollSyncFollowupTimer = null;
 let seamlessScrollSyncRouteKey = "";
 let seamlessScrollSyncSignature = "";
-let seamlessScrollSyncDirty = false;
-let seamlessScrollSyncDirtyRouteKey = "";
 let seamlessScrollSyncLastRefreshAt = 0;
 let seamlessScrollSyncIntentUntil = 0;
 let seamlessScrollInteractionRevision = 0;
-let rebuiltHashScrollFrame = 0;
-let rebuiltHashScrollAppliedKey = "";
-let rebuiltHashScrollAppliedInteractionRevision = 0;
-let rebuiltHashScrollSuppressedKey = "";
-let rebuiltHashScrollRetryTimers = [];
-let rebuiltHashScrollPendingKey = "";
-let rebuiltHashScrollPendingInteractionRevision = 0;
-let rebuiltHashScrollRetryExhaustedKey = "";
-let rebuiltHashScrollAttemptGeneration = 0;
-let rebuiltHashScrollGuardTimer = 0;
-let rebuiltHashScrollGuardUntil = 0;
 let rebuiltRefreshSequence = 0;
 let newTopicModeSyncRevision = 0;
 let newTopicModeSyncTimers = [];
@@ -304,10 +266,6 @@ let rebuildTransitionVeilNavigationBound = false;
 let nativeLazyScrollOverlayDepth = 0;
 let userCenterPendingRebuildTimer = null;
 let messageTitleObserver = null;
-let messageTitleSource = null;
-let messageTitleClickHandler = null;
-let messageTitleSyncTimer = null;
-let messageTitleLateSyncTimer = null;
 let nativeAntUiObserver = null;
 let nativeAntUiStabilizeTimer = null;
 let legacyQuoteGuardObserver = null;
@@ -351,10 +309,7 @@ let blacklistFilterType = "all";
 let editorSubmitIntermediateTimer = null;
 let editorDraftAutosaveTimers = new WeakMap();
 let normalPageBooted = false;
-let normalPageDomBooted = false;
-let normalPageStartupTimers = [];
 let webVpnBootProbeStarted = false;
-let topbarStabilizeTimers = [];
 let webVpnNakedRouteGuardBound = false;
 let openLinksInNewTabGuardBound = false;
 let rebornReplyTailSubmitGuardBound = false;
@@ -375,7 +330,6 @@ const nativeUserCenterStabilizers = new WeakSet();
 const nativeTopbarUserStabilizers = new WeakSet();
 const nativeTopbarMenuCloseTimers = new WeakMap();
 const proxyControlSyncTimers = new WeakMap();
-const proxyControlSyncObservers = new WeakMap();
 const handledEditorSubmitMonitorEvents = new Set();
 const searchSuggestionCache = new Map();
 let searchHistoryCache = null;
@@ -933,99 +887,6 @@ function getRebuiltFloorAnchorId(floor) {
   return `cc98-floor-${floor}`;
 }
 
-function getRebuiltHashScrollKey() {
-  const hash = String(location.hash || "").trim();
-  return hash ? `${getRoutePageKey()}${hash}` : "";
-}
-
-function cancelRebuiltHashScrollAttempts() {
-  rebuiltHashScrollAttemptGeneration += 1;
-  if (rebuiltHashScrollFrame) {
-    window.cancelAnimationFrame(rebuiltHashScrollFrame);
-    rebuiltHashScrollFrame = 0;
-  }
-  rebuiltHashScrollRetryTimers.forEach((timer) => window.clearTimeout(timer));
-  rebuiltHashScrollRetryTimers = [];
-}
-
-function cancelRebuiltHashScrollGuard() {
-  if (rebuiltHashScrollGuardTimer) {
-    window.clearTimeout(rebuiltHashScrollGuardTimer);
-    rebuiltHashScrollGuardTimer = 0;
-  }
-  rebuiltHashScrollGuardUntil = 0;
-}
-
-function getRebuiltHashScrollTargetTop(card) {
-  if (!(card instanceof HTMLElement)) {
-    return 0;
-  }
-  const topbarBottom = document.querySelector("#cc98-comfort-app .cc98-rebuild-topbar")
-    ?.getBoundingClientRect?.().bottom || 0;
-  const scrollMarginTop = Number.parseFloat(getComputedStyle(card).scrollMarginTop) || 0;
-  return Math.max(scrollMarginTop, topbarBottom + 8);
-}
-
-function isRebuiltHashCardAtAnchor(card) {
-  if (!(card instanceof HTMLElement)) {
-    return false;
-  }
-  const rect = card.getBoundingClientRect();
-  const targetTop = getRebuiltHashScrollTargetTop(card);
-  // Browser implementations differ slightly in how they apply
-  // scroll-margin when a fixed header is present.  Accept a generous band
-  // around the header, but still reject a card that is far below/above the
-  // viewport after an unexpected page-top reset.
-  return rect.top >= -40 && rect.top <= Math.max(160, targetTop + 72);
-}
-
-function scheduleRebuiltHashScrollGuard() {
-  if (rebuiltHashScrollGuardTimer) {
-    return;
-  }
-  rebuiltHashScrollGuardTimer = window.setTimeout(() => {
-    rebuiltHashScrollGuardTimer = 0;
-    const key = getRebuiltHashScrollKey();
-    if (!key
-      || rebuiltHashScrollAppliedKey !== key
-      || rebuiltHashScrollAppliedInteractionRevision !== seamlessScrollInteractionRevision
-      || Date.now() >= rebuiltHashScrollGuardUntil) {
-      cancelRebuiltHashScrollGuard();
-      return;
-    }
-
-    let floor = null;
-    try {
-      const url = new URL(location.href);
-      const candidates = getTopicHashFloorCandidatesForUrl(url);
-      floor = candidates.find((candidate) => getRebuiltPostCardByFloor(candidate)) || null;
-    } catch {
-      floor = null;
-    }
-    const card = floor ? getRebuiltPostCardByFloor(floor) : null;
-    if (card && !isRebuiltHashCardAtAnchor(card)) {
-      scrollToRebuiltFloor(floor, { behavior: "auto" });
-    }
-    scheduleRebuiltHashScrollGuard();
-  }, REBUILT_HASH_SCROLL_GUARD_CHECK_MS);
-}
-
-function armRebuiltHashScrollGuard() {
-  rebuiltHashScrollGuardUntil = Date.now() + REBUILT_HASH_SCROLL_GUARD_MS;
-  scheduleRebuiltHashScrollGuard();
-}
-
-function clearRebuiltHashScrollIntent() {
-  cancelRebuiltHashScrollAttempts();
-  cancelRebuiltHashScrollGuard();
-  rebuiltHashScrollAppliedKey = "";
-  rebuiltHashScrollAppliedInteractionRevision = 0;
-  rebuiltHashScrollSuppressedKey = "";
-  rebuiltHashScrollPendingKey = "";
-  rebuiltHashScrollPendingInteractionRevision = 0;
-  rebuiltHashScrollRetryExhaustedKey = "";
-}
-
 function getFloorFromHash(hash) {
   const text = decodeURIComponent(String(hash ?? "").replace(/^#/, "")).trim();
   const match = text.match(/^(?:cc98-)?floor-?(\d{1,5})$/i) || text.match(/^(\d{1,5})$/);
@@ -1058,30 +919,20 @@ function getTopicPathTarget(pathname = "") {
   };
 }
 
-function getTopicHashFloorCandidatesForUrl(url) {
+function resolveTopicHashFloorForUrl(url) {
   const rawFloor = getFloorFromHash(url?.hash || "");
   if (!rawFloor) {
-    return [];
+    return null;
   }
   const target = getTopicPathTarget(url?.pathname || "");
   const targetPage = target?.page || getTopicPageInfo()?.current || 1;
   if (targetPage > 1 && rawFloor <= 10) {
     const absoluteFloor = (targetPage - 1) * 10 + rawFloor;
-    // Different native views expose either an absolute floor or a page-local
-    // floor.  Keep both candidates until the rebuilt cards tell us which form
-    // this page uses.
-    return [...new Set([absoluteFloor, rawFloor])];
+    if (getRebuiltPostCardByFloor(absoluteFloor)) {
+      return absoluteFloor;
+    }
   }
-  return [rawFloor];
-}
-
-function resolveTopicHashFloorForUrl(url) {
-  const candidates = getTopicHashFloorCandidatesForUrl(url);
-  if (!candidates.length) {
-    return null;
-  }
-  const mounted = candidates.find((floor) => getRebuiltPostCardByFloor(floor));
-  return mounted || candidates[candidates.length - 1];
+  return rawFloor;
 }
 
 function getQuotedOriginalFloorFromText(text) {
@@ -1226,10 +1077,6 @@ function scrollToRebuiltFloor(floor, options = {}) {
 
   if (options.updateHash) {
     history.pushState(null, "", `${location.pathname}${location.search}#${floor}`);
-    rebuiltHashScrollAppliedKey = getRebuiltHashScrollKey();
-    rebuiltHashScrollAppliedInteractionRevision = seamlessScrollInteractionRevision;
-    rebuiltHashScrollSuppressedKey = "";
-    armRebuiltHashScrollGuard();
   }
   return true;
 }
@@ -1262,140 +1109,14 @@ function bindRebuiltFloorLinks(app) {
   }, true);
 }
 
-function attemptCurrentRebuiltHashScroll(key, generation, options = {}) {
-  const forceApplied = Boolean(options.forceApplied);
-  if (generation !== rebuiltHashScrollAttemptGeneration
-    || getRebuiltHashScrollKey() !== key
-    || (!forceApplied && rebuiltHashScrollAppliedKey === key)
-    || rebuiltHashScrollSuppressedKey === key) {
-    return;
-  }
-
-  if (forceApplied
-    && rebuiltHashScrollAppliedKey === key
-    && rebuiltHashScrollAppliedInteractionRevision !== seamlessScrollInteractionRevision) {
-    return;
-  }
-
-  // A real wheel/touch/keyboard/drag interaction wins over delayed hash
-  // restoration.  Keep this check tied to the first attempt for this route;
-  // native fragment restoration and later content mutations must not reset
-  // that baseline and accidentally pull the reader back.
-  if (seamlessScrollInteractionRevision !== rebuiltHashScrollPendingInteractionRevision) {
-    rebuiltHashScrollSuppressedKey = key;
-    cancelRebuiltHashScrollAttempts();
-    return;
-  }
-
-  let floor = null;
-  try {
-    // Try both absolute and page-local floor forms; the mounted rebuilt card
-    // is the authoritative indication of which form this page uses.
-    const url = new URL(location.href);
-    const candidates = getTopicHashFloorCandidatesForUrl(url);
-    floor = candidates.find((candidate) => getRebuiltPostCardByFloor(candidate)) || null;
-  } catch {
-    floor = null;
-  }
+function scrollToCurrentRebuiltHash() {
+  const floor = resolveTopicHashFloorForUrl(new URL(location.href));
   if (!floor) {
     return;
   }
-
-  if (scrollToRebuiltFloor(floor, { behavior: "auto" })) {
-    rebuiltHashScrollAppliedKey = key;
-    rebuiltHashScrollAppliedInteractionRevision = seamlessScrollInteractionRevision;
-    cancelRebuiltHashScrollAttempts();
-    armRebuiltHashScrollGuard();
-  }
-}
-
-function scheduleCurrentRebuiltHashAttempt(key, generation, options = {}) {
-  const forceApplied = Boolean(options.forceApplied);
-  if (generation !== rebuiltHashScrollAttemptGeneration
-    || getRebuiltHashScrollKey() !== key
-    || (!forceApplied && rebuiltHashScrollAppliedKey === key)
-    || rebuiltHashScrollSuppressedKey === key) {
-    return;
-  }
-  if (rebuiltHashScrollFrame) {
-    window.cancelAnimationFrame(rebuiltHashScrollFrame);
-  }
-  rebuiltHashScrollFrame = window.requestAnimationFrame(() => {
-    rebuiltHashScrollFrame = 0;
-    attemptCurrentRebuiltHashScroll(key, generation, { forceApplied });
+  requestAnimationFrame(() => {
+    scrollToRebuiltFloor(floor, { behavior: "auto" });
   });
-}
-
-function scrollToCurrentRebuiltHash(options = {}) {
-  const forceApplied = Boolean(options.forceApplied);
-  const key = getRebuiltHashScrollKey();
-  if (!key
-    || (!forceApplied && rebuiltHashScrollAppliedKey === key)
-    || rebuiltHashScrollSuppressedKey === key) {
-    return;
-  }
-  if (forceApplied
-    && rebuiltHashScrollAppliedKey === key
-    && rebuiltHashScrollAppliedInteractionRevision !== seamlessScrollInteractionRevision) {
-    return;
-  }
-
-  let floor = null;
-  try {
-    floor = resolveTopicHashFloorForUrl(new URL(location.href));
-  } catch {
-    floor = null;
-  }
-  if (!floor) {
-    return;
-  }
-
-  if (rebuiltHashScrollPendingKey !== key) {
-    cancelRebuiltHashScrollAttempts();
-    rebuiltHashScrollPendingKey = key;
-    rebuiltHashScrollPendingInteractionRevision = seamlessScrollInteractionRevision;
-    rebuiltHashScrollRetryExhaustedKey = "";
-  } else if (seamlessScrollInteractionRevision !== rebuiltHashScrollPendingInteractionRevision) {
-    rebuiltHashScrollSuppressedKey = key;
-    cancelRebuiltHashScrollAttempts();
-    return;
-  }
-
-  const generation = rebuiltHashScrollAttemptGeneration;
-  // Try immediately, then retry only while the rebuilt target is still
-  // unavailable.  This covers the initial native-to-rebuilt handoff and late
-  // WebVPN responses without creating a recurring scroll listener.
-  attemptCurrentRebuiltHashScroll(key, generation, { forceApplied });
-  if ((!forceApplied && rebuiltHashScrollAppliedKey === key)
-    || rebuiltHashScrollSuppressedKey === key) {
-    return;
-  }
-  if (rebuiltHashScrollFrame || rebuiltHashScrollRetryTimers.length) {
-    return;
-  }
-  // If the bounded retry window has elapsed, keep later native-content syncs
-  // as a cheap single probe rather than restarting another timer batch.
-  if (rebuiltHashScrollRetryExhaustedKey === key) {
-    return;
-  }
-
-  const retryTimers = [];
-  REBUILT_HASH_SCROLL_RETRY_DELAYS.slice(1).forEach((delay) => {
-    let timer = 0;
-    timer = window.setTimeout(() => {
-      const index = retryTimers.indexOf(timer);
-      if (index >= 0) {
-        retryTimers.splice(index, 1);
-      }
-      rebuiltHashScrollRetryTimers = retryTimers;
-      if (retryTimers.length === 0) {
-        rebuiltHashScrollRetryExhaustedKey = key;
-      }
-      scheduleCurrentRebuiltHashAttempt(key, generation, { forceApplied });
-    }, delay);
-    retryTimers.push(timer);
-  });
-  rebuiltHashScrollRetryTimers = retryTimers;
 }
 
 function createButton(className, text, onClick) {
@@ -2241,44 +1962,6 @@ function scheduleProxyControlDisplaySync(button, action, delays, clearPendingAft
   proxyControlSyncTimers.set(button, timers);
 }
 
-function clearProxyControlSyncObserver(button) {
-  const state = proxyControlSyncObservers.get(button);
-  if (!state) {
-    return;
-  }
-  state.observer.disconnect();
-  window.clearTimeout(state.timeout);
-  proxyControlSyncObservers.delete(button);
-}
-
-function watchProxyControlDisplay(button, action, timeoutMs = 30000) {
-  clearProxyControlSyncObserver(button);
-  const control = resolveCurrentProxyAction(action);
-  if (!(button instanceof HTMLElement) || !(control instanceof HTMLElement)) {
-    return;
-  }
-  const root = control.closest(".topicInfo-info, .topicInfo-title") || control;
-  const observer = new MutationObserver(() => {
-    if (!button.isConnected || !root.isConnected) {
-      clearProxyControlSyncObserver(button);
-      return;
-    }
-    syncProxyControlDisplay(button, action);
-    button.classList.remove("is-pending");
-    button.removeAttribute("aria-busy");
-    clearProxyControlSyncObserver(button);
-    scheduleRebuild();
-  });
-  observer.observe(root, {
-    attributes: true,
-    characterData: true,
-    childList: true,
-    subtree: true
-  });
-  const timeout = window.setTimeout(() => clearProxyControlSyncObserver(button), timeoutMs);
-  proxyControlSyncObservers.set(button, { observer, timeout });
-}
-
 function isTopicShareAction(action) {
   return action?.scope === "topic" && cleanupPostText(action.text).includes("\u5206\u4eab\u5e16\u5b50\u94fe\u63a5");
 }
@@ -2638,9 +2321,6 @@ function renderProxyControl(action) {
       : [180, 700, 1600, 3200];
     if (shouldSyncDisplay) {
       scheduleProxyControlDisplaySync(button, action, syncDelays, isVoteAction ? 700 : 180);
-    }
-    if (isFavoriteAction) {
-      watchProxyControlDisplay(button, action);
     }
     if (isVoteAction && oppositeAction?.proxyButton) {
       scheduleProxyControlDisplaySync(oppositeAction.proxyButton, oppositeAction, syncDelays, 80);
@@ -3385,7 +3065,7 @@ function navigateToRebuiltHref(href) {
 }
 
 function bindWebVpnNakedRouteGuard() {
-  if (!isWebVpnHost() || webVpnNakedRouteGuardBound) {
+  if (webVpnNakedRouteGuardBound) {
     return;
   }
   webVpnNakedRouteGuardBound = true;
@@ -4301,12 +3981,6 @@ function handlePageEditorSubmitResult(event) {
       requestMethod: String(result.method || ""),
       requestUrl: String(result.url || "")
     });
-    if (releaseReparentedNativeEditorForSubmit(result.kind)) {
-      editorSubmitOverlayAwaitingRebuild = true;
-      showLoadingOverlay(result.kind === "edit"
-        ? "正在提交修改，请稍候..."
-        : "正在提交内容，请稍候...", { opaque: true });
-    }
     return;
   }
 
@@ -4321,9 +3995,6 @@ function handlePageEditorSubmitResult(event) {
       clearNativePostSubmitRefreshTimers();
       clearEditorSubmitIntent();
       resetReleasedNativeEditors();
-      editorSubmitOverlayAwaitingRebuild = false;
-      hideLoadingOverlay({ force: true });
-      scheduleRebuild();
       return;
     }
     scheduleAmbiguousEditorSubmitRecovery(context, result);
@@ -4348,6 +4019,7 @@ function handlePageEditorSubmitResult(event) {
     destinationHref: destination || context.destinationHref,
     responseStatus: Number(result.status) || 0
   });
+  resetReleasedNativeEditors();
   showLoadingOverlay(result.kind === "edit"
     ? "\u4fee\u6539\u5df2\u6210\u529f\uff0c\u6b63\u5728\u8fd4\u56de\u5e16\u5b50..."
     : "\u63d0\u4ea4\u5df2\u6210\u529f\uff0c\u6b63\u5728\u5237\u65b0\u5e16\u5b50...");
@@ -5336,12 +5008,7 @@ function applyPrewarmedPostSnapshot(content, snapshot) {
 
 function applyImportantStyle(element, styles) {
   Object.entries(styles).forEach(([property, value]) => {
-    const nextValue = String(value);
-    if (element.style.getPropertyValue(property) === nextValue
-      && element.style.getPropertyPriority(property) === "important") {
-      return;
-    }
-    element.style.setProperty(property, nextValue, "important");
+    element.style.setProperty(property, value, "important");
   });
 }
 
@@ -5506,7 +5173,7 @@ function applySecurityWatermarkHostStyle(host) {
 function ensureSecurityWatermarkHost() {
   if (securityWatermarkHost?.isConnected && securityWatermarkCanvas) {
     const parent = getSecurityWatermarkParent();
-    if (parent && securityWatermarkHost.parentElement !== parent) {
+    if (parent) {
       parent.append(securityWatermarkHost);
     }
     applySecurityWatermarkHostStyle(securityWatermarkHost);
@@ -5558,23 +5225,14 @@ function resizeSecurityWatermarkCanvas() {
   const ratio = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
   const pixelWidth = Math.ceil(width * ratio);
   const pixelHeight = Math.ceil(height * ratio);
-  let changed = false;
   if (canvas.width !== pixelWidth) {
     canvas.width = pixelWidth;
-    changed = true;
   }
   if (canvas.height !== pixelHeight) {
     canvas.height = pixelHeight;
-    changed = true;
   }
-  const ratioText = String(ratio);
-  if (canvas.dataset.pixelRatio !== ratioText) {
-    canvas.dataset.pixelRatio = ratioText;
-    changed = true;
-  }
-  if (changed) {
-    requestSecurityWatermarkRedraw();
-  }
+  canvas.dataset.pixelRatio = String(ratio);
+  requestSecurityWatermarkRedraw();
 }
 
 function chooseSecurityWatermarkDirection() {
@@ -5670,7 +5328,7 @@ function observeSecurityWatermarkHost() {
       startSecurityWatermarkAnimation();
     }
   });
-  securityWatermarkObserver.observe(document.documentElement, { childList: true });
+  securityWatermarkObserver.observe(document.documentElement, { childList: true, subtree: true });
 }
 
 function startSecurityWatermark(code) {
@@ -5689,13 +5347,13 @@ function startSecurityWatermark(code) {
   window.addEventListener("resize", resizeSecurityWatermarkCanvas, { passive: true });
   if (!securityWatermarkEnsureTimer) {
     securityWatermarkEnsureTimer = window.setInterval(() => {
-      if (!securityWatermarkCode || document.visibilityState === "hidden") {
+      if (!securityWatermarkCode) {
         return;
       }
       ensureSecurityWatermarkHost();
       resizeSecurityWatermarkCanvas();
       startSecurityWatermarkAnimation();
-    }, 1800);
+    }, 900);
   }
 }
 
@@ -5825,7 +5483,6 @@ function bindRebuildTransitionVeilNavigationGuard() {
       // A valid internal route can still be handled by the native page.
     }
     beginRebuildTransitionVeil(href);
-    releaseReparentedNativeNodesForNavigation();
   }, true);
 }
 
@@ -5966,7 +5623,7 @@ function scheduleUserCenterPendingRebuild() {
   }
   userCenterPendingRebuildTimer = window.setTimeout(() => {
     userCenterPendingRebuildTimer = null;
-    if (!isUserCenterRoutePath() && !isPublicUserProfilePage()) {
+    if (!isUserCenterPendingNativeLoad()) {
       return;
     }
     scheduleRebuild();
@@ -6075,78 +5732,62 @@ function ensureLoadingOverlayElement() {
     parent.append(overlay);
   }
 
+  const colors = getThemeLoadingColors();
   const isSoft = Boolean(loadingOverlaySoft);
   const isDismissible = isDismissibleLoadingOverlay();
-  if (overlay.dataset.cc98LoadingClickBound !== "true") {
-    overlay.dataset.cc98LoadingClickBound = "true";
-    overlay.addEventListener("click", (event) => {
-      if (isDismissibleLoadingOverlay() && event.target === overlay) {
-        hideLoadingOverlay({ force: true });
-        scheduleSync();
-      }
+  overlay.dataset.cc98LoadingSoft = isSoft ? "true" : "false";
+  overlay.onclick = (event) => {
+    if (isDismissibleLoadingOverlay() && event.target === overlay) {
+      hideLoadingOverlay({ force: true });
+      scheduleSync();
+    }
+  };
+  applyImportantStyle(overlay, {
+    position: "fixed",
+    inset: "0",
+    "z-index": "2147483647",
+    display: "grid",
+    "place-items": "center",
+    "pointer-events": "auto",
+    opacity: "1",
+    visibility: "visible",
+    cursor: isDismissible ? "pointer" : "default",
+    background: isSoft ? "color-mix(in srgb, var(--cc98-comfort-bg) 72%, transparent)" : colors.bg,
+    color: colors.text
+  });
+
+  const panel = overlay.querySelector(".cc98-comfort-loading-panel");
+  if (panel) {
+    applyImportantStyle(panel, {
+      display: "grid",
+      visibility: "visible",
+      opacity: "1",
+      background: colors.surface,
+      "border-color": colors.panelBorder,
+      "box-shadow": colors.shadow
     });
   }
 
-  const subtitleText = isDismissible
-    ? "原页面正在加载；若 WebVPN 响应较慢，遮罩会自动收起。"
-    : "\u539f\u7248\u9875\u9762\u6b63\u5728\u906e\u7f69\u540e\u9762\u9884\u70ed\uff0c\u5b8c\u6210\u540e\u4f1a\u81ea\u52a8\u663e\u793a\u5b8c\u6574\u9605\u8bfb\u754c\u9762\u3002";
-  const renderKey = JSON.stringify([
-    lastSettings?.theme || "soft",
-    document.documentElement.dataset.cc98ComfortTone || "light",
-    isSoft,
-    isDismissible,
-    loadingOverlayMessage,
-    subtitleText
-  ]);
-  if (overlay.dataset.cc98LoadingRenderKey !== renderKey) {
-    overlay.dataset.cc98LoadingRenderKey = renderKey;
-    overlay.dataset.cc98LoadingSoft = isSoft ? "true" : "false";
-    const colors = getThemeLoadingColors();
-    applyImportantStyle(overlay, {
-      position: "fixed",
-      inset: "0",
-      "z-index": "2147483647",
-      display: "grid",
-      "place-items": "center",
-      "pointer-events": "auto",
-      opacity: "1",
-      visibility: "visible",
-      cursor: isDismissible ? "pointer" : "default",
-      background: isSoft ? "color-mix(in srgb, var(--cc98-comfort-bg) 72%, transparent)" : colors.bg,
-      color: colors.text
+  const spinner = overlay.querySelector(".cc98-comfort-loading-spinner");
+  if (spinner) {
+    applyImportantStyle(spinner, {
+      "border-color": colors.border,
+      "border-top-color": colors.accent
     });
+  }
 
-    const panel = overlay.querySelector(".cc98-comfort-loading-panel");
-    if (panel) {
-      applyImportantStyle(panel, {
-        display: "grid",
-        visibility: "visible",
-        opacity: "1",
-        background: colors.surface,
-        "border-color": colors.panelBorder,
-        "box-shadow": colors.shadow
-      });
-    }
+  const title = overlay.querySelector(".cc98-comfort-loading-title");
+  if (title) {
+    title.textContent = loadingOverlayMessage;
+    applyImportantStyle(title, { color: colors.text });
+  }
 
-    const spinner = overlay.querySelector(".cc98-comfort-loading-spinner");
-    if (spinner) {
-      applyImportantStyle(spinner, {
-        "border-color": colors.border,
-        "border-top-color": colors.accent
-      });
-    }
-
-    const title = overlay.querySelector(".cc98-comfort-loading-title");
-    if (title) {
-      title.textContent = loadingOverlayMessage;
-      applyImportantStyle(title, { color: colors.text });
-    }
-
-    const subtitle = overlay.querySelector(".cc98-comfort-loading-subtitle");
-    if (subtitle) {
-      subtitle.textContent = subtitleText;
-      applyImportantStyle(subtitle, { color: colors.muted });
-    }
+  const subtitle = overlay.querySelector(".cc98-comfort-loading-subtitle");
+  if (subtitle) {
+    subtitle.textContent = isDismissible
+      ? "原页面正在加载；若 WebVPN 响应较慢，遮罩会自动收起。"
+      : "\u539f\u7248\u9875\u9762\u6b63\u5728\u906e\u7f69\u540e\u9762\u9884\u70ed\uff0c\u5b8c\u6210\u540e\u4f1a\u81ea\u52a8\u663e\u793a\u5b8c\u6574\u9605\u8bfb\u754c\u9762\u3002";
+    applyImportantStyle(subtitle, { color: colors.muted });
   }
   overlay.hidden = false;
   overlay.removeAttribute("aria-hidden");
@@ -6213,7 +5854,7 @@ function showLoadingOverlay(message = "\u6b63\u5728\u52a0\u8f7d\u5e16\u5b50\u56f
         return;
       }
       ensureLoadingOverlayElement();
-    }, 300);
+    }, 120);
   }
   if (!loadingOverlayFailsafeTimer) {
     const failsafeDelay = loadingOverlaySoft
@@ -6827,46 +6468,35 @@ function scheduleWebVpnBootProbe() {
   }
   webVpnBootProbeStarted = true;
   let observer = null;
-  let probeTimer = null;
-  const stopProbing = () => {
-    observer?.disconnect();
-    window.clearTimeout(probeTimer);
-    probeTimer = null;
-  };
   const tryBoot = () => {
     if (isOpenIdAuthorizationPage()) {
-      stopProbing();
+      observer?.disconnect();
       return true;
     }
     if (redirectCurrentWebVpnExternalPage()) {
-      stopProbing();
+      observer?.disconnect();
       return true;
     }
     if (normalPageBooted || !shouldBootCc98Reborn()) {
       return false;
     }
-    stopProbing();
+    observer?.disconnect();
     bootNormalPage();
     return true;
-  };
-  const scheduleProbe = () => {
-    window.clearTimeout(probeTimer);
-    probeTimer = window.setTimeout(() => {
-      probeTimer = null;
-      tryBoot();
-    }, 120);
   };
   if (tryBoot()) {
     return;
   }
   document.addEventListener("DOMContentLoaded", tryBoot, { once: true });
-  observer = new MutationObserver(scheduleProbe);
+  observer = new MutationObserver(() => {
+    tryBoot();
+  });
   observer.observe(document.documentElement || document, {
     childList: true,
     subtree: true
   });
   [400, 1200, 2600, 5200].forEach((delay) => setTimeout(tryBoot, delay));
-  setTimeout(stopProbing, 8000);
+  setTimeout(() => observer?.disconnect(), 8000);
 }
 
 function getPageKind() {
@@ -8358,15 +7988,6 @@ function markInlineEmojiContainers(root) {
       if (!/^(DIV|SPAN|P)$/i.test(parent.tagName)) {
         break;
       }
-      if (parent.matches([
-        "[contenteditable='true']",
-        ".cc98-rebuild-dual-ubb-visual",
-        ".cc98-rebuild-profile-signature-wysiwyg",
-        ".cc98-rebuild-dual-ubb-visual-pane",
-        ".cc98-rebuild-profile-signature-preview-body"
-      ].join(","))) {
-        break;
-      }
       if (parent.dataset.cc98UbbTag === "align"
         || parent.classList.contains("cc98-rebuild-preview-align")) {
         break;
@@ -8375,67 +7996,6 @@ function markInlineEmojiContainers(root) {
       parent = parent.parentElement;
     }
   });
-}
-
-function stabilizeDualUbbLeadingEmojiLayout(root) {
-  if (!(root instanceof HTMLElement) || !root.matches(".cc98-rebuild-dual-ubb-visual")) {
-    return;
-  }
-  root.classList.remove("cc98-rebuild-inline-emoji-wrap");
-  const emojiImages = [...root.querySelectorAll("img.cc98-rebuild-inline-emoji")];
-  let hasOtherContent = false;
-  const inspect = (node) => {
-    [...node.childNodes].forEach((child) => {
-      if (hasOtherContent || child === emojiImages[0]) {
-        return;
-      }
-      if (child.nodeType === Node.TEXT_NODE) {
-        if (String(child.nodeValue || "").replace(/[\s\u200b\uFEFF]/g, "")) {
-          hasOtherContent = true;
-        }
-        return;
-      }
-      if (!(child instanceof HTMLElement) || child.tagName === "BR") {
-        return;
-      }
-      if (child.matches("img, audio, video, iframe, object, embed")) {
-        hasOtherContent = true;
-        return;
-      }
-      inspect(child);
-    });
-  };
-  inspect(root);
-  const isSingleLeadingEmoji = emojiImages.length === 1 && !hasOtherContent;
-  root.classList.toggle("cc98-rebuild-leading-emoji-only", isSingleLeadingEmoji);
-  const styleProperties = ["margin", "padding", "border", "box-sizing"];
-  if (isSingleLeadingEmoji) {
-    if (!root.__cc98LeadingEmojiInlineStyle) {
-      root.__cc98LeadingEmojiInlineStyle = Object.fromEntries(
-        styleProperties.map((property) => [
-          property,
-          [root.style.getPropertyValue(property), root.style.getPropertyPriority(property)]
-        ])
-      );
-    }
-    root.style.setProperty("margin", "5px", "important");
-    root.style.setProperty("padding", "24px 28px", "important");
-    root.style.setProperty("border", "1px solid transparent", "important");
-    root.style.setProperty("box-sizing", "border-box", "important");
-    return;
-  }
-  const previousStyle = root.__cc98LeadingEmojiInlineStyle;
-  if (previousStyle) {
-    styleProperties.forEach((property) => {
-      const [value, priority] = previousStyle[property] || ["", ""];
-      if (value) {
-        root.style.setProperty(property, value, priority);
-      } else {
-        root.style.removeProperty(property);
-      }
-    });
-    delete root.__cc98LeadingEmojiInlineStyle;
-  }
 }
 
 function isEmojiOnlyNode(node) {
@@ -8976,31 +8536,16 @@ function createUbbMediaPreviewNode(tag, url, title = "") {
   return null;
 }
 
-function appendInlineUbbText(target, text, options = {}) {
+function appendInlineUbbText(target, text) {
   const source = String(text ?? "");
-  const preserveLineBreaks = options?.preserveLineBreaks === true;
   const tokenPattern = /\[(cc98\d{2}|ac(?:\d{2}|\d{4})|[acf]:\d{3}|tb\d{2}|ms\d{2}|em\d{2})\]|\[(\/?)(b|i|u|s|del|url|color|size|align|audio|mp3|video|bili|bilibili)(?:=([^\]]+))?\]|\[img\]([\s\S]*?)\[\/img\]/ig;
   const stack = [{ tag: "", node: target }];
   let lastIndex = 0;
 
   const appendText = (value) => {
-    if (!value) {
-      return;
+    if (value) {
+      stack.at(-1).node.append(document.createTextNode(value));
     }
-    const currentNode = stack.at(-1).node;
-    if (!preserveLineBreaks) {
-      currentNode.append(document.createTextNode(value));
-      return;
-    }
-    const lines = String(value).replace(/\r\n?/g, "\n").split("\n");
-    lines.forEach((line, index) => {
-      if (line) {
-        currentNode.append(document.createTextNode(line));
-      }
-      if (index < lines.length - 1) {
-        currentNode.append(document.createElement("br"));
-      }
-    });
   };
 
   const makeNode = (tag, value = "") => {
@@ -9220,90 +8765,6 @@ function markInlineUbbStyleClasses(root) {
     if (fontSize) {
       node.classList.add("cc98-rebuild-preview-size");
       node.style.setProperty("--cc98-preview-size", fontSize);
-    }
-  });
-  synchronizeInlineUbbDecorationColors(root);
-}
-
-/**
- * CSS text decorations are painted by the element that owns the decoration,
- * not by the innermost coloured span.  Consequently a structure such as
- *
- *   <del><u><span style="color: ...">text</span></u></del>
- *
- * can show coloured text with a decoration in the surrounding theme colour.
- * Resolve the effective colour of the text nodes inside each decoration and
- * expose it on that decoration as a custom property.  This keeps the UBB DOM
- * and its serialization unchanged while also handling native HTML produced by
- * the forum.
- */
-function synchronizeInlineUbbDecorationColors(root) {
-  if (!(root instanceof HTMLElement)) {
-    return;
-  }
-
-  const nodes = [root, ...(root.querySelectorAll?.("*") ?? [])]
-    .filter((node) => node instanceof HTMLElement);
-  const decorationNodes = nodes.filter((node) => (
-    node.classList.contains("cc98-rebuild-preview-underline")
-    || node.classList.contains("cc98-rebuild-preview-strike")
-  ));
-
-  decorationNodes.forEach((node) => {
-    node.style.removeProperty("--cc98-preview-decoration-color");
-    node.style.removeProperty("text-decoration-color");
-  });
-
-  const decorationSet = new Set(decorationNodes);
-  const colorsByDecoration = new Map(
-    decorationNodes.map((node) => [node, new Map()])
-  );
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-  while (walker.nextNode()) {
-    const textNode = walker.currentNode;
-    if (textNode?.nodeType !== Node.TEXT_NODE || !String(textNode.nodeValue || "").trim()) {
-      continue;
-    }
-    let current = textNode.parentElement;
-    let effectiveColor = "";
-    const ancestors = [];
-    while (current) {
-      if (decorationSet.has(current)) {
-        ancestors.push(current);
-      }
-      if (!effectiveColor) {
-        effectiveColor = getExplicitTextColor(current)
-          || current.style.getPropertyValue("--cc98-preview-color").trim();
-      }
-      if (current === root) {
-        break;
-      }
-      current = current.parentElement;
-    }
-    if (!effectiveColor) {
-      continue;
-    }
-    const normalizedColor = effectiveColor.trim().toLowerCase();
-    ancestors.forEach((decorationNode) => {
-      const colors = colorsByDecoration.get(decorationNode);
-      if (colors && !colors.has(normalizedColor)) {
-        colors.set(normalizedColor, effectiveColor.trim());
-      }
-    });
-  }
-
-  colorsByDecoration.forEach((colors, decorationNode) => {
-    if (colors.size === 1) {
-      const color = colors.values().next().value;
-      decorationNode.style.setProperty(
-        "--cc98-preview-decoration-color",
-        color
-      );
-      // The UBB underline node itself may carry an inline
-      // `text-decoration: ... !important`; set the longhand in the same
-      // inline style block so that the browser cannot fall back to the
-      // decoration element's theme colour.
-      decorationNode.style.setProperty("text-decoration-color", color, "important");
     }
   });
 }
@@ -13149,24 +12610,6 @@ function stabilizeTopbarUserEntry(app = document.querySelector("#cc98-comfort-ap
   }
 }
 
-function clearTopbarStabilizeTimers() {
-  topbarStabilizeTimers.forEach((timer) => window.clearTimeout(timer));
-  topbarStabilizeTimers = [];
-}
-
-function scheduleTopbarStabilization(app) {
-  clearTopbarStabilizeTimers();
-  const delays = [120, 480, 1200, 2400, 4200, 6500];
-  topbarStabilizeTimers = delays.map((delay, index) => window.setTimeout(() => {
-    if (app?.isConnected && document.querySelector("#cc98-comfort-app") === app) {
-      stabilizeTopbarUserEntry(app);
-    }
-    if (index === delays.length - 1) {
-      topbarStabilizeTimers = [];
-    }
-  }, delay));
-}
-
 function renderTopbarUserEntry() {
   const publicProfileSnapshot = createPublicProfileTopbarSnapshot();
   if (publicProfileSnapshot) {
@@ -14106,27 +13549,6 @@ function restoreNativeNode(node) {
 function restoreReparentedNativeNodes(app) {
   app?.querySelectorAll?.(".createTopic.cc98-rebuild-native-editor, #sendTopicInfo.cc98-rebuild-native-reply, .user-center-navigation.cc98-rebuild-native-user-nav, .user-center-router.cc98-rebuild-native-user-router, .cc98-rebuild-native-user-entry, .cc98-rebuild-native-message, .cc98-rebuild-native-signin, .cc98-rebuild-native-login, .cc98-rebuild-native-login-announcement, .vote-content.cc98-rebuild-native-vote, .cc98-rebuild-native-post-follow-action")
     .forEach((node) => restoreNativeNode(node));
-}
-
-function releaseReparentedNativeNodesForNavigation() {
-  const app = document.querySelector("#cc98-comfort-app");
-  if (!(app instanceof HTMLElement)) {
-    return false;
-  }
-  restoreReparentedNativeNodes(app);
-  return true;
-}
-
-function releaseReparentedNativeEditorForSubmit(kind) {
-  const editor = String(kind || "").toLowerCase() === "reply"
-    ? document.querySelector("#sendTopicInfo")
-    : document.querySelector(".createTopic");
-  if (!(editor instanceof HTMLElement) || !editor.closest("#cc98-comfort-app")) {
-    return false;
-  }
-  editor.dataset.cc98NativeSubmitReleased = "true";
-  restoreNativeNode(editor);
-  return true;
 }
 
 function isEditorAuxiliarySubmitControl(control) {
@@ -15324,158 +14746,6 @@ const EDITOR_GRADIENT_PRESETS = [
 
 const EDITOR_FONT_SIZE_VALUES = ["1", "2", "3", "4", "5", "6", "7"];
 
-const EDITOR_FONT_FAMILY_GROUPS = [
-  ["常用中文", [
-    ["SimSun", "宋体"],
-    ["SimHei", "黑体"],
-    ["Microsoft YaHei", "微软雅黑"],
-    ["Microsoft JhengHei", "微软正黑体"],
-    ["NSimSun", "新宋体"],
-    ["FangSong", "仿宋"],
-    ["KaiTi", "楷体"],
-    ["FangSong_GB2312", "仿宋_GB2312"],
-    ["KaiTi_GB2312", "楷体_GB2312"]
-  ]],
-  ["Windows / Office", [
-    ["PMingLiU", "新细明体"],
-    ["MingLiU", "细明体"],
-    ["DFKai-SB", "标楷体"],
-    ["LiSu", "隶书"],
-    ["YouYuan", "幼圆"],
-    ["FZShuTi", "方正舒体"],
-    ["FZYaoti", "方正姚体"]
-  ]],
-  ["华文字体", [
-    ["STHeiti Light", "华文细黑（Light）"],
-    ["STXihei", "华文细黑"],
-    ["STHeiti", "华文黑体"],
-    ["STKaiti", "华文楷体"],
-    ["STSong", "华文宋体"],
-    ["STZhongsong", "华文中宋"],
-    ["STFangsong", "华文仿宋"],
-    ["STCaiyun", "华文彩云"],
-    ["STHupo", "华文琥珀"],
-    ["STLiti", "华文隶书"],
-    ["STXingkai", "华文行楷"],
-    ["STXinwei", "华文新魏"]
-  ]],
-  ["繁体 / macOS", [
-    ["BiauKai", "标楷体（繁）"],
-    ["LiHei Pro Medium", "俪黑 Pro"],
-    ["LiSong Pro Light", "俪宋 Pro"],
-    ["Apple LiGothic Medium", "苹果俪中黑"],
-    ["Apple LiSung Light", "苹果俪细宋"]
-  ]],
-  ["西文 / 等宽", [
-    ["Arial", "Arial"],
-    ["Consolas", "Consolas"]
-  ]]
-];
-
-const EDITOR_FONT_FAMILY_VALUES = new Set(
-  EDITOR_FONT_FAMILY_GROUPS.flatMap(([, fonts]) => fonts.map(([value]) => value))
-);
-
-function normalizeEditorFontFamilyValue(value) {
-  const normalized = String(value || "").trim();
-  return EDITOR_FONT_FAMILY_VALUES.has(normalized) ? normalized : "";
-}
-
-function rememberEditorFontFamilySelection(editor, select) {
-  if (!(editor instanceof HTMLElement) || !(select instanceof HTMLSelectElement)) {
-    return;
-  }
-  if (typeof editor.__cc98WysiwygRememberSelection === "function") {
-    editor.__cc98WysiwygRememberSelection({ preserveNonCollapsed: true });
-    return;
-  }
-  const textarea = getNativeEditorTextarea(editor);
-  if (!(textarea instanceof HTMLTextAreaElement)) {
-    return;
-  }
-  select.dataset.cc98FontSelectionStart = String(
-    Number.isFinite(textarea.selectionStart) ? textarea.selectionStart : textarea.value.length
-  );
-  select.dataset.cc98FontSelectionEnd = String(
-    Number.isFinite(textarea.selectionEnd) ? textarea.selectionEnd : textarea.selectionStart
-  );
-}
-
-function applyEditorFontFamily(editor, fontFamily, select = null) {
-  const normalized = normalizeEditorFontFamilyValue(fontFamily);
-  if (!(editor instanceof HTMLElement) || !normalized) {
-    return false;
-  }
-  if (typeof editor.__cc98WysiwygApplyFontFamily === "function") {
-    return editor.__cc98WysiwygApplyFontFamily(normalized);
-  }
-  const textarea = getNativeEditorTextarea(editor);
-  if (!(textarea instanceof HTMLTextAreaElement)) {
-    return false;
-  }
-  const storedStart = Number(select?.dataset?.cc98FontSelectionStart);
-  const storedEnd = Number(select?.dataset?.cc98FontSelectionEnd);
-  const start = Number.isFinite(storedStart)
-    ? Math.max(0, Math.min(textarea.value.length, storedStart))
-    : (Number.isFinite(textarea.selectionStart) ? textarea.selectionStart : textarea.value.length);
-  const end = Number.isFinite(storedEnd)
-    ? Math.max(start, Math.min(textarea.value.length, storedEnd))
-    : (Number.isFinite(textarea.selectionEnd) ? textarea.selectionEnd : start);
-  const selected = textarea.value.slice(start, end);
-  const opening = `[font=${normalized}]`;
-  const wrapped = `${opening}${selected}[/font]`;
-  setNativeMessageInputValue(
-    textarea,
-    `${textarea.value.slice(0, start)}${wrapped}${textarea.value.slice(end)}`
-  );
-  const caretStart = start + opening.length;
-  const caretEnd = selected ? caretStart + selected.length : caretStart;
-  textarea.focus({ preventScroll: true });
-  textarea.setSelectionRange(caretStart, caretEnd);
-  scheduleNativeEditorStabilize(editor);
-  scheduleNativeEditorDraftSave(editor);
-  return true;
-}
-
-function createEditorFontFamilySelect(editor, extraClassName = "") {
-  const select = document.createElement("select");
-  select.className = `cc98-rebuild-editor-font-select ${extraClassName}`.trim();
-  select.title = "字体";
-  select.setAttribute("aria-label", "字体");
-  const placeholder = document.createElement("option");
-  placeholder.value = "";
-  placeholder.textContent = "字体";
-  placeholder.selected = true;
-  select.append(placeholder);
-  EDITOR_FONT_FAMILY_GROUPS.forEach(([groupLabel, fonts]) => {
-    const group = document.createElement("optgroup");
-    group.label = groupLabel;
-    fonts.forEach(([value, label]) => {
-      const option = document.createElement("option");
-      option.value = value;
-      option.textContent = `${label} · ${value}`;
-      option.style.fontFamily = value;
-      group.append(option);
-    });
-    select.append(group);
-  });
-  const rememberSelection = () => rememberEditorFontFamilySelection(editor, select);
-  select.addEventListener("pointerdown", rememberSelection);
-  select.addEventListener("keydown", (event) => {
-    if (["Enter", " ", "ArrowUp", "ArrowDown"].includes(event.key)) {
-      rememberSelection();
-    }
-  });
-  select.addEventListener("change", () => {
-    const fontFamily = normalizeEditorFontFamilyValue(select.value);
-    if (fontFamily) {
-      applyEditorFontFamily(editor, fontFamily, select);
-    }
-    select.value = "";
-  });
-  return select;
-}
-
 function normalizeHexColor(value, fallback = "#ff0000") {
   const text = String(value ?? "").trim();
   const shortHex = text.match(/^#([0-9a-f])([0-9a-f])([0-9a-f])$/i);
@@ -15758,14 +15028,7 @@ function ensureLegacyColorPickerSuppressor() {
     legacyColorPickerObserver.observe(document.documentElement || document, { childList: true, subtree: true });
   }
   if (!legacyColorPickerInterval) {
-    legacyColorPickerInterval = window.setInterval(() => {
-      if (document.visibilityState === "hidden"
-        || !lastSettings?.enabled
-        || !document.querySelector(LEGACY_COLOR_PICKER_SELECTOR)) {
-        return;
-      }
-      suppressLegacyEditorColorPickers(document);
-    }, 4500);
+    legacyColorPickerInterval = window.setInterval(() => suppressLegacyEditorColorPickers(document), 700);
   }
 }
 
@@ -15883,588 +15146,22 @@ function getStoredEditorSelection(button, textarea) {
   };
 }
 
-let cc98ColorSelectionSequence = 0;
-
-function getEditorColorSelectionMarkerText(marker) {
-  return marker?.dataset?.cc98ColorSelectionMarker || "";
-}
-
-function getEditorColorSelectionMarkerRange(snapshot) {
-  if (!snapshot || snapshot.surface !== "visual") {
-    return null;
-  }
-  const startMarker = snapshot.startMarker;
-  const endMarker = snapshot.endMarker;
-  if (
-    !(snapshot.wysiwyg instanceof HTMLElement)
-    || !(startMarker instanceof HTMLElement)
-    || !startMarker.isConnected
-    || !snapshot.wysiwyg.contains(startMarker)
-  ) {
-    return null;
-  }
-  if (snapshot.collapsed) {
-    const range = document.createRange();
-    try {
-      range.setStartAfter(startMarker);
-      range.collapse(true);
-      return range;
-    } catch {
-      return null;
-    }
-  }
-  if (
-    !(endMarker instanceof HTMLElement)
-    || !endMarker.isConnected
-    || !snapshot.wysiwyg.contains(endMarker)
-  ) {
-    return null;
-  }
-  const range = document.createRange();
-  try {
-    range.setStartAfter(startMarker);
-    range.setEndBefore(endMarker);
-    return range;
-  } catch {
-    return null;
-  }
-}
-
-function clearEditorColorSelectionSnapshot(editor, options = {}) {
-  const snapshot = editor?.__cc98ColorSelectionSnapshot;
-  if (!snapshot) {
-    return null;
-  }
-  const range = getEditorColorSelectionMarkerRange(snapshot);
-  if (options.restore && range) {
-    const selection = window.getSelection();
-    selection?.removeAllRanges();
-    selection?.addRange(range);
-  }
-  [snapshot.startMarker, snapshot.endMarker].forEach((marker) => {
-    if (marker instanceof HTMLElement) {
-      marker.remove();
-    }
-  });
-  delete editor.__cc98ColorSelectionSnapshot;
-  return range;
-}
-
-function captureEditorColorSourceSelection(editor, textarea, selection) {
-  if (!(textarea instanceof HTMLTextAreaElement) || !selection) {
-    return null;
-  }
-  clearEditorColorSelectionSnapshot(editor);
-  // A source selection supersedes any visual selection remembered before the
-  // source pane became active.  Otherwise a later color-button click could
-  // accidentally reuse an old visual interval after the source was edited.
-  delete editor.__cc98WysiwygLogicalSelection;
-  const max = textarea.value.length;
-  const start = Math.max(0, Math.min(max, Number(selection.start) || 0));
-  const end = Math.max(start, Math.min(max, Number(selection.end) || start));
-  const snapshot = {
-    surface: "source",
-    start,
-    end,
-    sourceValue: textarea.value,
-    selectedText: textarea.value.slice(start, end),
-    locked: true
-  };
-  editor.__cc98ColorSelectionSnapshot = snapshot;
-  return snapshot;
-}
-
-function getEditorVisualNodePath(root, node) {
-  if (!(root instanceof Node) || !(node instanceof Node)) {
-    return null;
-  }
-  const path = [];
-  let current = node;
-  while (current && current !== root) {
-    const parent = current.parentNode;
-    if (!(parent instanceof Node)) {
-      return null;
-    }
-    const index = [...parent.childNodes].indexOf(current);
-    if (index < 0) {
-      return null;
-    }
-    path.unshift(index);
-    current = parent;
-  }
-  return current === root ? path : null;
-}
-
-function getEditorVisualNodeAtPath(root, path) {
-  if (!(root instanceof Node) || !Array.isArray(path)) {
-    return null;
-  }
-  return path.reduce((node, index) => {
-    if (!(node instanceof Node)) {
-      return null;
-    }
-    return node.childNodes?.[index] || null;
-  }, root);
-}
-
-function buildEditorColorVisualLogicalSelection(editor, wysiwyg, range) {
-  if (
-    !(editor instanceof HTMLElement)
-    || !(wysiwyg instanceof HTMLElement)
-    || !(range instanceof Range)
-  ) {
-    return null;
-  }
-  const container = range.commonAncestorContainer;
-  if (!(container === wysiwyg || wysiwyg.contains(container))) {
-    return null;
-  }
-  const startPath = getEditorVisualNodePath(wysiwyg, range.startContainer);
-  const endPath = getEditorVisualNodePath(wysiwyg, range.endContainer);
-  if (!startPath || !endPath) {
-    return null;
-  }
-  const clone = wysiwyg.cloneNode(true);
-  const cloneStart = getEditorVisualNodeAtPath(clone, startPath);
-  const cloneEnd = getEditorVisualNodeAtPath(clone, endPath);
-  if (!(cloneStart instanceof Node) || !(cloneEnd instanceof Node)) {
-    return null;
-  }
-
-  let markedRange;
-  try {
-    markedRange = document.createRange();
-    markedRange.setStart(cloneStart, Math.min(range.startOffset, cloneStart.nodeType === Node.TEXT_NODE
-      ? cloneStart.nodeValue.length
-      : cloneStart.childNodes.length));
-    markedRange.setEnd(cloneEnd, Math.min(range.endOffset, cloneEnd.nodeType === Node.TEXT_NODE
-      ? cloneEnd.nodeValue.length
-      : cloneEnd.childNodes.length));
-  } catch {
-    return null;
-  }
-
-  const sourceValue = serializeProfileSignatureWysiwygChildren(wysiwyg)
-    .replace(/\r\n?/g, "\n")
-    .replace(/[\u200b\uFEFF]/g, "");
-  let visibleSelectionText = "";
-  try {
-    visibleSelectionText = String(range.toString() || "")
-      .replace(/[\u200b\uFEFF]/g, "")
-      .replace(/\u00a0/g, " ");
-  } catch {
-    visibleSelectionText = "";
-  }
-
-  const sequence = ++cc98ColorSelectionSequence;
-  const startToken = `\uE000cc98-color-logical-start-${sequence}\uE001`;
-  const endToken = `\uE000cc98-color-logical-end-${sequence}\uE001`;
-  const startMarker = document.createElement("span");
-  const endMarker = document.createElement("span");
-  startMarker.dataset.cc98ColorSelectionMarker = startToken;
-  endMarker.dataset.cc98ColorSelectionMarker = endToken;
-  startMarker.setAttribute("aria-hidden", "true");
-  endMarker.setAttribute("aria-hidden", "true");
-
-  const collapsed = range.collapsed;
-  try {
-    if (collapsed) {
-      markedRange.collapse(true);
-      markedRange.insertNode(startMarker);
-    } else {
-      // Insert the end first, matching the live-marker implementation and
-      // keeping offsets stable when both boundaries share a text node.
-      const endRange = markedRange.cloneRange();
-      endRange.collapse(false);
-      endRange.insertNode(endMarker);
-      const startRange = markedRange.cloneRange();
-      startRange.collapse(true);
-      startRange.insertNode(startMarker);
-    }
-  } catch {
-    return null;
-  }
-
-  const markedSource = serializeProfileSignatureWysiwygChildren(clone)
-    .replace(/\r\n?/g, "\n");
-  const withoutMarkers = markedSource
-    .split(startToken).join("")
-    .split(endToken).join("")
-    .replace(/[\u200b\uFEFF]/g, "");
-  const startIndex = markedSource.indexOf(startToken);
-  const endIndex = collapsed ? startIndex : markedSource.indexOf(endToken);
-  const sourceStart = startIndex >= 0
-    ? markedSource.slice(0, startIndex)
-      .split(startToken).join("")
-      .split(endToken).join("")
-      .replace(/[\u200b\uFEFF]/g, "").length
-    : 0;
-  const sourceEnd = collapsed
-    ? sourceStart
-    : (endIndex >= 0
-      ? markedSource.slice(0, endIndex)
-        .split(startToken).join("")
-        .split(endToken).join("")
-        .replace(/[\u200b\uFEFF]/g, "").length
-      : sourceStart);
-  const start = Math.max(0, Math.min(sourceValue.length, sourceStart));
-  const end = Math.max(start, Math.min(sourceValue.length, sourceEnd));
-  return {
-    surface: "visual",
-    wysiwyg,
-    collapsed,
-    sourceValue,
-    start,
-    end,
-    sourceSelectedText: withoutMarkers.slice(start, end),
-    selectedText: visibleSelectionText || withoutMarkers.slice(start, end),
-    logical: true,
-    locked: false,
-    startMarker: null,
-    endMarker: null
-  };
-}
-
-function rememberEditorColorVisualLogicalSelection(editor, wysiwyg, range) {
-  const snapshot = buildEditorColorVisualLogicalSelection(editor, wysiwyg, range);
-  if (!snapshot) {
-    return null;
-  }
-  editor.__cc98WysiwygLogicalSelection = snapshot;
-  return snapshot;
-}
-
-function promoteEditorColorLogicalSelection(editor, wysiwyg, sourceValue) {
-  const logical = editor?.__cc98WysiwygLogicalSelection;
-  if (
-    !logical
-    || logical.surface !== "visual"
-    || logical.wysiwyg !== wysiwyg
-  ) {
-    return null;
-  }
-  const value = String(sourceValue ?? "").replace(/[\u200b\uFEFF]/g, "");
-  const sourceSelection = getEditorColorSourceSelectionForApply(logical, value);
-  if (!sourceSelection) {
-    return null;
-  }
-  if (!isUsableEditorColorSourceSelection(logical, value, sourceSelection)
-    && getEditorColorSelectionExpectedSourceText(logical)) {
-    return null;
-  }
-  const promoted = {
-    ...logical,
-    sourceValue: value,
-    start: sourceSelection.start,
-    end: sourceSelection.end,
-    sourceSelectedText: value.slice(sourceSelection.start, sourceSelection.end),
-    startMarker: null,
-    endMarker: null,
-    locked: true,
-    logical: true
-  };
-  editor.__cc98ColorSelectionSnapshot = promoted;
-  return promoted;
-}
-
-function captureEditorColorVisualSelection(editor, wysiwyg, range) {
-  if (!(wysiwyg instanceof HTMLElement) || !(range instanceof Range)) {
-    return null;
-  }
-  const container = range.commonAncestorContainer;
-  if (!(container === wysiwyg || wysiwyg.contains(container))) {
-    return null;
-  }
-  clearEditorColorSelectionSnapshot(editor);
-  const sourceValue = serializeProfileSignatureWysiwygChildren(wysiwyg)
-    .replace(/\r\n?/g, "\n")
-    .replace(/[\u200b\uFEFF]/g, "");
-  const visibleSelectionText = String(range.toString() || "")
-    .replace(/[\u200b\uFEFF]/g, "")
-    .replace(/\u00a0/g, " ");
-  const sequence = ++cc98ColorSelectionSequence;
-  const startToken = `\uE000cc98-color-start-${sequence}\uE001`;
-  const endToken = `\uE000cc98-color-end-${sequence}\uE001`;
-  const startMarker = document.createElement("span");
-  const endMarker = document.createElement("span");
-  startMarker.dataset.cc98ColorSelectionMarker = startToken;
-  endMarker.dataset.cc98ColorSelectionMarker = endToken;
-  startMarker.setAttribute("aria-hidden", "true");
-  endMarker.setAttribute("aria-hidden", "true");
-  startMarker.contentEditable = "false";
-  endMarker.contentEditable = "false";
-  startMarker.className = "cc98-rebuild-color-selection-marker";
-  endMarker.className = "cc98-rebuild-color-selection-marker";
-
-  const startRange = range.cloneRange();
-  const endRange = range.cloneRange();
-  const collapsed = range.collapsed;
-  if (collapsed) {
-    startRange.collapse(true);
-    startRange.insertNode(startMarker);
-  } else {
-    // Insert the end first so inserting the start marker cannot change the
-    // end boundary when both boundaries are in the same text node.
-    endRange.collapse(false);
-    endRange.insertNode(endMarker);
-    startRange.collapse(true);
-    startRange.insertNode(startMarker);
-  }
-
-  const markedSource = serializeProfileSignatureWysiwygChildren(wysiwyg)
-    .replace(/\r\n?/g, "\n");
-  const startIndex = markedSource.indexOf(startToken);
-  const endIndex = collapsed ? startIndex : markedSource.indexOf(endToken);
-  const withoutMarkers = markedSource
-    .split(startToken).join("")
-    .split(endToken).join("")
-    .replace(/[\u200b\uFEFF]/g, "");
-  const sourceStart = startIndex >= 0
-    ? markedSource.slice(0, startIndex)
-      .split(startToken).join("")
-      .split(endToken).join("")
-      .replace(/[\u200b\uFEFF]/g, "").length
-    : 0;
-  const sourceEnd = collapsed
-    ? sourceStart
-    : (endIndex >= 0
-      ? markedSource.slice(0, endIndex)
-        .split(startToken).join("")
-        .split(endToken).join("")
-        .replace(/[\u200b\uFEFF]/g, "").length
-      : sourceStart);
-  const snapshot = {
-    surface: "visual",
-    wysiwyg,
-    startMarker,
-    endMarker: collapsed ? null : endMarker,
-    collapsed,
-    sourceValue,
-    start: sourceStart,
-    end: Math.max(sourceStart, sourceEnd),
-    sourceSelectedText: withoutMarkers.slice(sourceStart, Math.max(sourceStart, sourceEnd)),
-    selectedText: visibleSelectionText || withoutMarkers.slice(sourceStart, Math.max(sourceStart, sourceEnd)),
-    locked: true,
-    logical: true
-  };
-  editor.__cc98ColorSelectionSnapshot = snapshot;
-  // Keep the source interval independently of the live marker nodes.  The
-  // visual pane is rebuilt with replaceChildren() during native/editor sync,
-  // which removes those nodes and invalidates their Range references.
-  editor.__cc98WysiwygLogicalSelection = {
-    ...snapshot,
-    startMarker: null,
-    endMarker: null,
-    locked: false,
-    logical: true
-  };
-  const markerRange = getEditorColorSelectionMarkerRange(snapshot);
-  if (markerRange) {
-    editor.__cc98WysiwygRange = markerRange.cloneRange();
-  }
-  return snapshot;
-}
-
-function getStoredEditorColorSelection(editor, button, panel = null) {
-  const snapshot = panel?.__cc98ColorSelectionSnapshot
-    || editor?.__cc98ColorSelectionSnapshot;
-  if (snapshot) {
-    return snapshot;
-  }
-  const textarea = getNativeEditorTextarea(editor);
-  return textarea instanceof HTMLTextAreaElement
-    ? getStoredEditorSelection(button, textarea)
-    : null;
-}
-
-function normalizeEditorColorSourceSelection(selection, sourceValue) {
-  if (!selection) {
-    return null;
-  }
-  const value = String(sourceValue ?? "").replace(/[\u200b\uFEFF]/g, "");
-  const max = value.length;
-  let start = Number(selection.start);
-  let end = Number(selection.end);
-  if (selection.surface === "visual" && String(selection.sourceValue ?? "").replace(/[\u200b\uFEFF]/g, "") !== value) {
-    const selectedText = getEditorColorSelectionExpectedSourceText(selection);
-    if (selectedText) {
-      const hintedStart = Math.max(0, Math.min(max, Number(selection.start) || 0));
-      const foundAtHint = value.indexOf(selectedText, hintedStart);
-      const found = foundAtHint >= 0 ? foundAtHint : value.indexOf(selectedText);
-      if (found >= 0) {
-        start = found;
-        end = found + selectedText.length;
-      }
-    }
-  }
-  if (!Number.isFinite(start)) {
-    start = max;
-  }
-  if (!Number.isFinite(end)) {
-    end = start;
-  }
-  start = Math.max(0, Math.min(max, start));
-  end = Math.max(start, Math.min(max, end));
-  return { start, end };
-}
-
-function normalizeEditorColorSelectionText(value) {
-  return String(value ?? "")
-    .replace(/[\u200b\uFEFF]/g, "")
-    .replace(/\u00a0/g, " ");
-}
-
-function getEditorColorSelectionExpectedSourceText(selection) {
-  if (!selection) {
-    return "";
-  }
-  return normalizeEditorColorSelectionText(
-    selection.sourceSelectedText || selection.selectedText || ""
-  );
-}
-
-function getEditorColorSourceSelectionForApply(selection, sourceValue) {
-  if (!selection) {
-    return null;
-  }
-  const value = String(sourceValue ?? "").replace(/[\u200b\uFEFF]/g, "");
-  const candidate = normalizeEditorColorSourceSelection(selection, value);
-  if (!candidate || selection.surface !== "visual") {
-    return candidate;
-  }
-
-  // A visual selection can be replaced by a collapsed caret while the color
-  // popover takes focus.  At the beginning of a line this used to produce an
-  // empty color tag after the selected text.  Use the captured visible text
-  // to recover the exact source interval before touching the DOM selection.
-  const expected = getEditorColorSelectionExpectedSourceText(selection);
-  if (!expected) {
-    return candidate;
-  }
-  const actual = normalizeEditorColorSelectionText(
-    value.slice(candidate.start, candidate.end)
-  );
-  if (actual === expected) {
-    return candidate;
-  }
-
-  const hint = Math.max(0, Math.min(value.length, Number(selection.start) || 0));
-  let found = -1;
-  let bestDistance = Number.POSITIVE_INFINITY;
-  let cursor = value.indexOf(expected);
-  while (cursor >= 0) {
-    const distance = Math.abs(cursor - hint);
-    if (distance < bestDistance) {
-      found = cursor;
-      bestDistance = distance;
-    }
-    cursor = value.indexOf(expected, cursor + Math.max(1, expected.length));
-  }
-  return found >= 0
-    ? { start: found, end: found + expected.length }
-    : null;
-}
-
-function isUsableEditorColorSourceSelection(selection, sourceValue, sourceSelection) {
-  if (!sourceSelection || sourceSelection.end <= sourceSelection.start) {
-    return false;
-  }
-  const value = String(sourceValue ?? "").replace(/[\u200b\uFEFF]/g, "");
-  const actual = normalizeEditorColorSelectionText(
-    value.slice(sourceSelection.start, sourceSelection.end)
-  );
-  const expectedSource = normalizeEditorColorSelectionText(selection?.sourceSelectedText || "");
-  const expectedVisible = normalizeEditorColorSelectionText(selection?.selectedText || "");
-  if (!expectedSource && !expectedVisible) {
-    return true;
-  }
-  return actual === expectedSource || actual === expectedVisible;
-}
-
-function stripEditorInvisibleTextNodes(root) {
-  if (!(root instanceof Node)) {
-    return;
-  }
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-  const textNodes = [];
-  while (walker.nextNode()) {
-    textNodes.push(walker.currentNode);
-  }
-  textNodes.forEach((node) => {
-    node.nodeValue = String(node.nodeValue || "").replace(/[\u200b\uFEFF]/g, "");
-  });
-}
-
-function rememberEditorSelection(editor, button, options = {}) {
+function rememberEditorSelection(editor, button) {
   if (typeof editor?.__cc98WysiwygRememberSelection === "function") {
-    const remembered = editor.__cc98WysiwygRememberSelection(options);
-    if (options.captureColorSelection && !editor.__cc98ColorSelectionSnapshot) {
-      const visual = editor.querySelector?.(
-        ".cc98-rebuild-dual-ubb-visual, .cc98-rebuild-profile-signature-wysiwyg"
-      );
-      let range = getProfileSignatureWysiwygRange(visual);
-      const storedRange = editor.__cc98WysiwygRange;
-      const storedRangeIsValid = storedRange instanceof Range
-        && storedRange.startContainer?.isConnected
-        && storedRange.endContainer?.isConnected
-        && (
-          storedRange.commonAncestorContainer === visual
-          || visual?.contains?.(storedRange.commonAncestorContainer)
-        );
-      if (
-        options.preserveNonCollapsed
-        && storedRangeIsValid
-        && hasMeaningfulProfileSignatureWysiwygRange(storedRange)
-        && (!range || !hasMeaningfulProfileSignatureWysiwygRange(range))
-      ) {
-        range = storedRange;
-      }
-      const logicalSelection = editor.__cc98WysiwygLogicalSelection;
-      const logicalSelectionHasContent = Boolean(
-        logicalSelection
-        && logicalSelection.surface === "visual"
-        && logicalSelection.wysiwyg === visual
-        && (
-          normalizeEditorColorSelectionText(logicalSelection.selectedText).replace(/\s/g, "")
-          || normalizeEditorColorSelectionText(logicalSelection.sourceSelectedText).replace(/\s|\[[^\]]+\]/g, "")
-        )
-      );
-      if (
-        options.preserveNonCollapsed
-        && logicalSelectionHasContent
-        && (!range || !hasMeaningfulProfileSignatureWysiwygRange(range))
-        && !(storedRangeIsValid && hasMeaningfulProfileSignatureWysiwygRange(storedRange))
-      ) {
-        // The current Range can point at a newly rendered caret.  Leave the
-        // range empty here so the stable source snapshot is promoted below.
-        range = null;
-      }
-      if (range) {
-        captureEditorColorVisualSelection(editor, visual, range);
-      } else {
-        promoteEditorColorLogicalSelection(
-          editor,
-          visual,
-          getNativeEditorTextarea(editor)?.value || ""
-        );
-      }
-    }
-    return remembered;
+    editor.__cc98WysiwygRememberSelection(button);
+    return;
   }
   const textarea = getNativeEditorTextarea(editor);
   if (!(textarea instanceof HTMLTextAreaElement)) {
-    return null;
+    return;
   }
-  const start = Number.isFinite(textarea.selectionStart) ? textarea.selectionStart : textarea.value.length;
-  const end = Number.isFinite(textarea.selectionEnd) ? textarea.selectionEnd : start;
-  button.dataset.cc98ColorSelectionStart = String(start);
-  button.dataset.cc98ColorSelectionEnd = String(end);
-  return { start, end };
+  button.dataset.cc98ColorSelectionStart = String(Number.isFinite(textarea.selectionStart) ? textarea.selectionStart : textarea.value.length);
+  button.dataset.cc98ColorSelectionEnd = String(Number.isFinite(textarea.selectionEnd) ? textarea.selectionEnd : textarea.selectionStart);
 }
 
 function applyEditorColor(editor, color, selection = null) {
   if (typeof editor?.__cc98WysiwygApplyColor === "function") {
-    return editor.__cc98WysiwygApplyColor(color, selection);
+    return editor.__cc98WysiwygApplyColor(color);
   }
   const textarea = getNativeEditorTextarea(editor);
   const normalizedColor = String(color ?? "").trim().toLowerCase();
@@ -16474,24 +15171,15 @@ function applyEditorColor(editor, color, selection = null) {
   ) {
     return false;
   }
-  const sourceValue = String(textarea.value || "").replace(/[\u200b\uFEFF]/g, "");
-  const sourceSelection = getEditorColorSourceSelectionForApply(selection, sourceValue)
-    || normalizeEditorColorSourceSelection(selection, sourceValue);
-  const start = Number.isFinite(sourceSelection?.start)
-    ? sourceSelection.start
+  const start = Number.isFinite(selection?.start)
+    ? selection.start
     : (Number.isFinite(textarea.selectionStart) ? textarea.selectionStart : textarea.value.length);
-  const end = Number.isFinite(sourceSelection?.end)
-    ? sourceSelection.end
+  const end = Number.isFinite(selection?.end)
+    ? selection.end
     : (Number.isFinite(textarea.selectionEnd) ? textarea.selectionEnd : start);
-  if (
-    start === end
-    && normalizeEditorColorSelectionText(selection?.selectedText || "").replace(/\s/g, "")
-  ) {
-    return false;
-  }
-  const selected = sourceValue.slice(start, end);
-  const before = sourceValue.slice(0, start);
-  const after = sourceValue.slice(end);
+  const selected = textarea.value.slice(start, end);
+  const before = textarea.value.slice(0, start);
+  const after = textarea.value.slice(end);
   const wrapped = selected
     ? `[color=${normalizedColor}]${selected}[/color]`
     : `[color=${normalizedColor}][/color]`;
@@ -16499,175 +15187,6 @@ function applyEditorColor(editor, color, selection = null) {
   const caret = selected ? start + wrapped.length : start + `[color=${normalizedColor}]`.length;
   textarea.focus({ preventScroll: true });
   textarea.setSelectionRange(caret, caret);
-  scheduleNativeEditorStabilize(editor);
-  return true;
-}
-
-function collectEditorColorTagIntervals(source) {
-  const value = String(source ?? "");
-  const pattern = /\[color(?:=([^\]]+))?\]|\[\/color\]/ig;
-  const stack = [];
-  const intervals = [];
-  let match;
-  while ((match = pattern.exec(value))) {
-    const token = match[0];
-    if (/^\[\//i.test(token)) {
-      const opener = stack.pop();
-      if (opener) {
-        intervals.push({
-          ...opener,
-          closeStart: match.index,
-          closeEnd: match.index + token.length,
-          closeText: token
-        });
-      }
-      continue;
-    }
-    stack.push({
-      openStart: match.index,
-      openEnd: match.index + token.length,
-      openText: token,
-      color: match[1] || "",
-      depth: stack.length
-    });
-  }
-  stack.forEach((opener) => {
-    intervals.push({
-      ...opener,
-      closeStart: value.length,
-      closeEnd: value.length,
-      closeText: ""
-    });
-  });
-  return intervals.sort((left, right) => left.openStart - right.openStart);
-}
-
-function removeEditorColorTagsFromSource(source, start, end) {
-  const value = String(source ?? "");
-  const max = value.length;
-  const from = Math.max(0, Math.min(max, Number(start) || 0));
-  const to = Math.max(from, Math.min(max, Number(end) || from));
-  if (from === to) {
-    return { value, start: from, end: to, changed: false };
-  }
-
-  const edits = [];
-  const editKeys = new Set();
-  const addEdit = (editStart, editEnd, replacement = "", order = 0) => {
-    const safeStart = Math.max(0, Math.min(max, editStart));
-    const safeEnd = Math.max(safeStart, Math.min(max, editEnd));
-    const key = `${safeStart}:${safeEnd}:${replacement}:${order}`;
-    if (editKeys.has(key)) {
-      return;
-    }
-    editKeys.add(key);
-    edits.push({ start: safeStart, end: safeEnd, replacement });
-  };
-  const intersects = (left, right) => Math.max(left, from) < Math.min(right, to);
-  const intervals = collectEditorColorTagIntervals(value);
-
-  intervals.forEach((interval) => {
-    const contentStart = interval.openEnd;
-    const contentEnd = interval.closeStart;
-    const contentIntersects = intersects(contentStart, contentEnd);
-    if (!contentIntersects) {
-      const openTokenIntersects = intersects(interval.openStart, interval.openEnd);
-      const closeTokenIntersects = interval.closeEnd > interval.closeStart
-        && intersects(interval.closeStart, interval.closeEnd);
-      if (openTokenIntersects || closeTokenIntersects) {
-        addEdit(interval.openStart, interval.openEnd);
-        if (interval.closeEnd > interval.closeStart) {
-          addEdit(interval.closeStart, interval.closeEnd);
-        }
-      }
-      return;
-    }
-    const coversContent = from <= contentStart && to >= contentEnd;
-    const startsInside = from > contentStart && from < contentEnd;
-    const endsInside = to > contentStart && to < contentEnd;
-    if (coversContent) {
-      addEdit(interval.openStart, interval.openEnd);
-      if (interval.closeEnd > interval.closeStart) {
-        addEdit(interval.closeStart, interval.closeEnd);
-      }
-      return;
-    }
-    if (startsInside && endsInside) {
-      addEdit(from, from, interval.closeText || "[/color]", interval.depth);
-      addEdit(to, to, interval.openText, -interval.depth);
-      return;
-    }
-    if (!startsInside && endsInside) {
-      addEdit(interval.openStart, interval.openEnd);
-      addEdit(to, to, interval.openText, -interval.depth);
-      return;
-    }
-    if (startsInside && !endsInside) {
-      addEdit(from, from, interval.closeText || "[/color]", interval.depth);
-      if (interval.closeEnd > interval.closeStart) {
-        addEdit(interval.closeStart, interval.closeEnd);
-      }
-    }
-  });
-
-  const colorTokenPattern = /\[\/?color(?:=[^\]]+)?\]/ig;
-  let tokenMatch;
-  while ((tokenMatch = colorTokenPattern.exec(value))) {
-    const tokenStart = tokenMatch.index;
-    const tokenEnd = tokenStart + tokenMatch[0].length;
-    if (tokenStart < to && tokenEnd > from) {
-      addEdit(tokenStart, tokenEnd);
-    }
-  }
-  if (!edits.length) {
-    return { value, start: from, end: to, changed: false };
-  }
-
-  edits.sort((left, right) => right.start - left.start || right.end - left.end || left.order - right.order);
-  let nextValue = value;
-  edits.forEach((edit) => {
-    nextValue = `${nextValue.slice(0, edit.start)}${edit.replacement}${nextValue.slice(edit.end)}`;
-  });
-  const shiftAt = (position, includeAtPosition) => edits.reduce((shift, edit) => {
-    const affectsPosition = edit.end < position
-      || (edit.end === position && (edit.start !== edit.end || includeAtPosition));
-    if (affectsPosition) {
-      return shift + edit.replacement.length - (edit.end - edit.start);
-    }
-    return shift;
-  }, 0);
-  return {
-    value: nextValue,
-    start: Math.max(0, from + shiftAt(from, true)),
-    end: Math.max(0, to + shiftAt(to, false)),
-    changed: nextValue !== value
-  };
-}
-
-function clearEditorColor(editor, selection = null) {
-  if (typeof editor?.__cc98WysiwygClearColor === "function") {
-    return editor.__cc98WysiwygClearColor(selection);
-  }
-  const textarea = getNativeEditorTextarea(editor);
-  if (!(textarea instanceof HTMLTextAreaElement)) {
-    return false;
-  }
-  const sourceSelection = normalizeEditorColorSourceSelection(selection, textarea.value);
-  const rawStart = Number.isFinite(sourceSelection?.start)
-    ? sourceSelection.start
-    : (Number.isFinite(textarea.selectionStart) ? textarea.selectionStart : sourceValue.length);
-  const rawEnd = Number.isFinite(sourceSelection?.end)
-    ? sourceSelection.end
-    : (Number.isFinite(textarea.selectionEnd) ? textarea.selectionEnd : rawStart);
-  const start = Math.max(0, Math.min(sourceValue.length, rawStart));
-  const end = Math.max(start, Math.min(sourceValue.length, rawEnd));
-  const result = removeEditorColorTagsFromSource(textarea.value, start, end);
-  if (!result.changed) {
-    return false;
-  }
-  setNativeMessageInputValue(textarea, result.value);
-  textarea.focus({ preventScroll: true });
-  textarea.setSelectionRange(result.start, result.end);
   scheduleNativeEditorStabilize(editor);
   return true;
 }
@@ -16815,11 +15334,6 @@ function closeEditorColorPopovers(exceptPanel = null) {
     panel.hidden = true;
     panel.__cc98ColorButton?.classList?.remove("cc98-rebuild-color-button-open");
     panel.closest(".ubb-button-color")?.classList.remove("cc98-rebuild-color-button-open");
-    const editor = panel.__cc98Editor;
-    if (editor instanceof HTMLElement) {
-      clearEditorColorSelectionSnapshot(editor, { restore: true });
-    }
-    panel.__cc98ColorSelectionSnapshot = null;
   });
 }
 
@@ -16913,7 +15427,6 @@ function ensureEditorColorPopover(editor, button) {
       && panel.querySelector(".cc98-rebuild-color-transparent")
       && panel.querySelector(".cc98-rebuild-gradient-editor")
       && panel.querySelector(".cc98-rebuild-gradient-density-input")
-      && panel.querySelector(".cc98-rebuild-color-clear")
       && existingInput instanceof HTMLInputElement
       && existingInput.type !== "color"
     ) {
@@ -16953,11 +15466,7 @@ function ensureEditorColorPopover(editor, button) {
   input.inputMode = "text";
   input.autocomplete = "off";
   input.setAttribute("aria-label", "color");
-  const clearColor = createElement("button", "cc98-rebuild-color-clear", "\u53d6\u6d88\u989c\u8272");
-  clearColor.type = "button";
-  clearColor.title = "\u79fb\u9664\u9009\u4e2d\u5185\u5bb9\u7684\u989c\u8272\u683c\u5f0f";
-  clearColor.setAttribute("aria-label", "\u53d6\u6d88\u989c\u8272");
-  row.append(swatch, input, clearColor);
+  row.append(swatch, input);
 
   const presets = createElement("div", "cc98-rebuild-color-presets");
   EDITOR_COLOR_PRESETS.forEach((color) => {
@@ -17182,22 +15691,6 @@ function ensureEditorColorPopover(editor, button) {
       commitHexInput();
     }
   });
-  clearColor.addEventListener("click", () => {
-    const selection = getStoredEditorColorSelection(editor, button, panel);
-    const applied = clearEditorColor(editor, selection);
-    if (!applied) {
-      status.textContent = "\u8bf7\u5148\u9009\u4e2d\u5305\u542b\u989c\u8272\u7684\u6587\u5b57\u3002";
-      status.hidden = false;
-      positionEditorColorPopover(button, panel);
-      return;
-    }
-    clearEditorColorSelectionSnapshot(editor);
-    delete editor.__cc98WysiwygLogicalSelection;
-    panel.__cc98ColorSelectionSnapshot = null;
-    panel.hidden = true;
-    button.classList.remove("cc98-rebuild-color-button-open");
-    suppressLegacyEditorColorPickers();
-  });
   presets.querySelectorAll(".cc98-rebuild-color-preset").forEach((preset) => {
     preset.addEventListener("click", () => {
       applyActiveColor(preset.dataset.cc98ColorPreset || "#ff0000");
@@ -17271,14 +15764,13 @@ function ensureEditorColorPopover(editor, button) {
   });
   cancel.addEventListener("click", () => {
     updateEditorColorButtonPreview(button, panel.dataset.cc98PreviousColor || getEditorColorButtonValue(button));
-    clearEditorColorSelectionSnapshot(editor, { restore: true });
-    panel.__cc98ColorSelectionSnapshot = null;
     panel.hidden = true;
     button.classList.remove("cc98-rebuild-color-button-open");
     suppressLegacyEditorColorPickers();
   });
   ok.addEventListener("click", () => {
-    const selection = getStoredEditorColorSelection(editor, button, panel);
+    const textarea = getNativeEditorTextarea(editor);
+    const selection = textarea instanceof HTMLTextAreaElement ? getStoredEditorSelection(button, textarea) : null;
     const color = getColorPopoverValue(panel, button);
     const isGradient = panel.dataset.cc98ColorMode === "gradient";
     const isTransparent = !isGradient && panel.dataset.cc98TransparentSelected === "true";
@@ -17286,21 +15778,14 @@ function ensureEditorColorPopover(editor, button) {
     const applied = isGradient
       ? applyEditorGradient(editor, panel.__cc98GradientStops, selection, gradientDensityValue)
       : applyEditorColor(editor, isTransparent ? "transparent" : color, selection);
-    if (!applied) {
-      status.textContent = isGradient
-        ? "\u8bf7\u5148\u5728\u7f16\u8f91\u5668\u4e2d\u9009\u4e2d\u8981\u5e94\u7528\u6e10\u53d8\u7684\u6587\u5b57\u3002"
-        : "\u9009\u533a\u5df2\u5931\u6548\uff0c\u8bf7\u91cd\u65b0\u9009\u62e9\u6587\u5b57\u540e\u518d\u8bd5\u3002";
+    if (!applied && isGradient) {
+      status.textContent = "\u8bf7\u5148\u5728\u7f16\u8f91\u5668\u4e2d\u9009\u4e2d\u8981\u5e94\u7528\u6e10\u53d8\u7684\u6587\u5b57\u3002";
       status.hidden = false;
       positionEditorColorPopover(button, panel);
       return;
     }
     if (applied && !isTransparent) {
       updateEditorColorButtonPreview(button, color);
-    }
-    if (applied) {
-      clearEditorColorSelectionSnapshot(editor);
-      delete editor.__cc98WysiwygLogicalSelection;
-      panel.__cc98ColorSelectionSnapshot = null;
     }
     panel.hidden = true;
     button.classList.remove("cc98-rebuild-color-button-open");
@@ -17455,12 +15940,7 @@ function isEditorEmojiButtonTarget(target) {
   if (!(target instanceof Element)) {
     return false;
   }
-  if (target.closest(".cc98-rebuild-message-emoji-panel")) {
-    return false;
-  }
-  const control = target.closest(
-    ".ubb-emoji-button, .ubb-button, [data-cc98-emoji-trigger='true']"
-  );
+  const control = target.closest(".ubb-emoji-button, .ubb-button");
   if (!(control instanceof HTMLElement)) {
     return false;
   }
@@ -17540,6 +16020,15 @@ function setEditorEmojiPanelOpen(editor, open) {
   }
 }
 
+function closeEditorEmojiPanelSoon(editor) {
+  if (!(editor instanceof HTMLElement)) {
+    return;
+  }
+  window.setTimeout(() => {
+    setEditorEmojiPanelOpen(editor, false);
+  }, 90);
+}
+
 function dispatchMouseSequence(target) {
   ["pointerdown", "mousedown", "mouseup", "click"].forEach((type) => {
     const EventClass = type.startsWith("pointer") ? PointerEvent : MouseEvent;
@@ -17560,23 +16049,6 @@ function openEditorColorPicker(colorButton, editor = colorButton?.closest?.(".cc
   }
   if (!(editor instanceof HTMLElement)) {
     return false;
-  }
-  // Capture the selection before creating/focusing the detached popover.  A
-  // toolbar click can otherwise collapse a selection at offset 0 (the first
-  // line is especially prone to this), leaving the color action with only a
-  // caret and producing an empty [color] wrapper after the selected text.
-  const existingPanel = colorButton.dataset.cc98ColorPopoverId
-    ? document.getElementById(colorButton.dataset.cc98ColorPopoverId)
-    : null;
-  const existingPanelWasHidden = !(existingPanel instanceof HTMLElement) || existingPanel.hidden;
-  if (existingPanelWasHidden) {
-    clearEditorColorSelectionSnapshot(editor);
-  }
-  if (existingPanelWasHidden || !editor.__cc98ColorSelectionSnapshot) {
-    rememberEditorSelection(editor, colorButton, {
-      preserveNonCollapsed: true,
-      captureColorSelection: true
-    });
   }
   const panel = ensureEditorColorPopover(editor, colorButton);
   const previousColor = getEditorColorButtonValue(colorButton);
@@ -17602,16 +16074,7 @@ function openEditorColorPicker(colorButton, editor = colorButton?.closest?.(".cc
     status.hidden = true;
   }
   updateEditorColorButtonPreview(colorButton, previousColor);
-  // A panel may have been created/replaced above.  If selection capture was
-  // unavailable before that DOM work, make one final attempt using the stored
-  // WYSIWYG range before the popover takes focus.
-  if (!editor.__cc98ColorSelectionSnapshot) {
-    rememberEditorSelection(editor, colorButton, {
-      preserveNonCollapsed: true,
-      captureColorSelection: true
-    });
-  }
-  panel.__cc98ColorSelectionSnapshot = editor.__cc98ColorSelectionSnapshot || null;
+  rememberEditorSelection(editor, colorButton);
   suppressLegacyEditorColorPickers(editor);
   closeEditorColorPopovers(panel);
   panel.hidden = false;
@@ -17690,85 +16153,14 @@ function getExplicitTextColor(node) {
 }
 
 function hasInlineUbbFormatting(text) {
-  return /\[(?:(?:\/?)(?:b|i|u|s|del|color|size|font|align|img|audio|mp3|video|bili|bilibili)(?:=[^\]]+)?|cc98\d{2}|ac(?:\d{2}|\d{4})|[acf]:\d{3}|tb\d{2}|ms\d{2}|em\d{2})\]/i.test(String(text ?? ""));
+  return /\[(?:(?:\/?)(?:b|i|u|s|del|color|size|align|img|audio|mp3|video|bili|bilibili)(?:=[^\]]+)?|cc98\d{2}|ac(?:\d{2}|\d{4})|[acf]:\d{3}|tb\d{2}|ms\d{2}|em\d{2})\]/i.test(String(text ?? ""));
 }
 
 function buildNativeEditorUbbPreview(source) {
   const article = document.createElement("article");
   article.className = "cc98-rebuild-ubb-preview-rendered";
-  const extendedUbb = window.CC98RebornExtendedUbb;
-  if (extendedUbb?.shouldHandle?.(source)) {
-    const rendered = extendedUbb.render(source);
-    if (rendered instanceof HTMLElement) {
-      return rendered;
-    }
-  }
-  // Keep source newlines as explicit BR nodes in the dual editor preview.
-  // This avoids depending only on inherited white-space rules, which can be
-  // overridden by original-editor styles around emoji/media nodes.
-  appendInlineUbbText(article, String(source ?? ""), { preserveLineBreaks: true });
-  return article;
-}
-
-function buildLegacy031UbbPreview(source) {
-  const article = document.createElement("article");
-  article.className = "cc98-rebuild-ubb-preview-rendered";
-  // Keep this path aligned with the shipped 0.3.1 preview renderer. It is a
-  // deliberately simple, read-only fallback for checking the canonical UBB.
   appendInlineUbbText(article, String(source ?? ""));
   return article;
-}
-
-function createLegacy031UbbPreviewPanel() {
-  const panel = createElement("section", "cc98-rebuild-legacy-ubb-preview");
-  panel.hidden = true;
-  panel.setAttribute("role", "region");
-  panel.setAttribute("aria-label", "旧版 UBB 预览");
-
-  const header = createElement("div", "cc98-rebuild-legacy-ubb-preview-header");
-  const title = createElement(
-    "span",
-    "cc98-rebuild-legacy-ubb-preview-title",
-    "旧版 UBB 预览（0.3.1）"
-  );
-  const closeButton = createButton(
-    "cc98-rebuild-legacy-ubb-preview-close",
-    "×",
-    (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      panel.dispatchEvent(new CustomEvent("cc98:legacy-preview-close", { bubbles: true }));
-    }
-  );
-  closeButton.title = "关闭旧版预览";
-  closeButton.setAttribute("aria-label", "关闭旧版预览");
-  header.append(title, closeButton);
-
-  const body = createElement("div", "cc98-rebuild-legacy-ubb-preview-body");
-  body.addEventListener("click", (event) => {
-    if (event.target instanceof Element && event.target.closest("a[href]")) {
-      event.preventDefault();
-    }
-  });
-  panel.append(header, body);
-  return panel;
-}
-
-function renderLegacy031UbbPreview(panel, sourceText) {
-  if (!(panel instanceof HTMLElement)) {
-    return;
-  }
-  const body = panel.querySelector(".cc98-rebuild-legacy-ubb-preview-body");
-  if (!(body instanceof HTMLElement)) {
-    return;
-  }
-  const article = buildLegacy031UbbPreview(sourceText);
-  markInlineUbbStyleClasses(article);
-  strengthenInlineTextStyles(article);
-  markInlineEmojiContainers(article);
-  stabilizeEmojiRendering(article);
-  synchronizeInlineUbbDecorationColors(article);
-  body.replaceChildren(article);
 }
 
 function getEditorSourceText(editor) {
@@ -17845,7 +16237,6 @@ function stabilizeEditorPreviewFormatting(editor) {
         spreadVariable(node, "cc98-rebuild-preview-size", "--cc98-preview-size", normalizedSize);
       }
     });
-    synchronizeInlineUbbDecorationColors(preview);
   });
 }
 
@@ -17946,39 +16337,8 @@ function bindDualUbbPaneDivider(workspace, upperPane, lowerPane, divider) {
     return;
   }
   divider.dataset.cc98DualDividerBound = "true";
-  const readCssPixelValue = (element, property, fallback = 0) => {
-    const value = Number.parseFloat(window.getComputedStyle(element).getPropertyValue(property));
-    return Number.isFinite(value) ? Math.max(0, value) : fallback;
-  };
-  const getMinimumPaneHeight = (pane, fallback) => Math.max(
-    fallback,
-    readCssPixelValue(pane, "min-height", fallback)
-  );
-  const getDividerHeight = () => Math.max(
-    1,
-    divider.getBoundingClientRect().height,
-    readCssPixelValue(divider, "height", 10)
-  );
-  const readPaneHeight = (pane) => {
-    const value = pane.getBoundingClientRect().height;
-    return Number.isFinite(value) ? Math.max(0, value) : 0;
-  };
-  let lastObservedUpperHeight = 0;
-  let lastObservedLowerHeight = 0;
-  const setPaneLayout = (upperHeight, lowerHeight) => {
-    const upper = Math.max(0, Math.round(upperHeight));
-    const lower = Math.max(0, Math.round(lowerHeight));
-    upperPane.style.setProperty("height", `${upper}px`, "important");
-    lowerPane.style.setProperty("height", `${lower}px`, "important");
-    // Keep the grid tracks in step with the two pane boxes.  Auto-sized grid
-    // tracks can otherwise reject an upward drag when a profile editor has a
-    // larger content-based minimum height.
-    workspace.style.setProperty("--cc98-dual-upper-height", `${upper}px`);
-    workspace.style.setProperty("--cc98-dual-lower-height", `${lower}px`);
-    workspace.style.setProperty("--cc98-dual-divider-height", `${Math.round(getDividerHeight())}px`);
-    lastObservedUpperHeight = upper;
-    lastObservedLowerHeight = lower;
-  };
+  const minimumUpperHeight = 180;
+  const minimumLowerHeight = 120;
   const resizeBy = (requestedDelta, initialUpper = null, initialLower = null) => {
     const upperHeight = Number.isFinite(initialUpper)
       ? initialUpper
@@ -17986,77 +16346,14 @@ function bindDualUbbPaneDivider(workspace, upperPane, lowerPane, divider) {
     const lowerHeight = Number.isFinite(initialLower)
       ? initialLower
       : lowerPane.getBoundingClientRect().height;
-    const minimumUpperHeight = getMinimumPaneHeight(upperPane, 180);
-    const minimumLowerHeight = getMinimumPaneHeight(lowerPane, 120);
-    const totalHeight = Math.max(
-      upperHeight + lowerHeight,
-      minimumUpperHeight + minimumLowerHeight
+    const delta = Math.max(
+      minimumUpperHeight - upperHeight,
+      Math.min(lowerHeight - minimumLowerHeight, Number(requestedDelta) || 0)
     );
-    const requestedUpperHeight = upperHeight + (Number(requestedDelta) || 0);
-    const nextUpperHeight = Math.min(
-      totalHeight - minimumLowerHeight,
-      Math.max(minimumUpperHeight, requestedUpperHeight)
-    );
-    const nextLowerHeight = totalHeight - nextUpperHeight;
-    setPaneLayout(nextUpperHeight, nextLowerHeight);
+    upperPane.style.setProperty("height", `${Math.round(upperHeight + delta)}px`, "important");
+    lowerPane.style.setProperty("height", `${Math.round(lowerHeight - delta)}px`, "important");
     workspace.dispatchEvent(new CustomEvent("cc98:dual-editor-resize", { bubbles: true }));
   };
-
-  const rememberCurrentPaneHeights = () => {
-    lastObservedUpperHeight = readPaneHeight(upperPane);
-    lastObservedLowerHeight = readPaneHeight(lowerPane);
-  };
-  const syncLayoutFromNativePaneResize = () => {
-    if (!workspace.isConnected) {
-      return;
-    }
-    if (lowerPane.hidden) {
-      rememberCurrentPaneHeights();
-      return;
-    }
-    const upperHeight = readPaneHeight(upperPane);
-    const lowerHeight = readPaneHeight(lowerPane);
-    if (upperHeight <= 0 || lowerHeight <= 0) {
-      rememberCurrentPaneHeights();
-      return;
-    }
-    const upperChanged = Math.abs(upperHeight - lastObservedUpperHeight) >= 1;
-    const lowerChanged = Math.abs(lowerHeight - lastObservedLowerHeight) >= 1;
-    if (!upperChanged && !lowerChanged) {
-      return;
-    }
-    // A native resize changes the pane box, but not the grid row variables.
-    // Reconcile both rows so the divider and the document flow follow it.
-    setPaneLayout(upperHeight, lowerHeight);
-    workspace.dispatchEvent(new CustomEvent("cc98:dual-editor-resize", { bubbles: true }));
-  };
-  let paneResizeFrame = 0;
-  let paneResizeObserver = null;
-  rememberCurrentPaneHeights();
-  if (typeof ResizeObserver === "function") {
-    paneResizeObserver = new ResizeObserver(() => {
-      if (!workspace.isConnected) {
-        paneResizeObserver?.disconnect?.();
-        return;
-      }
-      if (paneResizeFrame) {
-        window.cancelAnimationFrame(paneResizeFrame);
-      }
-      paneResizeFrame = window.requestAnimationFrame(() => {
-        paneResizeFrame = 0;
-        syncLayoutFromNativePaneResize();
-      });
-    });
-    paneResizeObserver.observe(upperPane);
-    paneResizeObserver.observe(lowerPane);
-    workspace.__cc98DualPaneResizeObserver = paneResizeObserver;
-    workspace.__cc98DualPaneResizeFrame = () => {
-      if (paneResizeFrame) {
-        window.cancelAnimationFrame(paneResizeFrame);
-        paneResizeFrame = 0;
-      }
-    };
-  }
   divider.addEventListener("pointerdown", (event) => {
     if (event.button !== 0 || lowerPane.hidden) {
       return;
@@ -18133,103 +16430,12 @@ function handleNativeDualUbbToolbarControl(editor, target, event) {
   return true;
 }
 
-function ensureNativeDualUbbToolbarControls(editor, state = editor?.__cc98DualUbbState) {
-  if (!(editor instanceof HTMLElement) || !state || !(state.ubbEditor instanceof HTMLElement)) {
-    return;
-  }
-  const toolbar = state.ubbEditor.querySelector(":scope > .ubb-buttons, :scope > .ubb-toolbar")
-    || state.ubbEditor.querySelector(".ubb-buttons, .ubb-toolbar");
-  if (!(toolbar instanceof HTMLElement)) {
-    return;
-  }
-  let fontFamilySelect = toolbar.querySelector(":scope > .cc98-rebuild-editor-font-select");
-  if (!(fontFamilySelect instanceof HTMLSelectElement)) {
-    fontFamilySelect = createEditorFontFamilySelect(
-      editor,
-      "cc98-rebuild-dual-ubb-font-select"
-    );
-  }
-  const fontSizeControl = toolbar.querySelector(
-    ":scope > .ubb-button-fontSize, :scope > .cc98-rebuild-font-size-button"
-  );
-  if (fontSizeControl instanceof HTMLElement) {
-    fontSizeControl.after(fontFamilySelect);
-  } else if (!fontFamilySelect.isConnected) {
-    toolbar.append(fontFamilySelect);
-  }
-  state.fontFamilySelect = fontFamilySelect;
-  const existing = toolbar.querySelector(":scope > .cc98-rebuild-dual-ubb-toolbar-actions");
-  if (existing instanceof HTMLElement) {
-    const legacyPreviewButton = existing.querySelector("[data-cc98-dual-ubb-action='legacy-preview']");
-    const syncButton = existing.querySelector("[data-cc98-dual-ubb-action='sync']");
-    if (legacyPreviewButton instanceof HTMLElement && syncButton instanceof HTMLElement) {
-      state.toolbarActions = existing;
-      state.legacyPreviewButton = legacyPreviewButton;
-      state.syncButton = syncButton;
-      state.updateToolbarState?.();
-      return;
-    }
-    existing.remove();
-  }
-
-  const actions = createElement("span", "cc98-rebuild-dual-ubb-toolbar-actions");
-  const preserveSelection = (control) => {
-    control.addEventListener("pointerdown", (event) => {
-      state.rememberSelection?.({ preserveNonCollapsed: true });
-      event.preventDefault();
-      event.stopPropagation();
-    });
-  };
-  const addAction = (label, title, action, onClick) => {
-    const button = createButton(
-      "cc98-rebuild-dual-ubb-toolbar-button cc98-rebuild-dual-ubb-toolbar-utility",
-      label,
-      (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        onClick(button);
-      }
-    );
-    button.dataset.cc98DualUbbAction = action;
-    button.title = title;
-    button.setAttribute("aria-label", title);
-    preserveSelection(button);
-    actions.append(button);
-    return button;
-  };
-
-  const legacyPreviewButton = addAction(
-    "旧预览",
-    "打开 0.3.1 版 UBB 预览（备用）",
-    "legacy-preview",
-    () => state.toggleLegacyPreview?.()
-  );
-  const syncButton = addAction(
-    "同步",
-    "同步上下编辑区并重新渲染",
-    "sync",
-    (button) => {
-      state.forceSynchronize?.();
-      showRebuiltTransientToast(button, "上下编辑区已同步");
-    }
-  );
-  toolbar.append(actions);
-  state.toolbarActions = actions;
-  state.legacyPreviewButton = legacyPreviewButton;
-  state.syncButton = syncButton;
-  state.updateToolbarState?.();
-}
-
 function teardownNativeDualUbbEditor(editor) {
   const state = editor?.__cc98DualUbbState;
   if (!state) {
     return;
   }
   state.gutterResizeObserver?.disconnect?.();
-  state.workspace?.__cc98DualPaneResizeFrame?.();
-  state.workspace?.__cc98DualPaneResizeObserver?.disconnect?.();
-  state.fontFamilySelect?.remove?.();
-  state.toolbarActions?.remove?.();
   state.workspace?.remove();
   state.ubbEditor?.classList?.remove("cc98-rebuild-dual-ubb-native-shell");
   if (state.textarea instanceof HTMLTextAreaElement) {
@@ -18239,8 +16445,6 @@ function teardownNativeDualUbbEditor(editor) {
     state.textarea.tabIndex = state.originalTabIndex;
   }
   delete editor.__cc98DualUbbState;
-  delete editor.__cc98WysiwygClearColor;
-  delete editor.__cc98WysiwygApplyFontFamily;
 }
 
 function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
@@ -18260,12 +16464,6 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
     "div",
     "cc98-rebuild-dual-ubb-visual cc98-rebuild-profile-signature-wysiwyg"
   );
-  applyImportantStyle(visual, {
-    margin: "5px",
-    padding: "24px 28px",
-    border: "1px solid transparent",
-    "box-sizing": "border-box"
-  });
   visual.contentEditable = "true";
   visual.spellcheck = true;
   visual.setAttribute("role", "textbox");
@@ -18298,8 +16496,7 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
   sourceEditor.dataset.placeholder = "在这里以经典代码形式编辑内容";
   sourceEditor.tabIndex = 0;
   sourcePane.append(sourceGutter, sourceEditor);
-  const legacyPreview = createLegacy031UbbPreviewPanel();
-  workspace.append(visualPane, divider, sourcePane, legacyPreview);
+  workspace.append(visualPane, divider, sourcePane);
 
   const state = {
     editor,
@@ -18313,7 +16510,6 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
     sourcePane,
     sourceGutter,
     sourceEditor,
-    legacyPreview,
     activeSurface: "visual",
     sourceSelection: null,
     syncingNativeSource: false,
@@ -18328,12 +16524,6 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
     const textLength = String(visual.textContent || "").replace(/\u200b/g, "").length;
     visualMeta.textContent = `${textLength} 字符`;
   };
-  const refreshLegacyPreview = (force = false) => {
-    if (!force && legacyPreview.hidden) {
-      return;
-    }
-    renderLegacy031UbbPreview(legacyPreview, textarea.value);
-  };
   let refreshSourceGutter = null;
   const renderSource = (preserveSelection = true) => {
     renderEditableProfileSignatureSource(sourceEditor, textarea.value, preserveSelection);
@@ -18344,16 +16534,14 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
     updateVisualMeta();
   };
   const writeNativeSource = (nextValue) => {
-    const normalized = String(nextValue ?? "").replace(/[\u200b\uFEFF]/g, "");
+    const normalized = String(nextValue ?? "");
     state.lastNativeValue = normalized;
     if (textarea.value === normalized) {
-      refreshLegacyPreview();
       return;
     }
     state.syncingNativeSource = true;
     setNativeMessageInputValue(textarea, normalized);
     state.syncingNativeSource = false;
-    refreshLegacyPreview();
   };
   const scheduleSourceHighlight = (immediate = false) => {
     if (state.sourceHighlightFrame) {
@@ -18370,33 +16558,18 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
       state.sourceHighlightFrame = window.requestAnimationFrame(run);
     }
   };
-  const rememberSelection = (options = {}) => {
-    const lockedColorSelection = editor.__cc98ColorSelectionSnapshot;
-    if (lockedColorSelection?.locked && lockedColorSelection.surface === "source") {
+  const rememberSelection = () => {
+    const sourceSelection = getProfileSignatureSourceSelection(sourceEditor);
+    if (sourceSelection) {
       state.activeSurface = "source";
-      state.sourceSelection = lockedColorSelection;
-      return lockedColorSelection;
-    }
-    const currentSourceSelection = getProfileSignatureSourceSelection(sourceEditor);
-    if (currentSourceSelection) {
-      state.activeSurface = "source";
-      const previousSourceSelection = state.sourceSelection;
-      const effectiveSourceSelection = (
-        options.preserveNonCollapsed
-        && previousSourceSelection
-        && previousSourceSelection.start !== previousSourceSelection.end
-        && currentSourceSelection.start === currentSourceSelection.end
-      ) ? previousSourceSelection : currentSourceSelection;
-      state.sourceSelection = effectiveSourceSelection;
-      if (options.captureColorSelection) {
-        captureEditorColorSourceSelection(editor, textarea, effectiveSourceSelection);
-      }
-      return effectiveSourceSelection;
+      state.sourceSelection = sourceSelection;
+      return sourceSelection;
     }
     const visualRange = getProfileSignatureWysiwygRange(visual);
     if (visualRange) {
       state.activeSurface = "visual";
-      return rememberProfileSignatureWysiwygRange(editor, visual, options) || visualRange;
+      rememberProfileSignatureWysiwygRange(editor, visual);
+      return visualRange;
     }
     return null;
   };
@@ -18404,25 +16577,18 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
     state.lastNativeValue = textarea.value;
     renderVisual();
     renderSource(preserveSourceSelection);
-    refreshLegacyPreview();
     if (state.activeSurface === "visual") {
       editor.__cc98WysiwygRange = null;
     }
   };
-  const getVisualDeletionNormalization = createWysiwygDeletionInputTracker(visual);
-  const syncFromVisual = (normalizeEmptyFormatting = false) => {
+  const syncFromVisual = () => {
     if (state.visualIsComposing) {
       return;
     }
-    if (normalizeEmptyFormatting) {
-      normalizeEmptyWysiwygFormatting(visual);
-    }
-    stabilizeDualUbbLeadingEmojiLayout(visual);
     const nextValue = serializeProfileSignatureWysiwyg(visual);
     writeNativeSource(nextValue);
     updateVisualMeta();
     renderSource(false);
-    rememberProfileSignatureWysiwygRange(editor, visual);
     scheduleNativeEditorDraftSave(editor);
   };
   const syncFromSource = (rehighlight = !state.sourceIsComposing) => {
@@ -18437,40 +16603,6 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
     }
     scheduleNativeEditorDraftSave(editor);
   };
-  const forceSynchronize = () => {
-    const sourceActive = state.activeSurface === "source"
-      || document.activeElement === sourceEditor
-      || sourceEditor.contains(document.activeElement);
-    const nextValue = sourceActive
-      ? getProfileSignatureSourceText(sourceEditor)
-      : serializeProfileSignatureWysiwyg(visual);
-    writeNativeSource(nextValue);
-    state.lastNativeValue = textarea.value;
-    renderVisual();
-    renderSource(sourceActive);
-    refreshLegacyPreview(true);
-    editor.__cc98WysiwygRange = null;
-    scheduleNativeEditorDraftSave(editor);
-    return textarea.value;
-  };
-  const updateToolbarState = () => {
-    const open = !legacyPreview.hidden;
-    const button = state.legacyPreviewButton;
-    if (button instanceof HTMLElement) {
-      button.classList.toggle("is-active", open);
-      button.setAttribute("aria-pressed", String(open));
-    }
-  };
-  const setLegacyPreviewOpen = (open) => {
-    const shouldOpen = Boolean(open);
-    if (shouldOpen) {
-      forceSynchronize();
-    }
-    legacyPreview.hidden = !shouldOpen;
-    workspace.classList.toggle("is-legacy-preview-open", shouldOpen);
-    updateToolbarState();
-  };
-  const toggleLegacyPreview = () => setLegacyPreviewOpen(legacyPreview.hidden);
   const getSourceSelection = () => {
     const current = getProfileSignatureSourceSelection(sourceEditor);
     if (current) {
@@ -18482,31 +16614,16 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
       end: textarea.value.length
     };
   };
-  const replaceSourceSelection = (before, after = "", requireSelection = false, selectionOverride = null) => {
-    const sourceValue = String(textarea.value || "").replace(/[\u200b\uFEFF]/g, "");
-    const resolvedSelection = selectionOverride
-      ? getEditorColorSourceSelectionForApply(selectionOverride, sourceValue)
-      : null;
-    if (
-      selectionOverride?.surface === "visual"
-      && normalizeEditorColorSelectionText(selectionOverride.selectedText)
-      && !resolvedSelection
-    ) {
-      return false;
-    }
-    const selection = resolvedSelection || selectionOverride || getSourceSelection();
-    const start = Math.max(0, Math.min(sourceValue.length, Number(selection?.start) || 0));
-    const end = Math.max(start, Math.min(sourceValue.length, Number(selection?.end) || start));
-    const selected = sourceValue.slice(start, end);
+  const replaceSourceSelection = (before, after = "", requireSelection = false) => {
+    const selection = getSourceSelection();
+    const start = Math.max(0, Math.min(textarea.value.length, selection.start));
+    const end = Math.max(start, Math.min(textarea.value.length, selection.end));
+    const selected = textarea.value.slice(start, end);
     if (requireSelection && !selected) {
       return false;
     }
-    if (selectionOverride?.surface === "visual") {
-      clearEditorColorSelectionSnapshot(editor);
-      delete editor.__cc98WysiwygLogicalSelection;
-    }
     const inserted = `${before}${selected}${after}`;
-    const nextValue = `${sourceValue.slice(0, start)}${inserted}${sourceValue.slice(end)}`;
+    const nextValue = `${textarea.value.slice(0, start)}${inserted}${textarea.value.slice(end)}`;
     writeNativeSource(nextValue);
     renderProfileSignatureWysiwygFromUbb(visual, nextValue);
     updateVisualMeta();
@@ -18548,64 +16665,6 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
     return replaceSourceSelection(`[${tag}${suffix}]`, `[/${tag}]`, requireSelection);
   };
   const insertSourceText = (text) => replaceSourceWithText(String(text || ""));
-  const getExtendedUbbSourceSelection = () => {
-    const sourceValue = String(textarea.value || "").replace(/[\u200b\uFEFF]/g, "");
-    const syntaxToolsCore = window.CC98RebornExtendedUbbCore;
-    const liveSourceSelection = getProfileSignatureSourceSelection(sourceEditor);
-    const savedSourceSelection = state.sourceSelection;
-    if (liveSourceSelection || savedSourceSelection) {
-      const sourceSelection = syntaxToolsCore?.preferSavedSelection
-        ? syntaxToolsCore.preferSavedSelection(liveSourceSelection, savedSourceSelection)
-        : (liveSourceSelection || savedSourceSelection);
-      if (sourceSelection && state.activeSurface === "source") {
-        return { ...sourceSelection, surface: "source" };
-      }
-    }
-    const liveVisualRange = getProfileSignatureWysiwygRange(visual);
-    const liveVisualSelection = liveVisualRange
-      ? buildEditorColorVisualLogicalSelection(editor, visual, liveVisualRange)
-      : null;
-    const savedVisualSelection = editor.__cc98WysiwygLogicalSelection
-      || editor.__cc98ColorSelectionSnapshot;
-    const visualSelection = syntaxToolsCore?.preferSavedSelection
-      ? syntaxToolsCore.preferSavedSelection(liveVisualSelection, savedVisualSelection)
-      : (liveVisualSelection || savedVisualSelection);
-    const resolvedVisualSelection = visualSelection
-      ? getEditorColorSourceSelectionForApply(visualSelection, sourceValue)
-      : null;
-    if (resolvedVisualSelection) {
-      return { ...resolvedVisualSelection, surface: "visual" };
-    }
-    const fallback = savedSourceSelection || liveSourceSelection || getSourceSelection();
-    return { ...fallback, surface: "source" };
-  };
-  const applyExtendedUbbSourceEdit = (options = {}) => {
-    const sourceValue = String(textarea.value || "").replace(/[\u200b\uFEFF]/g, "");
-    const selection = getExtendedUbbSourceSelection();
-    const buildSourceEdit = window.CC98RebornExtendedUbbCore?.buildSourceEdit;
-    if (typeof buildSourceEdit !== "function") {
-      return { applied: false, reason: "core-unavailable", selected: "", start: 0, end: 0 };
-    }
-    const editPlan = buildSourceEdit(sourceValue, selection, options);
-    if (!editPlan?.applied) {
-      return editPlan;
-    }
-    const { selected, start, end, nextValue, nextSelection } = editPlan;
-    if (selection.surface === "visual") {
-      clearEditorColorSelectionSnapshot(editor);
-      delete editor.__cc98WysiwygLogicalSelection;
-    }
-    writeNativeSource(nextValue);
-    renderProfileSignatureWysiwygFromUbb(visual, nextValue);
-    updateVisualMeta();
-    renderSource(false);
-    sourceEditor.focus({ preventScroll: true });
-    restoreProfileSignatureSourceSelection(sourceEditor, nextSelection);
-    state.activeSurface = "source";
-    state.sourceSelection = nextSelection;
-    scheduleNativeEditorDraftSave(editor);
-    return { applied: true, selected, start, end, nextValue, nextSelection };
-  };
   const applyToolbarCommand = ({ tag, value = "", command = "" }) => {
     if (isNativeDualUbbSourceActive(state)) {
       return applySourceTag(tag, value);
@@ -18697,87 +16756,16 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
   state.rememberSelection = rememberSelection;
   state.applyToolbarCommand = applyToolbarCommand;
   state.applySourceTag = applySourceTag;
-  state.extendedUbbApplySourceEdit = applyExtendedUbbSourceEdit;
-  state.extendedUbbGetSourceSelection = getExtendedUbbSourceSelection;
-  state.forceSynchronize = forceSynchronize;
-  state.setLegacyPreviewOpen = setLegacyPreviewOpen;
-  state.toggleLegacyPreview = toggleLegacyPreview;
-  state.updateToolbarState = updateToolbarState;
 
   editor.__cc98DualUbbState = state;
   editor.__cc98WysiwygSyncSource = syncFromVisual;
   editor.__cc98WysiwygRememberSelection = rememberSelection;
-  editor.__cc98WysiwygApplyColor = (color, selectionOverride = null) => {
+  editor.__cc98WysiwygApplyColor = (color) => {
     const normalized = String(color || "").trim().toLowerCase();
     if (normalized !== "transparent" && !/^#[0-9a-f]{6}$/i.test(normalized)) {
       return false;
     }
-    const selection = selectionOverride
-      || editor.__cc98ColorSelectionSnapshot
-      || promoteEditorColorLogicalSelection(editor, visual, textarea.value);
-    if (selection?.surface === "source") {
-      return replaceSourceSelection(
-        `[color=${normalized}]`,
-        "[/color]",
-        false,
-        selection
-      );
-    }
-    if (selection?.surface === "visual") {
-      const sourceSelection = getEditorColorSourceSelectionForApply(selection, textarea.value);
-      if (isUsableEditorColorSourceSelection(selection, textarea.value, sourceSelection)) {
-        return replaceSourceSelection(
-          `[color=${normalized}]`,
-          "[/color]",
-          false,
-          selection
-        );
-      }
-      const markerRange = getEditorColorSelectionMarkerRange(selection);
-      const expectedSelection = getEditorColorSelectionExpectedSourceText(selection);
-      if (
-        expectedSelection.replace(/\s|\[[^\]]+\]/g, "")
-        && (!markerRange || !hasMeaningfulProfileSignatureWysiwygRange(markerRange))
-      ) {
-        return false;
-      }
-      state.activeSurface = "visual";
-      return applyProfileSignatureWysiwygInlineTag(
-        editor,
-        visual,
-        "color",
-        normalized,
-        { color: normalized }
-      );
-    }
     return applyInlineTag("color", normalized, { color: normalized });
-  };
-  editor.__cc98WysiwygClearColor = (selectionOverride = null) => {
-    if (isNativeDualUbbSourceActive(state)) {
-      const selection = selectionOverride?.surface === "source"
-        ? selectionOverride
-        : getSourceSelection();
-      const result = removeEditorColorTagsFromSource(
-        textarea.value,
-        selection.start,
-        selection.end
-      );
-      if (!result.changed) {
-        return false;
-      }
-      writeNativeSource(result.value);
-      renderProfileSignatureWysiwygFromUbb(visual, result.value);
-      updateVisualMeta();
-      renderSource(false);
-      const nextSelection = { start: result.start, end: result.end };
-      sourceEditor.focus({ preventScroll: true });
-      restoreProfileSignatureSourceSelection(sourceEditor, nextSelection);
-      state.activeSurface = "source";
-      state.sourceSelection = nextSelection;
-      scheduleNativeEditorDraftSave(editor);
-      return true;
-    }
-    return clearProfileSignatureWysiwygColor(editor, visual);
   };
   editor.__cc98WysiwygApplyGradient = applyGradient;
   editor.__cc98WysiwygApplyFontSize = (size) => {
@@ -18790,12 +16778,6 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
       )
       : false;
   };
-  editor.__cc98WysiwygApplyFontFamily = (fontFamily) => {
-    const normalized = normalizeEditorFontFamilyValue(fontFamily);
-    return normalized
-      ? applyInlineTag("font", normalized, { "font-family": normalized })
-      : false;
-  };
   editor.__cc98WysiwygInsertEmoji = insertEmoji;
   editor.__cc98WysiwygInsertLink = insertLink;
   editor.__cc98WysiwygInsertMedia = insertMedia;
@@ -18806,10 +16788,6 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
   textarea.setAttribute("aria-hidden", "true");
   ubbEditor.classList.add("cc98-rebuild-dual-ubb-native-shell");
   ubbEditor.after(workspace);
-  legacyPreview.addEventListener("cc98:legacy-preview-close", () => {
-    setLegacyPreviewOpen(false);
-  });
-  ensureNativeDualUbbToolbarControls(editor, state);
   bindDualUbbPaneDivider(workspace, visualPane, sourcePane, divider);
   refreshSourceGutter = bindDualUbbLogicalLineGutter(
     sourceGutter,
@@ -18870,7 +16848,7 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
   });
   visual.addEventListener("focus", () => {
     state.activeSurface = "visual";
-    rememberProfileSignatureWysiwygRange(editor, visual, { preserveNonCollapsed: true });
+    rememberProfileSignatureWysiwygRange(editor, visual);
   });
   ["keyup", "mouseup"].forEach((type) => {
     visual.addEventListener(type, () => {
@@ -18883,11 +16861,9 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
   });
   visual.addEventListener("compositionend", () => {
     state.visualIsComposing = false;
-    syncFromVisual(false);
+    syncFromVisual();
   });
-  visual.addEventListener("input", (event) => {
-    syncFromVisual(getVisualDeletionNormalization(event));
-  });
+  visual.addEventListener("input", syncFromVisual);
   visual.addEventListener("paste", (event) => {
     const plainText = event.clipboardData?.getData("text/plain");
     if (typeof plainText !== "string") {
@@ -18897,7 +16873,7 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
     restoreProfileSignatureWysiwygRange(editor, visual);
     document.execCommand("insertText", false, plainText);
     rememberProfileSignatureWysiwygRange(editor, visual);
-    syncFromVisual(false);
+    syncFromVisual();
   });
   visual.addEventListener("click", (event) => {
     if (event.target instanceof Element && event.target.closest("a[href]")) {
@@ -18956,7 +16932,6 @@ function stabilizeNativeDualUbbEditor(editor) {
     && existingState.workspace?.isConnected
   ) {
     existingState.workspace.hidden = false;
-    ensureNativeDualUbbToolbarControls(editor, existingState);
     if (
       !existingState.sourceIsComposing
       && !existingState.visualIsComposing
@@ -19096,21 +17071,16 @@ function bindNativeEditorStabilizer(editor) {
     }
     if (isEditorEmojiButtonTarget(event.target)) {
       editor.__cc98DualUbbState?.rememberSelection?.();
-      stopNativeEditorToolbarEvent(event);
+      event.preventDefault();
+      event.stopPropagation();
       hideNativeEditorLegacyEmojiPanel(editor);
       const currentPanel = editor.querySelector(":scope > .cc98-rebuild-message-emoji-panel");
       const shouldOpen = !(currentPanel instanceof HTMLElement) || currentPanel.hidden;
-      const pointerToggle = {
-        pointerId: Number.isFinite(event.pointerId) ? event.pointerId : null,
-        startedAt: Date.now()
-      };
-      editor.__cc98EmojiPointerToggle = pointerToggle;
+      editor.dataset.cc98EmojiPointerToggle = shouldOpen ? "open" : "close";
       setEditorEmojiPanelOpen(editor, shouldOpen);
       window.setTimeout(() => {
-        if (editor.__cc98EmojiPointerToggle === pointerToggle) {
-          delete editor.__cc98EmojiPointerToggle;
-        }
-      }, 5000);
+        delete editor.dataset.cc98EmojiPointerToggle;
+      }, 160);
       return;
     }
     if (!event.target?.closest?.(".cc98-rebuild-message-emoji-panel")) {
@@ -19140,9 +17110,6 @@ function bindNativeEditorStabilizer(editor) {
     event.stopPropagation();
     openEditorColorPicker(colorButton, editor);
   }, true);
-  editor.addEventListener("pointercancel", () => {
-    delete editor.__cc98EmojiPointerToggle;
-  }, true);
   editor.addEventListener("click", (event) => {
     if (deferMarkdownPreviewUntilInputSettles(editor, event)) {
       return;
@@ -19162,15 +17129,17 @@ function bindNativeEditorStabilizer(editor) {
       return;
     }
     if (event.target?.closest?.(".cc98-rebuild-message-emoji-panel img")) {
+      closeEditorEmojiPanelSoon(editor);
       return;
     }
     if (event.target?.closest?.(".cc98-rebuild-message-emoji-panel")) {
       return;
     }
     if (isEditorEmojiButtonTarget(event.target)) {
-      stopNativeEditorToolbarEvent(event);
-      if (editor.__cc98EmojiPointerToggle) {
-        delete editor.__cc98EmojiPointerToggle;
+      event.preventDefault();
+      event.stopPropagation();
+      if (editor.dataset.cc98EmojiPointerToggle) {
+        delete editor.dataset.cc98EmojiPointerToggle;
         scheduleNativeEditorStabilize(editor);
         return;
       }
@@ -19255,10 +17224,6 @@ function renderEditorPage(app) {
     return;
   }
 
-  if (data.editor.dataset.cc98NativeSubmitReleased === "true") {
-    return;
-  }
-
   rememberReparentedNativeNode(data.editor);
   bindNativeEditorStabilizer(data.editor);
   app.append(data.editor);
@@ -19266,7 +17231,7 @@ function renderEditorPage(app) {
 
 function renderPostReplyEditor(app) {
   const reply = document.querySelector("#sendTopicInfo");
-  if (!reply || reply.closest("#cc98-comfort-app") || reply.dataset.cc98NativeSubmitReleased === "true") {
+  if (!reply || reply.closest("#cc98-comfort-app")) {
     return;
   }
   rememberReparentedNativeNode(reply);
@@ -19298,7 +17263,7 @@ function renderMessagePage(app) {
   if (!source) {
     const fallback = createElement("section", "cc98-rebuild-empty-state");
     fallback.append(createElement("h2", "", "消息页面还没有加载完成"));
-    fallback.append(createElement("p", "", "稍后会自动更新，也可以点击顶部同步。"));
+    fallback.append(createElement("p", "", "稍后会自动更新，也可以点击刷新。"));
     app.append(fallback);
     return;
   }
@@ -20062,7 +18027,7 @@ function stabilizePrivateMessageComposer(source, nativeInput) {
   addActionButton("影", "插入视频", () => insertPrivateMessageTaggedUrl(textarea, "video", "请输入视频地址"));
   addActionButton("Bili", "插入 Bilibili 视频", () => insertPrivateMessageTaggedUrl(textarea, "bilibili", "请输入 Bilibili 地址或 BV 号"));
   addActionButton("音", "插入音频", () => insertPrivateMessageTaggedUrl(textarea, "audio", "请输入音频地址"));
-  const emojiButton = addActionButton("☺", "插入表情", (event) => {
+  addActionButton("☺", "插入表情", (event) => {
     const panel = ensurePrivateMessageEmojiPanel(editor, textarea);
     if (panel instanceof HTMLElement) {
       const willOpen = panel.hidden;
@@ -20076,7 +18041,6 @@ function stabilizePrivateMessageComposer(source, nativeInput) {
       }
     }
   });
-  emojiButton.dataset.cc98EmojiTrigger = "true";
   addActionButton("预", "预览", () => {
     const willShow = preview.hidden;
     if (willShow) {
@@ -20178,26 +18142,12 @@ function stabilizePrivateMessageComposer(source, nativeInput) {
   syncToNative();
 }
 
-function clearMessageTitleSync() {
+function bindMessageTitleSync(source, heroTitle, heroTop) {
   messageTitleObserver?.disconnect();
   messageTitleObserver = null;
-  if (messageTitleSource && messageTitleClickHandler) {
-    messageTitleSource.removeEventListener("click", messageTitleClickHandler, true);
-  }
-  messageTitleSource = null;
-  messageTitleClickHandler = null;
-  window.clearTimeout(messageTitleSyncTimer);
-  window.clearTimeout(messageTitleLateSyncTimer);
-  messageTitleSyncTimer = null;
-  messageTitleLateSyncTimer = null;
-}
-
-function bindMessageTitleSync(source, heroTitle, heroTop) {
-  clearMessageTitleSync();
   if (!source || !heroTitle) {
     return;
   }
-  messageTitleSource = source;
 
   const syncTitle = () => {
     const title = getMessagePageTitle(source);
@@ -20206,10 +18156,10 @@ function bindMessageTitleSync(source, heroTitle, heroTop) {
     }
   };
 
+  let titleSyncTimer = null;
   const scheduleTitleSync = (delay = 80) => {
-    window.clearTimeout(messageTitleSyncTimer);
-    messageTitleSyncTimer = window.setTimeout(() => {
-      messageTitleSyncTimer = null;
+    window.clearTimeout(titleSyncTimer);
+    titleSyncTimer = window.setTimeout(() => {
       syncTitle();
       syncMessageReadAllProxy(source, heroTop);
       stabilizeNativeMessageSurfaces(source);
@@ -20217,7 +18167,7 @@ function bindMessageTitleSync(source, heroTitle, heroTop) {
     }, delay);
   };
 
-  messageTitleClickHandler = (event) => {
+  source.addEventListener("click", (event) => {
     const person = event.target?.closest?.(".message-message-person");
     if (!person || !source.contains(person)) {
       return;
@@ -20227,13 +18177,8 @@ function bindMessageTitleSync(source, heroTitle, heroTop) {
       heroTitle.textContent = `\u4e0e ${name} \u7684\u79c1\u4fe1`;
     }
     scheduleTitleSync(180);
-    window.clearTimeout(messageTitleLateSyncTimer);
-    messageTitleLateSyncTimer = window.setTimeout(() => {
-      messageTitleLateSyncTimer = null;
-      syncTitle();
-    }, 650);
-  };
-  source.addEventListener("click", messageTitleClickHandler, true);
+    window.setTimeout(syncTitle, 650);
+  }, true);
 
   messageTitleObserver = new MutationObserver(() => scheduleTitleSync());
   messageTitleObserver.observe(source, { childList: true, subtree: true, characterData: true });
@@ -20332,7 +18277,7 @@ function renderSignInPage(app) {
   if (!source) {
     const fallback = createElement("section", "cc98-rebuild-empty-state");
     fallback.append(createElement("h2", "", "签到页面还没有加载完成"));
-    fallback.append(createElement("p", "", "稍后会自动更新，也可以点击顶部同步。"));
+    fallback.append(createElement("p", "", "稍后会自动更新，也可以点击刷新。"));
     app.append(fallback);
     return;
   }
@@ -20426,7 +18371,7 @@ function renderLoginPage(app) {
   if (!login) {
     const fallback = createElement("section", "cc98-rebuild-empty-state");
     fallback.append(createElement("h2", "", "登录页还没有加载完成"));
-    fallback.append(createElement("p", "", "稍后会自动同步重建，也可以点击顶部同步。"));
+    fallback.append(createElement("p", "", "稍后会自动刷新重建，也可以点击顶部刷新。"));
     app.append(fallback);
     return;
   }
@@ -20891,8 +18836,8 @@ function insertProfileSignatureTaggedUrl(textarea, tag, label) {
   insertPrivateMessageText(textarea, `[${tag}]${url}[/${tag}]`);
 }
 
-const PROFILE_SIGNATURE_UBB_CONTAINER_TAG_SOURCE = String.raw`\[(\/?)(b|i|u|s|del|url|color|size|font|align|audio|mp3|video|bili|bilibili)(?:=[^\]]+)?\]`;
-const PROFILE_SIGNATURE_UBB_SYNTAX_TOKEN_SOURCE = String.raw`\[(\/?)(b|i|u|s|del|url|color|size|font|align|audio|mp3|video|bili|bilibili|img)(?:=([^\]]+))?\]|\[(cc98\d{2}|ac(?:\d{2}|\d{4})|[acf]:\d{3}|tb\d{2}|ms\d{2}|em\d{2})\]`;
+const PROFILE_SIGNATURE_UBB_CONTAINER_TAG_SOURCE = String.raw`\[(\/?)(b|i|u|s|del|url|color|size|align|audio|mp3|video|bili|bilibili)(?:=[^\]]+)?\]`;
+const PROFILE_SIGNATURE_UBB_SYNTAX_TOKEN_SOURCE = String.raw`\[(\/?)(b|i|u|s|del|url|color|size|align|audio|mp3|video|bili|bilibili|img)(?:=([^\]]+))?\]|\[(cc98\d{2}|ac(?:\d{2}|\d{4})|[acf]:\d{3}|tb\d{2}|ms\d{2}|em\d{2})\]`;
 
 function updateProfileSignatureUbbStack(stack, isClosing, tag) {
   const normalizedTag = String(tag || "").toLowerCase();
@@ -21000,17 +18945,6 @@ function renderProfileSignatureSyntaxLayer(layer, source) {
     return [];
   }
   const value = String(source ?? "").replace(/\r\n?/g, "\n");
-  // Keep the empty source truly empty.  The syntax layer uses a pseudo-element
-  // for its placeholder; inserting the usual zero-width boundary marker here
-  // turns that placeholder into a real (and selectable) text node, which moves
-  // the caret to the right of the hint on an empty editor.
-  if (!value) {
-    if (layer.__cc98SignatureSyntaxSource !== value || layer.childNodes.length > 0) {
-      layer.__cc98SignatureSyntaxSource = value;
-      layer.replaceChildren();
-    }
-    return [];
-  }
   if (layer.__cc98SignatureSyntaxSource === value) {
     return [...layer.querySelectorAll(".cc98-rebuild-profile-signature-syntax-line")];
   }
@@ -21072,7 +19006,7 @@ function getProfileSignatureSourceText(sourceEditor) {
   }
   return String(sourceEditor.textContent || "")
     .replace(/\r\n?/g, "\n")
-    .replace(/[\u200b\uFEFF]/g, "");
+    .replace(/\u200b/g, "");
 }
 
 function getProfileSignatureSourceSelection(sourceEditor) {
@@ -21096,7 +19030,7 @@ function getProfileSignatureSourceSelection(sourceEditor) {
     } catch {
       measure.collapse(false);
     }
-    return measure.toString().replace(/[\u200b\uFEFF]/g, "").length;
+    return measure.toString().replace(/\u200b/g, "").length;
   };
   return {
     start: offsetTo(range.startContainer, range.startOffset),
@@ -21111,7 +19045,7 @@ function resolveProfileSignatureSourceOffset(sourceEditor, targetOffset, preferN
   let lastTextNode = null;
   while (walker.nextNode()) {
     const textNode = walker.currentNode;
-    const textLength = String(textNode.nodeValue || "").replace(/[\u200b\uFEFF]/g, "").length;
+    const textLength = String(textNode.nodeValue || "").replace(/\u200b/g, "").length;
     lastTextNode = textNode;
     const isNeutralBoundary = textNode.parentElement?.classList?.contains(
       "cc98-rebuild-profile-signature-syntax-boundary"
@@ -21339,25 +19273,6 @@ function isProfileSignatureWysiwygBlock(node) {
   return /^(?:address|article|aside|blockquote|div|footer|h[1-6]|header|main|nav|p|pre|section)$/i.test(node.tagName);
 }
 
-function isProfileSignatureWysiwygPlaceholderBlock(node) {
-  if (!isProfileSignatureWysiwygBlock(node)) {
-    return false;
-  }
-  if (
-    node.dataset.cc98UbbTag
-    || node.dataset.cc98LocalUbbTag
-    || node.hasAttribute("data-cc98-local-ubb-source")
-  ) {
-    return false;
-  }
-  const children = [...node.childNodes].filter((child) => {
-    return !(child instanceof Text)
-      || Boolean(String(child.nodeValue || "").replace(/[\u200b\uFEFF]/g, ""));
-  });
-  return children.length === 0
-    || (children.length === 1 && children[0] instanceof HTMLBRElement);
-}
-
 function wrapProfileSignatureUbb(tag, value, content) {
   const normalizedTag = String(tag || "").toLowerCase();
   if (!normalizedTag) {
@@ -21370,34 +19285,15 @@ function wrapProfileSignatureUbb(tag, value, content) {
 function serializeProfileSignatureWysiwygChildren(parent) {
   const children = [...(parent?.childNodes || [])];
   let output = "";
-  let previousWasBlock = false;
-  let previousWasPlaceholder = false;
-  children.forEach((child) => {
+  children.forEach((child, index) => {
     const block = isProfileSignatureWysiwygBlock(child);
-    const placeholder = block && isProfileSignatureWysiwygPlaceholderBlock(child);
-    if (block) {
-      if (previousWasBlock) {
-        if (!output.endsWith("\n") || previousWasPlaceholder) {
-          output += "\n";
-        }
-      } else if (output && !output.endsWith("\n")) {
-        output += "\n";
-      }
-      if (!placeholder) {
-        output += serializeProfileSignatureWysiwygNode(child);
-      }
-    } else {
-      if (
-        previousWasBlock
-        && !(child instanceof HTMLBRElement)
-        && !output.endsWith("\n")
-      ) {
-        output += "\n";
-      }
-      output += serializeProfileSignatureWysiwygNode(child);
+    if (block && output && !output.endsWith("\n")) {
+      output += "\n";
     }
-    previousWasBlock = block;
-    previousWasPlaceholder = placeholder;
+    output += serializeProfileSignatureWysiwygNode(child);
+    if (block && index < children.length - 1 && !output.endsWith("\n")) {
+      output += "\n";
+    }
   });
   return output;
 }
@@ -21405,21 +19301,11 @@ function serializeProfileSignatureWysiwygChildren(parent) {
 function serializeProfileSignatureWysiwygNode(node) {
   if (node instanceof Text) {
     return String(node.nodeValue || "")
-      .replace(/[\u200b\uFEFF]/g, "")
+      .replace(/\u200b/g, "")
       .replace(/\u00a0/g, " ");
   }
   if (!(node instanceof HTMLElement)) {
     return "";
-  }
-
-  const extendedRawUbbSource = node.getAttribute("data-cc98-local-ubb-source");
-  if (extendedRawUbbSource !== null) {
-    return extendedRawUbbSource;
-  }
-
-  const colorSelectionMarker = getEditorColorSelectionMarkerText(node);
-  if (colorSelectionMarker) {
-    return colorSelectionMarker;
   }
 
   const emotionTag = node.dataset.cc98UbbEmotionTag;
@@ -21443,35 +19329,7 @@ function serializeProfileSignatureWysiwygNode(node) {
   }
 
   let content = serializeProfileSignatureWysiwygChildren(node);
-  const extendedUbbTag = String(node.dataset.cc98LocalUbbTag || "").toLowerCase();
-  if (extendedUbbTag === "code") {
-    const codeLines = [...node.querySelectorAll(":scope > ol > li")];
-    const codeContent = codeLines
-      .map((line) => serializeProfileSignatureWysiwygChildren(line).replace(/\n+$/g, ""))
-      .join("\n");
-    return wrapProfileSignatureUbb("code", "", codeContent);
-  }
-  if (extendedUbbTag === "md") {
-    const serializeMarkdown = window.CC98RebornExtendedUbb?.serializeEditableMarkdown;
-    const markdownContent = typeof serializeMarkdown === "function"
-      ? serializeMarkdown(node)
-      : String(node.innerText || node.textContent || "").replace(/\r\n?/g, "\n");
-    return wrapProfileSignatureUbb("md", "", markdownContent);
-  }
-  if (extendedUbbTag) {
-    return wrapProfileSignatureUbb(extendedUbbTag, node.dataset.cc98LocalUbbValue || "", content);
-  }
-  // An empty color wrapper is only a caret/typing helper.  It must not leak
-  // into the native UBB value as `[color]​[/color]` (or as an empty wrapper
-  // after a toolbar selection is lost).
-  if (
-    explicitTag === "color"
-    && !content.replace(/[\u200b\uFEFF]/g, "")
-    && !node.querySelector("img, audio, video, iframe, object, embed")
-  ) {
-    return "";
-  }
-  if (explicitTag && /^(?:b|i|u|s|del|url|color|size|font|align|replyview)$/i.test(explicitTag)) {
+  if (explicitTag && /^(?:b|i|u|s|del|url|color|size|align|replyview)$/i.test(explicitTag)) {
     return wrapProfileSignatureUbb(explicitTag, explicitValue, content);
   }
 
@@ -21524,15 +19382,11 @@ function serializeProfileSignatureWysiwygNode(node) {
 function serializeProfileSignatureWysiwyg(root) {
   const output = serializeProfileSignatureWysiwygChildren(root)
     .replace(/\r\n?/g, "\n")
-    .replace(/[\u200b\uFEFF]/g, "")
-    .replace(/\uE000cc98-color-(?:start|end)-\d+\uE001/g, "");
+    .replace(/\u200b/g, "");
   const hasMedia = Boolean(root?.querySelector?.(
     "img, audio, video, [data-cc98-ubb-emotion-tag], [data-cc98-ubb-tag='audio'], [data-cc98-ubb-tag='video'], [data-cc98-ubb-tag='bili'], [data-cc98-ubb-tag='bilibili']"
   ));
-  const hasExtendedStructuredContent = Boolean(root?.querySelector?.(
-    "[data-cc98-local-ubb-tag='code'], [data-cc98-local-ubb-tag='md'], [data-cc98-local-ubb-tag='quote'], [data-cc98-local-ubb-tag='table'], [data-cc98-local-ubb-source]"
-  ));
-  return !hasMedia && !hasExtendedStructuredContent && !String(root?.textContent || "").replace(/[\u200b\uFEFF]/g, "").trim()
+  return !hasMedia && !String(root?.textContent || "").replace(/\u200b/g, "").trim()
     ? ""
     : output;
 }
@@ -21551,7 +19405,6 @@ function renderProfileSignatureWysiwygFromUbb(wysiwyg, source) {
     fragment.append(article.firstChild);
   }
   wysiwyg.replaceChildren(fragment);
-  stabilizeDualUbbLeadingEmojiLayout(wysiwyg);
   wysiwyg.querySelectorAll("img, audio, video, .aplayer").forEach((media) => {
     if (media instanceof HTMLElement) {
       media.contentEditable = "false";
@@ -21573,496 +19426,30 @@ function getProfileSignatureWysiwygRange(wysiwyg) {
   return (container === wysiwyg || wysiwyg.contains(container)) ? range : null;
 }
 
-function hasMeaningfulProfileSignatureWysiwygRange(range) {
-  if (!(range instanceof Range) || range.collapsed) {
-    return false;
-  }
-  if (String(range.toString() || "").replace(/[\u200b\uFEFF\u00a0\s]/g, "")) {
-    return true;
-  }
-  try {
-    const fragment = range.cloneContents();
-    return Boolean(fragment.querySelector?.(
-      "img, audio, video, iframe, object, embed"
-    ));
-  } catch {
-    return false;
-  }
-}
-
-function rememberProfileSignatureWysiwygRange(editor, wysiwyg, options = {}) {
-  const lockedSnapshot = editor?.__cc98ColorSelectionSnapshot;
-  if (lockedSnapshot?.locked) {
-    const lockedRange = getEditorColorSelectionMarkerRange(lockedSnapshot);
-    if (lockedRange) {
-      editor.__cc98WysiwygRange = lockedRange.cloneRange();
-      return lockedRange;
-    }
-    // The live markers may have been removed by a visual-pane redraw.  Keep
-    // the logical source interval locked until the color action is completed
-    // or cancelled; a newly observed caret must not replace it.
-    if (lockedSnapshot.surface === "visual" && lockedSnapshot.logical) {
-      return null;
-    }
-  }
-
+function rememberProfileSignatureWysiwygRange(editor, wysiwyg) {
   const range = getProfileSignatureWysiwygRange(wysiwyg);
-  const storedRange = editor.__cc98WysiwygRange;
-  const storedRangeIsValid = storedRange instanceof Range
-    && storedRange.startContainer?.isConnected
-    && storedRange.endContainer?.isConnected
-    && (
-      storedRange.commonAncestorContainer === wysiwyg
-      || wysiwyg.contains(storedRange.commonAncestorContainer)
-    );
-  let effectiveRange = range;
-  if (
-    options.preserveNonCollapsed
-    && storedRangeIsValid
-    && hasMeaningfulProfileSignatureWysiwygRange(storedRange)
-    && (!range || !hasMeaningfulProfileSignatureWysiwygRange(range))
-  ) {
-    effectiveRange = storedRange;
+  if (range) {
+    editor.__cc98WysiwygRange = range.cloneRange();
   }
-  const logical = editor?.__cc98WysiwygLogicalSelection;
-  const logicalHasContent = Boolean(
-    logical
-    && logical.surface === "visual"
-    && logical.wysiwyg === wysiwyg
-    && (
-      normalizeEditorColorSelectionText(logical.selectedText).replace(/\s/g, "")
-      || normalizeEditorColorSelectionText(logical.sourceSelectedText).replace(/\s|\[[^\]]+\]/g, "")
-    )
-  );
-  if (
-    options.preserveNonCollapsed
-    && logicalHasContent
-    && (!effectiveRange || !hasMeaningfulProfileSignatureWysiwygRange(effectiveRange))
-    && !(storedRangeIsValid && hasMeaningfulProfileSignatureWysiwygRange(storedRange))
-  ) {
-    // Do not let the capture path turn a post-redraw caret into the active
-    // color selection.  The caller will promote the logical source interval.
-    effectiveRange = null;
-  }
-  if (options.captureColorSelection && effectiveRange) {
-    return captureEditorColorVisualSelection(editor, wysiwyg, effectiveRange)
-      ? effectiveRange
-      : effectiveRange;
-  }
-  if (effectiveRange) {
-    // Focus can briefly expose a collapsed caret while a toolbar/popover is
-    // taking focus.  Do not throw away a meaningful logical selection in that
-    // short window when the caller explicitly asked to preserve it.
-    if (!(options.preserveNonCollapsed && logicalHasContent && !hasMeaningfulProfileSignatureWysiwygRange(effectiveRange))) {
-      editor.__cc98WysiwygRange = effectiveRange.cloneRange();
-      rememberEditorColorVisualLogicalSelection(editor, wysiwyg, effectiveRange);
-    }
-  }
-  return effectiveRange;
+  return range;
 }
 
 function restoreProfileSignatureWysiwygRange(editor, wysiwyg) {
-  let range = getEditorColorSelectionMarkerRange(editor?.__cc98ColorSelectionSnapshot)
-    || editor.__cc98WysiwygRange;
+  let range = editor.__cc98WysiwygRange;
   if (
     !(range instanceof Range)
     || !range.startContainer?.isConnected
-    || !range.endContainer?.isConnected
     || !(range.commonAncestorContainer === wysiwyg || wysiwyg.contains(range.commonAncestorContainer))
   ) {
     range = document.createRange();
     range.selectNodeContents(wysiwyg);
     range.collapse(false);
   }
-  wysiwyg.focus({ preventScroll: true });
   const selection = window.getSelection();
   selection?.removeAllRanges();
   selection?.addRange(range);
-  return range;
-}
-
-function isWysiwygDeletionInput(event) {
-  const inputType = String(event?.inputType || "");
-  return /^delete/i.test(inputType)
-    || event?.key === "Backspace"
-    || event?.key === "Delete";
-}
-
-function createWysiwygDeletionInputTracker(root) {
-  if (!(root instanceof HTMLElement)) {
-    return () => false;
-  }
-  let pendingDeletion = false;
-  let clearTimer = 0;
-  const markDeletion = (event) => {
-    if (!isWysiwygDeletionInput(event)) {
-      return;
-    }
-    pendingDeletion = true;
-    window.clearTimeout(clearTimer);
-    clearTimer = window.setTimeout(() => {
-      pendingDeletion = false;
-      clearTimer = 0;
-    }, 1000);
-  };
-  root.addEventListener("beforeinput", markDeletion);
-  root.addEventListener("keydown", markDeletion);
-  return (event) => {
-    const shouldNormalize = pendingDeletion || isWysiwygDeletionInput(event);
-    pendingDeletion = false;
-    window.clearTimeout(clearTimer);
-    clearTimer = 0;
-    return shouldNormalize;
-  };
-}
-
-function isWysiwygFormattingWrapper(node) {
-  if (!(node instanceof HTMLElement)) {
-    return false;
-  }
-  const explicitTag = String(node.dataset.cc98UbbTag || "").toLowerCase();
-  if (explicitTag === "color" || explicitTag === "font") {
-    return true;
-  }
-  if (node.style.color || node.getAttribute("color") || node.style.fontFamily) {
-    return true;
-  }
-  return false;
-}
-
-function isWysiwygColorWrapper(node) {
-  if (!(node instanceof HTMLElement)) {
-    return false;
-  }
-  const explicitTag = String(node.dataset.cc98UbbTag || "").toLowerCase();
-  return explicitTag === "color"
-    || Boolean(node.style.color)
-    || node.hasAttribute("color");
-}
-
-function clearWysiwygColorPresentation(root) {
-  const nodes = [
-    ...(root instanceof HTMLElement ? [root] : []),
-    ...(root.querySelectorAll?.("*") || [])
-  ];
-  nodes.forEach((node) => {
-    if (!(node instanceof HTMLElement)) {
-      return;
-    }
-    node.classList.remove("cc98-rebuild-preview-colored");
-    node.style.removeProperty("--cc98-preview-color");
-    node.style.removeProperty("color");
-    node.removeAttribute("color");
-    if (String(node.dataset.cc98UbbTag || "").toLowerCase() === "color") {
-      delete node.dataset.cc98UbbTag;
-      delete node.dataset.cc98UbbValue;
-    }
-  });
-}
-
-function unwrapWysiwygColorWrappers(root) {
-  if (!(root instanceof Node)) {
-    return false;
-  }
-  const candidates = [
-    ...(root instanceof HTMLElement && isWysiwygColorWrapper(root) ? [root] : []),
-    ...(root.querySelectorAll?.("*") || [])
-  ]
-    .filter((node) => isWysiwygColorWrapper(node))
-    .sort((left, right) => {
-      const depth = (node) => {
-        let count = 0;
-        let current = node;
-        while (current && current !== root) {
-          count += 1;
-          current = current.parentNode;
-        }
-        return count;
-      };
-      return depth(right) - depth(left);
-    });
-  let changed = false;
-  candidates.forEach((node) => {
-    if (!(node instanceof HTMLElement) || !(node.parentNode instanceof Node)) {
-      return;
-    }
-    const parent = node.parentNode;
-    while (node.firstChild) {
-      parent.insertBefore(node.firstChild, node);
-    }
-    node.remove();
-    changed = true;
-  });
-  if (changed) {
-    clearWysiwygColorPresentation(root);
-  }
-  return changed;
-}
-
-function splitWysiwygElementAtMarker(element, marker) {
-  if (!(element instanceof HTMLElement) || !(marker instanceof Node)) {
-    return false;
-  }
-  if (marker.parentNode === element) {
-    const parent = element.parentNode;
-    if (!(parent instanceof Node)) {
-      return false;
-    }
-    const suffix = element.cloneNode(false);
-    while (marker.nextSibling) {
-      suffix.append(marker.nextSibling);
-    }
-    parent.insertBefore(suffix, element.nextSibling);
-    parent.insertBefore(marker, suffix);
-    if (!suffix.childNodes.length) {
-      suffix.remove();
-    }
-    if (!element.childNodes.length) {
-      element.remove();
-    }
-    return true;
-  }
-  let child = marker;
-  while (child.parentNode && child.parentNode !== element) {
-    child = child.parentNode;
-  }
-  if (child.parentNode !== element || !(child instanceof HTMLElement)) {
-    return false;
-  }
-  if (!splitWysiwygElementAtMarker(child, marker)) {
-    return false;
-  }
-  return splitWysiwygElementAtMarker(element, marker);
-}
-
-function splitWysiwygColorAncestorsAtMarker(root, marker) {
-  if (!(root instanceof HTMLElement) || !(marker instanceof Node)) {
-    return false;
-  }
-  const ancestors = [];
-  let current = marker.parentElement;
-  while (current && current !== root) {
-    if (isWysiwygColorWrapper(current)) {
-      ancestors.push(current);
-    }
-    current = current.parentElement;
-  }
-  let changed = false;
-  ancestors.forEach((ancestor) => {
-    if (ancestor instanceof HTMLElement && ancestor.contains(marker)) {
-      changed = splitWysiwygElementAtMarker(ancestor, marker) || changed;
-    }
-  });
-  return changed;
-}
-
-function clearProfileSignatureWysiwygColor(editor, wysiwyg) {
-  if (!(editor instanceof HTMLElement) || !(wysiwyg instanceof HTMLElement)) {
-    return false;
-  }
-  const range = restoreProfileSignatureWysiwygRange(editor, wysiwyg);
-  const wasCollapsed = range.collapsed;
-  const startMarker = document.createElement("span");
-  const endMarker = document.createElement("span");
-  startMarker.dataset.cc98ColorClearMarker = "start";
-  endMarker.dataset.cc98ColorClearMarker = "end";
-  startMarker.append(document.createTextNode("\u200b"));
-  endMarker.append(document.createTextNode("\u200b"));
-
-  const startRange = range.cloneRange();
-  const endRange = range.cloneRange();
-  startRange.collapse(true);
-  endRange.collapse(false);
-  if (wasCollapsed) {
-    startRange.insertNode(startMarker);
-    const markerEndRange = document.createRange();
-    markerEndRange.setStartAfter(startMarker);
-    markerEndRange.collapse(true);
-    markerEndRange.insertNode(endMarker);
-  } else {
-    endRange.insertNode(endMarker);
-    startRange.insertNode(startMarker);
-  }
-  const startBoundaryChanged = splitWysiwygColorAncestorsAtMarker(wysiwyg, startMarker);
-  const endBoundaryChanged = splitWysiwygColorAncestorsAtMarker(wysiwyg, endMarker);
-  const boundaryChanged = startBoundaryChanged || endBoundaryChanged;
-
-  if (wasCollapsed) {
-    const changed = boundaryChanged;
-    const parent = startMarker.parentNode;
-    const offset = parent instanceof Node
-      ? [...parent.childNodes].indexOf(startMarker)
-      : -1;
-    if (!changed || !(parent instanceof Node) || offset < 0) {
-      startMarker.remove();
-      endMarker.remove();
-      return false;
-    }
-    startMarker.remove();
-    endMarker.remove();
-    const caret = document.createRange();
-    caret.setStart(parent, Math.min(offset, parent.childNodes.length));
-    caret.collapse(true);
-    const selection = window.getSelection();
-    selection?.removeAllRanges();
-    selection?.addRange(caret);
-    editor.__cc98WysiwygRange = caret.cloneRange();
-    clearEditorColorSelectionSnapshot(editor);
-    delete editor.__cc98WysiwygLogicalSelection;
-    normalizeEmptyWysiwygFormatting(wysiwyg);
-    wysiwyg.focus({ preventScroll: true });
-    editor.__cc98WysiwygSyncSource?.();
-    return true;
-  }
-
-  const selectedRange = document.createRange();
-  selectedRange.setStartAfter(startMarker);
-  selectedRange.setEndBefore(endMarker);
-  const fragment = selectedRange.extractContents();
-  const changed = unwrapWysiwygColorWrappers(fragment);
-  if (!changed) {
-    selectedRange.insertNode(fragment);
-    startMarker.remove();
-    endMarker.remove();
-    return false;
-  }
-  selectedRange.insertNode(fragment);
-  const nextRange = document.createRange();
-  nextRange.setStartAfter(startMarker);
-  nextRange.setEndBefore(endMarker);
-  const selection = window.getSelection();
-  selection?.removeAllRanges();
-  selection?.addRange(nextRange);
-  startMarker.remove();
-  endMarker.remove();
-  editor.__cc98WysiwygRange = nextRange.cloneRange();
-  clearEditorColorSelectionSnapshot(editor);
-  delete editor.__cc98WysiwygLogicalSelection;
-  normalizeEmptyWysiwygFormatting(wysiwyg);
   wysiwyg.focus({ preventScroll: true });
-  editor.__cc98WysiwygSyncSource?.();
-  return true;
-}
-
-function hasMeaningfulWysiwygContent(node) {
-  for (const child of [...(node?.childNodes || [])]) {
-    if (child.nodeType === Node.TEXT_NODE) {
-      const text = String(child.nodeValue || "").replace(/[\u200b\uFEFF\u00a0]/g, "");
-      if (text.length) {
-        return true;
-      }
-      continue;
-    }
-    if (!(child instanceof HTMLElement)) {
-      continue;
-    }
-    const tagName = child.tagName.toLowerCase();
-    if (/^(?:img|audio|video|iframe|object|embed)$/i.test(tagName)
-      || child.matches(".aplayer, [data-cc98-ubb-media-tag], [data-cc98-ubb-emotion-tag]")) {
-      return true;
-    }
-    if (hasMeaningfulWysiwygContent(child)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-function getWysiwygNodeDepth(node, root) {
-  let depth = 0;
-  let current = node;
-  while (current && current !== root) {
-    depth += 1;
-    current = current.parentNode;
-  }
-  return depth;
-}
-
-function normalizeEmptyWysiwygFormatting(root) {
-  if (!(root instanceof HTMLElement)) {
-    return false;
-  }
-  const selection = window.getSelection();
-  const selectionAnchor = selection?.rangeCount
-    ? selection.getRangeAt(0).startContainer
-    : null;
-  const canNormalizeWrapper = (node) => {
-    if (!isWysiwygFormattingWrapper(node) || hasMeaningfulWysiwygContent(node)) {
-      return false;
-    }
-    if (node.dataset.cc98WysiwygTypingWrapper !== "true") {
-      return true;
-    }
-    return Boolean(
-      selectionAnchor
-      && (selectionAnchor === node || node.contains(selectionAnchor))
-    );
-  };
-  let caretTarget = null;
-  if (selection?.rangeCount) {
-    const range = selection.getRangeAt(0);
-    if (range.startContainer === root || root.contains(range.startContainer)) {
-      let current = range.startContainer instanceof HTMLElement
-        ? range.startContainer
-        : range.startContainer.parentElement;
-      let emptyAncestor = null;
-      while (current && current !== root) {
-        if (canNormalizeWrapper(current)) {
-          emptyAncestor = current;
-        }
-        current = current.parentElement;
-      }
-      if (emptyAncestor?.parentNode) {
-        caretTarget = {
-          parent: emptyAncestor.parentNode,
-          index: [...emptyAncestor.parentNode.childNodes].indexOf(emptyAncestor)
-        };
-      }
-    }
-  }
-
-  let changed = false;
-  for (let pass = 0; pass < 4; pass += 1) {
-    const candidates = [...root.querySelectorAll("*")]
-      .filter(canNormalizeWrapper)
-      .sort((left, right) => getWysiwygNodeDepth(right, root) - getWysiwygNodeDepth(left, root));
-    if (!candidates.length) {
-      break;
-    }
-    let changedThisPass = false;
-    candidates.forEach((node) => {
-      if (!node.isConnected || !root.contains(node) || !canNormalizeWrapper(node)) {
-        return;
-      }
-      const parent = node.parentNode;
-      if (!parent) {
-        return;
-      }
-      [...node.childNodes].forEach((child) => {
-        if (child.nodeType === Node.TEXT_NODE
-          && !String(child.nodeValue || "").replace(/[\u200b\uFEFF\u00a0]/g, "").length) {
-          return;
-        }
-        parent.insertBefore(child, node);
-      });
-      node.remove();
-      changed = true;
-      changedThisPass = true;
-    });
-    if (!changedThisPass) {
-      break;
-    }
-  }
-
-  if (changed && caretTarget?.parent?.isConnected && root.contains(caretTarget.parent)) {
-    const range = document.createRange();
-    const offset = Math.max(0, Math.min(caretTarget.index, caretTarget.parent.childNodes.length));
-    range.setStart(caretTarget.parent, offset);
-    range.collapse(true);
-    selection?.removeAllRanges();
-    selection?.addRange(range);
-  }
-  return changed;
+  return range;
 }
 
 function selectProfileSignatureInsertedNode(editor, wysiwyg, node, selectContents = false) {
@@ -22087,7 +19474,6 @@ function insertProfileSignatureWysiwygNode(editor, wysiwyg, node, preserveSelect
   const range = restoreProfileSignatureWysiwygRange(editor, wysiwyg);
   range.deleteContents();
   range.insertNode(node);
-  stabilizeDualUbbLeadingEmojiLayout(wysiwyg);
   selectProfileSignatureInsertedNode(editor, wysiwyg, node, preserveSelection);
   editor.__cc98WysiwygSyncSource?.();
   return true;
@@ -22108,64 +19494,20 @@ function applyProfileSignatureWysiwygCommand(editor, wysiwyg, command, value = n
 
 function applyProfileSignatureWysiwygInlineTag(editor, wysiwyg, tag, value, style = {}) {
   const range = restoreProfileSignatureWysiwygRange(editor, wysiwyg);
-  const hasSelectedContent = hasMeaningfulProfileSignatureWysiwygRange(range);
-  const savedSelection = editor?.__cc98ColorSelectionSnapshot;
-  const savedVisibleText = normalizeEditorColorSelectionText(savedSelection?.selectedText);
-  const savedSourceText = normalizeEditorColorSelectionText(savedSelection?.sourceSelectedText);
-  const storedRange = editor?.__cc98WysiwygRange;
-  const savedSelectionHasContent = Boolean(
-    savedSelection
-    && savedSelection.surface === "visual"
-    && !savedSelection.collapsed
-    && (
-      savedVisibleText.replace(/\s/g, "")
-      || savedSourceText.replace(/\s|\[[^\]]+\]/g, "")
-    )
-  );
-  const storedSelectionHasContent = Boolean(
-    storedRange instanceof Range
-    && !storedRange.collapsed
-    && hasMeaningfulProfileSignatureWysiwygRange(storedRange)
-  );
-  if (
-    String(tag || "").toLowerCase() === "color"
-    && (savedSelectionHasContent || storedSelectionHasContent)
-    && !hasSelectedContent
-  ) {
-    // Never turn a lost non-collapsed selection into an empty color wrapper.
-    // The caller can still retry through the source interval when available.
-    return false;
-  }
   const span = document.createElement("span");
   span.dataset.cc98UbbTag = tag;
   if (value) {
     span.dataset.cc98UbbValue = value;
   }
-  if (String(tag || "").toLowerCase() === "color" && !hasSelectedContent) {
-    span.dataset.cc98WysiwygTypingWrapper = "true";
-  }
   Object.entries(style).forEach(([property, propertyValue]) => {
     span.style.setProperty(property, propertyValue, "important");
   });
-  if (!hasSelectedContent) {
-    // A browser can leave a non-collapsed range that only contains the
-    // zero-width caret helper.  Treat it as a caret instead of producing an
-    // empty color wrapper beside the text the user actually selected.
-    if (!range.collapsed) {
-      range.deleteContents();
-      range.collapse(true);
-    }
+  if (range.collapsed) {
     span.append(document.createTextNode("\u200b"));
   } else {
-    const extracted = range.extractContents();
-    stripEditorInvisibleTextNodes(extracted);
-    span.append(extracted);
+    span.append(range.extractContents());
   }
   range.insertNode(span);
-  // Do not let the temporary selection markers enter the next serialization.
-  // The inserted wrapper now owns the real selection boundary.
-  clearEditorColorSelectionSnapshot(editor);
-  delete editor.__cc98WysiwygLogicalSelection;
   selectProfileSignatureInsertedNode(editor, wysiwyg, span, true);
   editor.__cc98WysiwygSyncSource?.();
   return true;
@@ -22177,9 +19519,7 @@ function applyProfileSignatureWysiwygGradient(editor, wysiwyg, stops, density = 
   if (!selected) {
     return false;
   }
-  const article = buildNativeEditorUbbPreview(
-    buildEditorGradientUbb(selected, stops, density)
-  );
+  const article = buildNativeEditorUbbPreview(buildEditorGradientUbb(selected, stops, density));
   const nodes = [...article.childNodes];
   if (!nodes.length) {
     return false;
@@ -22188,8 +19528,6 @@ function applyProfileSignatureWysiwygGradient(editor, wysiwyg, stops, density = 
   nodes.forEach((node) => fragment.append(node));
   range.deleteContents();
   range.insertNode(fragment);
-  clearEditorColorSelectionSnapshot(editor);
-  delete editor.__cc98WysiwygLogicalSelection;
   selectProfileSignatureInsertedNode(editor, wysiwyg, nodes.at(-1));
   editor.__cc98WysiwygSyncSource?.();
   return true;
@@ -22276,12 +19614,6 @@ function stabilizeProfileSignatureToolbar(router) {
         "div",
         "cc98-rebuild-profile-signature-preview-body cc98-rebuild-profile-signature-wysiwyg cc98-rebuild-dual-ubb-visual"
       );
-      applyImportantStyle(wysiwyg, {
-        margin: "5px",
-        padding: "24px 28px",
-        border: "1px solid transparent",
-        "box-sizing": "border-box"
-      });
       wysiwyg.contentEditable = "true";
       wysiwyg.spellcheck = true;
       wysiwyg.setAttribute("role", "textbox");
@@ -22307,14 +19639,12 @@ function stabilizeProfileSignatureToolbar(router) {
         "pre",
         "cc98-rebuild-profile-signature-syntax-layer cc98-rebuild-dual-ubb-source"
       );
-      const legacyPreview = createLegacy031UbbPreviewPanel();
       let syncingNativeSource = false;
       let sourceIsComposing = false;
       let sourceHighlightFrame = 0;
       let activeSurface = "visual";
       let sourceSelection = null;
       let refreshSourceGutter = null;
-      let legacyPreviewButton = null;
 
       const refreshCodeChrome = (preserveSelection = true) => {
         renderEditableProfileSignatureSource(syntaxLayer, textarea.value, preserveSelection);
@@ -22324,35 +19654,20 @@ function stabilizeProfileSignatureToolbar(router) {
         const textLength = String(wysiwyg.textContent || "").replace(/\u200b/g, "").length;
         wysiwygMeta.textContent = `${textLength} 字符`;
       };
-      const refreshLegacyPreview = (force = false) => {
-        if (!force && legacyPreview.hidden) {
-          return;
-        }
-        renderLegacy031UbbPreview(legacyPreview, textarea.value);
-      };
-      const getWysiwygDeletionNormalization = createWysiwygDeletionInputTracker(wysiwyg);
       const writeNativeSource = (nextValue) => {
-        const normalized = String(nextValue ?? "").replace(/[\u200b\uFEFF]/g, "");
-        if (textarea.value === normalized) {
-          refreshLegacyPreview();
+        if (textarea.value === nextValue) {
           return;
         }
         syncingNativeSource = true;
-        setNativeMessageInputValue(textarea, normalized);
+        setNativeMessageInputValue(textarea, nextValue);
         syncingNativeSource = false;
-        refreshLegacyPreview();
       };
-      const syncGeneratedSource = (normalizeEmptyFormatting = false) => {
+      const syncGeneratedSource = () => {
         activeSurface = "visual";
-        if (normalizeEmptyFormatting) {
-          normalizeEmptyWysiwygFormatting(wysiwyg);
-        }
-        stabilizeDualUbbLeadingEmojiLayout(wysiwyg);
         const nextValue = serializeProfileSignatureWysiwyg(wysiwyg);
         writeNativeSource(nextValue);
         updateWysiwygMeta();
         refreshCodeChrome();
-        rememberProfileSignatureWysiwygRange(editor, wysiwyg);
       };
       const scheduleSourceHighlight = (immediate = false) => {
         if (sourceHighlightFrame) {
@@ -22381,64 +19696,18 @@ function stabilizeProfileSignatureToolbar(router) {
           scheduleSourceHighlight();
         }
       };
-      const forceSynchronize = () => {
-        const sourceActive = activeSurface === "source"
-          || document.activeElement === syntaxLayer
-          || syntaxLayer.contains(document.activeElement);
-        const nextValue = sourceActive
-          ? getProfileSignatureSourceText(syntaxLayer)
-          : serializeProfileSignatureWysiwyg(wysiwyg);
-        writeNativeSource(nextValue);
-        renderProfileSignatureWysiwygFromUbb(wysiwyg, textarea.value);
-        updateWysiwygMeta();
-        refreshCodeChrome(sourceActive);
-        refreshLegacyPreview(true);
-        editor.__cc98WysiwygRange = null;
-        return textarea.value;
-      };
-      const updateLegacyPreviewButton = () => {
-        if (!(legacyPreviewButton instanceof HTMLElement)) {
-          return;
-        }
-        const open = !legacyPreview.hidden;
-        legacyPreviewButton.classList.toggle("is-active", open);
-        legacyPreviewButton.setAttribute("aria-pressed", String(open));
-      };
-      const setLegacyPreviewOpen = (open) => {
-        const shouldOpen = Boolean(open);
-        if (shouldOpen) {
-          forceSynchronize();
-        }
-        legacyPreview.hidden = !shouldOpen;
-        workspace.classList.toggle("is-legacy-preview-open", shouldOpen);
-        updateLegacyPreviewButton();
-      };
-      const rememberActiveSelection = (options = {}) => {
-        const lockedColorSelection = editor.__cc98ColorSelectionSnapshot;
-        if (lockedColorSelection?.locked && lockedColorSelection.surface === "source") {
-          activeSurface = "source";
-          sourceSelection = lockedColorSelection;
-          return lockedColorSelection;
-        }
+      const rememberActiveSelection = () => {
         const currentSourceSelection = getProfileSignatureSourceSelection(syntaxLayer);
         if (currentSourceSelection) {
           activeSurface = "source";
-          const effectiveSourceSelection = (
-            options.preserveNonCollapsed
-            && sourceSelection
-            && sourceSelection.start !== sourceSelection.end
-            && currentSourceSelection.start === currentSourceSelection.end
-          ) ? sourceSelection : currentSourceSelection;
-          sourceSelection = effectiveSourceSelection;
-          if (options.captureColorSelection) {
-            captureEditorColorSourceSelection(editor, textarea, effectiveSourceSelection);
-          }
-          return effectiveSourceSelection;
+          sourceSelection = currentSourceSelection;
+          return currentSourceSelection;
         }
         const visualRange = getProfileSignatureWysiwygRange(wysiwyg);
         if (visualRange) {
           activeSurface = "visual";
-          return rememberProfileSignatureWysiwygRange(editor, wysiwyg, options) || visualRange;
+          rememberProfileSignatureWysiwygRange(editor, wysiwyg);
+          return visualRange;
         }
         return null;
       };
@@ -22453,31 +19722,16 @@ function stabilizeProfileSignatureToolbar(router) {
           end: textarea.value.length
         };
       };
-      const replaceSourceSelection = (before, after = "", requireSelection = false, selectionOverride = null) => {
-        const sourceValue = String(textarea.value || "").replace(/[\u200b\uFEFF]/g, "");
-        const resolvedSelection = selectionOverride
-          ? getEditorColorSourceSelectionForApply(selectionOverride, sourceValue)
-          : null;
-        if (
-          selectionOverride?.surface === "visual"
-          && normalizeEditorColorSelectionText(selectionOverride.selectedText)
-          && !resolvedSelection
-        ) {
-          return false;
-        }
-        const selection = resolvedSelection || selectionOverride || getActiveSourceSelection();
-        const start = Math.max(0, Math.min(sourceValue.length, Number(selection?.start) || 0));
-        const end = Math.max(start, Math.min(sourceValue.length, Number(selection?.end) || start));
-        const selected = sourceValue.slice(start, end);
+      const replaceSourceSelection = (before, after = "", requireSelection = false) => {
+        const selection = getActiveSourceSelection();
+        const start = Math.max(0, Math.min(textarea.value.length, selection.start));
+        const end = Math.max(start, Math.min(textarea.value.length, selection.end));
+        const selected = textarea.value.slice(start, end);
         if (requireSelection && !selected) {
           return false;
         }
-        if (selectionOverride?.surface === "visual") {
-          clearEditorColorSelectionSnapshot(editor);
-          delete editor.__cc98WysiwygLogicalSelection;
-        }
         const inserted = `${before}${selected}${after}`;
-        const nextValue = `${sourceValue.slice(0, start)}${inserted}${sourceValue.slice(end)}`;
+        const nextValue = `${textarea.value.slice(0, start)}${inserted}${textarea.value.slice(end)}`;
         writeNativeSource(nextValue);
         renderProfileSignatureWysiwygFromUbb(wysiwyg, nextValue);
         updateWysiwygMeta();
@@ -22514,48 +19768,10 @@ function stabilizeProfileSignatureToolbar(router) {
       };
       editor.__cc98WysiwygSyncSource = syncGeneratedSource;
       editor.__cc98WysiwygRememberSelection = rememberActiveSelection;
-      editor.__cc98WysiwygApplyColor = (color, selectionOverride = null) => {
+      editor.__cc98WysiwygApplyColor = (color) => {
         const normalized = String(color || "").trim().toLowerCase();
         if (normalized !== "transparent" && !/^#[0-9a-f]{6}$/i.test(normalized)) {
           return false;
-        }
-        const selection = selectionOverride
-          || editor.__cc98ColorSelectionSnapshot
-          || promoteEditorColorLogicalSelection(editor, wysiwyg, textarea.value);
-        if (selection?.surface === "source") {
-          return replaceSourceSelection(
-            `[color=${normalized}]`,
-            "[/color]",
-            false,
-            selection
-          );
-        }
-        if (selection?.surface === "visual") {
-          const sourceSelection = getEditorColorSourceSelectionForApply(selection, textarea.value);
-          if (isUsableEditorColorSourceSelection(selection, textarea.value, sourceSelection)) {
-            return replaceSourceSelection(
-              `[color=${normalized}]`,
-              "[/color]",
-              false,
-              selection
-            );
-          }
-          const markerRange = getEditorColorSelectionMarkerRange(selection);
-          const expectedSelection = getEditorColorSelectionExpectedSourceText(selection);
-          if (
-            expectedSelection.replace(/\s|\[[^\]]+\]/g, "")
-            && (!markerRange || !hasMeaningfulProfileSignatureWysiwygRange(markerRange))
-          ) {
-            return false;
-          }
-          activeSurface = "visual";
-          return applyProfileSignatureWysiwygInlineTag(
-            editor,
-            wysiwyg,
-            "color",
-            normalized,
-            { color: normalized }
-          );
         }
         if (activeSurface === "source") {
           return replaceSourceSelection(`[color=${normalized}]`, "[/color]");
@@ -22568,31 +19784,6 @@ function stabilizeProfileSignatureToolbar(router) {
           { color: normalized }
         );
       };
-      editor.__cc98WysiwygClearColor = (selectionOverride = null) => {
-        if (activeSurface === "source") {
-          const selection = selectionOverride?.surface === "source"
-            ? selectionOverride
-            : getActiveSourceSelection();
-          const result = removeEditorColorTagsFromSource(
-            textarea.value,
-            selection.start,
-            selection.end
-          );
-          if (!result.changed) {
-            return false;
-          }
-          writeNativeSource(result.value);
-          renderProfileSignatureWysiwygFromUbb(wysiwyg, result.value);
-          updateWysiwygMeta();
-          refreshCodeChrome(false);
-          const nextSelection = { start: result.start, end: result.end };
-          sourceSelection = nextSelection;
-          syntaxLayer.focus({ preventScroll: true });
-          restoreProfileSignatureSourceSelection(syntaxLayer, nextSelection);
-          return true;
-        }
-        return clearProfileSignatureWysiwygColor(editor, wysiwyg);
-      };
       editor.__cc98WysiwygApplyGradient = (stops, density) => {
         if (activeSurface === "source") {
           const selection = getActiveSourceSelection();
@@ -22604,27 +19795,10 @@ function stabilizeProfileSignatureToolbar(router) {
         }
         return applyProfileSignatureWysiwygGradient(editor, wysiwyg, stops, density);
       };
-      editor.__cc98WysiwygApplyFontFamily = (fontFamily) => {
-        const normalized = normalizeEditorFontFamilyValue(fontFamily);
-        if (!normalized) {
-          return false;
-        }
-        if (activeSurface === "source") {
-          return replaceSourceSelection(`[font=${normalized}]`, "[/font]");
-        }
-        activeSurface = "visual";
-        return applyProfileSignatureWysiwygInlineTag(
-          editor,
-          wysiwyg,
-          "font",
-          normalized,
-          { "font-family": normalized }
-        );
-      };
 
       const preserveWysiwygSelection = (control) => {
         control.addEventListener("pointerdown", (event) => {
-          rememberActiveSelection({ preserveNonCollapsed: true });
+          rememberActiveSelection();
           event.preventDefault();
         });
       };
@@ -22683,29 +19857,6 @@ function stabilizeProfileSignatureToolbar(router) {
       sourceButton.classList.add("is-active");
       sourceButton.setAttribute("aria-pressed", "true");
 
-      legacyPreviewButton = addActionButton(
-        "旧预览",
-        "打开 0.3.1 版 UBB 预览（备用）",
-        () => setLegacyPreviewOpen(legacyPreview.hidden)
-      );
-      legacyPreviewButton.classList.add("cc98-rebuild-dual-ubb-toolbar-utility");
-      legacyPreviewButton.setAttribute("aria-pressed", "false");
-      const syncButton = addActionButton(
-        "同步",
-        "同步上下编辑区并重新渲染",
-        () => {
-          forceSynchronize();
-          showRebuiltTransientToast(syncButton, "上下编辑区已同步");
-        }
-      );
-      syncButton.classList.add("cc98-rebuild-dual-ubb-toolbar-utility");
-
-      const fontFamily = createEditorFontFamilySelect(
-        editor,
-        "cc98-rebuild-profile-signature-font-select cc98-rebuild-message-editor-select"
-      );
-      toolbar.append(fontFamily);
-
       const size = document.createElement("select");
       size.className = "cc98-rebuild-message-editor-select";
       size.title = "\u5b57\u53f7";
@@ -22741,7 +19892,7 @@ function stabilizeProfileSignatureToolbar(router) {
       const colorButton = createButton("cc98-rebuild-message-editor-button cc98-rebuild-message-editor-color cc98-rebuild-color-button", "", (event) => {
         event.preventDefault();
         event.stopPropagation();
-        rememberEditorSelection(editor, colorButton, { preserveNonCollapsed: true });
+        rememberEditorSelection(editor, colorButton);
         openEditorColorPicker(colorButton, editor);
       });
       preserveWysiwygSelection(colorButton);
@@ -22769,11 +19920,8 @@ function stabilizeProfileSignatureToolbar(router) {
       syntaxLayer.dataset.placeholder = "在这里以经典代码形式编辑内容";
       syntaxLayer.tabIndex = 0;
       codePane.append(codeGutter, syntaxLayer, textarea);
-      workspace.append(wysiwygPane, divider, codePane, legacyPreview);
+      workspace.append(wysiwygPane, divider, codePane);
       editor.append(toolbar, workspace);
-      legacyPreview.addEventListener("cc98:legacy-preview-close", () => {
-        setLegacyPreviewOpen(false);
-      });
       bindDualUbbPaneDivider(workspace, wysiwygPane, codePane, divider);
       refreshSourceGutter = bindDualUbbLogicalLineGutter(
         codeGutter,
@@ -22789,7 +19937,6 @@ function stabilizeProfileSignatureToolbar(router) {
         editor.__cc98WysiwygRange = null;
         updateWysiwygMeta();
         refreshCodeChrome(document.activeElement === syntaxLayer);
-        refreshLegacyPreview();
       });
       syntaxLayer.addEventListener("input", () => {
         syncFromSourceEditor(!sourceIsComposing);
@@ -22837,10 +19984,8 @@ function stabilizeProfileSignatureToolbar(router) {
           scheduleSourceHighlight(true);
         }
       });
-      wysiwyg.addEventListener("input", (event) => {
-        syncGeneratedSource(getWysiwygDeletionNormalization(event));
-      });
-      wysiwyg.addEventListener("compositionend", () => syncGeneratedSource(false));
+      wysiwyg.addEventListener("input", syncGeneratedSource);
+      wysiwyg.addEventListener("compositionend", syncGeneratedSource);
       wysiwyg.addEventListener("paste", (event) => {
         const plainText = event.clipboardData?.getData("text/plain");
         if (typeof plainText !== "string") {
@@ -22850,16 +19995,12 @@ function stabilizeProfileSignatureToolbar(router) {
         restoreProfileSignatureWysiwygRange(editor, wysiwyg);
         document.execCommand("insertText", false, plainText);
         rememberProfileSignatureWysiwygRange(editor, wysiwyg);
-        syncGeneratedSource(false);
+        syncGeneratedSource();
       });
       ["keyup", "mouseup", "focus"].forEach((type) => {
         wysiwyg.addEventListener(type, () => {
           activeSurface = "visual";
-          rememberProfileSignatureWysiwygRange(
-            editor,
-            wysiwyg,
-            type === "focus" ? { preserveNonCollapsed: true } : {}
-          );
+          rememberProfileSignatureWysiwygRange(editor, wysiwyg);
         });
       });
       wysiwyg.addEventListener("click", (event) => {
@@ -23772,6 +20913,7 @@ function stabilizeNativeAntUi() {
   if (!lastSettings?.enabled) {
     return;
   }
+  stabilizeEmojiRendering(document);
   cleanupAntFullPaginationOutsideModals();
   const nativeRoot = document.querySelector("#root");
   nativeRoot?.querySelectorAll(".ant-list, .ant-list-item, .ant-list-item-meta, .ant-list-item-content, .ant-list-item-meta-content").forEach((node) => {
@@ -23790,31 +20932,11 @@ function scheduleNativeAntUiStabilize() {
   nativeAntUiStabilizeTimer = window.setTimeout(stabilizeNativeAntUi, 80);
 }
 
-function isNativeAntUiMutation(record) {
-  const candidates = [record.target, ...record.addedNodes, ...record.removedNodes];
-  return candidates.some((node) => {
-    const element = node instanceof Element ? node : node?.parentElement;
-    if (!(element instanceof Element)) {
-      return false;
-    }
-    if (element.closest(".cc98-rebuild-ant-simple-pager, .cc98-rebuild-ant-full-pager")) {
-      return false;
-    }
-    return element.matches(NATIVE_ANT_UI_SELECTOR)
-      || Boolean(element.closest(NATIVE_ANT_UI_SELECTOR))
-      || Boolean(element.querySelector?.(NATIVE_ANT_UI_SELECTOR));
-  });
-}
-
 function ensureNativeAntUiStabilizer() {
   if (nativeAntUiObserver || !document.body) {
     return;
   }
-  nativeAntUiObserver = new MutationObserver((records) => {
-    if (records.some(isNativeAntUiMutation)) {
-      scheduleNativeAntUiStabilize();
-    }
-  });
+  nativeAntUiObserver = new MutationObserver(scheduleNativeAntUiStabilize);
   nativeAntUiObserver.observe(document.body, {
     childList: true,
     subtree: true,
@@ -27265,20 +24387,10 @@ function rememberSeamlessNativeContentSignature() {
   if (!SEAMLESS_SCROLL_SYNC_PAGE_KINDS.has(kind)) {
     seamlessScrollSyncRouteKey = "";
     seamlessScrollSyncSignature = "";
-    seamlessScrollSyncDirty = false;
-    seamlessScrollSyncDirtyRouteKey = "";
     return;
   }
-  const routeKey = getRoutePageKey();
-  seamlessScrollSyncRouteKey = routeKey;
+  seamlessScrollSyncRouteKey = getRoutePageKey();
   seamlessScrollSyncSignature = getSeamlessNativeContentSignature(kind);
-  seamlessScrollSyncDirty = false;
-  seamlessScrollSyncDirtyRouteKey = routeKey;
-}
-
-function markSeamlessNativeContentDirty() {
-  seamlessScrollSyncDirty = true;
-  seamlessScrollSyncDirtyRouteKey = getRoutePageKey();
 }
 
 function captureSeamlessRebuildScrollState() {
@@ -27390,23 +24502,11 @@ function runSeamlessNativeContentSync() {
   }
 
   const routeKey = getRoutePageKey();
-  const hasBaseline = seamlessScrollSyncRouteKey === routeKey && Boolean(seamlessScrollSyncSignature);
-  const isDirty = seamlessScrollSyncDirty && seamlessScrollSyncDirtyRouteKey === routeKey;
-  if (hasBaseline && !isDirty) {
-    return;
-  }
-  const intervalRemaining = SEAMLESS_SCROLL_SYNC_MIN_INTERVAL - (now - seamlessScrollSyncLastRefreshAt);
-  if (hasBaseline && intervalRemaining > 0) {
-    seamlessScrollSyncTimer = window.setTimeout(runSeamlessNativeContentSync, intervalRemaining);
-    return;
-  }
   const signature = getSeamlessNativeContentSignature(kind);
-  seamlessScrollSyncDirty = false;
-  seamlessScrollSyncDirtyRouteKey = routeKey;
   if (!signature) {
     return;
   }
-  if (!hasBaseline) {
+  if (seamlessScrollSyncRouteKey !== routeKey || !seamlessScrollSyncSignature) {
     seamlessScrollSyncRouteKey = routeKey;
     seamlessScrollSyncSignature = signature;
     return;
@@ -27415,13 +24515,18 @@ function runSeamlessNativeContentSync() {
     return;
   }
 
+  const intervalRemaining = SEAMLESS_SCROLL_SYNC_MIN_INTERVAL - (now - seamlessScrollSyncLastRefreshAt);
+  if (intervalRemaining > 0) {
+    seamlessScrollSyncTimer = window.setTimeout(runSeamlessNativeContentSync, intervalRemaining);
+    return;
+  }
   seamlessScrollSyncSignature = signature;
   seamlessScrollSyncLastRefreshAt = now;
   refreshRebuiltFromLoadedNativeContent(null, { automatic: true });
 }
 
 function scheduleSeamlessNativeContentSync(options = {}) {
-  const kind = options.kind || getPageKind();
+  const kind = getPageKind();
   if (!SEAMLESS_SCROLL_SYNC_PAGE_KINDS.has(kind)
     || !lastSettings?.enabled
     || !lastSettings.rebuildUi) {
@@ -27429,28 +24534,18 @@ function scheduleSeamlessNativeContentSync(options = {}) {
   }
   const fromMutation = Boolean(options.fromMutation);
   const now = Date.now();
-  if (fromMutation) {
-    markSeamlessNativeContentDirty();
-    if (now > seamlessScrollSyncIntentUntil) {
-      return;
-    }
+  if (fromMutation && now > seamlessScrollSyncIntentUntil) {
+    return;
   }
   if (!fromMutation) {
     seamlessScrollSyncIntentUntil = now + SEAMLESS_SCROLL_SYNC_INTENT_TTL;
   }
-  const routeKey = getRoutePageKey();
-  const shouldCheck = fromMutation
-    || seamlessScrollSyncDirty
-    || seamlessScrollSyncRouteKey !== routeKey
-    || !seamlessScrollSyncSignature;
-  if (shouldCheck) {
-    window.clearTimeout(seamlessScrollSyncTimer);
-    seamlessScrollSyncTimer = window.setTimeout(
-      runSeamlessNativeContentSync,
-      fromMutation ? 90 : SEAMLESS_SCROLL_SYNC_DELAY
-    );
-  }
-  if (!fromMutation && shouldCheck) {
+  window.clearTimeout(seamlessScrollSyncTimer);
+  seamlessScrollSyncTimer = window.setTimeout(
+    runSeamlessNativeContentSync,
+    fromMutation ? 90 : SEAMLESS_SCROLL_SYNC_DELAY
+  );
+  if (!fromMutation) {
     window.clearTimeout(seamlessScrollSyncFollowupTimer);
     seamlessScrollSyncFollowupTimer = window.setTimeout(
       runSeamlessNativeContentSync,
@@ -27555,33 +24650,11 @@ function refreshRebuiltFromLoadedNativeContent(button, options = {}) {
     finishFeedback(false);
     return;
   }
-  const restore = () => {
-    const currentHashKey = getRebuiltHashScrollKey();
-    const hashPositionIsStable = Boolean(
-      currentHashKey
-      && rebuiltHashScrollAppliedKey === currentHashKey
-      && rebuiltHashScrollAppliedInteractionRevision === seamlessScrollInteractionRevision
-    );
-    if (!hashPositionIsStable) {
-      restoreSeamlessRebuildScrollState(
-        scrollState,
-        interactionRevision,
-        !automatic
-      );
-    }
-    // An automatic native-content refresh intentionally skips the normal
-    // overlay/hash pass.  If the first rebuilt tree was mounted while the
-    // browser was still restoring a fragment, the scroll-state restore above
-    // can otherwise leave the reader at the page top.  Reconcile the hash
-    // immediately after each restore; a stable applied hash is re-applied,
-    // while an explicitly scrolled-by-user hash is suppressed by its revision.
-    scrollToCurrentRebuiltHash({ forceApplied: hashPositionIsStable });
-  };
-  // Restore once before the next paint as well as on the existing follow-up
-  // frames.  Replacing a hash-targeted post tree can make the browser briefly
-  // honor the fragment again; the synchronous restore prevents that transient
-  // position from becoming visible.
-  restore();
+  const restore = () => restoreSeamlessRebuildScrollState(
+    scrollState,
+    interactionRevision,
+    !automatic
+  );
   requestAnimationFrame(restore);
   [80, 220].forEach((delay) => {
     window.setTimeout(() => {
@@ -27609,17 +24682,9 @@ function renderRebuiltUi(options = {}) {
     return;
   }
   isRebuilding = true;
-  clearTopbarStabilizeTimers();
 
   const existing = document.querySelector("#cc98-comfort-app");
   const currentKind = getPageKind();
-  // Removing/reinserting the rebuilt shell temporarily exposes the native
-  // topic tree.  On a URL with a fragment that transition can make the
-  // browser restore scroll position to 0 before the rebuilt floor exists.
-  // Keep the pre-rebuild viewport as a bridge until hash reconciliation runs.
-  const preservedHashScrollPosition = currentKind === "post" && getRebuiltHashScrollKey()
-    ? captureImageViewerScrollPosition()
-    : null;
   if (currentKind === "topics" && shouldDeferNewTopicsRebuild()) {
     beginRebuildTransitionVeil(location.href);
     scheduleNewTopicsPendingRecheck();
@@ -27696,7 +24761,8 @@ function renderRebuiltUi(options = {}) {
     const kind = currentKind;
     document.documentElement.removeAttribute("data-cc98-rebuild-openid-login");
     if (kind !== "message") {
-      clearMessageTitleSync();
+      messageTitleObserver?.disconnect();
+      messageTitleObserver = null;
     }
     app.dataset.pageKind = kind;
     app.dataset.homeHotOnly = String(Boolean(lastSettings.homeHotOnly && kind === "home"));
@@ -27785,7 +24851,7 @@ function renderRebuiltUi(options = {}) {
     if (!["login", "error", "blacklist"].includes(kind) && !app.querySelector(".cc98-rebuild-blocked-page") && app.children.length <= 2) {
       const fallback = createElement("section", "cc98-rebuild-section");
       fallback.append(createElement("h2", "", "正在等待页面内容"));
-      fallback.append(createElement("p", "cc98-rebuild-card-meta", "CC98 原页面还没有加载出可抽取内容。稍后会自动更新，也可以点击顶部同步。"));
+      fallback.append(createElement("p", "cc98-rebuild-card-meta", "CC98 原页面还没有加载出可抽取内容。稍后会自动更新，也可以点击刷新。"));
       app.append(fallback);
     }
 
@@ -27801,13 +24867,12 @@ function renderRebuiltUi(options = {}) {
     if (kind === "message") {
       restoreMessageWindowScrollState(preservedMessageScrollState, app);
     }
-    if (preservedHashScrollPosition) {
-      restoreImageViewerScrollPosition(preservedHashScrollPosition);
-    }
     restoreRebuiltSearchUiState(app, preservedSearchState);
     stabilizeTopbarUserEntry(app);
     armPublicProfileTopbarRecovery(app);
-    scheduleTopbarStabilization(app);
+    [120, 480, 1200, 2400, 4200, 6500].forEach((delay) => {
+      setTimeout(() => stabilizeTopbarUserEntry(app), delay);
+    });
     rewriteLegacyQuoteInlineStyles(app);
     stabilizePostQuoteBlocks(app);
     forceLegacyQuotesInRebuiltRoot(app);
@@ -27822,19 +24887,6 @@ function renderRebuiltUi(options = {}) {
     setupRebuiltImagePlaceholders(app);
     document.documentElement.classList.add("cc98-comfort-rebuild-active");
     document.documentElement.dataset.cc98ComfortRebuildReady = "true";
-    if (preservedHashScrollPosition) {
-      const currentHashKey = getRebuiltHashScrollKey();
-      const hashPositionIsStable = Boolean(
-        currentHashKey
-        && rebuiltHashScrollAppliedKey === currentHashKey
-        && rebuiltHashScrollAppliedInteractionRevision === seamlessScrollInteractionRevision
-      );
-      if (hashPositionIsStable) {
-        scrollToCurrentRebuiltHash({ forceApplied: true });
-      } else {
-        restoreImageViewerScrollPosition(preservedHashScrollPosition);
-      }
-    }
     releaseRebuildTransitionVeilWhenReady();
     if (app.dataset.cc98UserCenterPending === "true") {
       showLoadingOverlay("正在加载个人中心...", { allowUserCenter: true });
@@ -27979,7 +25031,6 @@ function applyNativeSkinPolicy() {
 function createPlaceholder(item, reason, settings) {
   const placeholder = document.createElement("div");
   placeholder.className = "cc98-comfort-placeholder";
-  placeholder.dataset.cc98ComfortBlockedReason = reason;
   placeholder.innerHTML = `
     <div class="cc98-comfort-placeholder-text"></div>
     <button class="cc98-comfort-placeholder-button" type="button">显示</button>
@@ -27995,18 +25046,6 @@ function createPlaceholder(item, reason, settings) {
   });
 
   item.before(placeholder);
-  return placeholder;
-}
-
-function getPlaceholderForBlockedItem(item) {
-  const placeholder = item?.previousElementSibling;
-  return placeholder?.classList?.contains("cc98-comfort-placeholder") ? placeholder : null;
-}
-
-function clearBlockedItem(item) {
-  item.classList.remove("cc98-comfort-is-blocked");
-  item.removeAttribute("data-cc98-comfort-blocked-reason");
-  getPlaceholderForBlockedItem(item)?.remove();
 }
 
 function runFiltering() {
@@ -28015,50 +25054,34 @@ function runFiltering() {
   }
 
   isFiltering = true;
-  try {
-    if (!lastSettings?.enabled || !hasBlacklistRules(lastSettings)) {
-      clearBlockedState();
+  clearBlockedState();
+
+  if (!lastSettings?.enabled) {
+    isFiltering = false;
+    return;
+  }
+
+  if (!hasBlacklistRules(lastSettings)) {
+    isFiltering = false;
+    return;
+  }
+
+  document.querySelectorAll(BLOCKABLE_SELECTORS).forEach((item) => {
+    if (item.dataset.cc98ComfortRevealed === "true") {
       return;
     }
 
-    document.querySelectorAll(BLOCKABLE_SELECTORS).forEach((item) => {
-      const existingPlaceholder = getPlaceholderForBlockedItem(item);
-      if (item.dataset.cc98ComfortRevealed === "true") {
-        clearBlockedItem(item);
-        return;
-      }
+    const reason = getBlockReason(item, lastSettings);
+    if (!reason) {
+      return;
+    }
 
-      const reason = getBlockReason(item, lastSettings);
-      if (!reason) {
-        clearBlockedItem(item);
-        return;
-      }
+    item.classList.add("cc98-comfort-is-blocked");
+    item.dataset.cc98ComfortBlockedReason = reason;
+    createPlaceholder(item, reason, lastSettings);
+  });
 
-      item.classList.add("cc98-comfort-is-blocked");
-      item.dataset.cc98ComfortBlockedReason = reason;
-      if (existingPlaceholder) {
-        existingPlaceholder.dataset.cc98ComfortBlockedReason = reason;
-        const text = existingPlaceholder.querySelector(".cc98-comfort-placeholder-text");
-        const nextText = `${lastSettings.placeholderText} · ${reason}`;
-        if (text && text.textContent !== nextText) {
-          text.textContent = nextText;
-        }
-      } else {
-        createPlaceholder(item, reason, lastSettings);
-      }
-    });
-
-    document.querySelectorAll(".cc98-comfort-placeholder").forEach((placeholder) => {
-      const item = placeholder.nextElementSibling;
-      if (!(item instanceof HTMLElement)
-        || !item.matches(BLOCKABLE_SELECTORS)
-        || !item.classList.contains("cc98-comfort-is-blocked")) {
-        placeholder.remove();
-      }
-    });
-  } finally {
-    isFiltering = false;
-  }
+  isFiltering = false;
 }
 
 function scheduleFiltering() {
@@ -28103,17 +25126,11 @@ function ensureRebuiltAppPresenceWatchdog() {
     return;
   }
   rebuiltAppPresenceWatchdog = window.setInterval(() => {
-    if (document.visibilityState === "hidden") {
-      return;
-    }
     recoverMissingRebuiltApp();
-  }, 1600);
+  }, 420);
 }
 
 function scheduleRebuild() {
-  if (!lastSettings || !document.body) {
-    return;
-  }
   if (deferPublicProfileRebuildForSelection()) {
     return;
   }
@@ -28207,43 +25224,11 @@ function upsertCard(feed, key, card) {
   card.dataset.itemKey = key;
   const existing = feed.querySelector(`[data-item-key="${escapedKey}"]`);
   if (existing) {
-    if (existing.isEqualNode(card)) {
-      return false;
-    }
     existing.replaceWith(card);
     return true;
   }
   feed.append(card);
   return true;
-}
-
-function reconcileCardFeed(feed, entries) {
-  if (!(feed instanceof HTMLElement)) {
-    return;
-  }
-  const expectedKeys = new Set();
-  entries.forEach(({ key, card }) => {
-    expectedKeys.add(key);
-    upsertCard(feed, key, card);
-  });
-
-  [...feed.children].forEach((child) => {
-    const key = child.getAttribute("data-item-key") || "";
-    if (!key || !expectedKeys.has(key)) {
-      child.remove();
-    }
-  });
-
-  entries.forEach(({ key }, index) => {
-    const escapedKey = typeof CSS !== "undefined" && typeof CSS.escape === "function"
-      ? CSS.escape(key)
-      : key.replace(/["\\]/g, "\\$&");
-    const card = feed.querySelector(`[data-item-key="${escapedKey}"]`);
-    const current = feed.children[index] || null;
-    if (card && current !== card) {
-      feed.insertBefore(card, current);
-    }
-  });
 }
 
 function syncRebuiltContent() {
@@ -28294,16 +25279,16 @@ function syncRebuiltContent() {
   if (feed.dataset.feedKind === "search") {
     const keyword = getCurrentSearchKeyword();
     const topics = sortSearchTopicItems(getTopicItems(), keyword);
-    reconcileCardFeed(feed, topics.map((item) => ({
-      key: `topic:${item.href}`,
-      card: renderTopicCard(item)
-    })));
+    feed.replaceChildren();
+    topics.forEach((item) => {
+      const card = renderTopicCard(item);
+      card.dataset.itemKey = `topic:${item.href}`;
+      feed.append(card);
+    });
     const controls = app?.querySelector(".cc98-rebuild-search-sort");
     if (controls instanceof HTMLElement) {
       const nextControls = createSearchSortControls(topics.length, keyword);
-      if (!controls.isEqualNode(nextControls)) {
-        controls.replaceWith(nextControls);
-      }
+      controls.replaceWith(nextControls);
     }
     return;
   }
@@ -28327,10 +25312,6 @@ function syncRebuiltContent() {
       appendUniqueCard(feed, `post:${item.id}`, renderPostCard(item));
     });
     setupRebuiltImagePlaceholders(app);
-    // The target floor may only have appeared in the native tree during this
-    // sync.  Retry the pending first-load fragment now that its rebuilt card
-    // can be present.
-    scrollToCurrentRebuiltHash();
     return;
   }
 
@@ -28415,46 +25396,22 @@ function armAutoLoader() {
     }
   }, true);
   window.addEventListener("scroll", () => {
-    if (autoLoadScrollFrame) {
+    if (!lastSettings?.enabled || !lastSettings.rebuildUi) {
       return;
     }
-    autoLoadScrollFrame = window.requestAnimationFrame(() => {
-      autoLoadScrollFrame = 0;
-      if (!lastSettings?.enabled || !lastSettings.rebuildUi) {
-        return;
-      }
-      const kind = getPageKind();
-      if (SEAMLESS_SCROLL_SYNC_PAGE_KINDS.has(kind)) {
-        scheduleSeamlessNativeContentSync({ kind });
-      }
-      const nearBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 900;
-      if (!nearBottom) {
-        return;
-      }
-      pokeNativeInfiniteLoad();
-      if (kind === "userCenter") {
-        scheduleSync();
-      }
-    });
+    const kind = getPageKind();
+    if (SEAMLESS_SCROLL_SYNC_PAGE_KINDS.has(kind)) {
+      scheduleSeamlessNativeContentSync();
+    }
+    const nearBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 900;
+    if (!nearBottom) {
+      return;
+    }
+    pokeNativeInfiniteLoad();
+    if (kind === "userCenter") {
+      scheduleSync();
+    }
   }, { passive: true });
-}
-
-function isRebuiltInternalMutationTarget(record, app) {
-  const target = record.target instanceof Element ? record.target : record.target?.parentElement;
-  if (!(target instanceof Element)) {
-    return false;
-  }
-  if (app?.contains(target)) {
-    return true;
-  }
-  return Boolean(target.closest([
-    "#cc98-comfort-loading",
-    "#cc98-comfort-image-viewer",
-    ".cc98-rebuild-color-popover",
-    ".cc98-rebuild-font-size-popover",
-    ".cc98-rebuild-message-emoji-panel",
-    ".cc98-rebuild-transient-toast"
-  ].join(",")));
 }
 
 function ensureObserver() {
@@ -28470,7 +25427,6 @@ function ensureObserver() {
       return;
     }
     recoverMissingRebuiltApp();
-    const app = document.querySelector("#cc98-comfort-app");
     const hasTopbarAvatarMutation = records.some((record) => {
       const target = record.target instanceof Element ? record.target : record.target?.parentElement;
       if (record.type === "attributes") {
@@ -28490,11 +25446,9 @@ function ensureObserver() {
         syncRebuiltTopbarAvatar();
       }, 0);
     }
-    if (records.every((record) => isRebuiltInternalMutationTarget(record, app))) {
-      return;
-    }
     const hasSourceMutation = records.some((record) => {
       const target = record.target;
+      const app = document.querySelector("#cc98-comfort-app");
       const changedNodes = [...record.addedNodes, ...record.removedNodes];
       const onlyRebuildNodes = changedNodes.length > 0 && changedNodes.every((node) => {
         return node instanceof Element && (node.id === "cc98-comfort-app" || Boolean(node.closest?.("#cc98-comfort-app")));
@@ -28568,7 +25522,6 @@ function patchHistoryNavigation() {
     const original = history[method];
     history[method] = function patchedHistoryMethod(...args) {
       const beforeRouteKey = getRoutePageKey();
-      const beforeHash = location.hash;
       const isImageViewerHistoryState = Boolean(args[0]?.cc98ComfortImageViewer);
       if (isWebVpnHost() && args.length >= 3 && typeof args[2] !== "undefined" && args[2] !== null) {
         const fixedUrl = repairWebVpnNakedCc98Href(String(args[2]));
@@ -28594,9 +25547,6 @@ function patchHistoryNavigation() {
         }
       }
       const result = original.apply(this, args);
-      if (location.hash !== beforeHash) {
-        clearRebuiltHashScrollIntent();
-      }
       if (isImageViewerHistoryState) {
         return result;
       }
@@ -28615,7 +25565,6 @@ function patchHistoryNavigation() {
         markCurrentTopicReadLaterRead();
         scheduleFiltering();
         if (nextRouteKey !== beforeRouteKey) {
-          clearRebuiltHashScrollIntent();
           scheduleDelayedRebuilds();
         } else {
           scrollToCurrentRebuiltHash();
@@ -28632,14 +25581,12 @@ function patchHistoryNavigation() {
     }
     const nextRouteKey = getRoutePageKey();
     if (nextRouteKey !== previousRouteKey) {
-      clearRebuiltHashScrollIntent();
       beginRebuildTransitionVeil(location.href);
       previousRouteKey = nextRouteKey;
       markCurrentTopicReadLaterRead();
       scheduleDelayedRebuilds();
       return;
     }
-    clearRebuiltHashScrollIntent();
     scrollToCurrentRebuiltHash();
     scheduleSync();
   });
@@ -28647,7 +25594,6 @@ function patchHistoryNavigation() {
     if (Date.now() < imageViewerSuppressHashScrollUntil) {
       return;
     }
-    clearRebuiltHashScrollIntent();
     if (isReadLaterRoute() || isBlacklistRoute() || ["readLater", "blacklist"].includes(document.querySelector("#cc98-comfort-app")?.dataset.pageKind)) {
       scheduleDelayedRebuilds();
       return;
@@ -28728,56 +25674,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   return false;
 });
 
-function runNormalPageStartupFollowup() {
-  const app = document.querySelector("#cc98-comfort-app");
-  const needsRebuild = !(app instanceof HTMLElement)
-    || app.dataset.routeKey !== getRoutePageKey()
-    || app.dataset.cc98UserCenterPending === "true"
-    || Boolean(app.querySelector(".cc98-rebuild-empty-state"));
-  if (needsRebuild) {
-    scheduleRebuild();
-  } else {
-    scheduleSync();
-  }
-}
-
-function initializeNormalPageDom() {
-  if (normalPageDomBooted || !normalPageBooted || !document.body) {
-    return;
-  }
-  normalPageDomBooted = true;
-  clearPublicUserProfileLoadingOverlay();
-  injectSecurityWatermarkPageBridge();
-  ensureSecurityWatermark();
-  enforceRecentLogoutRedirectIntent();
-  bindGlobalTopbarAuthRedirects();
-  bindWebVpnNakedRouteGuard();
-  ensureRebornReplyTailSubmitGuard();
-  scheduleOpenIdBindPromptAfterLogin();
-  syncOpenIdBindingWithWebAccount();
-  ensureLegacyColorPickerSuppressor();
-  bindGlobalEditorColorInterceptor();
-  ensureHeadObserver();
-  ensureObserver();
-  ensureNativeAntUiStabilizer();
-  patchHistoryNavigation();
-  if (recoverEditorSubmitAfterNavigation()) {
-    return;
-  }
-  scheduleFiltering();
-  scheduleRebuild();
-  ensureStartupUpdateNotice();
-  normalPageStartupTimers.forEach((timer) => window.clearTimeout(timer));
-  normalPageStartupTimers = [
-    window.setTimeout(recoverEditorSubmitAfterNavigation, 350),
-    window.setTimeout(runNormalPageStartupFollowup, 600),
-    window.setTimeout(() => {
-      scheduleSync();
-      normalPageStartupTimers = [];
-    }, 1400)
-  ];
-}
-
 function bootNormalPage() {
   if (isOpenIdAuthorizationPage()) {
     return;
@@ -28810,15 +25706,51 @@ function bootNormalPage() {
   enforceRecentLogoutRedirectIntent();
   bindGlobalTopbarAuthRedirects();
   bindWebVpnNakedRouteGuard();
-  patchHistoryNavigation();
   scheduleOpenIdBindPromptAfterLogin();
   syncOpenIdBindingWithWebAccount();
+  document.addEventListener("DOMContentLoaded", () => {
+    clearPublicUserProfileLoadingOverlay();
+    injectSecurityWatermarkPageBridge();
+    ensureSecurityWatermark();
+    enforceRecentLogoutRedirectIntent();
+    bindGlobalTopbarAuthRedirects();
+    bindWebVpnNakedRouteGuard();
+    ensureRebornReplyTailSubmitGuard();
+    scheduleOpenIdBindPromptAfterLogin();
+    syncOpenIdBindingWithWebAccount();
+    ensureLegacyColorPickerSuppressor();
+    bindGlobalEditorColorInterceptor();
+    ensureHeadObserver();
+    ensureObserver();
+    ensureNativeAntUiStabilizer();
+    patchHistoryNavigation();
+    if (recoverEditorSubmitAfterNavigation()) {
+      return;
+    }
+    scheduleFiltering();
+    scheduleRebuild();
+    ensureStartupUpdateNotice();
+    setTimeout(recoverEditorSubmitAfterNavigation, 350);
+    setTimeout(scheduleRebuild, 600);
+    setTimeout(scheduleSync, 1400);
+  });
+
+  ensureLegacyColorPickerSuppressor();
+  bindGlobalEditorColorInterceptor();
+  ensureHeadObserver();
+  ensureObserver();
+  ensureNativeAntUiStabilizer();
+  patchHistoryNavigation();
+  bindWebVpnNakedRouteGuard();
+  ensureRebornReplyTailSubmitGuard();
+  scheduleOpenIdBindPromptAfterLogin();
+  syncOpenIdBindingWithWebAccount();
+  scheduleFiltering();
+  scheduleRebuild();
+  setTimeout(scheduleRebuild, 600);
+  setTimeout(scheduleSync, 1400);
+
   loadSettings();
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initializeNormalPageDom, { once: true });
-  } else {
-    initializeNormalPageDom();
-  }
 }
 
 armInitialRebuildTransitionVeil();

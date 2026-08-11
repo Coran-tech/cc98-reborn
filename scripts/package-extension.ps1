@@ -9,9 +9,10 @@ $manifestPath = Join-Path $root "manifest.json"
 $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
 $version = $manifest.version
 $packageName = "cc98-reborn-$version.zip"
+$unpackedName = "cc98-reborn-$version"
 $dist = Join-Path $root $OutputDirectory
 $zipPath = Join-Path $dist $packageName
-$stage = Join-Path $dist "package"
+$stage = Join-Path $dist $unpackedName
 
 New-Item -ItemType Directory -Force -Path $dist | Out-Null
 if (Test-Path $zipPath) {
@@ -39,14 +40,18 @@ New-Item -ItemType Directory -Force -Path (Join-Path $stage "src") | Out-Null
 @(
   "background.js",
   "content.js",
+  "extended-ubb-core.js",
+  "extended-ubb.js",
+  "extended-ubb.css",
   "openid-webvpn-bridge.js",
   "page-submit-monitor.js",
-  "styles.css"
+  "styles.css",
+  "vendor"
 ) | ForEach-Object {
-  Copy-Item -Path (Join-Path $root "src\$_") -Destination (Join-Path $stage "src")
+  Copy-Item -Path (Join-Path $root "src\$_") -Destination (Join-Path $stage "src") -Recurse
 }
 
 $releasePaths = Get-ChildItem -Force -Path $stage | ForEach-Object { $_.FullName }
 Compress-Archive -Path $releasePaths -DestinationPath $zipPath -CompressionLevel Optimal
-Remove-Item $stage -Recurse -Force
 Write-Host "Packaged $zipPath"
+Write-Host "Unpacked extension $stage"

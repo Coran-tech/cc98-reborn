@@ -98,6 +98,8 @@ const fields = {
 let settings = { ...DEFAULT_SETTINGS };
 let isHydrating = false;
 let latestReleaseUrl = RELEASES_PAGE_URL;
+let settingsSaveTimer = null;
+let lastPersistedSettingsSignature = "";
 
 function readRadio(name) {
   return document.querySelector(`input[name="${name}"]:checked`)?.value ?? DEFAULT_SETTINGS[name];
@@ -534,6 +536,7 @@ function hydrate(nextSettings) {
   updatePostImagePrewarmControls();
   updateBlacklistSummary();
 
+  lastPersistedSettingsSignature = JSON.stringify(settings);
   isHydrating = false;
 }
 
@@ -574,7 +577,17 @@ function collect() {
   };
 }
 
-function save() {
+function persistSettings() {
+  settingsSaveTimer = null;
+  const signature = JSON.stringify(settings);
+  if (signature === lastPersistedSettingsSignature) {
+    return;
+  }
+  lastPersistedSettingsSignature = signature;
+  chrome.storage.local.set({ [STORAGE_KEY]: settings });
+}
+
+function save(event) {
   if (isHydrating) {
     return;
   }
@@ -586,13 +599,28 @@ function save() {
   updatePostImagePrewarmControls();
   updateThemeDisplay();
   updateBlacklistSummary();
-  chrome.storage.local.set({ [STORAGE_KEY]: settings });
+  window.clearTimeout(settingsSaveTimer);
+  if (event?.type === "input") {
+    settingsSaveTimer = window.setTimeout(persistSettings, 140);
+  } else {
+    persistSettings();
+  }
 }
 
 function bind() {
   document.querySelectorAll("input, textarea, select").forEach((input) => {
-    input.addEventListener("input", save);
+    if (input.matches("input[type='range'], input[type='text'], input[type='number'], textarea")) {
+      input.addEventListener("input", save);
+    }
     input.addEventListener("change", save);
+  });
+
+  window.addEventListener("pagehide", () => {
+    if (!settingsSaveTimer) {
+      return;
+    }
+    window.clearTimeout(settingsSaveTimer);
+    persistSettings();
   });
 
   fields.themeMoreToggle?.addEventListener("click", (event) => {
