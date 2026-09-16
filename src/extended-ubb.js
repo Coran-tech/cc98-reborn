@@ -3,6 +3,7 @@
 
   const EXTENDED_UBB_TOUR_STORAGE_KEY = "cc98RebornExtendedUbbTour:v1";
   const EXTENDED_UBB_TOUR_VERSION = "0.3.4";
+  const EXTENDED_UBB_TOUR_AUTO_ENABLED = false;
   const emotionPattern = /^\[(cc98\d{2}|ac(?:\d{2}|\d{4})|[acf]:\d{3}|tb\d{2}|ms\d{2}|em\d{2})\]/i;
   const openingTagPattern = /^\[(\/?)([a-z][a-z0-9-]*)(?:=([^\]]*))?\]/i;
   const extendedTagPattern = /\[(?:\/?(?:left|center|right|quote|md|line|code|font|table|tr|th|td|upload|replyview|needreply|posteronly|allowviewer|noubb|english|cursor|topic|board|pm|user|math|m)(?:=|\])|img=)/i;
@@ -1788,6 +1789,9 @@
   }
 
   function scheduleExtendedUbbTour(tools) {
+    if (!EXTENDED_UBB_TOUR_AUTO_ENABLED) {
+      return;
+    }
     window.setTimeout(() => {
       void maybeShowExtendedUbbTour(tools);
     }, 260);

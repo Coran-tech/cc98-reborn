@@ -8,7 +8,7 @@ const SEARCH_HISTORY_CHANGE_EVENT = "cc98-reborn-search-history-change";
 const SEARCH_HISTORY_LIMIT = 12;
 const READ_LATER_ROUTE_HASH = "#cc98-reborn-read-later";
 const BLACKLIST_ROUTE_HASH = "#cc98-reborn-blacklist";
-const EXTENSION_VERSION = "0.3.4";
+const EXTENSION_VERSION = "0.3.4.1";
 const LOGIN_REDIRECT_MARK_KEY = "cc98RebornLoginRedirectStartedAt";
 const LOGIN_REDIRECT_SNAPSHOT_KEY = "cc98RebornLoginRedirectSnapshot";
 const LOGIN_HOME_REFRESH_MARK_KEY = "cc98RebornLoginHomeRefreshPendingAt";
@@ -18153,7 +18153,12 @@ function ensureNativeDualUbbToolbarControls(editor, state = editor?.__cc98DualUb
     ":scope > .ubb-button-fontSize, :scope > .cc98-rebuild-font-size-button"
   );
   if (fontSizeControl instanceof HTMLElement) {
-    fontSizeControl.after(fontFamilySelect);
+    // Re-inserting an already correctly positioned native <select> closes its
+    // open picker in Chromium. Stabilization runs after most toolbar clicks,
+    // so only move the control when React has actually changed its position.
+    if (fontSizeControl.nextElementSibling !== fontFamilySelect) {
+      fontSizeControl.after(fontFamilySelect);
+    }
   } else if (!fontFamilySelect.isConnected) {
     toolbar.append(fontFamilySelect);
   }
@@ -19084,6 +19089,9 @@ function bindNativeEditorStabilizer(editor) {
   }, true);
   editor.addEventListener("pointerdown", (event) => {
     blurMarkdownEditorBeforePreview(editor, event.target);
+    if (event.target?.closest?.(".cc98-rebuild-editor-font-select")) {
+      return;
+    }
     if (event.target?.closest?.(".cc98-rebuild-message-emoji-panel")) {
       return;
     }
@@ -19145,6 +19153,9 @@ function bindNativeEditorStabilizer(editor) {
   }, true);
   editor.addEventListener("click", (event) => {
     if (deferMarkdownPreviewUntilInputSettles(editor, event)) {
+      return;
+    }
+    if (event.target?.closest?.(".cc98-rebuild-editor-font-select")) {
       return;
     }
     if (isNativePostSubmitEditor(editor) && isLikelyEditorSubmitControl(event.target)) {
@@ -23877,7 +23888,7 @@ function getSearchRouteAge() {
 }
 
 function hasNativeSearchLoadingSignal() {
-  return Boolean(document.querySelector([
+  const candidate = document.querySelector([
     ".ant-spin-spinning",
     ".ant-spin-nested-loading .ant-spin",
     ".ant-spin-blur",
@@ -23886,7 +23897,19 @@ function hasNativeSearchLoadingSignal() {
     "[class*='loadMore']",
     "[id*='loading']",
     "[id*='Loading']"
-  ].join(",")));
+  ].join(","));
+  if (!(candidate instanceof HTMLElement)) {
+    return false;
+  }
+  const text = cleanupPostText(candidate.textContent || "");
+  const className = String(candidate.className || "");
+  // The native search empty-state wrapper includes `loading` in its class on
+  // some Forum builds. It is not a live spinner, so it must not keep the
+  // rebuilt search view in its pending state indefinitely.
+  if (/noResult|emptyResult|searchNone/i.test(className) || /抱歉呢前辈|没有找到|查询出错/.test(text)) {
+    return false;
+  }
+  return true;
 }
 
 function shouldDeferSearchEmptyState() {
