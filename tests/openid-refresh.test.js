@@ -171,6 +171,7 @@ globalThis.__openidRefreshTest = {
     btoa: (value) => Buffer.from(value, "binary").toString("base64"),
     setTimeout,
     clearTimeout,
+    importScripts: () => {},
     console
   };
   vm.runInNewContext(source, context, { filename: sourcePath });

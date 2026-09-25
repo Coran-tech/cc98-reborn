@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>问号密钥更新端</title>
+  <style>
+    body { max-width: 720px; margin: 48px auto; padding: 0 24px; font: 15px/1.6 system-ui, sans-serif; color: #24313b; background: #f7f9fb; }
+    h1 { font-size: 24px; }
+    p { max-width: 64ch; }
+    button { padding: 8px 14px; margin-right: 8px; color: #fff; background: #2265a4; border: 0; border-radius: 4px; cursor: pointer; }
+    button:disabled { opacity: .5; cursor: default; }
+    pre { padding: 16px; overflow-wrap: anywhere; white-space: pre-wrap; background: #fff; border: 1px solid #ccd4db; border-radius: 4px; }
+    #status { min-height: 24px; }
+  </style>
+  <script src="admin-key-store.js" defer></script>
+  <script src="admin.js" defer></script>
+</head>
+<body>
+  <h1>本机公钥更新端</h1>
+  <p>这台设备的私钥只保存在扩展本地，不能导出。将下方公钥登记到 Sites 后，它才能在你完成 CC98 OpenID 授权时提交官方公钥更新。</p>
+  <button id="generate" type="button">生成本机密钥</button>
+  <button id="copy" type="button" disabled>复制公钥</button>
+  <p id="status" role="status"></p>
+  <pre id="public-key" aria-label="本机公钥"></pre>
+</body>
+</html>

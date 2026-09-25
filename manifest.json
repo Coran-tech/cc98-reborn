@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "CC98 Reborn",
   "description": "A refreshed reading and browsing interface for CC98.",
-  "version": "0.3.4.2",
+  "version": "0.3.5",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsx4AY7VBQLt9+vyQu66ygsM332JqZkzTbXoGodjciunuxrkJ5PmN7qmlyhJQz3hd6rqxIQq7DRwEimcH3SaEYB6ypOh0fSSSWEWhjIbENVOJuVd0j+9ad8Ww9QE+AA/rfGEci0hHx02IvLarBCUBlROqVJjvofOFNg/8rhozdu/3lpcYqPqq+CKzYZWH7J26TC5Tcau0sXodmM27sI/4q5avmL0cFSruuCuqep69delrU/qSBLkJZar53AIpKPwwz48Jj75XQD5PFEpJ/8mTxiSRQ6cgQH2xypLwIiUbbtDMUmkLzVGEo364hUN1/GavubO6h78T5K8ealXNWUqgHQIDAQAB",
   "permissions": [
     "storage",
@@ -20,6 +20,7 @@
     "*://*.webvpn.zju.edu.cn/*",
     "https://openid.cc98.org/*",
     "https://api.cc98.org/*",
+    "https://cc98-question-mark-demo.coran-zju.chatgpt.site/*",
     "https://api.github.com/repos/Coran-tech/cc98-reborn/releases*",
     "https://github.com/Coran-tech/cc98-reborn/releases/*",
     "https://gh-proxy.com/*"
@@ -93,12 +94,14 @@
         "src/vendor/katex/katex.min.js",
         "src/extended-ubb-core.js",
         "src/extended-ubb.js",
-        "src/content.js"
+        "src/content.js",
+        "experiments/question-mark/content.js"
       ],
       "css": [
         "src/vendor/katex/katex.min.css",
         "src/styles.css",
-        "src/extended-ubb.css"
+        "src/extended-ubb.css",
+        "experiments/question-mark/content.css"
       ],
       "run_at": "document_start"
     }

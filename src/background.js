@@ -1064,7 +1064,8 @@ async function requestCc98OpenIdBinding({
   interactive = true,
   authTransport = "direct",
   expectedAccount = null,
-  resumeMode = "request"
+  resumeMode = "request",
+  oidcNonce = ""
 } = {}) {
   const normalizedTransport = normalizeOpenIdAuthTransport(authTransport);
   const redirectUri = normalizedTransport === "webvpn"
@@ -1079,11 +1080,16 @@ async function requestCc98OpenIdBinding({
   authorizeUrl.searchParams.set("response_type", "code");
   authorizeUrl.searchParams.set("scope", CC98_OPENID_SCOPES.join(" "));
   authorizeUrl.searchParams.set("state", state);
+  if (oidcNonce) {
+    authorizeUrl.searchParams.set("nonce", oidcNonce);
+  }
   authorizeUrl.searchParams.set("code_challenge", codeChallenge);
   authorizeUrl.searchParams.set("code_challenge_method", "S256");
   if (forceLogin) {
     authorizeUrl.searchParams.set("prompt", "login consent");
     authorizeUrl.searchParams.set("max_age", "0");
+  } else if (!interactive && normalizedTransport === "direct") {
+    authorizeUrl.searchParams.set("prompt", "none");
   } else if (interactive && OPENID_PROFILE_REFRESH_ENABLED) {
     // offline_access needs explicit consent so the provider reliably returns a refresh token.
     authorizeUrl.searchParams.set("prompt", "consent");
@@ -1144,6 +1150,11 @@ async function requestCc98OpenIdBinding({
       normalizedTransport
     );
     const profile = await fetchCc98Profile(tokenPayload.access_token, normalizedTransport);
+    if (normalizedTransport === "direct" && typeof questionMaybeUpdateOfficialKeys === "function") {
+      await questionMaybeUpdateOfficialKeys().catch(() => {
+        console.warn("CC98 question public-key synchronization was skipped");
+      });
+    }
     return {
       binding: normalizeOpenIdBinding(profile, tokenPayload),
       tokenPayload
@@ -1923,3 +1934,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   return false;
 });
+
+importScripts("../experiments/question-mark/admin-key-store.js");
+importScripts("../experiments/question-mark/background.js");

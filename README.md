@@ -4,7 +4,7 @@
 
 它的主要目标很简单：让 CC98 的页面更统一、更清爽，也顺手补上一些日常浏览真正用得上的便利功能。扩展会在浏览器本地读取原页面已经加载的内容，构建新的阅读界面；发帖、回复、上传、收藏、评分、关注、私信等关键操作则尽量继续调用原站逻辑。
 
-当前版本：`0.3.4.2`
+当前版本：`0.3.5`
 
 [下载发布包](https://github.com/Coran-tech/cc98-reborn/releases) ·
 [提交 Bug](https://github.com/Coran-tech/cc98-reborn/issues) ·
@@ -64,6 +64,7 @@
 - 支持浏览记录、我的收藏、黑名单页面和个人中心常用入口。
 - 支持手动及定时检查 GitHub Releases 中的新版本。
 - 提供显式的 CC98 Cookie 与站点数据清理入口，用于处理缓存异常或刷新十大。
+- 可选的实验性“问号键”：在楼层的赞与踩之间显示问号和计数；使用前需同意独立隐私说明并完成同账号 CC98 OpenID 授权，默认关闭。
 
 ## 安装
 
@@ -88,9 +89,12 @@
 - 按需开启帖子图片预热、第一页预热、回复小尾巴等辅助功能。
 - 设置版面、标题关键词和 UID 屏蔽规则。
 - 绑定或退出 CC98 OpenID。
+- 开启或关闭实验性“问号键”，并打开其独立隐私说明。
 - 检查更新、查看项目信息或清理 CC98 站点数据。
 
 页面顶栏中的“同步”不是普通的浏览器刷新：它会重新读取原页面目前已经加载的内容，并同步到重构 UI。
+
+启用问号键后，在 CC98 直连帖子的楼层中点击 `?`，阅读隐私说明并确认，再完成 OpenID 授权。此后页面会显示已加载楼层的问号计数；再次点击可取消自己的问号。此实验暂不支持 WebVPN 授权，也不替代原站的赞、踩、评分或回复。
 
 ## OpenID 与水印
 
@@ -106,7 +110,7 @@
 
 ## 数据与隐私
 
-扩展不会把帖子正文、私信、搜索词、草稿或插件设置上传到第三方服务器。
+扩展不会把帖子正文、标题、图片、私信、搜索词、草稿或插件设置上传到问号服务。问号功能默认关闭；开启并确认隐私说明后，才会与独立 HTTPS 服务通信。
 
 可能发生的网络访问仅包括：
 
@@ -114,12 +118,13 @@
 - 用户主动触发的 CC98 文件上传、下载和站内操作。
 - 用户主动绑定时访问 CC98 OpenID 和 `/me`。
 - 检查更新时读取公开的 GitHub Release 信息及备用镜像。
+- 可选问号功能在授权时发送 CC98 OpenID ID Token 以换取短期会话；授权后查询或切换问号时发送数字帖号和楼层号。服务端使用身份摘要限制每个账号对每个楼层只有一个当前问号状态，普通用户只能查询汇总计数和自己的状态；服务端运营方仍能接触服务端数据。
 
 稍后再看、版面置顶、草稿、搜索历史、屏蔽规则和 OpenID 摘要均保存在浏览器本地。使用“清除 CC98 Cookie 与站点数据”会同时删除 CC98 页面自身保存的本地数据，可能包括上述内容，请先导出需要保留的数据。
 
-AI 搜索联想和高级模糊搜索的外部接口当前保持停用。
+问号功能的服务端尚无法独立确认楼层存在性或原站访问权限，请勿将实验功能视为原站官方能力；目前仅在直连页面验证。AI 搜索联想和高级模糊搜索的外部接口当前保持停用。
 
-完整说明见 [PRIVACY.md](./PRIVACY.md)。
+完整说明见 [PRIVACY.md](./PRIVACY.md) 和[问号功能独立隐私说明](https://cc98-question-mark-demo.coran-zju.chatgpt.site/privacy)。
 
 ## 已知限制
 
@@ -145,6 +150,7 @@ src/
   styles.css
   vendor/
 popup/
+experiments/question-mark/  # 问号实验的运行文件
 assets/
 images/
 ```
@@ -159,10 +165,15 @@ node --check .\src\background.js
 node --check .\src\openid-webvpn-bridge.js
 node --check .\src\page-submit-monitor.js
 node --check .\popup\popup.js
+node --check .\experiments\question-mark\background.js
+node --check .\experiments\question-mark\content.js
+node --check .\experiments\question-mark\admin-key-store.js
+node --check .\experiments\question-mark\admin.js
 node -e "JSON.parse(require('fs').readFileSync('manifest.json','utf8')); console.log('manifest ok')"
 node .\tests\page-submit-monitor.test.js
 node .\tests\openid-refresh.test.js
 node .\tests\extended-ubb-core.test.js
+node .\tests\question-mark-integration.test.js
 ```
 
 打包：
@@ -174,8 +185,8 @@ node .\tests\extended-ubb-core.test.js
 生成文件：
 
 ```text
-dist/cc98-reborn-0.3.4.2.zip
-dist/cc98-reborn-0.3.4.2/
+dist/cc98-reborn-0.3.5.zip
+dist/cc98-reborn-0.3.5/
 ```
 
 发布包不包含 `reference/`、`tests/`、`.git/` 或其他开发期文件。
@@ -184,9 +195,9 @@ dist/cc98-reborn-0.3.4.2/
 
 CC98 Reborn is a Chrome/Edge extension that rebuilds common CC98 pages into a cleaner, theme-aware interface while reusing native CC98 controls for important actions whenever possible.
 
-It supports direct CC98 access and ZJU WebVPN, improves post reading and media viewing, provides local drafts, search history, per-user read-later storage, board pinning, user hover cards, update checks, and optional OpenID-based local watermarking.
+It supports direct CC98 access and ZJU WebVPN, improves post reading and media viewing, provides local drafts, search history, per-user read-later storage, board pinning, user hover cards, update checks, and optional OpenID-based local watermarking. An experimental question reaction is available on direct CC98 pages and is off by default.
 
-The extension does not upload posts, private messages, search terms, drafts, or settings to third-party services. See [PRIVACY.md](./PRIVACY.md) for details.
+The extension does not upload posts, private messages, search terms, drafts, or settings to the external question service. If users enable and consent to the optional question reaction, an OpenID ID Token and numeric topic/floor identifiers are sent to that service. See [PRIVACY.md](./PRIVACY.md) and the [question feature privacy notice](https://cc98-question-mark-demo.coran-zju.chatgpt.site/privacy) for details.
 
 Install the latest package from [GitHub Releases](https://github.com/Coran-tech/cc98-reborn/releases), extract it to a fixed folder, then load that folder from `chrome://extensions/` or `edge://extensions/` with Developer mode enabled.
 

@@ -25,6 +25,10 @@ jobs:
           node --check src/openid-webvpn-bridge.js
           node --check src/page-submit-monitor.js
           node --check popup/popup.js
+          node --check experiments/question-mark/background.js
+          node --check experiments/question-mark/content.js
+          node --check experiments/question-mark/admin-key-store.js
+          node --check experiments/question-mark/admin.js
 
       - name: Validate manifest
         run: node -e "JSON.parse(require('fs').readFileSync('manifest.json','utf8')); console.log('manifest ok')"
@@ -37,3 +41,6 @@ jobs:
 
       - name: Test extended UBB core
         run: node tests/extended-ubb-core.test.js
+
+      - name: Test question reaction integration
+        run: node tests/question-mark-integration.test.js

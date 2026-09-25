@@ -20,6 +20,7 @@ const DEFAULT_SETTINGS = {
   openLinksInNewTab: false,
   sideTopbar: false,
   replyRebornTail: true,
+  questionMarkEnabled: false,
   minimalMode: false,
   homeHotOnly: false,
   expandTopicCardsByDefault: false,
@@ -69,6 +70,7 @@ const fields = {
   openLinksInNewTab: document.querySelector("#openLinksInNewTab"),
   sideTopbar: document.querySelector("#sideTopbar"),
   replyRebornTail: document.querySelector("#replyRebornTail"),
+  questionMarkEnabled: document.querySelector("#questionMarkEnabled"),
   fontScale: document.querySelector("#fontScale"),
   fontScaleOutput: document.querySelector("#fontScaleOutput"),
   emojiScale: document.querySelector("#emojiScale"),
@@ -525,6 +527,7 @@ function hydrate(nextSettings) {
   fields.openLinksInNewTab.checked = settings.openLinksInNewTab;
   fields.sideTopbar.checked = settings.sideTopbar;
   fields.replyRebornTail.checked = settings.replyRebornTail;
+  fields.questionMarkEnabled.checked = settings.questionMarkEnabled === true;
   writeRadio("theme", settings.theme);
   updateThemeDisplay();
   fields.fontScale.value = settings.fontScale;
@@ -557,6 +560,7 @@ function collect() {
     openLinksInNewTab: fields.openLinksInNewTab.checked,
     sideTopbar: fields.sideTopbar.checked,
     replyRebornTail: fields.replyRebornTail.checked,
+    questionMarkEnabled: fields.questionMarkEnabled.checked,
     minimalMode: DEFAULT_SETTINGS.minimalMode,
     homeHotOnly: fields.homeHotOnly.checked,
     expandTopicCardsByDefault: fields.expandTopicCardsByDefault.checked,

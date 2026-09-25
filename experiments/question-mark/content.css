@@ -1,0 +1,71 @@
+:root.cc98-comfort .cc98-question-action {
+  gap: 6px;
+  min-width: 54px;
+  font-variant-numeric: tabular-nums;
+}
+
+:root.cc98-comfort .cc98-question-action .cc98-question-mark {
+  font-size: 1.08em;
+  font-weight: 800;
+}
+
+:root.cc98-comfort .cc98-question-action.is-selected {
+  color: var(--cc98-comfort-accent) !important;
+  border-color: var(--cc98-comfort-accent) !important;
+  background: var(--cc98-comfort-accent-2) !important;
+}
+
+:root.cc98-comfort .cc98-question-action.is-pending {
+  opacity: 0.6;
+}
+
+.cc98-question-notice {
+  position: fixed;
+  left: 20px;
+  bottom: 20px;
+  z-index: 2147483647;
+  max-width: min(380px, calc(100vw - 40px));
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: var(--cc98-comfort-surface, #fff);
+  color: var(--cc98-comfort-text, #222);
+  border: 1px solid var(--cc98-comfort-border, #ddd);
+  box-shadow: 0 8px 30px #0002;
+  font-size: 13px;
+}
+
+dialog.cc98-question-privacy-dialog {
+  width: min(440px, calc(100vw - 32px));
+  max-width: none;
+  max-height: calc(100vh - 32px);
+  margin: auto;
+  padding: 22px;
+  overflow: auto;
+  border: 1px solid var(--cc98-comfort-border, #d7dfe0);
+  border-radius: 6px;
+  background: var(--cc98-comfort-surface, #fff);
+  color: var(--cc98-comfort-text, #1d282c);
+  box-shadow: 0 20px 60px #0004;
+  line-height: 1.7;
+}
+
+dialog.cc98-question-privacy-dialog::backdrop { background: #0008; }
+dialog.cc98-question-privacy-dialog h2 { margin: 0 0 12px; font-size: 19px; line-height: 1.4; }
+dialog.cc98-question-privacy-dialog p { margin: 0 0 12px; font-size: 14px; }
+dialog.cc98-question-privacy-dialog a { color: var(--cc98-comfort-accent, #a83847); text-decoration: underline; }
+.cc98-question-privacy-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+.cc98-question-privacy-actions button {
+  min-height: 36px;
+  padding: 6px 13px;
+  border: 1px solid var(--cc98-comfort-border, #d7dfe0);
+  border-radius: 5px;
+  background: var(--cc98-comfort-surface, #fff);
+  color: var(--cc98-comfort-text, #1d282c);
+  cursor: pointer;
+  font-size: 14px;
+}
+.cc98-question-privacy-actions button.is-primary {
+  border-color: #a83847;
+  background: #a83847;
+  color: #fff;
+}
