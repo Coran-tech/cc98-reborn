@@ -8,7 +8,7 @@ const SEARCH_HISTORY_CHANGE_EVENT = "cc98-reborn-search-history-change";
 const SEARCH_HISTORY_LIMIT = 12;
 const READ_LATER_ROUTE_HASH = "#cc98-reborn-read-later";
 const BLACKLIST_ROUTE_HASH = "#cc98-reborn-blacklist";
-const EXTENSION_VERSION = "0.3.4.1";
+const EXTENSION_VERSION = "0.3.4.2";
 const LOGIN_REDIRECT_MARK_KEY = "cc98RebornLoginRedirectStartedAt";
 const LOGIN_REDIRECT_SNAPSHOT_KEY = "cc98RebornLoginRedirectSnapshot";
 const LOGIN_HOME_REFRESH_MARK_KEY = "cc98RebornLoginHomeRefreshPendingAt";
@@ -348,6 +348,7 @@ let readLaterItemsCache = null;
 let readLaterStorageHydratedKey = "";
 let readLaterStorageHydratingKey = "";
 let blacklistFilterType = "all";
+let embeddedBlacklistOpenPath = "";
 let editorSubmitIntermediateTimer = null;
 let editorDraftAutosaveTimers = new WeakMap();
 let normalPageBooted = false;
@@ -5847,9 +5848,11 @@ function isUserCenterRoutePath(path = getCurrentCc98RoutePath()) {
 }
 
 function getUserCenterNativeShell() {
+  const outsideApp = (selector) => [...document.querySelectorAll(selector)]
+    .find((node) => node instanceof HTMLElement && !node.closest("#cc98-comfort-app"));
   return {
-    navSource: document.querySelector(".user-center-navigation"),
-    router: document.querySelector(".user-center-router")
+    navSource: outsideApp(".user-center-navigation") || document.querySelector(".user-center-navigation"),
+    router: outsideApp(".user-center-router") || document.querySelector(".user-center-router")
   };
 }
 
@@ -7050,7 +7053,7 @@ function parseTopicMetaText(text) {
     };
   }
 
-  const cardInfo = raw.match(new RegExp(`^(\\d+)\\s+(\\d+)\\s*最后回复[:：]\\s*(.*?)\\s*(${timePattern})(?:\\s|$)`));
+  const cardInfo = raw.match(new RegExp(`^(\\d+(?:\\.\\d+)?(?:万|[wk])?)\\s+(\\d+)\\s*最后回复[:：]\\s*(.*?)\\s*(${timePattern})(?:\\s|$)`, "i"));
   if (cardInfo) {
     const [, viewCount, replyCount, lastReplyUser, lastReplyAt] = cardInfo;
     return {
@@ -7065,7 +7068,7 @@ function parseTopicMetaText(text) {
     };
   }
 
-  const searchInfo = raw.match(new RegExp(`^(${timePattern})\\s+(\\d+)\\s*最后回复[:：]\\s*(.+?)\\s*$`));
+  const searchInfo = raw.match(new RegExp(`^(${timePattern})\\s+(\\d+(?:\\.\\d+)?(?:万|[wk])?)\\s*最后回复[:：]\\s*(.+?)\\s*$`, "i"));
   if (searchInfo) {
     const [, listedAt, viewCount, lastReplyUser] = searchInfo;
     return {
@@ -7130,6 +7133,10 @@ function getFirstNumber(text) {
   return String(text ?? "").match(/\d+/)?.[0] ?? "";
 }
 
+function getFirstCountText(text) {
+  return String(text ?? "").match(/\d+(?:\.\d+)?\s*(?:万|[wk])?/i)?.[0]?.replace(/\s+/g, "") ?? "";
+}
+
 function isTopicTimeText(text) {
   return TOPIC_TIME_RE.test(normalizeSuggestionText(text));
 }
@@ -7145,7 +7152,7 @@ function parseStructuredTopicMeta(topic) {
   }
   const { info, parts } = parsed;
   if (info.classList.contains("card-topic-info") && parts.length >= 4) {
-    const viewCount = getFirstNumber(parts[0].text);
+    const viewCount = getFirstCountText(parts[0].text);
     const replyCount = getFirstNumber(parts[1].text);
     const lastReplyPart = parts.find((part) => part.text.includes("最后回复"));
     const lastReplyUser = getFirstLink(lastReplyPart?.node ?? info, 'a[href*="/user/"]')?.text
@@ -7172,11 +7179,11 @@ function parseStructuredTopicMeta(topic) {
       if (part === tagPart || part === timePart || part.text.includes("最后回复")) {
         return false;
       }
-      return Boolean(getFirstNumber(part.text));
+      return Boolean(getFirstCountText(part.text));
     });
     const listedAt = timePart?.text || "";
     const tag = stripTopicLabel(tagPart?.text || "");
-    const viewCount = getFirstNumber(viewPart?.text);
+    const viewCount = getFirstCountText(viewPart?.text);
     const lastReplyPart = parts.find((part) => part.text.includes("最后回复"));
     const lastReplyUser = getFirstLink(lastReplyPart?.node ?? info, 'a[href*="/user/"]')?.text
       || lastReplyPart?.text.replace(/最后回复[:：]\s*/, "").trim()
@@ -13345,7 +13352,7 @@ function renderTopicCard(item) {
       card.classList.add(`cc98-rebuild-rank-${item.rankMovement}`);
       const motionText = item.rankMovement === "new"
         ? "\u65b0"
-        : `${item.rankMovement === "up" ? "\u2191" : "\u2193"}${item.rankDelta || ""}`;
+        : `${item.rankMovement === "up" ? "\u25b2" : "\u25bc"}${item.rankDelta || ""}`;
       const motionClass = [
         "cc98-rebuild-rank-motion",
         `cc98-rebuild-rank-motion-${item.rankMovement}`,
@@ -13953,6 +13960,9 @@ function renderBoardTopicCard(item) {
 
 function renderBoardPage(app) {
   const data = getBoardPageData();
+  if (document.querySelector(".board-body .board-head-name") && data.name) {
+    document.title = `${data.name} - CC98论坛`;
+  }
   const summary = createElement("section", "cc98-rebuild-board-hero");
   if (data.avatar) {
     const avatar = createElement("img", "cc98-rebuild-board-hero-avatar");
@@ -14049,6 +14059,10 @@ function rememberReparentedNativeNode(node) {
 function restoreNativeNode(node) {
   if (!node) {
     return;
+  }
+  if (node.dataset?.cc98EmbeddedBlacklistHidden === "true") {
+    node.hidden = false;
+    delete node.dataset.cc98EmbeddedBlacklistHidden;
   }
   if (node.classList?.contains("cc98-rebuild-native-vote")) {
     node.querySelectorAll?.(".cc98-rebuild-native-vote-button").forEach((button) => {
@@ -20791,7 +20805,9 @@ function getUserCenterActiveTitle() {
 function updateUserCenterHero(app = document.querySelector("#cc98-comfort-app")) {
   const title = app?.querySelector(".cc98-rebuild-user-hero h1");
   if (title) {
-    const nextTitle = getUserCenterActiveTitle();
+    const nextTitle = app.querySelector(".cc98-rebuild-user-blacklist-panel:not([hidden])")
+      ? "黑名单"
+      : getUserCenterActiveTitle();
     if (title.textContent !== nextTitle) {
       title.textContent = nextTitle;
     }
@@ -20830,7 +20846,7 @@ function stabilizeUserCenterFavoriteActions(router) {
       return;
     }
     wrapper.classList.add("cc98-rebuild-favorite-action-offset");
-    wrapper.style.setProperty("transform", "translate(700px, 0px)", "important");
+    wrapper.style.setProperty("transform", "none", "important");
     wrapper.style.setProperty("white-space", "nowrap", "important");
     wrapper.style.setProperty("margin", "0", "important");
   });
@@ -24412,7 +24428,9 @@ function showEmbeddedBlacklistPanel(router, panel, app, navSource) {
     navigateToRebuiltHref(getBlacklistPageHref());
     return;
   }
+  embeddedBlacklistOpenPath = getCurrentCc98RoutePath();
   router.hidden = true;
+  router.dataset.cc98EmbeddedBlacklistHidden = "true";
   panel.hidden = false;
   navSource?.querySelectorAll?.(".cc98-rebuild-blacklist-nav-entry").forEach((entry) => {
     entry.classList.add("is-active");
@@ -24424,8 +24442,10 @@ function showEmbeddedBlacklistPanel(router, panel, app, navSource) {
 }
 
 function hideEmbeddedBlacklistPanel(router, panel, app) {
+  embeddedBlacklistOpenPath = "";
   if (router instanceof HTMLElement) {
     router.hidden = false;
+    delete router.dataset.cc98EmbeddedBlacklistHidden;
   }
   if (panel instanceof HTMLElement) {
     panel.hidden = true;
@@ -24437,8 +24457,8 @@ function hideEmbeddedBlacklistPanel(router, panel, app) {
 }
 
 function createBlacklistNavLink(router = null, panel = null, app = null, navSource = null) {
-  const link = createElement("a", "fa fa-ban cc98-rebuild-blacklist-nav-entry");
-  link.href = getBlacklistPageHref();
+  const link = createElement("button", "fa fa-ban cc98-rebuild-blacklist-nav-entry");
+  link.type = "button";
   const label = createElement("span", "center-nav-item", "黑名单");
   link.append(label);
   link.addEventListener("click", (event) => {
@@ -24499,8 +24519,7 @@ function renderUserCenter(app) {
     return;
   }
 
-  const navSource = document.querySelector(".user-center-navigation");
-  const router = document.querySelector(".user-center-router");
+  const { navSource, router } = getUserCenterNativeShell();
   const activeTitle = getUserCenterActiveTitle();
   const isPublicProfile = isPublicUserProfilePage();
 
@@ -24565,6 +24584,9 @@ function renderUserCenter(app) {
     host.append(main, panel);
     layout.append(nav, host);
     app.append(layout);
+    if (embeddedBlacklistOpenPath === getCurrentCc98RoutePath()) {
+      showEmbeddedBlacklistPanel(main, panel, app, nav);
+    }
     return;
   }
 
@@ -24588,6 +24610,9 @@ function renderUserCenter(app) {
   host.append(router, panel);
   layout.append(navSource, host);
   app.append(layout);
+  if (embeddedBlacklistOpenPath === getCurrentCc98RoutePath()) {
+    showEmbeddedBlacklistPanel(router, panel, app, navSource);
+  }
 }
 
 function encodeSearchKeyword(keyword) {
@@ -25342,7 +25367,7 @@ function extractSuggestionTerms(title, keyword) {
 }
 
 function getSearchSuggestionEntryWeight(entry) {
-  const views = Number(entry.viewCount) || 0;
+  const views = parseCountValue(entry.viewCount);
   const replies = Number(entry.replyCount) || 0;
   return 1 + Math.log10(views + 1) * 1.8 + Math.log10(replies + 1) * 2.4;
 }
@@ -25365,13 +25390,13 @@ function collectSearchSuggestionEntriesFromDocument(doc) {
     let viewCount = structured?.viewCount || textParsed?.viewCount || "";
     let replyCount = structured?.replyCount || textParsed?.replyCount || "";
     if (!viewCount && infoParts?.info.classList.contains("card-topic-info")) {
-      viewCount = getFirstNumber(infoParts.parts[0]?.text);
+      viewCount = getFirstCountText(infoParts.parts[0]?.text);
     }
     if (!replyCount && infoParts?.info.classList.contains("card-topic-info")) {
       replyCount = getFirstNumber(infoParts.parts[1]?.text);
     }
     if (!viewCount && infoParts?.info.classList.contains("focus-topic-info")) {
-      viewCount = getFirstNumber(infoParts.parts[1]?.text);
+      viewCount = getFirstCountText(infoParts.parts[1]?.text);
     }
     entries.push({
       title: cleanTitle,
@@ -25655,7 +25680,7 @@ function getFuzzyItemScore(item, terms, combo, index) {
   const titleHitBonus = matchedTerms
     .filter((term) => title.includes(term.toLowerCase()))
     .reduce((sum, term) => sum + getTermImportance(term) * 22, 0);
-  const views = Number(item.viewCount) || 0;
+  const views = parseCountValue(item.viewCount);
   const replies = Number(item.replyCount) || 0;
   return matchedTerms.reduce((sum, term) => sum + getTermImportance(term) * 55, 0)
     + comboHitBonus
@@ -28295,6 +28320,13 @@ function syncRebuiltContent() {
       } else if (isPublicUserProfileNativeShellReady()) {
         scheduleRebuild();
       }
+    } else if (isUserCenterNativeShellReady()) {
+      const { navSource, router } = getUserCenterNativeShell();
+      if (navSource !== app?.querySelector(".user-center-navigation.cc98-rebuild-native-user-nav")
+        || router !== app?.querySelector(".user-center-router.cc98-rebuild-native-user-router")) {
+        scheduleRebuild();
+        return;
+      }
     }
     updateUserCenterHero(app);
     return;
@@ -28339,6 +28371,10 @@ function syncRebuiltContent() {
   }
 
   if (feed.dataset.feedKind === "boardTopics") {
+    const boardName = getFirstText(document, ".board-body .board-head-name");
+    if (boardName) {
+      document.title = `${boardName} - CC98论坛`;
+    }
     getBoardTopicItems().forEach((item) => {
       upsertCard(feed, `board-topic:${item.href}`, renderBoardTopicCard(item));
     });
@@ -28547,6 +28583,16 @@ function ensureObserver() {
       return;
     }
 
+    if (getPageKind() === "userCenter" && !isPublicUserProfilePage()
+      && isUserCenterNativeShellReady()) {
+      const { navSource, router } = getUserCenterNativeShell();
+      if (navSource !== app?.querySelector(".user-center-navigation.cc98-rebuild-native-user-nav")
+        || router !== app?.querySelector(".user-center-router.cc98-rebuild-native-user-router")) {
+        scheduleRebuild();
+        return;
+      }
+    }
+
     if (!isFiltering) {
       scheduleFiltering();
     }
@@ -28591,6 +28637,7 @@ function patchHistoryNavigation() {
     const original = history[method];
     history[method] = function patchedHistoryMethod(...args) {
       const beforeRouteKey = getRoutePageKey();
+      const beforeRoutePath = getCurrentCc98RoutePath();
       const beforeHash = location.hash;
       const isImageViewerHistoryState = Boolean(args[0]?.cc98ComfortImageViewer);
       if (isWebVpnHost() && args.length >= 3 && typeof args[2] !== "undefined" && args[2] !== null) {
@@ -28623,6 +28670,13 @@ function patchHistoryNavigation() {
       if (isImageViewerHistoryState) {
         return result;
       }
+      const nextRoutePath = getCurrentCc98RoutePath();
+      if (nextRoutePath !== beforeRoutePath) {
+        embeddedBlacklistOpenPath = "";
+      }
+      const movedToAnotherPath = method === "pushState"
+        && beforeRoutePath !== nextRoutePath
+        && !location.hash;
       if (redirectNullPageToHome()) {
         return result;
       }
@@ -28639,6 +28693,9 @@ function patchHistoryNavigation() {
         scheduleFiltering();
         if (nextRouteKey !== beforeRouteKey) {
           clearRebuiltHashScrollIntent();
+          if (movedToAnotherPath) {
+            window.scrollTo(0, 0);
+          }
           scheduleDelayedRebuilds();
         } else {
           scrollToCurrentRebuiltHash();
@@ -28649,6 +28706,9 @@ function patchHistoryNavigation() {
     };
   });
   window.addEventListener("popstate", () => {
+    if (embeddedBlacklistOpenPath && embeddedBlacklistOpenPath !== getCurrentCc98RoutePath()) {
+      embeddedBlacklistOpenPath = "";
+    }
     if (document.querySelector("#cc98-comfort-image-viewer")) {
       closeImageViewer(true);
       return;

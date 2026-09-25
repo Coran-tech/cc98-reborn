@@ -4,7 +4,7 @@
 
 它的主要目标很简单：让 CC98 的页面更统一、更清爽，也顺手补上一些日常浏览真正用得上的便利功能。扩展会在浏览器本地读取原页面已经加载的内容，构建新的阅读界面；发帖、回复、上传、收藏、评分、关注、私信等关键操作则尽量继续调用原站逻辑。
 
-当前版本：`0.3.4.1`
+当前版本：`0.3.4.2`
 
 [下载发布包](https://github.com/Coran-tech/cc98-reborn/releases) ·
 [提交 Bug](https://github.com/Coran-tech/cc98-reborn/issues) ·
@@ -174,8 +174,8 @@ node .\tests\extended-ubb-core.test.js
 生成文件：
 
 ```text
-dist/cc98-reborn-0.3.4.1.zip
-dist/cc98-reborn-0.3.4.1/
+dist/cc98-reborn-0.3.4.2.zip
+dist/cc98-reborn-0.3.4.2/
 ```
 
 发布包不包含 `reference/`、`tests/`、`.git/` 或其他开发期文件。

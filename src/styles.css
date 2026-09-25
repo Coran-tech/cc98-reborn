@@ -969,6 +969,52 @@
   overflow-anchor: none;
 }
 
+@media (min-width: 861px) and (max-width: 1100px) {
+  :root.cc98-comfort .cc98-rebuild-topbar {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 8px 12px;
+  }
+
+  :root.cc98-comfort .cc98-rebuild-topbar > .cc98-rebuild-brand {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  :root.cc98-comfort .cc98-rebuild-topbar > .cc98-rebuild-nav {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+    flex-wrap: nowrap;
+    gap: 0;
+  }
+
+  :root.cc98-comfort .cc98-rebuild-topbar > .cc98-rebuild-nav a {
+    padding-inline: 7px;
+    white-space: nowrap;
+  }
+
+  :root.cc98-comfort .cc98-rebuild-topbar > .cc98-rebuild-actions {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  :root.cc98-comfort .cc98-rebuild-topbar > .cc98-rebuild-search {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    grid-template-columns: 86px minmax(0, 1fr) auto auto;
+  }
+
+  :root.cc98-comfort .cc98-rebuild-topbar .cc98-rebuild-search-submit {
+    min-width: 54px;
+    white-space: nowrap;
+  }
+
+  :root.cc98-comfort .cc98-rebuild-search-suggestions {
+    right: auto;
+    width: min(420px, calc(100vw - 32px));
+  }
+}
+
 @media (min-width: 1101px) {
   :root.cc98-comfort[data-cc98-comfort-side-topbar="true"] #cc98-comfort-app {
     --cc98-side-topbar-width: 202px;
@@ -6327,6 +6373,15 @@
   width: 100%;
 }
 
+:root.cc98-comfort button.cc98-rebuild-blacklist-nav-entry {
+  appearance: none;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  text-align: left;
+  cursor: pointer;
+}
+
 :root.cc98-comfort .cc98-rebuild-blocked-actions,
 :root.cc98-comfort .cc98-rebuild-blocked-page-actions {
   display: flex;
@@ -11184,19 +11239,19 @@
 }
 
 :root.cc98-comfort .cc98-rebuild-native-user-router :is(.user-center-myfavorites, .user-center-myfavorite, .user-favorites) div[style*="translate(-50px"]:has(> .ant-dropdown-link.ant-dropdown-trigger) {
-  transform: translate(700px, 0px) !important;
+  transform: none !important;
   white-space: nowrap !important;
 }
 
 :root.cc98-comfort .cc98-rebuild-native-user-router .user-post-content > div[style*="translate(-50px"]:has(> .ant-dropdown-link.ant-dropdown-trigger),
 :root.cc98-comfort .cc98-rebuild-native-user-router .cc98-rebuild-favorite-action-offset {
   width: max-content !important;
-  max-width: none !important;
+  max-width: 100% !important;
   flex: 0 0 auto !important;
   align-self: center !important;
-  justify-self: start !important;
-  margin: 0 !important;
-  transform: translate(700px, 0px) !important;
+  justify-self: end !important;
+  margin: 0 0 0 auto !important;
+  transform: none !important;
   white-space: nowrap !important;
 }
 
