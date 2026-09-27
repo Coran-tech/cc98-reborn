@@ -8,7 +8,7 @@ const SEARCH_HISTORY_CHANGE_EVENT = "cc98-reborn-search-history-change";
 const SEARCH_HISTORY_LIMIT = 12;
 const READ_LATER_ROUTE_HASH = "#cc98-reborn-read-later";
 const BLACKLIST_ROUTE_HASH = "#cc98-reborn-blacklist";
-const EXTENSION_VERSION = "0.3.4.2";
+const EXTENSION_VERSION = globalThis.chrome?.runtime?.getManifest?.()?.version || "dev";
 const LOGIN_REDIRECT_MARK_KEY = "cc98RebornLoginRedirectStartedAt";
 const LOGIN_REDIRECT_SNAPSHOT_KEY = "cc98RebornLoginRedirectSnapshot";
 const LOGIN_HOME_REFRESH_MARK_KEY = "cc98RebornLoginHomeRefreshPendingAt";
@@ -86,20 +86,20 @@ const DEFAULT_SETTINGS = {
   enabled: true,
   theme: "soft",
   density: "comfortable",
-  fontScale: 100,
-  emojiScale: 100,
+  fontScale: 110,
+  emojiScale: 200,
   neutralizeNativeSkin: true,
   rebuildUi: true,
   roundUi: true,
   cornerRadius: 10,
   prewarmPostImages: false,
   imageLoadDuration: 2100,
-  previsitFirstPageForTopicImages: false,
+  previsitFirstPageForTopicImages: true,
   openLinksInNewTab: false,
   sideTopbar: false,
   replyRebornTail: true,
   minimalMode: false,
-  homeHotOnly: false,
+  homeHotOnly: true,
   expandTopicCardsByDefault: false,
   softenAvatars: true,
   hideSticky: false,
@@ -470,7 +470,9 @@ function normalizeSettings(settings = {}) {
     emojiScale: clampNumber(settings.emojiScale, 70, 200, DEFAULT_SETTINGS.emojiScale),
     prewarmPostImages: Boolean(settings.prewarmPostImages),
     imageLoadDuration: clampNumber(settings.imageLoadDuration, 800, 8000, DEFAULT_SETTINGS.imageLoadDuration),
-    previsitFirstPageForTopicImages: Boolean(settings.previsitFirstPageForTopicImages),
+    previsitFirstPageForTopicImages: Boolean(
+      settings.previsitFirstPageForTopicImages ?? DEFAULT_SETTINGS.previsitFirstPageForTopicImages
+    ),
     openLinksInNewTab: Boolean(settings.openLinksInNewTab),
     sideTopbar: Boolean(settings.sideTopbar),
     replyRebornTail: Boolean(settings.replyRebornTail ?? DEFAULT_SETTINGS.replyRebornTail),
@@ -15337,6 +15339,7 @@ const EDITOR_GRADIENT_PRESETS = [
 ];
 
 const EDITOR_FONT_SIZE_VALUES = ["1", "2", "3", "4", "5", "6", "7"];
+const EDITOR_TYPOGRAPHY_RESET_VALUE = "__cc98_reset__";
 
 const EDITOR_FONT_FAMILY_GROUPS = [
   ["常用中文", [
@@ -15435,17 +15438,15 @@ function applyEditorFontFamily(editor, fontFamily, select = null) {
   const end = Number.isFinite(storedEnd)
     ? Math.max(start, Math.min(textarea.value.length, storedEnd))
     : (Number.isFinite(textarea.selectionEnd) ? textarea.selectionEnd : start);
-  const selected = textarea.value.slice(start, end);
-  const opening = `[font=${normalized}]`;
-  const wrapped = `${opening}${selected}[/font]`;
-  setNativeMessageInputValue(
-    textarea,
-    `${textarea.value.slice(0, start)}${wrapped}${textarea.value.slice(end)}`
+  const result = window.CC98RebornExtendedUbbCore?.applyFontToSource(
+    textarea.value, { start, end }, normalized
   );
-  const caretStart = start + opening.length;
-  const caretEnd = selected ? caretStart + selected.length : caretStart;
+  if (!result) {
+    return false;
+  }
+  setNativeMessageInputValue(textarea, result.value);
   textarea.focus({ preventScroll: true });
-  textarea.setSelectionRange(caretStart, caretEnd);
+  textarea.setSelectionRange(result.start, result.end);
   scheduleNativeEditorStabilize(editor);
   scheduleNativeEditorDraftSave(editor);
   return true;
@@ -15473,6 +15474,7 @@ function createEditorFontFamilySelect(editor, extraClassName = "") {
     });
     select.append(group);
   });
+  select.value = normalizeEditorFontFamilyValue(editor.__cc98CurrentFontFamily);
   const rememberSelection = () => rememberEditorFontFamilySelection(editor, select);
   select.addEventListener("pointerdown", rememberSelection);
   select.addEventListener("keydown", (event) => {
@@ -15483,11 +15485,87 @@ function createEditorFontFamilySelect(editor, extraClassName = "") {
   select.addEventListener("change", () => {
     const fontFamily = normalizeEditorFontFamilyValue(select.value);
     if (fontFamily) {
+      editor.__cc98CurrentFontFamily = fontFamily;
       applyEditorFontFamily(editor, fontFamily, select);
     }
-    select.value = "";
+    select.closest(".cc98-rebuild-font-family-control")?.querySelector(".cc98-rebuild-font-family-apply")?.toggleAttribute("disabled", !fontFamily);
   });
   return select;
+}
+
+function getStoredEditorFontFamilySelection(select, textarea) {
+  const start = Number(select?.dataset?.cc98FontSelectionStart);
+  const end = Number(select?.dataset?.cc98FontSelectionEnd);
+  if (!Number.isFinite(start) || !Number.isFinite(end)) {
+    return null;
+  }
+  return {
+    start: Math.max(0, Math.min(textarea.value.length, start)),
+    end: Math.max(0, Math.min(textarea.value.length, end))
+  };
+}
+
+function createEditorFontFamilyControl(editor, extraClassName = "") {
+  const control = createElement("span", "cc98-rebuild-font-family-control");
+  const select = createEditorFontFamilySelect(editor, extraClassName);
+  const apply = createButton("cc98-rebuild-font-family-apply", "字", (event) => {
+    event.preventDefault();
+    const fontFamily = normalizeEditorFontFamilyValue(select.value || editor.__cc98CurrentFontFamily);
+    if (fontFamily) {
+      applyEditorFontFamily(editor, fontFamily, select);
+    }
+  });
+  apply.type = "button";
+  apply.title = "应用当前字体";
+  apply.setAttribute("aria-label", apply.title);
+  apply.disabled = !normalizeEditorFontFamilyValue(select.value);
+  apply.addEventListener("pointerdown", (event) => {
+    rememberEditorFontFamilySelection(editor, select);
+    event.preventDefault();
+  });
+  const reset = createButton("cc98-rebuild-font-family-reset", "取消字体", (event) => {
+    event.preventDefault();
+    const textarea = getNativeEditorTextarea(editor);
+    const selection = textarea instanceof HTMLTextAreaElement ? getStoredEditorFontFamilySelection(select, textarea) : null;
+    clearEditorTypography(editor, "font", selection);
+    editor.__cc98CurrentFontFamily = "";
+    select.value = "";
+    apply.disabled = true;
+  });
+  reset.type = "button";
+  reset.title = "取消字体（恢复默认）";
+  reset.setAttribute("aria-label", reset.title);
+  reset.addEventListener("pointerdown", (event) => {
+    rememberEditorFontFamilySelection(editor, select);
+    event.preventDefault();
+  });
+  control.append(apply, select, reset);
+  return control;
+}
+
+function clearEditorTypography(editor, tag, selection = null) {
+  const clear = tag === "font" ? editor?.__cc98WysiwygClearFontFamily : editor?.__cc98WysiwygClearFontSize;
+  if (typeof clear === "function") {
+    return clear();
+  }
+  const textarea = getNativeEditorTextarea(editor);
+  if (!(textarea instanceof HTMLTextAreaElement)) {
+    return false;
+  }
+  const result = window.CC98RebornExtendedUbbCore?.applyTypographyToSource(
+    textarea.value,
+    selection || { start: textarea.selectionStart, end: textarea.selectionEnd },
+    tag, null
+  );
+  if (!result) {
+    return false;
+  }
+  setNativeMessageInputValue(textarea, result.value);
+  textarea.focus({ preventScroll: true });
+  textarea.setSelectionRange(result.start, result.end);
+  scheduleNativeEditorStabilize(editor);
+  scheduleNativeEditorDraftSave(editor);
+  return true;
 }
 
 function normalizeHexColor(value, fallback = "#ff0000") {
@@ -15517,7 +15595,7 @@ function hexToRgb(color) {
 
 function rgbToHex(r, g, b) {
   return `#${[r, g, b]
-    .map((value) => Math.max(0, Math.min(255, Number(value) || 0)).toString(16).padStart(2, "0"))
+    .map((value) => Math.round(Math.max(0, Math.min(255, Number(value) || 0))).toString(16).padStart(2, "0"))
     .join("")}`;
 }
 
@@ -15710,6 +15788,10 @@ function getEditorColorTriggerButton(target) {
   if (!(target instanceof Element)) {
     return null;
   }
+  const split = target.closest(".cc98-rebuild-color-split");
+  if (split instanceof HTMLElement) {
+    return split.querySelector(".cc98-rebuild-color-button");
+  }
   const direct = target.closest(".ubb-button-color, .cc98-rebuild-color-button");
   if (direct instanceof HTMLElement) {
     return direct;
@@ -15784,7 +15866,9 @@ function ensureLegacyColorPickerSuppressor() {
 }
 
 function findEditorForColorButton(button) {
-  return button?.closest?.(".cc98-rebuild-profile-signature-editor, .cc98-rebuild-message-editor, .cc98-rebuild-native-editor, .createTopic, #sendTopicInfo, .sendTopicInfo, .reply-input, .ubb-editor, form")
+  return button?.__cc98ColorEditor
+    || button?.closest?.(".cc98-rebuild-profile-signature-editor, .cc98-rebuild-message-editor, .cc98-rebuild-native-editor")
+    || button?.closest?.(".createTopic, #sendTopicInfo, .sendTopicInfo, .reply-input, .ubb-editor, form")
     || document.querySelector(".cc98-rebuild-native-editor, .createTopic, #sendTopicInfo")
     || null;
 }
@@ -15827,61 +15911,59 @@ function positionEditorFontSizePopover(button, panel) {
   panel.style.setProperty("left", `${left}px`, "important");
 }
 
-function getEditorColorButtonValue(button) {
-  const input = button?.querySelector?.(":scope > .cc98-rebuild-native-color-input")
-    || getEditorColorPanels(button)[0]?.querySelector?.(".cc98-rebuild-color-popover-input");
-  const preview = button?.querySelector?.(".sp-preview-inner, .sp-preview");
-  return normalizeHexColor(input?.value || preview?.style?.backgroundColor || preview?.style?.color || "#ff0000");
+function copyEditorColorChoice(choice) {
+  const color = normalizeHexColor(choice?.color);
+  const stops = normalizeEditorGradientStops((choice?.stops || []).map((stop) => ({ ...stop })), color);
+  return {
+    mode: ["solid", "transparent", "gradient"].includes(choice?.mode) ? choice.mode : "solid",
+    color,
+    stops,
+    density: normalizeEditorGradientDensity(choice?.density),
+    selectedStopId: stops.some((stop) => stop.id === choice?.selectedStopId) ? choice.selectedStopId : stops[0].id
+  };
 }
 
-function updateEditorColorButtonPreview(button, color) {
-  const normalized = normalizeHexColor(color);
-  const rgb = hexToRgb(normalized);
-  getEditorColorPanels(button).forEach((panel) => {
-    if (panel instanceof HTMLElement) {
-      panel.dataset.cc98CurrentColor = normalized;
-      panel.dataset.cc98TransparentSelected = "false";
-      const transparent = panel.querySelector(".cc98-rebuild-color-transparent");
-      transparent?.classList.remove("is-active");
-      transparent?.setAttribute("aria-pressed", "false");
-    }
-  });
-  [
-    ...(button?.querySelectorAll?.(".cc98-rebuild-native-color-input") ?? []),
-    ...getEditorColorPanels(button).flatMap((panel) => [...panel.querySelectorAll(".cc98-rebuild-color-popover-input")])
-  ].forEach((input) => {
-    if (input instanceof HTMLInputElement) {
-      if (input !== document.activeElement || !input.classList.contains("cc98-rebuild-color-popover-input")) {
-        input.value = normalized;
-      }
-    }
-  });
-  getEditorColorPanels(button).flatMap((panel) => [...panel.querySelectorAll("[data-cc98-color-channel]")]).forEach((input) => {
-    if (input instanceof HTMLInputElement) {
-      input.value = String(rgb[input.dataset.cc98ColorChannel] ?? 0);
-    }
-  });
-  [
-    ...(button?.querySelectorAll?.(".sp-preview-inner, .sp-preview") ?? []),
-    ...getEditorColorPanels(button).flatMap((panel) => [...panel.querySelectorAll(".cc98-rebuild-color-popover-swatch")])
-  ].forEach((node) => {
-    if (node instanceof HTMLElement) {
-      node.style.setProperty("background-color", normalized, "important");
-    }
-  });
-  getEditorColorPanels(button).flatMap((panel) => [...panel.querySelectorAll(".cc98-rebuild-color-preset")]).forEach((preset) => {
-    if (preset instanceof HTMLElement) {
-      preset.classList.toggle("is-active", normalizeHexColor(preset.dataset.cc98ColorPreset) === normalized);
-    }
-  });
+function getEditorColorState(button) {
+  const editor = button.__cc98ColorEditor || findEditorForColorButton(button);
+  let state = button.__cc98ColorState || editor?.__cc98ColorState;
+  if (!state) {
+    const legacy = button.querySelector(".sp-preview-inner, .sp-preview");
+    const color = button.classList.contains("cc98-rebuild-message-editor-color")
+      ? "#ff6666" : normalizeHexColor(legacy?.style.backgroundColor, "#ff0000");
+    state = { committed: copyEditorColorChoice({ color }) };
+  }
+  button.__cc98ColorState = state;
+  if (editor) {
+    editor.__cc98ColorState = state;
+  }
+  return state;
 }
 
-function getColorPopoverValue(panel, button) {
-  return normalizeHexColor(
-    panel?.dataset?.cc98CurrentColor
-      || panel?.querySelector?.(".cc98-rebuild-color-popover-input")?.value
-      || getEditorColorButtonValue(button)
-  );
+function renderEditorColorSwatch(swatch, choice) {
+  if (!(swatch instanceof HTMLElement)) {
+    return;
+  }
+  // Set all background components together so transparency cannot leave tiled gradients behind.
+  const transparent = choice.mode === "transparent";
+  swatch.style.setProperty("background-color", transparent ? "transparent" : choice.color, "important");
+  swatch.style.setProperty("background-image", transparent
+    ? "conic-gradient(#c6cbd0 25%, #fff 0 50%, #c6cbd0 0 75%, #fff 0)"
+    : choice.mode === "gradient" ? getEditorGradientCss(choice.stops) : "none", "important");
+  swatch.style.setProperty("background-size", transparent ? "8px 8px" : "100% 100%", "important");
+}
+
+function renderEditorColorButton(button, choice = getEditorColorState(button).committed) {
+  button.querySelectorAll(".cc98-rebuild-color-swatch").forEach((swatch) => renderEditorColorSwatch(swatch, choice));
+  const input = button.querySelector(":scope > .cc98-rebuild-native-color-input");
+  if (input instanceof HTMLInputElement) {
+    input.value = getEditorColorState(button).committed.color;
+  }
+}
+
+function applyEditorColorChoice(editor, choice, selection) {
+  return choice.mode === "gradient"
+    ? applyEditorGradient(editor, choice.stops, selection, choice.density)
+    : applyEditorColor(editor, choice.mode === "transparent" ? "transparent" : choice.color, selection);
 }
 
 function getStoredEditorSelection(button, textarea) {
@@ -16666,7 +16748,8 @@ function clearEditorColor(editor, selection = null) {
   if (!(textarea instanceof HTMLTextAreaElement)) {
     return false;
   }
-  const sourceSelection = normalizeEditorColorSourceSelection(selection, textarea.value);
+  const sourceValue = String(textarea.value || "").replace(/[\u200b\uFEFF]/g, "");
+  const sourceSelection = normalizeEditorColorSourceSelection(selection, sourceValue);
   const rawStart = Number.isFinite(sourceSelection?.start)
     ? sourceSelection.start
     : (Number.isFinite(textarea.selectionStart) ? textarea.selectionStart : sourceValue.length);
@@ -16675,7 +16758,7 @@ function clearEditorColor(editor, selection = null) {
     : (Number.isFinite(textarea.selectionEnd) ? textarea.selectionEnd : rawStart);
   const start = Math.max(0, Math.min(sourceValue.length, rawStart));
   const end = Math.max(start, Math.min(sourceValue.length, rawEnd));
-  const result = removeEditorColorTagsFromSource(textarea.value, start, end);
+  const result = removeEditorColorTagsFromSource(sourceValue, start, end);
   if (!result.changed) {
     return false;
   }
@@ -16744,7 +16827,7 @@ function getStoredEditorFontSizeSelection(button, textarea) {
 
 function rememberEditorFontSizeSelection(editor, button) {
   if (typeof editor?.__cc98WysiwygRememberSelection === "function") {
-    editor.__cc98WysiwygRememberSelection(button);
+    editor.__cc98WysiwygRememberSelection({ preserveNonCollapsed: true });
     return;
   }
   const textarea = getNativeEditorTextarea(editor);
@@ -16770,27 +16853,27 @@ function applyEditorFontSize(editor, size, selection = null) {
   const end = Number.isFinite(selection?.end)
     ? selection.end
     : (Number.isFinite(textarea.selectionEnd) ? textarea.selectionEnd : start);
-  const selected = textarea.value.slice(start, end);
-  const before = textarea.value.slice(0, start);
-  const after = textarea.value.slice(end);
-  const wrapped = selected
-    ? `[size=${normalized}]${selected}[/size]`
-    : `[size=${normalized}][/size]`;
-  setNativeMessageInputValue(textarea, `${before}${wrapped}${after}`);
-  const caret = selected ? start + wrapped.length : start + `[size=${normalized}]`.length;
+  const result = window.CC98RebornExtendedUbbCore?.applyTypographyToSource(
+    textarea.value, { start, end }, "size", normalized
+  );
+  if (!result) {
+    return false;
+  }
+  setNativeMessageInputValue(textarea, result.value);
   textarea.focus({ preventScroll: true });
-  textarea.setSelectionRange(caret, caret);
+  textarea.setSelectionRange(result.start, result.end);
   scheduleNativeEditorStabilize(editor);
   return true;
 }
 
 function ensureNativeColorInput(editor, button) {
+  button.__cc98ColorEditor = editor;
   let input = button.querySelector(":scope > .cc98-rebuild-native-color-input");
   if (!(input instanceof HTMLInputElement)) {
     input = document.createElement("input");
     input.type = "hidden";
     input.className = "cc98-rebuild-native-color-input";
-    input.value = getEditorColorButtonValue(button);
+    input.value = getEditorColorState(button).committed.color;
     input.title = "选择文字颜色";
     input.setAttribute("aria-label", "选择文字颜色");
     button.append(input);
@@ -16820,20 +16903,29 @@ function ensureNativeColorInput(editor, button) {
   return input;
 }
 
+function closeEditorColorPopover(panel, restoreSelection = true) {
+  if (!(panel instanceof HTMLElement) || panel.hidden) {
+    return;
+  }
+  // Hide before restoring focus: the input's later blur/change must not revive a discarded draft.
+  panel.hidden = true;
+  panel.__cc98ColorDraft = null;
+  panel.__cc98ColorDragCleanup?.();
+  const button = panel.__cc98ColorButton;
+  button?.classList.remove("cc98-rebuild-color-button-open");
+  if (button instanceof HTMLElement) {
+    renderEditorColorButton(button);
+  }
+  clearEditorColorSelectionSnapshot(panel.__cc98Editor, { restore: restoreSelection });
+  panel.__cc98ColorSelectionSnapshot = null;
+}
+
 function closeEditorColorPopovers(exceptPanel = null) {
   suppressLegacyEditorColorPickers();
-  document.querySelectorAll(".cc98-rebuild-color-popover").forEach((panel) => {
-    if (panel === exceptPanel) {
-      return;
+  document.querySelectorAll(".cc98-rebuild-color-popover:not([hidden])").forEach((panel) => {
+    if (panel !== exceptPanel) {
+      closeEditorColorPopover(panel);
     }
-    panel.hidden = true;
-    panel.__cc98ColorButton?.classList?.remove("cc98-rebuild-color-button-open");
-    panel.closest(".ubb-button-color")?.classList.remove("cc98-rebuild-color-button-open");
-    const editor = panel.__cc98Editor;
-    if (editor instanceof HTMLElement) {
-      clearEditorColorSelectionSnapshot(editor, { restore: true });
-    }
-    panel.__cc98ColorSelectionSnapshot = null;
   });
 }
 
@@ -16850,12 +16942,12 @@ function closeEditorFontSizePopovers(exceptPanel = null) {
 function updateEditorFontSizePreview(button, size) {
   const normalized = normalizeEditorFontSizeValue(size, "");
   const select = getEditorFontSizeSelect(button);
-  if (select instanceof HTMLSelectElement && normalized) {
+  if (select instanceof HTMLSelectElement) {
     select.value = normalized;
   }
   button?.querySelectorAll?.(".cc98-rebuild-font-size-trigger").forEach((trigger) => {
     if (trigger instanceof HTMLElement) {
-      trigger.textContent = normalized || "字号";
+      trigger.querySelector(".cc98-rebuild-split-value")?.replaceChildren(document.createTextNode(normalized || "字号"));
     }
   });
   document.querySelectorAll(".cc98-rebuild-font-size-popover").forEach((panel) => {
@@ -16876,7 +16968,7 @@ function ensureEditorFontSizePopover(editor, button) {
     button.dataset.cc98FontSizePopoverId = `cc98-rebuild-font-size-popover-${editorFontSizePopoverSequence}`;
   }
   let panel = document.getElementById(button.dataset.cc98FontSizePopoverId);
-  if (panel instanceof HTMLElement && panel.querySelector(".cc98-rebuild-font-size-option")) {
+  if (panel instanceof HTMLElement && panel.querySelector(".cc98-rebuild-font-size-reset")) {
     panel.__cc98Editor = editor;
     panel.__cc98FontSizeButton = button;
     return panel;
@@ -16894,6 +16986,7 @@ function ensureEditorFontSizePopover(editor, button) {
     option.type = "button";
     option.dataset.cc98FontSizeValue = size;
     option.setAttribute("role", "menuitem");
+    option.addEventListener("pointerdown", (event) => event.preventDefault());
     option.addEventListener("click", () => {
       const textarea = getNativeEditorTextarea(editor);
       const selection = textarea instanceof HTMLTextAreaElement ? getStoredEditorFontSizeSelection(button, textarea) : null;
@@ -16904,6 +16997,19 @@ function ensureEditorFontSizePopover(editor, button) {
     });
     panel.append(option);
   });
+  const reset = createButton("cc98-rebuild-font-size-reset", "取消字号", (event) => {
+    event.preventDefault();
+    const textarea = getNativeEditorTextarea(editor);
+    const selection = textarea instanceof HTMLTextAreaElement ? getStoredEditorFontSizeSelection(button, textarea) : null;
+    if (clearEditorTypography(editor, "size", selection)) {
+      updateEditorFontSizePreview(button, "");
+    }
+    panel.hidden = true;
+    button.classList.remove("cc98-rebuild-font-size-button-open");
+  });
+  reset.type = "button";
+  reset.addEventListener("pointerdown", (event) => event.preventDefault());
+  panel.append(reset);
   ["pointerdown", "mousedown", "mouseup", "click"].forEach((type) => {
     panel.addEventListener(type, (event) => event.stopPropagation());
   });
@@ -16922,7 +17028,10 @@ function ensureEditorColorPopover(editor, button) {
   if (panel instanceof HTMLElement) {
     const existingInput = panel.querySelector(".cc98-rebuild-color-popover-input");
     if (
-      panel.querySelector(".cc98-rebuild-color-popover-channels")
+      panel.__cc98ColorButton === button
+      && panel.__cc98Editor === editor
+      && typeof panel.__cc98RenderColor === "function"
+      && panel.querySelector(".cc98-rebuild-color-popover-channels")
       && panel.querySelector(".cc98-rebuild-color-presets")
       && panel.querySelector(".cc98-rebuild-color-transparent")
       && panel.querySelector(".cc98-rebuild-gradient-editor")
@@ -16935,6 +17044,7 @@ function ensureEditorColorPopover(editor, button) {
       panel.__cc98ColorButton = button;
       return panel;
     }
+    closeEditorColorPopover(panel);
     panel.remove();
   }
 
@@ -16961,7 +17071,7 @@ function ensureEditorColorPopover(editor, button) {
   const input = document.createElement("input");
   input.type = "text";
   input.className = "cc98-rebuild-color-popover-input";
-  input.value = getEditorColorButtonValue(button);
+  input.value = getEditorColorState(button).committed.color;
   input.maxLength = 7;
   input.spellcheck = false;
   input.inputMode = "text";
@@ -17060,134 +17170,157 @@ function ensureEditorColorPopover(editor, button) {
   status.hidden = true;
   panel.append(mode, row, presets, transparent, gradientEditor, channels, status, actions);
 
-  panel.dataset.cc98ColorMode = "solid";
-  panel.__cc98GradientStops = normalizeEditorGradientStops([], input.value);
-  panel.__cc98SelectedGradientStop = panel.__cc98GradientStops[0];
+  const handles = new Map();
+  const getDraft = () => !panel.hidden && !panel.__cc98ColorCommitting ? panel.__cc98ColorDraft : null;
+  const selectedStop = (choice) => choice.stops.find((stop) => stop.id === choice.selectedStopId) || choice.stops[0];
+  const editableColor = (choice) => choice.mode === "gradient" ? selectedStop(choice).color : choice.color;
 
-  const renderGradient = () => {
-    const stops = normalizeEditorGradientStops(panel.__cc98GradientStops, input.value);
-    panel.__cc98GradientStops = stops;
-    if (!stops.includes(panel.__cc98SelectedGradientStop)) {
-      panel.__cc98SelectedGradientStop = stops[0];
+  const render = ({ preserveHexInput = false } = {}) => {
+    const choice = panel.__cc98ColorDraft || getEditorColorState(button).committed;
+    const gradient = choice.mode === "gradient";
+    const color = editableColor(choice);
+    const rgb = hexToRgb(color);
+    panel.dataset.cc98ColorMode = gradient ? "gradient" : "solid";
+    solidMode.classList.toggle("is-active", !gradient);
+    gradientMode.classList.toggle("is-active", gradient);
+    transparent.classList.toggle("is-active", choice.mode === "transparent");
+    transparent.setAttribute("aria-pressed", String(choice.mode === "transparent"));
+    gradientEditor.hidden = !gradient;
+    presets.hidden = gradient;
+    if (!preserveHexInput) {
+      input.value = color;
     }
-    gradientTrack.style.setProperty("background", getEditorGradientCss(stops), "important");
-    gradientStops.replaceChildren();
-    stops.forEach((stop) => {
-      const handle = createElement("button", "cc98-rebuild-gradient-stop");
-      handle.type = "button";
-      handle.title = `${stop.position.toFixed(0)}% \u00b7 ${stop.color.toUpperCase()}`;
-      handle.style.setProperty("--cc98-gradient-stop-position", `${stop.position}%`);
+    channels.querySelectorAll("[data-cc98-color-channel]").forEach((control) => {
+      control.value = String(rgb[control.dataset.cc98ColorChannel]);
+    });
+    presets.querySelectorAll(".cc98-rebuild-color-preset").forEach((preset) => {
+      preset.classList.toggle("is-active", choice.mode === "solid" && preset.dataset.cc98ColorPreset === color);
+    });
+    gradientDensityInput.value = String(choice.density);
+    renderEditorColorSwatch(swatch, choice);
+    renderEditorColorButton(button, choice);
+    gradientTrack.style.setProperty("background", getEditorGradientCss(choice.stops), "important");
+    for (const [id, handle] of handles) {
+      if (!choice.stops.some((stop) => stop.id === id)) {
+        handle.remove();
+        handles.delete(id);
+      }
+    }
+    choice.stops.forEach((stop, index) => {
+      let handle = handles.get(stop.id);
+      if (!handle) {
+        handle = createElement("button", "cc98-rebuild-gradient-stop");
+        handle.type = "button";
+        const id = stop.id;
+        const selectStop = () => {
+          const draft = getDraft();
+          if (draft) {
+            draft.selectedStopId = id;
+            render();
+          }
+        };
+        handle.addEventListener("click", selectStop);
+        handle.addEventListener("pointerdown", (event) => {
+          if (!getDraft()) return;
+          event.preventDefault();
+          event.stopPropagation();
+          panel.__cc98ColorDragCleanup?.();
+          selectStop();
+          const move = (moveEvent) => {
+            const draft = getDraft();
+            const currentStop = draft?.stops.find((item) => item.id === id);
+            if (!currentStop) return;
+            const rect = gradientTrack.getBoundingClientRect();
+            currentStop.position = Math.max(0, Math.min(100, (moveEvent.clientX - rect.left) / Math.max(1, rect.width) * 100));
+            draft.stops.sort((left, right) => left.position - right.position);
+            render();
+          };
+          const release = () => {
+            document.removeEventListener("pointermove", move, true);
+            document.removeEventListener("pointerup", release, true);
+            document.removeEventListener("pointercancel", release, true);
+            panel.__cc98ColorDragCleanup = null;
+          };
+          panel.__cc98ColorDragCleanup = release;
+          document.addEventListener("pointermove", move, true);
+          document.addEventListener("pointerup", release, true);
+          document.addEventListener("pointercancel", release, true);
+        });
+        handles.set(id, handle);
+      }
+      handle.title = String(Math.round(stop.position)) + "% · " + stop.color.toUpperCase();
+      handle.style.setProperty("--cc98-gradient-stop-position", String(stop.position) + "%");
       handle.style.setProperty("--cc98-gradient-stop-color", stop.color);
-      handle.classList.toggle("is-active", panel.__cc98SelectedGradientStop === stop);
-      const selectStop = () => {
-        panel.__cc98SelectedGradientStop = stop;
-        updateEditorColorButtonPreview(button, stop.color);
-        renderGradient();
-      };
-      handle.addEventListener("click", selectStop);
-      handle.addEventListener("pointerdown", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        panel.__cc98SelectedGradientStop = stop;
-        const move = (moveEvent) => {
-          const rect = gradientTrack.getBoundingClientRect();
-          stop.position = Math.max(0, Math.min(100, ((moveEvent.clientX - rect.left) / Math.max(1, rect.width)) * 100));
-          panel.__cc98GradientStops.sort((a, b) => a.position - b.position);
-          renderGradient();
-        };
-        const release = () => {
-          document.removeEventListener("pointermove", move, true);
-          document.removeEventListener("pointerup", release, true);
-          document.removeEventListener("pointercancel", release, true);
-        };
-        document.addEventListener("pointermove", move, true);
-        document.addEventListener("pointerup", release, true);
-        document.addEventListener("pointercancel", release, true);
-        updateEditorColorButtonPreview(button, stop.color);
-        renderGradient();
-      });
-      gradientStops.append(handle);
+      handle.classList.toggle("is-active", stop.id === choice.selectedStopId);
+      if (gradientStops.children[index] !== handle) {
+        gradientStops.insertBefore(handle, gradientStops.children[index] || null);
+      }
     });
-    removeStop.disabled = stops.length <= 2;
+    removeStop.disabled = choice.stops.length <= 2;
   };
+  panel.__cc98RenderColor = render;
 
-  const setMode = (nextMode) => {
-    const normalizedMode = nextMode === "gradient" ? "gradient" : "solid";
-    panel.dataset.cc98ColorMode = normalizedMode;
-    solidMode.classList.toggle("is-active", normalizedMode === "solid");
-    gradientMode.classList.toggle("is-active", normalizedMode === "gradient");
-    gradientEditor.hidden = normalizedMode !== "gradient";
-    presets.hidden = normalizedMode === "gradient";
+  const setMode = (mode) => {
+    const draft = getDraft();
+    if (!draft) return;
+    draft.mode = mode;
     status.hidden = true;
-    if (normalizedMode === "gradient") {
-      const selectedStop = panel.__cc98SelectedGradientStop || panel.__cc98GradientStops?.[0];
-      if (selectedStop) {
-        updateEditorColorButtonPreview(button, selectedStop.color);
-      }
-      renderGradient();
-    }
-    window.setTimeout(() => positionEditorColorPopover(button, panel), 0);
+    render();
+    positionEditorColorPopover(button, panel);
   };
-
-  const applyActiveColor = (color) => {
-    const normalized = normalizeHexColor(color, getColorPopoverValue(panel, button));
-    if (panel.dataset.cc98ColorMode === "gradient") {
-      const stop = panel.__cc98SelectedGradientStop || panel.__cc98GradientStops?.[0];
-      if (stop) {
-        stop.color = normalized;
-      }
+  const applyActiveColor = (color, preserveHexInput = false) => {
+    const draft = getDraft();
+    if (!draft) return;
+    const normalized = normalizeHexColor(color, editableColor(draft));
+    if (draft.mode === "gradient") {
+      selectedStop(draft).color = normalized;
+    } else {
+      draft.mode = "solid";
+      draft.color = normalized;
     }
-    updateEditorColorButtonPreview(button, normalized);
-    if (panel.dataset.cc98ColorMode === "gradient") {
-      renderGradient();
-    }
+    status.hidden = true;
+    render({ preserveHexInput });
   };
-
-  ["pointerdown", "mousedown", "mouseup", "click", "input", "change"].forEach((type) => {
-    panel.addEventListener(type, (event) => {
-      event.stopPropagation();
-    });
-  });
   const getCompleteHexInput = () => {
     const raw = input.value.trim();
-    const withHash = raw.startsWith("#") ? raw : `#${raw}`;
+    const withHash = raw.startsWith("#") ? raw : "#" + raw;
     return /^#[0-9a-f]{6}$/i.test(withHash) ? withHash.toLowerCase() : "";
   };
-  const syncFromHex = () => {
-    const normalized = getCompleteHexInput();
-    if (!normalized) {
-      return false;
-    }
-    applyActiveColor(normalized);
-    return true;
-  };
   const commitHexInput = () => {
-    if (!syncFromHex()) {
-      input.value = getColorPopoverValue(panel, button);
+    const draft = getDraft();
+    if (!draft) return;
+    const value = getCompleteHexInput();
+    if (value && value !== editableColor(draft)) {
+      applyActiveColor(value);
+    } else {
+      input.value = editableColor(draft);
     }
   };
   const syncFromChannels = (event) => {
-    const source = event?.currentTarget;
-    if (source instanceof HTMLInputElement && source.dataset.cc98ColorChannel) {
-      const channel = source.dataset.cc98ColorChannel;
-      const value = Math.max(0, Math.min(255, Number(source.value) || 0));
-      source.value = String(value);
-      panel.querySelectorAll(`[data-cc98-color-channel="${channel}"]`).forEach((control) => {
-        if (control instanceof HTMLInputElement && control !== source) {
-          control.value = String(value);
-        }
-      });
-    }
-    const values = {};
-    ["r", "g", "b"].forEach((channel) => {
-      const control = panel.querySelector(`.cc98-rebuild-color-channel-range[data-cc98-color-channel="${channel}"]`);
-      values[channel] = control instanceof HTMLInputElement ? Number(control.value) : 0;
-    });
-    applyActiveColor(rgbToHex(values.r, values.g, values.b));
+    const draft = getDraft();
+    if (!draft) return;
+    const source = event.currentTarget;
+    const rgb = hexToRgb(editableColor(draft));
+    rgb[source.dataset.cc98ColorChannel] = Math.max(0, Math.min(255, Number(source.value) || 0));
+    applyActiveColor(rgbToHex(rgb.r, rgb.g, rgb.b));
   };
+  ["pointerdown", "mousedown", "mouseup", "click", "input", "change"].forEach((type) => {
+    panel.addEventListener(type, (event) => event.stopPropagation());
+  });
+  panel.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      closeEditorColorPopover(panel);
+    }
+  });
   solidMode.addEventListener("click", () => setMode("solid"));
   gradientMode.addEventListener("click", () => setMode("gradient"));
-  input.addEventListener("input", syncFromHex);
+  transparent.addEventListener("click", () => setMode("transparent"));
+  input.addEventListener("input", () => {
+    const value = getCompleteHexInput();
+    if (value) applyActiveColor(value, true);
+  });
   input.addEventListener("change", commitHexInput);
   input.addEventListener("blur", commitHexInput);
   input.addEventListener("keydown", (event) => {
@@ -17196,134 +17329,108 @@ function ensureEditorColorPopover(editor, button) {
       commitHexInput();
     }
   });
-  clearColor.addEventListener("click", () => {
-    const selection = getStoredEditorColorSelection(editor, button, panel);
-    const applied = clearEditorColor(editor, selection);
-    if (!applied) {
-      status.textContent = "\u8bf7\u5148\u9009\u4e2d\u5305\u542b\u989c\u8272\u7684\u6587\u5b57\u3002";
-      status.hidden = false;
-      positionEditorColorPopover(button, panel);
-      return;
-    }
-    clearEditorColorSelectionSnapshot(editor);
-    delete editor.__cc98WysiwygLogicalSelection;
-    panel.__cc98ColorSelectionSnapshot = null;
-    panel.hidden = true;
-    button.classList.remove("cc98-rebuild-color-button-open");
-    suppressLegacyEditorColorPickers();
-  });
   presets.querySelectorAll(".cc98-rebuild-color-preset").forEach((preset) => {
-    preset.addEventListener("click", () => {
-      applyActiveColor(preset.dataset.cc98ColorPreset || "#ff0000");
-    });
+    preset.addEventListener("click", () => applyActiveColor(preset.dataset.cc98ColorPreset));
   });
-  transparent.addEventListener("click", () => {
-    if (panel.dataset.cc98ColorMode === "gradient") {
-      setMode("solid");
-    }
-    panel.dataset.cc98TransparentSelected = "true";
-    transparent.classList.add("is-active");
-    transparent.setAttribute("aria-pressed", "true");
-    status.hidden = true;
-  });
-  addStop.addEventListener("click", () => {
-    const stops = normalizeEditorGradientStops(panel.__cc98GradientStops, input.value);
-    let widestStart = stops[0];
-    let widestEnd = stops[1];
-    for (let index = 1; index < stops.length; index += 1) {
-      const previous = stops[index - 1];
-      const next = stops[index];
-      if (next.position - previous.position > widestEnd.position - widestStart.position) {
-        widestStart = previous;
-        widestEnd = next;
-      }
-    }
-    const position = (widestStart.position + widestEnd.position) / 2;
-    const color = getEditorGradientColorAt(stops, position / 100);
-    const stop = createEditorGradientStop(color, position);
-    panel.__cc98GradientStops = [...stops, stop].sort((a, b) => a.position - b.position);
-    panel.__cc98SelectedGradientStop = stop;
-    updateEditorColorButtonPreview(button, stop.color);
-    renderGradient();
-  });
-  removeStop.addEventListener("click", () => {
-    const stops = normalizeEditorGradientStops(panel.__cc98GradientStops, input.value);
-    if (stops.length <= 2) {
-      return;
-    }
-    const selected = panel.__cc98SelectedGradientStop;
-    const index = Math.max(0, stops.indexOf(selected));
-    stops.splice(index, 1);
-    panel.__cc98GradientStops = stops;
-    panel.__cc98SelectedGradientStop = stops[Math.min(index, stops.length - 1)];
-    updateEditorColorButtonPreview(button, panel.__cc98SelectedGradientStop.color);
-    renderGradient();
-  });
-  gradientTrack.addEventListener("dblclick", (event) => {
-    const rect = gradientTrack.getBoundingClientRect();
-    const position = Math.max(0, Math.min(100, ((event.clientX - rect.left) / Math.max(1, rect.width)) * 100));
-    const stop = createEditorGradientStop(getEditorGradientColorAt(panel.__cc98GradientStops, position / 100), position);
-    panel.__cc98GradientStops = [...panel.__cc98GradientStops, stop].sort((a, b) => a.position - b.position);
-    panel.__cc98SelectedGradientStop = stop;
-    updateEditorColorButtonPreview(button, stop.color);
-    renderGradient();
-  });
-  gradientPresets.querySelectorAll(".cc98-rebuild-gradient-preset").forEach((preset) => {
-    preset.addEventListener("click", () => {
-      const colors = preset.__cc98GradientColors || [];
-      panel.__cc98GradientStops = colors.map((color, index) => (
-        createEditorGradientStop(color, colors.length <= 1 ? 0 : (index / (colors.length - 1)) * 100)
-      ));
-      panel.__cc98SelectedGradientStop = panel.__cc98GradientStops[0];
-      updateEditorColorButtonPreview(button, panel.__cc98SelectedGradientStop.color);
-      renderGradient();
-    });
-  });
-  panel.querySelectorAll("[data-cc98-color-channel]").forEach((control) => {
+  channels.querySelectorAll("[data-cc98-color-channel]").forEach((control) => {
     control.addEventListener("input", syncFromChannels);
     control.addEventListener("change", syncFromChannels);
   });
-  cancel.addEventListener("click", () => {
-    updateEditorColorButtonPreview(button, panel.dataset.cc98PreviousColor || getEditorColorButtonValue(button));
-    clearEditorColorSelectionSnapshot(editor, { restore: true });
-    panel.__cc98ColorSelectionSnapshot = null;
-    panel.hidden = true;
-    button.classList.remove("cc98-rebuild-color-button-open");
-    suppressLegacyEditorColorPickers();
+  gradientDensityInput.addEventListener("change", () => {
+    const draft = getDraft();
+    if (draft) draft.density = normalizeEditorGradientDensity(gradientDensityInput.value);
+  });
+
+  const addGradientStop = (position) => {
+    const draft = getDraft();
+    if (!draft) return;
+    const stop = createEditorGradientStop(getEditorGradientColorAt(draft.stops, position / 100), position);
+    draft.stops.push(stop);
+    draft.stops.sort((left, right) => left.position - right.position);
+    draft.selectedStopId = stop.id;
+    render();
+  };
+  addStop.addEventListener("click", () => {
+    const draft = getDraft();
+    if (!draft) return;
+    let start = draft.stops[0];
+    let end = draft.stops[1];
+    for (let index = 1; index < draft.stops.length; index++) {
+      if (draft.stops[index].position - draft.stops[index - 1].position > end.position - start.position) {
+        start = draft.stops[index - 1];
+        end = draft.stops[index];
+      }
+    }
+    addGradientStop((start.position + end.position) / 2);
+  });
+  removeStop.addEventListener("click", () => {
+    const draft = getDraft();
+    if (!draft || draft.stops.length <= 2) return;
+    const index = draft.stops.indexOf(selectedStop(draft));
+    draft.stops.splice(index, 1);
+    draft.selectedStopId = draft.stops[Math.min(index, draft.stops.length - 1)].id;
+    render();
+  });
+  gradientTrack.addEventListener("dblclick", (event) => {
+    const rect = gradientTrack.getBoundingClientRect();
+    addGradientStop(Math.max(0, Math.min(100, (event.clientX - rect.left) / Math.max(1, rect.width) * 100)));
+  });
+  gradientPresets.querySelectorAll(".cc98-rebuild-gradient-preset").forEach((preset) => {
+    preset.addEventListener("click", () => {
+      const draft = getDraft();
+      if (!draft) return;
+      const colors = preset.__cc98GradientColors;
+      draft.stops = colors.map((color, index) => createEditorGradientStop(color, index / (colors.length - 1) * 100));
+      draft.selectedStopId = draft.stops[0].id;
+      render();
+    });
+  });
+  cancel.addEventListener("click", () => closeEditorColorPopover(panel));
+  clearColor.addEventListener("click", () => {
+    const selection = getStoredEditorColorSelection(editor, button, panel);
+    panel.__cc98ColorCommitting = true;
+    let applied;
+    try {
+      applied = clearEditorColor(editor, selection);
+    } finally {
+      panel.__cc98ColorCommitting = false;
+    }
+    if (!applied) {
+      status.textContent = "请先选中包含颜色的文字。";
+      status.hidden = false;
+      return;
+    }
+    delete editor.__cc98WysiwygLogicalSelection;
+    closeEditorColorPopover(panel, false);
   });
   ok.addEventListener("click", () => {
+    commitHexInput();
+    const draft = getDraft();
+    if (!draft) return;
+    const choice = copyEditorColorChoice(draft);
     const selection = getStoredEditorColorSelection(editor, button, panel);
-    const color = getColorPopoverValue(panel, button);
-    const isGradient = panel.dataset.cc98ColorMode === "gradient";
-    const isTransparent = !isGradient && panel.dataset.cc98TransparentSelected === "true";
-    const gradientDensityValue = normalizeEditorGradientDensity(panel.querySelector(".cc98-rebuild-gradient-density-input")?.value);
-    const applied = isGradient
-      ? applyEditorGradient(editor, panel.__cc98GradientStops, selection, gradientDensityValue)
-      : applyEditorColor(editor, isTransparent ? "transparent" : color, selection);
+    panel.__cc98ColorCommitting = true;
+    let applied;
+    try {
+      applied = applyEditorColorChoice(editor, choice, selection);
+    } finally {
+      panel.__cc98ColorCommitting = false;
+    }
     if (!applied) {
-      status.textContent = isGradient
-        ? "\u8bf7\u5148\u5728\u7f16\u8f91\u5668\u4e2d\u9009\u4e2d\u8981\u5e94\u7528\u6e10\u53d8\u7684\u6587\u5b57\u3002"
-        : "\u9009\u533a\u5df2\u5931\u6548\uff0c\u8bf7\u91cd\u65b0\u9009\u62e9\u6587\u5b57\u540e\u518d\u8bd5\u3002";
+      status.textContent = choice.mode === "gradient"
+        ? "请先在编辑器中选中要应用渐变的文字。"
+        : "选区已失效，请重新选择文字后再试。";
       status.hidden = false;
       positionEditorColorPopover(button, panel);
       return;
     }
-    if (applied && !isTransparent) {
-      updateEditorColorButtonPreview(button, color);
-    }
-    if (applied) {
-      clearEditorColorSelectionSnapshot(editor);
-      delete editor.__cc98WysiwygLogicalSelection;
-      panel.__cc98ColorSelectionSnapshot = null;
-    }
-    panel.hidden = true;
-    button.classList.remove("cc98-rebuild-color-button-open");
-    suppressLegacyEditorColorPickers();
+    getEditorColorState(button).committed = choice;
+    delete editor.__cc98WysiwygLogicalSelection;
+    closeEditorColorPopover(panel, false);
   });
 
   document.body.append(panel);
-  updateEditorColorButtonPreview(button, input.value);
-  renderGradient();
+  render();
   return panel;
 }
 
@@ -17344,9 +17451,32 @@ function stabilizeEditorColorButton(editor) {
     }
   });
   colorButtons.forEach((button) => {
+    button.__cc98ColorEditor = editor;
     button.classList.add("cc98-rebuild-color-button");
+    if (button.classList.contains("ubb-button-color") && button.tagName !== "BUTTON") {
+      let apply = button.querySelector(":scope > .cc98-rebuild-color-apply");
+      if (!(apply instanceof HTMLButtonElement)) {
+        apply = createButton("cc98-rebuild-color-apply", "色");
+        apply.type = "button";
+        apply.title = "应用当前颜色";
+        apply.setAttribute("aria-label", apply.title);
+        apply.append(createElement("span", "sp-preview cc98-rebuild-color-swatch"));
+        button.append(apply);
+      }
+      apply.querySelector(".sp-preview")?.classList.add("cc98-rebuild-color-swatch");
+      let chooser = button.querySelector(":scope > .cc98-rebuild-color-chooser");
+      if (!(chooser instanceof HTMLButtonElement)) {
+        chooser = createButton("cc98-rebuild-color-chooser", "");
+        chooser.type = "button";
+        chooser.title = "选择颜色";
+        chooser.setAttribute("aria-label", chooser.title);
+        chooser.append(createElement("span", "cc98-rebuild-chooser-caret", "▾"));
+        button.append(chooser);
+      }
+    }
     ensureNativeColorInput(editor, button);
-    ensureEditorColorPopover(editor, button);
+    const panel = ensureEditorColorPopover(editor, button);
+    renderEditorColorButton(button, panel.hidden ? getEditorColorState(button).committed : panel.__cc98ColorDraft);
     const replacer = button.querySelector(".sp-replacer");
     if (replacer) {
       replacer.style.setProperty("pointer-events", "none", "important");
@@ -17401,14 +17531,26 @@ function bindGlobalEditorFontSizeInterceptor() {
       }
       return;
     }
-    const editor = button.closest(".cc98-rebuild-native-editor, .createTopic, #sendTopicInfo, .sendTopicInfo, .reply-input, .ubb-editor, form");
+    const editor = button.closest(".cc98-rebuild-native-editor, .createTopic, #sendTopicInfo, .sendTopicInfo, .reply-input")
+      || button.closest(".ubb-editor, form");
     if (!(editor instanceof HTMLElement)) {
       return;
     }
     event.preventDefault();
     event.stopPropagation();
     event.stopImmediatePropagation?.();
-    openEditorFontSizePicker(button, editor);
+    if (event.type !== "click") {
+      rememberEditorFontSizeSelection(editor, button);
+      return;
+    }
+    if (target.closest(".cc98-rebuild-font-size-apply")) {
+      const textarea = getNativeEditorTextarea(editor);
+      const selection = textarea instanceof HTMLTextAreaElement ? getStoredEditorFontSizeSelection(button, textarea) : null;
+      applyEditorFontSize(editor, getEditorFontSizeValue(button) || "3", selection);
+      closeEditorFontSizePopovers();
+    } else {
+      openEditorFontSizePicker(button, editor);
+    }
   };
   ["pointerdown", "mousedown", "click"].forEach((type) => {
     document.addEventListener(type, handleFontSizeEvent, true);
@@ -17437,25 +17579,28 @@ function stabilizeEditorFontSizeButton(editor) {
       select.setAttribute("aria-hidden", "true");
       select.style.setProperty("display", "none", "important");
     }
+    let apply = button.querySelector(":scope > .cc98-rebuild-font-size-apply");
+    if (!(apply instanceof HTMLButtonElement)) {
+      apply = document.createElement("button");
+      apply.type = "button";
+      apply.className = "cc98-rebuild-font-size-apply";
+      apply.textContent = "T↕";
+      apply.title = "应用当前字号";
+      apply.setAttribute("aria-label", apply.title);
+      button.append(apply);
+    }
     let trigger = button.querySelector(":scope > .cc98-rebuild-font-size-trigger");
     if (!(trigger instanceof HTMLButtonElement)) {
       trigger = document.createElement("button");
       trigger.type = "button";
       trigger.className = "cc98-rebuild-font-size-trigger";
-      trigger.setAttribute("aria-label", "\u5b57\u53f7");
+      trigger.append(createElement("span", "cc98-rebuild-split-value", "字号"), createElement("span", "cc98-rebuild-chooser-caret", "▾"));
+      trigger.title = "选择字号";
+      trigger.setAttribute("aria-label", trigger.title);
       button.append(trigger);
     }
-    trigger.onclick = (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      openEditorFontSizePicker(button, editor);
-    };
-    trigger.onpointerdown = (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      rememberEditorFontSizeSelection(editor, button);
-    };
     ensureEditorFontSizePopover(editor, button);
+    button.querySelector(":scope > .cc98-rebuild-typography-reset")?.remove();
     updateEditorFontSizePreview(button, getEditorFontSizeValue(button));
   });
 }
@@ -17505,18 +17650,40 @@ function hideNativeEditorLegacyEmojiPanel(editor) {
 }
 
 function positionNativeEditorEmojiPanel(editor, panel) {
-  if (!(editor instanceof HTMLElement) || !(panel instanceof HTMLElement)) {
+  if (!(editor instanceof HTMLElement) || !(panel instanceof HTMLElement) || panel.hidden) {
     return;
   }
   const toolbar = editor.querySelector(".ubb-buttons, .cc98-rebuild-message-editor-toolbar");
   if (!(toolbar instanceof HTMLElement)) {
-    panel.style.removeProperty("--cc98-editor-emoji-panel-top");
     return;
   }
   const editorRect = editor.getBoundingClientRect();
   const toolbarRect = toolbar.getBoundingClientRect();
-  const top = Math.max(48, Math.ceil(toolbarRect.bottom - editorRect.top + 6));
+  const margin = 12;
+  const gap = 6;
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const width = Math.max(0, Math.min(editorRect.width - 56, viewportWidth - margin * 2));
+  const left = Math.max(margin, Math.min(viewportWidth - width - margin, editorRect.left + 28));
+  const preferredHeight = Math.min(380, viewportHeight * 0.55);
+  const belowSpace = Math.max(0, viewportHeight - toolbarRect.bottom - gap - margin);
+  const aboveSpace = Math.max(0, toolbarRect.top - gap - margin);
+  const placeAbove = belowSpace < preferredHeight && aboveSpace > belowSpace;
+  const availableHeight = placeAbove ? aboveSpace : belowSpace;
+  const height = Math.max(0, Math.min(preferredHeight, availableHeight));
+  const top = placeAbove
+    ? Math.max(margin, toolbarRect.top - gap - height)
+    : Math.min(viewportHeight - margin, toolbarRect.bottom + gap);
   panel.style.setProperty("--cc98-editor-emoji-panel-top", `${top}px`);
+  panel.style.setProperty("--cc98-editor-emoji-panel-left", `${left}px`);
+  panel.style.setProperty("--cc98-editor-emoji-panel-width", `${width}px`);
+  panel.style.setProperty("--cc98-editor-emoji-panel-height", `${height}px`);
+  if (!panel.__cc98ViewportPositionBound) {
+    panel.__cc98ViewportPositionBound = true;
+    const reposition = () => positionNativeEditorEmojiPanel(editor, panel);
+    window.addEventListener("scroll", reposition, { passive: true, capture: true });
+    window.addEventListener("resize", reposition, { passive: true });
+  }
 }
 
 function setEditorEmojiPanelOpen(editor, open) {
@@ -17568,75 +17735,56 @@ function dispatchMouseSequence(target) {
   });
 }
 
-function openEditorColorPicker(colorButton, editor = colorButton?.closest?.(".cc98-rebuild-native-editor")) {
-  if (!(colorButton instanceof HTMLElement)) {
+function openEditorColorPicker(colorButton, editor = findEditorForColorButton(colorButton)) {
+  if (!(colorButton instanceof HTMLElement) || !(editor instanceof HTMLElement)) {
     return false;
   }
-  if (!(editor instanceof HTMLElement)) {
-    return false;
+  colorButton.__cc98ColorEditor = editor;
+  const existing = document.getElementById(colorButton.dataset.cc98ColorPopoverId || "");
+  if (existing instanceof HTMLElement && !existing.hidden) {
+    closeEditorColorPopover(existing);
+    return true;
   }
-  // Capture the selection before creating/focusing the detached popover.  A
-  // toolbar click can otherwise collapse a selection at offset 0 (the first
-  // line is especially prone to this), leaving the color action with only a
-  // caret and producing an empty [color] wrapper after the selected text.
-  const existingPanel = colorButton.dataset.cc98ColorPopoverId
-    ? document.getElementById(colorButton.dataset.cc98ColorPopoverId)
-    : null;
-  const existingPanelWasHidden = !(existingPanel instanceof HTMLElement) || existingPanel.hidden;
-  if (existingPanelWasHidden) {
-    clearEditorColorSelectionSnapshot(editor);
-  }
-  if (existingPanelWasHidden || !editor.__cc98ColorSelectionSnapshot) {
-    rememberEditorSelection(editor, colorButton, {
-      preserveNonCollapsed: true,
-      captureColorSelection: true
-    });
-  }
-  const panel = ensureEditorColorPopover(editor, colorButton);
-  const previousColor = getEditorColorButtonValue(colorButton);
-  panel.dataset.cc98PreviousColor = previousColor;
-  panel.dataset.cc98ColorMode = "solid";
-  panel.dataset.cc98TransparentSelected = "false";
-  const transparent = panel.querySelector(".cc98-rebuild-color-transparent");
-  transparent?.classList.remove("is-active");
-  transparent?.setAttribute("aria-pressed", "false");
-  panel.querySelectorAll(".cc98-rebuild-color-mode-button").forEach((control) => {
-    control.classList.toggle("is-active", control.dataset.cc98ColorMode === "solid");
+  closeEditorColorPopovers();
+  clearEditorColorSelectionSnapshot(editor);
+  rememberEditorSelection(editor, colorButton, {
+    preserveNonCollapsed: true,
+    captureColorSelection: true
   });
-  const gradientEditor = panel.querySelector(".cc98-rebuild-gradient-editor");
-  const presets = panel.querySelector(".cc98-rebuild-color-presets");
-  if (gradientEditor instanceof HTMLElement) {
-    gradientEditor.hidden = true;
-  }
-  if (presets instanceof HTMLElement) {
-    presets.hidden = false;
-  }
-  const status = panel.querySelector(".cc98-rebuild-color-popover-status");
-  if (status instanceof HTMLElement) {
-    status.hidden = true;
-  }
-  updateEditorColorButtonPreview(colorButton, previousColor);
-  // A panel may have been created/replaced above.  If selection capture was
-  // unavailable before that DOM work, make one final attempt using the stored
-  // WYSIWYG range before the popover takes focus.
-  if (!editor.__cc98ColorSelectionSnapshot) {
-    rememberEditorSelection(editor, colorButton, {
-      preserveNonCollapsed: true,
-      captureColorSelection: true
-    });
-  }
+  const panel = ensureEditorColorPopover(editor, colorButton);
+  panel.__cc98ColorDraft = copyEditorColorChoice(getEditorColorState(colorButton).committed);
   panel.__cc98ColorSelectionSnapshot = editor.__cc98ColorSelectionSnapshot || null;
-  suppressLegacyEditorColorPickers(editor);
-  closeEditorColorPopovers(panel);
+  panel.querySelector(".cc98-rebuild-color-popover-status").hidden = true;
   panel.hidden = false;
+  panel.__cc98RenderColor();
   colorButton.classList.add("cc98-rebuild-color-button-open");
+  suppressLegacyEditorColorPickers(editor);
   positionEditorColorPopover(colorButton, panel);
   window.setTimeout(() => {
-    suppressLegacyEditorColorPickers(editor);
+    if (panel.hidden || !panel.isConnected) return;
     positionEditorColorPopover(colorButton, panel);
-    panel.querySelector(".cc98-rebuild-color-popover-input")?.focus?.({ preventScroll: true });
+    panel.querySelector(".cc98-rebuild-color-popover-input")?.focus({ preventScroll: true });
   }, 0);
   return true;
+}
+
+function applyCurrentEditorColor(editor, button) {
+  if (!editor.__cc98ColorSelectionSnapshot) {
+    rememberEditorSelection(editor, button, { preserveNonCollapsed: true, captureColorSelection: true });
+  }
+  const selection = getStoredEditorColorSelection(editor, button);
+  const panel = getEditorColorPanels(button).find((item) => !item.hidden);
+  if (panel) panel.__cc98ColorCommitting = true;
+  let applied;
+  try {
+    applied = applyEditorColorChoice(editor, getEditorColorState(button).committed, selection);
+  } finally {
+    if (panel) panel.__cc98ColorCommitting = false;
+  }
+  if (panel) closeEditorColorPopover(panel, false);
+  clearEditorColorSelectionSnapshot(editor);
+  renderEditorColorButton(button);
+  return applied;
 }
 
 function bindGlobalEditorColorInterceptor() {
@@ -17670,7 +17818,24 @@ function bindGlobalEditorColorInterceptor() {
     }
     stopEditorColorEvent(event);
     suppressLegacyEditorColorPickers(editor);
-    openEditorColorPicker(colorButton, editor);
+    const isApply = Boolean(target.closest(".cc98-rebuild-color-apply, .cc98-rebuild-message-editor-color"));
+    if (event.type !== "click") {
+      if (event.type === "pointerdown" || event.type === "touchstart" || event.type === "mousedown") {
+        if (isApply) {
+          if (!editor.__cc98ColorSelectionSnapshot) {
+            rememberEditorSelection(editor, colorButton, { preserveNonCollapsed: true, captureColorSelection: true });
+          }
+        } else {
+          rememberEditorSelection(editor, colorButton, { preserveNonCollapsed: true });
+        }
+      }
+      return;
+    }
+    if (isApply) {
+      applyCurrentEditorColor(editor, colorButton);
+    } else {
+      openEditorColorPicker(colorButton, editor);
+    }
   };
   ["pointerdown", "touchstart", "mousedown", "mouseup", "click"].forEach((type) => {
     document.addEventListener(type, handleColorEvent, true);
@@ -17722,6 +17887,62 @@ function buildNativeEditorUbbPreview(source) {
   // overridden by original-editor styles around emoji/media nodes.
   appendInlineUbbText(article, String(source ?? ""), { preserveLineBreaks: true });
   return article;
+}
+
+function appendEditorFontSizeSplitSelect(editor, toolbar, select) {
+  const group = createElement("span", "cc98-rebuild-typography-group");
+  const split = createElement("span", "cc98-rebuild-font-size-split");
+  const apply = createButton("cc98-rebuild-font-size-apply", "T↕", (event) => {
+    event.preventDefault();
+    const textarea = getNativeEditorTextarea(editor);
+    const selection = textarea instanceof HTMLTextAreaElement ? getStoredEditorFontSizeSelection(select, textarea) : null;
+    applyEditorFontSize(editor, getEditorFontSizeValue(split) || "3", selection);
+  });
+  apply.type = "button";
+  apply.title = "应用当前字号";
+  apply.setAttribute("aria-label", apply.title);
+  apply.addEventListener("pointerdown", (event) => {
+    rememberEditorFontSizeSelection(editor, select);
+    event.preventDefault();
+  });
+  select.title = "选择字号";
+  select.setAttribute("aria-label", select.title);
+  split.append(apply, select);
+  group.append(split);
+  toolbar.append(group);
+  const reset = document.createElement("option");
+  reset.value = EDITOR_TYPOGRAPHY_RESET_VALUE;
+  reset.textContent = "取消字号";
+  select.append(reset);
+  return split;
+}
+
+function appendEditorColorSplitButton(editor, toolbar) {
+  const group = createElement("span", "cc98-rebuild-color-split");
+  const colorButton = createButton("cc98-rebuild-message-editor-button cc98-rebuild-message-editor-color cc98-rebuild-color-button cc98-rebuild-color-apply", "", (event) => {
+    event.preventDefault();
+    applyCurrentEditorColor(editor, colorButton);
+  });
+  colorButton.type = "button";
+  colorButton.title = "应用当前颜色";
+  colorButton.setAttribute("aria-label", colorButton.title);
+  colorButton.append(createElement("span", "cc98-rebuild-message-editor-color-label", "色"));
+  colorButton.append(createElement("span", "sp-preview cc98-rebuild-color-swatch"));
+  const chooser = createButton("cc98-rebuild-message-editor-button cc98-rebuild-color-chooser", "", (event) => {
+    event.preventDefault();
+    openEditorColorPicker(colorButton, editor);
+  });
+  chooser.type = "button";
+  chooser.title = "选择颜色";
+  chooser.setAttribute("aria-label", chooser.title);
+  chooser.append(createElement("span", "cc98-rebuild-chooser-caret", "▾"));
+  group.append(colorButton, chooser);
+  toolbar.append(group);
+  ensureNativeColorInput(editor, colorButton);
+  ensureEditorColorPopover(editor, colorButton);
+  bindGlobalEditorColorInterceptor();
+  renderEditorColorButton(colorButton);
+  return group;
 }
 
 function buildLegacy031UbbPreview(source) {
@@ -18147,6 +18368,141 @@ function handleNativeDualUbbToolbarControl(editor, target, event) {
   return true;
 }
 
+function openNativeMarkupConversionDialog(editor, state) {
+  const converter = window.CC98RebornMarkupConverter;
+  if (!converter?.convertUbbToMarkdown || !converter?.convertMarkdownToUbb) {
+    showRebuiltTransientToast(editor, "互转工具未加载");
+    return;
+  }
+  editor.__cc98ConversionDialogClose?.();
+  state.forceSynchronize?.();
+  const layer = createElement("div", "cc98-rebuild-convert-layer");
+  const dialog = createElement("section", "cc98-rebuild-convert-dialog");
+  dialog.setAttribute("role", "dialog");
+  dialog.setAttribute("aria-modal", "true");
+  dialog.setAttribute("aria-label", "UBB Markdown 互转");
+  const header = createElement("div", "cc98-rebuild-convert-header");
+  header.append(createElement("strong", "", "UBB / Markdown 互转"));
+  const close = createButton("cc98-rebuild-convert-close", "×", () => finish());
+  close.type = "button";
+  close.title = "关闭";
+  close.setAttribute("aria-label", "关闭互转工具");
+  header.append(close);
+
+  const direction = createElement("div", "cc98-rebuild-convert-directions");
+  direction.setAttribute("role", "group");
+  direction.setAttribute("aria-label", "转换方向");
+  const ubbToMarkdown = createButton("", "UBB → Markdown", () => setDirection("ubb"));
+  const markdownToUbb = createButton("", "Markdown → UBB", () => setDirection("markdown"));
+  for (const button of [ubbToMarkdown, markdownToUbb]) button.type = "button";
+  direction.append(ubbToMarkdown, markdownToUbb);
+
+  const panes = createElement("div", "cc98-rebuild-convert-panes");
+  const inputPane = createElement("label", "cc98-rebuild-convert-pane");
+  const outputPane = createElement("label", "cc98-rebuild-convert-pane");
+  const inputLabel = createElement("span", "", "UBB 输入");
+  const outputLabel = createElement("span", "", "Markdown 结果（可修改）");
+  const input = document.createElement("textarea");
+  const output = document.createElement("textarea");
+  input.spellcheck = false;
+  output.spellcheck = false;
+  input.value = state.textarea.value;
+  inputPane.append(inputLabel, input);
+  outputPane.append(outputLabel, output);
+  panes.append(inputPane, outputPane);
+
+  const warnings = createElement("div", "cc98-rebuild-convert-warnings");
+  warnings.setAttribute("role", "status");
+  const review = createElement("label", "cc98-rebuild-convert-review");
+  const reviewCheckbox = document.createElement("input");
+  reviewCheckbox.type = "checkbox";
+  review.append(reviewCheckbox, document.createTextNode("已检查转换结果，接受可能的格式差异"));
+  const footer = createElement("div", "cc98-rebuild-convert-footer");
+  const status = createElement("span", "cc98-rebuild-convert-status");
+  status.setAttribute("role", "status");
+  const copy = createButton("", "复制结果", async () => {
+    try {
+      await navigator.clipboard.writeText(output.value);
+      status.textContent = "已复制";
+    } catch {
+      output.focus();
+      output.select();
+      status.textContent = "无法自动复制，请手动复制选中的结果";
+    }
+  });
+  const apply = createButton("cc98-rebuild-convert-apply", "替换编辑内容", () => {
+    if (apply.disabled || !state.textarea?.isConnected) return;
+    const replacement = currentDirection === "ubb" ? `[md]${output.value}[/md]` : output.value;
+    setNativeMessageInputValue(state.textarea, replacement);
+    state.refreshFromNative?.(false);
+    scheduleNativeEditorDraftSave(editor);
+    finish();
+    state.sourceEditor?.focus({ preventScroll: true });
+  });
+  copy.type = "button";
+  apply.type = "button";
+  footer.append(status, copy, apply);
+  dialog.append(header, direction, panes, warnings, review, footer);
+  layer.append(dialog);
+  document.body.append(layer);
+  let currentDirection = "ubb";
+  let blocked = false;
+  let hasWarnings = false;
+  const updateApply = () => {
+    const invalidMarkdownBlock = currentDirection === "ubb" && /\[\/md\]/i.test(output.value);
+    apply.disabled = blocked || invalidMarkdownBlock || !output.value || (hasWarnings && !reviewCheckbox.checked);
+    if (invalidMarkdownBlock) status.textContent = "结果含 [/md]，无法安全嵌入 UBB 编辑器";
+  };
+  const convert = () => {
+    const result = currentDirection === "ubb"
+      ? converter.convertUbbToMarkdown(input.value)
+      : converter.convertMarkdownToUbb(input.value);
+    output.value = result.output;
+    blocked = result.blocked;
+    hasWarnings = result.warnings.length > 0;
+    warnings.replaceChildren();
+    result.warnings.forEach((message) => warnings.append(createElement("p", "", message)));
+    review.hidden = !hasWarnings || blocked;
+    reviewCheckbox.checked = false;
+    status.textContent = blocked ? "当前内容无法直接替换" : "";
+    updateApply();
+  };
+  const setDirection = (value) => {
+    if (value === "markdown") {
+      const wrapped = input.value.match(/^\[md\]([\s\S]*)\[\/md\]$/i);
+      if (wrapped) input.value = wrapped[1];
+    }
+    currentDirection = value;
+    ubbToMarkdown.setAttribute("aria-pressed", String(value === "ubb"));
+    markdownToUbb.setAttribute("aria-pressed", String(value === "markdown"));
+    inputLabel.textContent = value === "ubb" ? "UBB 输入" : "Markdown 输入";
+    outputLabel.textContent = value === "ubb" ? "Markdown 结果（将以 [md] 块写入）" : "UBB 结果（可修改）";
+    apply.textContent = value === "ubb" ? "替换为 Markdown 块" : "替换为 UBB";
+    convert();
+  };
+  const onKeydown = (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      finish();
+    }
+  };
+  function finish() {
+    document.removeEventListener("keydown", onKeydown, true);
+    layer.remove();
+    if (editor.__cc98ConversionDialogClose === finish) delete editor.__cc98ConversionDialogClose;
+  }
+  editor.__cc98ConversionDialogClose = finish;
+  document.addEventListener("keydown", onKeydown, true);
+  layer.addEventListener("pointerdown", (event) => {
+    if (event.target === layer) finish();
+  });
+  input.addEventListener("input", convert);
+  output.addEventListener("input", updateApply);
+  reviewCheckbox.addEventListener("change", updateApply);
+  setDirection("ubb");
+  input.focus({ preventScroll: true });
+}
+
 function ensureNativeDualUbbToolbarControls(editor, state = editor?.__cc98DualUbbState) {
   if (!(editor instanceof HTMLElement) || !state || !(state.ubbEditor instanceof HTMLElement)) {
     return;
@@ -18156,32 +18512,44 @@ function ensureNativeDualUbbToolbarControls(editor, state = editor?.__cc98DualUb
   if (!(toolbar instanceof HTMLElement)) {
     return;
   }
-  let fontFamilySelect = toolbar.querySelector(":scope > .cc98-rebuild-editor-font-select");
+  let fontFamilySelect = toolbar.querySelector(":scope > .cc98-rebuild-font-family-control > .cc98-rebuild-editor-font-select");
   if (!(fontFamilySelect instanceof HTMLSelectElement)) {
-    fontFamilySelect = createEditorFontFamilySelect(
+    toolbar.querySelector(":scope > .cc98-rebuild-typography-group:has(> .cc98-rebuild-editor-font-select)")?.remove();
+    const fontControl = createEditorFontFamilyControl(
       editor,
       "cc98-rebuild-dual-ubb-font-select"
     );
+    fontFamilySelect = fontControl.querySelector(".cc98-rebuild-editor-font-select");
   }
   const fontSizeControl = toolbar.querySelector(
     ":scope > .ubb-button-fontSize, :scope > .cc98-rebuild-font-size-button"
   );
+  const fontControl = fontFamilySelect.closest(".cc98-rebuild-font-family-control");
+  toolbar.querySelectorAll(".cc98-rebuild-typography-reset").forEach((button) => button.remove());
   if (fontSizeControl instanceof HTMLElement) {
     // Re-inserting an already correctly positioned native <select> closes its
     // open picker in Chromium. Stabilization runs after most toolbar clicks,
     // so only move the control when React has actually changed its position.
-    if (fontSizeControl.nextElementSibling !== fontFamilySelect) {
-      fontSizeControl.after(fontFamilySelect);
+    if (fontSizeControl.nextElementSibling !== fontControl) {
+      fontSizeControl.after(fontControl);
     }
-  } else if (!fontFamilySelect.isConnected) {
-    toolbar.append(fontFamilySelect);
+  } else if (!fontControl.isConnected) {
+    toolbar.append(fontControl);
   }
   state.fontFamilySelect = fontFamilySelect;
+  const ensureConvertBadge = (button) => {
+    if (button.nextElementSibling?.classList.contains("cc98-local-syntax-experimental-badge")) {
+      return;
+    }
+    button.after(createElement("span", "cc98-local-syntax-experimental-badge", "实验性"));
+  };
   const existing = toolbar.querySelector(":scope > .cc98-rebuild-dual-ubb-toolbar-actions");
   if (existing instanceof HTMLElement) {
     const legacyPreviewButton = existing.querySelector("[data-cc98-dual-ubb-action='legacy-preview']");
     const syncButton = existing.querySelector("[data-cc98-dual-ubb-action='sync']");
-    if (legacyPreviewButton instanceof HTMLElement && syncButton instanceof HTMLElement) {
+    const convertButton = existing.querySelector("[data-cc98-dual-ubb-action='convert']");
+    if (legacyPreviewButton instanceof HTMLElement && syncButton instanceof HTMLElement && convertButton instanceof HTMLElement) {
+      ensureConvertBadge(convertButton);
       state.toolbarActions = existing;
       state.legacyPreviewButton = legacyPreviewButton;
       state.syncButton = syncButton;
@@ -18232,6 +18600,13 @@ function ensureNativeDualUbbToolbarControls(editor, state = editor?.__cc98DualUb
       showRebuiltTransientToast(button, "上下编辑区已同步");
     }
   );
+  const convertButton = addAction(
+    "互转",
+    "UBB 与 Markdown 互转（预览后再替换）",
+    "convert",
+    () => openNativeMarkupConversionDialog(editor, state)
+  );
+  ensureConvertBadge(convertButton);
   toolbar.append(actions);
   state.toolbarActions = actions;
   state.legacyPreviewButton = legacyPreviewButton;
@@ -18244,10 +18619,12 @@ function teardownNativeDualUbbEditor(editor) {
   if (!state) {
     return;
   }
+  editor.__cc98ConversionDialogClose?.();
   state.gutterResizeObserver?.disconnect?.();
   state.workspace?.__cc98DualPaneResizeFrame?.();
   state.workspace?.__cc98DualPaneResizeObserver?.disconnect?.();
-  state.fontFamilySelect?.remove?.();
+  (state.fontFamilySelect?.closest(".cc98-rebuild-font-family-control") || state.fontFamilySelect)?.remove?.();
+  editor.querySelectorAll(".cc98-rebuild-typography-reset").forEach((button) => button.remove());
   state.toolbarActions?.remove?.();
   state.workspace?.remove();
   state.ubbEditor?.classList?.remove("cc98-rebuild-dual-ubb-native-shell");
@@ -18260,6 +18637,9 @@ function teardownNativeDualUbbEditor(editor) {
   delete editor.__cc98DualUbbState;
   delete editor.__cc98WysiwygClearColor;
   delete editor.__cc98WysiwygApplyFontFamily;
+  delete editor.__cc98WysiwygApplyFontSize;
+  delete editor.__cc98WysiwygClearFontFamily;
+  delete editor.__cc98WysiwygClearFontSize;
 }
 
 function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
@@ -18799,22 +19179,37 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
     return clearProfileSignatureWysiwygColor(editor, visual);
   };
   editor.__cc98WysiwygApplyGradient = applyGradient;
-  editor.__cc98WysiwygApplyFontSize = (size) => {
-    const normalized = normalizeEditorFontSizeValue(size, "");
-    return normalized
-      ? applyInlineTag(
-        "size",
-        normalized,
-        { "font-size": `${0.72 + Number(normalized) * 0.14}em` }
-      )
-      : false;
+  const applyTypography = (tag, value) => {
+    if (!isNativeDualUbbSourceActive(state)) {
+      state.activeSurface = "visual";
+      return applyProfileSignatureWysiwygTypography(editor, visual, tag, value);
+    }
+    const result = window.CC98RebornExtendedUbbCore?.applyTypographyToSource(
+      textarea.value, getSourceSelection(), tag, value
+    );
+    if (!result) {
+      return false;
+    }
+    writeNativeSource(result.value);
+    renderVisual();
+    renderSource(false);
+    const nextSelection = { start: result.start, end: result.end };
+    sourceEditor.focus({ preventScroll: true });
+    restoreProfileSignatureSourceSelection(sourceEditor, nextSelection);
+    state.sourceSelection = nextSelection;
+    scheduleNativeEditorDraftSave(editor);
+    return true;
   };
   editor.__cc98WysiwygApplyFontFamily = (fontFamily) => {
     const normalized = normalizeEditorFontFamilyValue(fontFamily);
-    return normalized
-      ? applyInlineTag("font", normalized, { "font-family": normalized })
-      : false;
+    return normalized ? applyTypography("font", normalized) : false;
   };
+  editor.__cc98WysiwygApplyFontSize = (size) => {
+    const normalized = normalizeEditorFontSizeValue(size, "");
+    return normalized ? applyTypography("size", normalized) : false;
+  };
+  editor.__cc98WysiwygClearFontFamily = () => applyTypography("font", null);
+  editor.__cc98WysiwygClearFontSize = () => applyTypography("size", null);
   editor.__cc98WysiwygInsertEmoji = insertEmoji;
   editor.__cc98WysiwygInsertLink = insertLink;
   editor.__cc98WysiwygInsertMedia = insertMedia;
@@ -20122,28 +20517,16 @@ function stabilizePrivateMessageComposer(source, nativeInput) {
     return option;
   }));
   size.addEventListener("change", () => {
-    if (size.value) {
-      insertPrivateMessageUbb(textarea, `[size=${size.value}]`, "[/size]");
+    if (size.value === EDITOR_TYPOGRAPHY_RESET_VALUE) {
+      clearEditorTypography(editor, "size", getStoredEditorFontSizeSelection(size, textarea));
       size.value = "";
+    } else if (size.value) {
+      applyEditorFontSize(editor, size.value, getStoredEditorFontSizeSelection(size, textarea));
     }
   });
-  toolbar.append(size);
-
-  const colorButton = createButton("cc98-rebuild-message-editor-button cc98-rebuild-message-editor-color cc98-rebuild-color-button", "", (event) => {
-    event?.preventDefault?.();
-    event?.stopPropagation?.();
-    rememberEditorSelection(editor, colorButton);
-    openEditorColorPicker(colorButton, editor);
-  });
-  colorButton.type = "button";
-  colorButton.title = "文字颜色";
-  colorButton.setAttribute("aria-label", "文字颜色");
-  colorButton.append(createElement("span", "cc98-rebuild-message-editor-color-label", "色"));
-  colorButton.append(createElement("span", "sp-preview"));
-  toolbar.append(colorButton);
-  ensureNativeColorInput(editor, colorButton);
-  ensureEditorColorPopover(editor, colorButton);
-  updateEditorColorButtonPreview(colorButton, "#ff6666");
+  size.addEventListener("pointerdown", () => rememberEditorFontSizeSelection(editor, size));
+  appendEditorFontSizeSplitSelect(editor, toolbar, size);
+  appendEditorColorSplitButton(editor, toolbar);
 
   const footer = createElement("div", "cc98-rebuild-message-editor-footer");
   const send = createButton("cc98-rebuild-message-editor-send", "发送", (event) => {
@@ -21862,14 +22245,14 @@ function splitWysiwygElementAtMarker(element, marker) {
   return splitWysiwygElementAtMarker(element, marker);
 }
 
-function splitWysiwygColorAncestorsAtMarker(root, marker) {
+function splitWysiwygFormattingAncestorsAtMarker(root, marker, isWrapper) {
   if (!(root instanceof HTMLElement) || !(marker instanceof Node)) {
     return false;
   }
   const ancestors = [];
   let current = marker.parentElement;
   while (current && current !== root) {
-    if (isWysiwygColorWrapper(current)) {
+    if (isWrapper(current)) {
       ancestors.push(current);
     }
     current = current.parentElement;
@@ -21910,8 +22293,8 @@ function clearProfileSignatureWysiwygColor(editor, wysiwyg) {
     endRange.insertNode(endMarker);
     startRange.insertNode(startMarker);
   }
-  const startBoundaryChanged = splitWysiwygColorAncestorsAtMarker(wysiwyg, startMarker);
-  const endBoundaryChanged = splitWysiwygColorAncestorsAtMarker(wysiwyg, endMarker);
+  const startBoundaryChanged = splitWysiwygFormattingAncestorsAtMarker(wysiwyg, startMarker, isWysiwygColorWrapper);
+  const endBoundaryChanged = splitWysiwygFormattingAncestorsAtMarker(wysiwyg, endMarker, isWysiwygColorWrapper);
   const boundaryChanged = startBoundaryChanged || endBoundaryChanged;
 
   if (wasCollapsed) {
@@ -22133,6 +22516,81 @@ function applyProfileSignatureWysiwygCommand(editor, wysiwyg, command, value = n
   return applied;
 }
 
+function applyProfileSignatureWysiwygTypography(editor, wysiwyg, tag, value) {
+  const range = restoreProfileSignatureWysiwygRange(editor, wysiwyg);
+  const wasCollapsed = range.collapsed;
+  const startMarker = document.createElement("span");
+  const endMarker = document.createElement("span");
+  const endRange = range.cloneRange();
+  endRange.collapse(false);
+  endRange.insertNode(endMarker);
+  const startRange = range.cloneRange();
+  startRange.collapse(true);
+  startRange.insertNode(startMarker);
+  const cssProperty = tag === "font" ? "font-family" : "font-size";
+  const legacyAttribute = tag === "font" ? "face" : "size";
+  const isPropertyTag = (candidate) => candidate === tag || (tag === "font" && candidate === "english");
+  const isWrapper = (node) => isPropertyTag(node.dataset.cc98UbbTag)
+    || isPropertyTag(node.dataset.cc98LocalUbbTag)
+    || Boolean(node.style.getPropertyValue(cssProperty))
+    || (node.tagName === "FONT" && node.hasAttribute(legacyAttribute));
+  splitWysiwygFormattingAncestorsAtMarker(wysiwyg, startMarker, isWrapper);
+  splitWysiwygFormattingAncestorsAtMarker(wysiwyg, endMarker, isWrapper);
+  const selectedRange = document.createRange();
+  selectedRange.setStartAfter(startMarker);
+  selectedRange.setEndBefore(endMarker);
+  const fragment = selectedRange.extractContents();
+  // Clear only the selected property; keep the other typography and formatting.
+  fragment.querySelectorAll("*").forEach((node) => {
+    if (tag === "size") {
+      node.classList.remove("cc98-rebuild-preview-size");
+      node.style.removeProperty("--cc98-preview-size");
+    }
+    if (!isWrapper(node)) {
+      return;
+    }
+    if (isPropertyTag(node.dataset.cc98UbbTag)) {
+      delete node.dataset.cc98UbbTag;
+      delete node.dataset.cc98UbbValue;
+    }
+    if (isPropertyTag(node.dataset.cc98LocalUbbTag)) {
+      delete node.dataset.cc98LocalUbbTag;
+      delete node.dataset.cc98LocalUbbValue;
+    }
+    node.style.removeProperty(cssProperty);
+    node.removeAttribute(legacyAttribute);
+    if (node.tagName === "SPAN" && [...node.attributes].every((attribute) =>
+      ["style", "class"].includes(attribute.name) && !attribute.value.trim())) {
+      node.replaceWith(...node.childNodes);
+    }
+  });
+  const wrapper = document.createElement("span");
+  if (value !== null) {
+    wrapper.dataset.cc98UbbTag = tag;
+    wrapper.dataset.cc98UbbValue = value;
+  }
+  wrapper.style.setProperty(cssProperty, value === null ? "inherit"
+    : (tag === "font" ? value : `${0.72 + Number(value) * 0.14}em`), "important");
+  wrapper.append(fragment);
+  if (wasCollapsed || !wrapper.childNodes.length) {
+    wrapper.replaceChildren(document.createTextNode("\u200b"));
+  }
+  selectedRange.insertNode(wrapper);
+  [startMarker.previousSibling, endMarker.nextSibling].forEach((node) => {
+    if (node instanceof HTMLElement && isWrapper(node)
+      && !hasMeaningfulWysiwygContent(node) && !node.querySelector("br")) {
+      node.remove();
+    }
+  });
+  startMarker.remove();
+  endMarker.remove();
+  clearEditorColorSelectionSnapshot(editor);
+  delete editor.__cc98WysiwygLogicalSelection;
+  selectProfileSignatureInsertedNode(editor, wysiwyg, wrapper, true);
+  editor.__cc98WysiwygSyncSource?.();
+  return true;
+}
+
 function applyProfileSignatureWysiwygInlineTag(editor, wysiwyg, tag, value, style = {}) {
   const range = restoreProfileSignatureWysiwygRange(editor, wysiwyg);
   const hasSelectedContent = hasMeaningfulProfileSignatureWysiwygRange(range);
@@ -22163,8 +22621,14 @@ function applyProfileSignatureWysiwygInlineTag(editor, wysiwyg, tag, value, styl
     // The caller can still retry through the source interval when available.
     return false;
   }
-  const span = document.createElement("span");
-  span.dataset.cc98UbbTag = tag;
+  // Reply-only content is a structured block, not an unstyled inline wrapper.
+  // Reuse the preview renderer immediately without replacing the live selection.
+  const span = (tag === "replyview"
+    ? buildNativeEditorUbbPreview("[replyview][/replyview]").firstElementChild
+    : null) || document.createElement("span");
+  if (!span.dataset.cc98LocalUbbTag) {
+    span.dataset.cc98UbbTag = tag;
+  }
   if (value) {
     span.dataset.cc98UbbValue = value;
   }
@@ -22631,23 +23095,37 @@ function stabilizeProfileSignatureToolbar(router) {
         }
         return applyProfileSignatureWysiwygGradient(editor, wysiwyg, stops, density);
       };
-      editor.__cc98WysiwygApplyFontFamily = (fontFamily) => {
-        const normalized = normalizeEditorFontFamilyValue(fontFamily);
-        if (!normalized) {
-          return false;
-        }
+      const applyTypography = (tag, value) => {
         if (activeSurface === "source") {
-          return replaceSourceSelection(`[font=${normalized}]`, "[/font]");
+          const result = window.CC98RebornExtendedUbbCore?.applyTypographyToSource(
+            textarea.value, getActiveSourceSelection(), tag, value
+          );
+          if (!result) {
+            return false;
+          }
+          writeNativeSource(result.value);
+          renderProfileSignatureWysiwygFromUbb(wysiwyg, result.value);
+          updateWysiwygMeta();
+          refreshCodeChrome(false);
+          const nextSelection = { start: result.start, end: result.end };
+          syntaxLayer.focus({ preventScroll: true });
+          restoreProfileSignatureSourceSelection(syntaxLayer, nextSelection);
+          sourceSelection = nextSelection;
+          return true;
         }
         activeSurface = "visual";
-        return applyProfileSignatureWysiwygInlineTag(
-          editor,
-          wysiwyg,
-          "font",
-          normalized,
-          { "font-family": normalized }
-        );
+        return applyProfileSignatureWysiwygTypography(editor, wysiwyg, tag, value);
       };
+      editor.__cc98WysiwygApplyFontFamily = (fontFamily) => {
+        const normalized = normalizeEditorFontFamilyValue(fontFamily);
+        return normalized ? applyTypography("font", normalized) : false;
+      };
+      editor.__cc98WysiwygApplyFontSize = (size) => {
+        const normalized = normalizeEditorFontSizeValue(size, "");
+        return normalized ? applyTypography("size", normalized) : false;
+      };
+      editor.__cc98WysiwygClearFontFamily = () => applyTypography("font", null);
+      editor.__cc98WysiwygClearFontSize = () => applyTypography("size", null);
 
       const preserveWysiwygSelection = (control) => {
         control.addEventListener("pointerdown", (event) => {
@@ -22727,7 +23205,7 @@ function stabilizeProfileSignatureToolbar(router) {
       );
       syncButton.classList.add("cc98-rebuild-dual-ubb-toolbar-utility");
 
-      const fontFamily = createEditorFontFamilySelect(
+      const fontFamily = createEditorFontFamilyControl(
         editor,
         "cc98-rebuild-profile-signature-font-select cc98-rebuild-message-editor-select"
       );
@@ -22743,43 +23221,21 @@ function stabilizeProfileSignatureToolbar(router) {
         size.append(option);
       });
       size.addEventListener("change", () => {
+        if (size.value === EDITOR_TYPOGRAPHY_RESET_VALUE) {
+          clearEditorTypography(editor, "size");
+          size.value = "";
+          return;
+        }
         if (!size.value) {
           return;
         }
-        const fontSize = `${0.72 + Number(size.value) * 0.14}em`;
-        if (activeSurface === "source") {
-          replaceSourceSelection(`[size=${size.value}]`, "[/size]");
-        } else {
-          applyProfileSignatureWysiwygInlineTag(
-            editor,
-            wysiwyg,
-            "size",
-            size.value,
-            { "font-size": fontSize }
-          );
-        }
-        size.value = "";
+        applyEditorFontSize(editor, size.value);
       });
       size.addEventListener("pointerdown", () => {
-        rememberActiveSelection();
+        rememberActiveSelection({ preserveNonCollapsed: true });
       });
-      toolbar.append(size);
-
-      const colorButton = createButton("cc98-rebuild-message-editor-button cc98-rebuild-message-editor-color cc98-rebuild-color-button", "", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        rememberEditorSelection(editor, colorButton, { preserveNonCollapsed: true });
-        openEditorColorPicker(colorButton, editor);
-      });
-      preserveWysiwygSelection(colorButton);
-      colorButton.title = "\u6587\u5b57\u989c\u8272";
-      colorButton.setAttribute("aria-label", "\u6587\u5b57\u989c\u8272");
-      colorButton.append(createElement("span", "cc98-rebuild-message-editor-color-label", "\u8272"));
-      colorButton.append(createElement("span", "sp-preview"));
-      toolbar.append(colorButton);
-      ensureNativeColorInput(editor, colorButton);
-      ensureEditorColorPopover(editor, colorButton);
-      updateEditorColorButtonPreview(colorButton, "#ff6666");
+      appendEditorFontSizeSplitSelect(editor, toolbar, size);
+      appendEditorColorSplitButton(editor, toolbar);
 
       parent.insertBefore(editor, textarea);
       textarea.readOnly = true;
@@ -23858,7 +24314,7 @@ function renderHome(app) {
   const visibleSections = hotOnly && hotSections.length > 0 ? hotSections : sections;
   if (hotOnly && visibleSections.length > 0) {
     const hero = createElement("section", "cc98-rebuild-hero cc98-rebuild-home-hot-hero");
-    hero.append(createElement("p", "cc98-rebuild-kicker", `Reborn View · v${EXTENSION_VERSION}`));
+    hero.append(createElement("p", "cc98-rebuild-kicker cc98-rebuild-version-kicker", `Reborn View · v${EXTENSION_VERSION}`));
     hero.append(createElement("h1", "", visibleSections[0].title));
     app.append(hero);
   }
@@ -27793,7 +28249,7 @@ function renderRebuiltUi(options = {}) {
 
     if (!["board", "userCenter", "message", "signin", "login", "error", "blacklist"].includes(kind) && !(kind === "home" && lastSettings.homeHotOnly)) {
       const hero = createElement("section", "cc98-rebuild-hero");
-      hero.append(createElement("p", "cc98-rebuild-kicker", `Reborn View · v${EXTENSION_VERSION}`));
+      hero.append(createElement("p", "cc98-rebuild-kicker cc98-rebuild-version-kicker", `Reborn View · v${EXTENSION_VERSION}`));
       hero.append(createElement("h1", "", getPageTitle()));
       app.append(hero);
     }

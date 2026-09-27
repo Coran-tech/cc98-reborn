@@ -1688,8 +1688,7 @@
     const title = createElement("h2", "cc98-local-syntax-tour-title");
     title.id = "cc98-extended-ubb-tour-title";
     title.textContent = "扩展 UBB 语法";
-    const badge = createElement("span", "cc98-local-syntax-experimental-badge", "实验性");
-    titleGroup.append(title, badge);
+    titleGroup.append(title);
     const close = createElement("button", "cc98-local-syntax-tour-close", "×");
     close.type = "button";
     close.title = "关闭导览";
@@ -1917,13 +1916,11 @@
     const tools = createElement("span", "cc98-local-syntax-tools");
     const trigger = createElement("button", "cc98-local-syntax-trigger");
     trigger.type = "button";
-    trigger.textContent = "扩";
+    trigger.textContent = "扩展";
     trigger.title = "扩展语法工具";
     trigger.setAttribute("aria-label", "扩展语法工具");
     trigger.setAttribute("aria-haspopup", "dialog");
     trigger.setAttribute("aria-expanded", "false");
-    const experimentalBadge = createElement("span", "cc98-local-syntax-experimental-badge", "实验性");
-
     const panel = createElement("div", "cc98-local-syntax-popover");
     panel.hidden = true;
     panel.setAttribute("role", "dialog");
@@ -1974,7 +1971,7 @@
       }
     });
     panel.addEventListener("click", (event) => event.stopPropagation());
-    tools.append(trigger, experimentalBadge, panel);
+    tools.append(trigger, panel);
     const nativeActions = toolbar.querySelector(":scope > .cc98-rebuild-dual-ubb-toolbar-actions");
     toolbar.insertBefore(tools, nativeActions || null);
     scheduleExtendedUbbTour(tools);

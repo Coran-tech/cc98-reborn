@@ -105,7 +105,8 @@ async function run() {
   assert.match(experimentalSyntax, /CC98RebornExtendedUbb/);
   assert.match(experimentalSyntax, /cc98RebornExtendedUbbTour:v1/);
   assert.match(experimentalSyntax, /EXTENDED_UBB_TOUR_VERSION = "0\.3\.4"/);
-  assert.match(experimentalSyntax, /cc98-local-syntax-experimental-badge/);
+  assert.match(experimentalSyntax, /trigger\.textContent = "扩展"/);
+  assert.doesNotMatch(experimentalSyntax, /cc98-local-syntax-experimental-badge/);
   assert.match(experimentalSyntax, /打开扩展语法/);
   assert.match(experimentalSyntax, /rememberExtendedUbbTourSeen/);
   assert.match(experimentalSyntax, /cc98-local-experimental-table/);

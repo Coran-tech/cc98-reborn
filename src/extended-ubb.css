@@ -201,6 +201,13 @@
   font-weight: 700;
 }
 
+.cc98-local-experimental-notice[data-cc98-local-ubb-tag="replyview"]::before {
+  display: block;
+  margin-bottom: 0.25em;
+  pointer-events: none;
+  user-select: none;
+}
+
 .cc98-local-experimental-image {
   display: block;
   margin: 0.75rem 0;
@@ -267,9 +274,9 @@
 
 .cc98-local-syntax-trigger {
   display: inline-grid;
-  width: 32px;
+  min-width: 44px;
   height: 30px;
-  padding: 0;
+  padding: 0 7px;
   place-items: center;
   border: 1px solid var(--cc98-comfort-border, #d8dfdc);
   border-radius: 4px;
@@ -277,6 +284,7 @@
   color: var(--cc98-comfort-text, #24332f);
   font-weight: 700;
   line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -656,9 +664,9 @@
   cursor: pointer;
 }
 
-.cc98-local-table-cell.is-selected {
-  border-color: var(--cc98-comfort-accent, #2d7167);
-  background: color-mix(in srgb, var(--cc98-comfort-accent, #2d7167) 20%, var(--cc98-comfort-surface, #fff));
+:root.cc98-comfort .cc98-local-syntax-popover .cc98-local-table-cell.is-selected {
+  border-color: var(--cc98-comfort-accent, #2d7167) !important;
+  background: color-mix(in srgb, var(--cc98-comfort-accent, #2d7167) 36%, var(--cc98-comfort-surface, #fff)) !important;
 }
 
 .cc98-local-syntax-status {

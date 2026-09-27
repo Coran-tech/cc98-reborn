@@ -21,6 +21,7 @@ jobs:
           node --check src/content.js
           node --check src/extended-ubb-core.js
           node --check src/extended-ubb.js
+          node --check src/markup-converter.js
           node --check src/background.js
           node --check src/openid-webvpn-bridge.js
           node --check src/page-submit-monitor.js
@@ -41,6 +42,9 @@ jobs:
 
       - name: Test extended UBB core
         run: node tests/extended-ubb-core.test.js
+
+      - name: Test UBB Markdown conversion core
+        run: node tests/markup-converter-core.test.js
 
       - name: Test question reaction integration
         run: node tests/question-mark-integration.test.js

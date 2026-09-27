@@ -4,7 +4,7 @@
 
 它的主要目标很简单：让 CC98 的页面更统一、更清爽，也顺手补上一些日常浏览真正用得上的便利功能。扩展会在浏览器本地读取原页面已经加载的内容，构建新的阅读界面；发帖、回复、上传、收藏、评分、关注、私信等关键操作则尽量继续调用原站逻辑。
 
-当前版本：`0.3.5`
+当前版本：`0.3.5.1`
 
 [下载发布包](https://github.com/Coran-tech/cc98-reborn/releases) ·
 [提交 Bug](https://github.com/Coran-tech/cc98-reborn/issues) ·
@@ -38,7 +38,8 @@
 - 适配发主题、回复、编辑主题和编辑回复页面。
 - UBB 模式提供上下双区编辑：上方直接编辑渲染内容，下方编辑带语法高亮和逻辑行号的 UBB 源码；两边实时同步并可独立拉伸，中间分隔线也可拖动，工具栏另有手动“同步”和基于 `0.3.1` 的“旧预览”备用入口。
 - 保留原站 UBB 工具栏、上传、表情、颜色、字号、链接、图片、视频和音频能力。
-- 双区工具栏加入带“实验性”标记的“扩展语法”，可插入并预览引用、分割线、可编辑代码块、内嵌 Markdown、数学公式、原样文本、命名字体、1 至 6 行列的表格和折叠图片；自动导览目前暂停，提交内容仍是原站 UBB 源码。
+- 双区工具栏的“扩展”可插入并预览引用、分割线、可编辑代码块、内嵌 Markdown、数学公式、原样文本、命名字体、1 至 6 行列的表格和折叠图片；自动导览目前暂停，提交内容仍是原站 UBB 源码。
+- 双区工具栏的“互转”可在 UBB 与 Markdown 间转换常用语法；先预览和修改结果，再手动替换。无法等价转换的格式会提示，回复可见等权限内容禁止直接替换。
 - 颜色面板支持常用色、透明色和快速渐变色。
 - 适配原站 Markdown 编辑器，并为输入法提交与预览切换提供本地过渡预览。
 - 发帖、回复和编辑均支持按页面与账号保存的本地草稿。
@@ -144,6 +145,7 @@ src/
   content.js
   extended-ubb-core.js
   extended-ubb.js
+  markup-converter.js
   extended-ubb.css
   openid-webvpn-bridge.js
   page-submit-monitor.js
@@ -161,6 +163,7 @@ images/
 node --check .\src\content.js
 node --check .\src\extended-ubb-core.js
 node --check .\src\extended-ubb.js
+node --check .\src\markup-converter.js
 node --check .\src\background.js
 node --check .\src\openid-webvpn-bridge.js
 node --check .\src\page-submit-monitor.js
@@ -173,6 +176,7 @@ node -e "JSON.parse(require('fs').readFileSync('manifest.json','utf8')); console
 node .\tests\page-submit-monitor.test.js
 node .\tests\openid-refresh.test.js
 node .\tests\extended-ubb-core.test.js
+node .\tests\markup-converter-core.test.js
 node .\tests\question-mark-integration.test.js
 ```
 
@@ -185,8 +189,8 @@ node .\tests\question-mark-integration.test.js
 生成文件：
 
 ```text
-dist/cc98-reborn-0.3.5.zip
-dist/cc98-reborn-0.3.5/
+dist/cc98-reborn-0.3.5.1.zip
+dist/cc98-reborn-0.3.5.1/
 ```
 
 发布包不包含 `reference/`、`tests/`、`.git/` 或其他开发期文件。

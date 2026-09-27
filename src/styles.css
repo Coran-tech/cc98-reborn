@@ -936,15 +936,6 @@
   font-family: var(--cc98-comfort-font-body);
 }
 
-:root.cc98-comfort:has(.cc98-rebuild-emoji-panel-open) #cc98-comfort-app::after,
-:root.cc98-comfort:has(.cc98-rebuild-color-button-open) #cc98-comfort-app::after,
-:root.cc98-comfort:has(.cc98-rebuild-font-size-button-open) #cc98-comfort-app::after,
-:root.cc98-comfort:has(.cc98-rebuild-message-emoji-panel:not([hidden])) #cc98-comfort-app::after {
-  content: "";
-  display: block;
-  height: min(42vh, 420px);
-}
-
 :root.cc98-comfort .cc98-rebuild-shell[data-page-kind="home"][data-home-hot-only="true"] {
   width: 80vw;
   max-width: none;
@@ -2635,6 +2626,11 @@
   font-weight: 760;
   letter-spacing: 0.08em !important;
   text-transform: uppercase;
+}
+
+:root.cc98-comfort .cc98-rebuild-version-kicker {
+  letter-spacing: 0 !important;
+  text-transform: none;
 }
 
 :root.cc98-comfort .cc98-rebuild-hero h1 {
@@ -7437,6 +7433,158 @@
   cursor: pointer !important;
 }
 
+:root.cc98-comfort .cc98-rebuild-convert-layer {
+  position: fixed;
+  z-index: 2147483647;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(0 0 0 / 48%);
+}
+
+:root.cc98-comfort .cc98-rebuild-convert-dialog {
+  box-sizing: border-box;
+  width: min(800px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  padding: 18px;
+  border: 1px solid var(--cc98-comfort-border);
+  border-radius: 8px;
+  background: var(--cc98-comfort-surface) !important;
+  color: var(--cc98-comfort-text);
+  box-shadow: 0 24px 70px rgb(0 0 0 / 25%);
+}
+
+:root.cc98-comfort .cc98-rebuild-convert-header,
+:root.cc98-comfort .cc98-rebuild-convert-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+:root.cc98-comfort .cc98-rebuild-convert-header strong {
+  font-size: 1rem;
+}
+
+:root.cc98-comfort .cc98-rebuild-convert-close {
+  width: 30px;
+  height: 30px;
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+:root.cc98-comfort .cc98-rebuild-convert-directions {
+  display: inline-flex;
+  margin: 12px 0;
+  border: 1px solid var(--cc98-comfort-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+:root.cc98-comfort .cc98-rebuild-convert-directions button {
+  min-height: 32px;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 0 12px;
+}
+
+:root.cc98-comfort .cc98-rebuild-convert-directions button + button {
+  border-left: 1px solid var(--cc98-comfort-border) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-convert-directions button[aria-pressed="true"] {
+  background: var(--cc98-comfort-accent) !important;
+  color: var(--cc98-comfort-surface) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-convert-panes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+:root.cc98-comfort .cc98-rebuild-convert-pane {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+:root.cc98-comfort .cc98-rebuild-convert-pane textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 270px;
+  max-height: 55vh;
+  resize: vertical;
+  padding: 10px;
+  font-family: var(--cc98-comfort-font-mono);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+:root.cc98-comfort .cc98-rebuild-convert-warnings {
+  margin-top: 12px;
+  color: var(--cc98-comfort-text);
+  font-size: 0.78rem;
+}
+
+:root.cc98-comfort .cc98-rebuild-convert-warnings p {
+  margin: 3px 0;
+}
+
+:root.cc98-comfort .cc98-rebuild-convert-review {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 10px;
+  font-size: 0.82rem;
+}
+
+:root.cc98-comfort .cc98-rebuild-convert-review[hidden] {
+  display: none;
+}
+
+:root.cc98-comfort .cc98-rebuild-convert-footer {
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+:root.cc98-comfort .cc98-rebuild-convert-status {
+  flex: 1 1 auto;
+  font-size: 0.78rem;
+}
+
+:root.cc98-comfort .cc98-rebuild-convert-footer button {
+  min-height: 32px;
+  padding: 0 12px;
+}
+
+:root.cc98-comfort .cc98-rebuild-convert-apply:not(:disabled) {
+  border-color: var(--cc98-comfort-accent) !important;
+  background: var(--cc98-comfort-accent) !important;
+  color: var(--cc98-comfort-surface) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-convert-apply:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+@media (max-width: 620px) {
+  :root.cc98-comfort .cc98-rebuild-convert-panes {
+    grid-template-columns: 1fr;
+  }
+
+  :root.cc98-comfort .cc98-rebuild-convert-pane textarea {
+    min-height: 120px;
+    max-height: 27vh;
+  }
+}
+
 :root.cc98-comfort .cc98-rebuild-editor-font-select {
   width: 116px !important;
   max-width: min(116px, 100%) !important;
@@ -7456,6 +7604,127 @@
   text-align: center !important;
   text-overflow: ellipsis !important;
   cursor: pointer !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-font-family-control {
+  display: inline-flex !important;
+  flex: 0 0 auto !important;
+  align-items: stretch !important;
+  max-width: 100% !important;
+  height: 30px !important;
+  overflow: hidden !important;
+  border: 1px solid var(--cc98-comfort-border) !important;
+  border-radius: 8px !important;
+  background: var(--cc98-comfort-surface) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-font-family-control > :is(button, select) {
+  flex: 0 0 auto !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--cc98-comfort-text) !important;
+  font: 700 0.8rem/1 var(--cc98-comfort-font-body) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-font-family-control > button {
+  padding: 0 8px !important;
+  cursor: pointer !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-font-family-control > .cc98-rebuild-font-family-apply {
+  min-width: 32px !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-font-family-control > .cc98-rebuild-editor-font-select {
+  width: 116px !important;
+  min-width: 0 !important;
+  padding: 0 22px 0 6px !important;
+  border-left: 1px solid var(--cc98-comfort-border) !important;
+  text-align: center !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-font-family-control > .cc98-rebuild-font-family-reset {
+  border-left: 1px solid var(--cc98-comfort-border) !important;
+  color: var(--cc98-comfort-muted) !important;
+  white-space: nowrap !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-font-family-control > button:disabled {
+  opacity: 0.45 !important;
+  cursor: default !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-font-family-control > :is(button, select):is(:hover, :focus-visible):not(:disabled) {
+  background: var(--cc98-comfort-accent-2) !important;
+  color: var(--cc98-comfort-accent) !important;
+  outline: none !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-typography-group {
+  display: inline-flex !important;
+  flex: 0 0 auto !important;
+  align-items: center !important;
+  gap: 6px !important;
+  max-width: 100% !important;
+}
+
+:root.cc98-comfort :is(.cc98-rebuild-font-size-split, .cc98-rebuild-color-split) {
+  display: inline-flex !important;
+  flex: 0 0 auto !important;
+  align-items: stretch !important;
+  height: 30px !important;
+  overflow: hidden !important;
+  border: 1px solid var(--cc98-comfort-border) !important;
+  border-radius: 8px !important;
+  background: var(--cc98-comfort-surface) !important;
+}
+
+:root.cc98-comfort :is(.cc98-rebuild-font-size-split, .cc98-rebuild-color-split) > :is(button, select),
+:root.cc98-comfort .cc98-rebuild-native-editor :is(.ubb-button-fontSize, .ubb-button-color) > :is(.cc98-rebuild-font-size-apply, .cc98-rebuild-font-size-trigger, .cc98-rebuild-color-apply, .cc98-rebuild-color-chooser) {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 32px !important;
+  height: 28px !important;
+  margin: 0 !important;
+  padding: 0 7px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--cc98-comfort-text) !important;
+  font: 700 0.84rem/1 var(--cc98-comfort-font-body) !important;
+  cursor: pointer !important;
+}
+
+:root.cc98-comfort :is(.cc98-rebuild-font-size-split, .cc98-rebuild-color-split) > :last-child,
+:root.cc98-comfort .cc98-rebuild-native-editor :is(.ubb-button-fontSize, .ubb-button-color) > :is(.cc98-rebuild-font-size-trigger, .cc98-rebuild-color-chooser) {
+  border-left: 1px solid var(--cc98-comfort-border) !important;
+}
+
+:root.cc98-comfort :is(.cc98-rebuild-font-size-split, .cc98-rebuild-color-split) > :is(button, select):hover,
+:root.cc98-comfort .cc98-rebuild-native-editor :is(.ubb-button-fontSize, .ubb-button-color) > :is(.cc98-rebuild-font-size-apply, .cc98-rebuild-font-size-trigger, .cc98-rebuild-color-apply, .cc98-rebuild-color-chooser):hover {
+  background: var(--cc98-comfort-accent-2) !important;
+  color: var(--cc98-comfort-accent) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-color-split > .cc98-rebuild-color-chooser,
+:root.cc98-comfort .cc98-rebuild-native-editor .ubb-button-color > .cc98-rebuild-color-chooser {
+  min-width: 25px !important;
+  padding: 0 5px !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-color-split .sp-preview,
+:root.cc98-comfort .cc98-rebuild-native-editor .cc98-rebuild-color-apply .sp-preview {
+  display: inline-block !important;
+  width: 17px !important;
+  height: 13px !important;
+  margin-left: 5px !important;
+  border: 1px solid var(--cc98-comfort-border) !important;
+  border-radius: 3px !important;
 }
 
 :root.cc98-comfort .cc98-rebuild-editor-font-select:is(:hover, :focus-visible) {
@@ -7519,6 +7788,20 @@
   overflow: hidden !important;
 }
 
+:root.cc98-comfort .cc98-rebuild-native-editor :is(.ubb-button-fontSize, .ubb-button-color):has(> .cc98-rebuild-font-size-apply, > .cc98-rebuild-color-apply) {
+  min-width: 0 !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  border-color: var(--cc98-comfort-border) !important;
+  background: var(--cc98-comfort-surface) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-native-editor :is(.ubb-button-fontSize, .ubb-button-color):has(> .cc98-rebuild-font-size-apply, > .cc98-rebuild-color-apply)::before,
+:root.cc98-comfort .cc98-rebuild-native-editor :is(.ubb-button-fontSize, .ubb-button-color):has(> .cc98-rebuild-font-size-apply, > .cc98-rebuild-color-apply) > .ubb-button-icon,
+:root.cc98-comfort .cc98-rebuild-native-editor .ubb-button-color:has(> .cc98-rebuild-color-apply) > :is(.sp-replacer, .sp-preview, .sp-dd, .ubb-color-picker) {
+  display: none !important;
+}
+
 :root.cc98-comfort .cc98-rebuild-native-editor :is(.ubb-buttons, .ubb-toolbar, .ubb-button-row, .ubb-editor-toolbar) {
   overflow: visible !important;
 }
@@ -7535,6 +7818,12 @@
 :root.cc98-comfort .cc98-rebuild-native-editor .ubb-button[data-cc98-toolbar-label] .ubb-button-icon::before {
   content: "" !important;
   display: none !important;
+}
+
+
+:root.cc98-comfort .cc98-rebuild-chooser-caret {
+  font-size: 0.75rem !important;
+  line-height: 1 !important;
 }
 
 :root.cc98-comfort .cc98-rebuild-native-editor button[data-cc98-editor-label] {
@@ -7578,13 +7867,14 @@
 
 :root.cc98-comfort .cc98-rebuild-native-editor .cc98-rebuild-font-size-trigger {
   min-width: 28px !important;
-  height: 26px !important;
+  height: 28px !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  border: 1px solid var(--cc98-comfort-border) !important;
-  border-radius: 8px !important;
-  background: var(--cc98-comfort-surface-2) !important;
+  border: 0 !important;
+  border-left: 1px solid var(--cc98-comfort-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
   color: var(--cc98-comfort-text) !important;
   padding: 0 8px !important;
   font-size: 0.82rem !important;
@@ -7593,9 +7883,14 @@
   cursor: pointer !important;
 }
 
+:root.cc98-comfort .cc98-rebuild-native-editor .cc98-rebuild-font-size-trigger {
+  gap: 5px !important;
+  min-width: 44px !important;
+}
+
 :root.cc98-comfort .cc98-rebuild-native-editor .cc98-rebuild-font-size-button-open .cc98-rebuild-font-size-trigger,
 :root.cc98-comfort .cc98-rebuild-native-editor .cc98-rebuild-font-size-trigger:hover {
-  border-color: var(--cc98-comfort-accent) !important;
+  background: var(--cc98-comfort-accent-2) !important;
   color: var(--cc98-comfort-accent) !important;
 }
 
@@ -8074,7 +8369,9 @@
 }
 
 :root .cc98-rebuild-color-popover[hidden],
-:root.cc98-comfort .cc98-rebuild-color-popover[hidden] {
+:root.cc98-comfort .cc98-rebuild-color-popover[hidden],
+:root .cc98-rebuild-color-popover [hidden],
+:root.cc98-comfort .cc98-rebuild-color-popover [hidden] {
   display: none !important;
 }
 
@@ -8523,6 +8820,25 @@
 :root.cc98-comfort .cc98-rebuild-font-size-option:hover,
 :root .cc98-rebuild-font-size-option.is-active,
 :root.cc98-comfort .cc98-rebuild-font-size-option.is-active {
+  border-color: var(--cc98-comfort-accent) !important;
+  background: var(--cc98-comfort-accent-2) !important;
+  color: var(--cc98-comfort-accent) !important;
+}
+
+:root .cc98-rebuild-font-size-reset,
+:root.cc98-comfort .cc98-rebuild-font-size-reset {
+  grid-column: 1 / -1 !important;
+  min-height: 30px !important;
+  border: 1px solid var(--cc98-comfort-border) !important;
+  border-radius: 8px !important;
+  background: var(--cc98-comfort-surface-2) !important;
+  color: var(--cc98-comfort-muted) !important;
+  font: 600 0.78rem/1 var(--cc98-comfort-font-body) !important;
+  cursor: pointer !important;
+}
+
+:root .cc98-rebuild-font-size-reset:is(:hover, :focus-visible),
+:root.cc98-comfort .cc98-rebuild-font-size-reset:is(:hover, :focus-visible) {
   border-color: var(--cc98-comfort-accent) !important;
   background: var(--cc98-comfort-accent-2) !important;
   color: var(--cc98-comfort-accent) !important;
@@ -13608,11 +13924,18 @@
 }
 
 :root.cc98-comfort #cc98-comfort-app[data-page-kind="message"] .cc98-rebuild-native-message .message-message-wcText {
-  max-width: min(1040px, 82%) !important;
+  max-width: 100% !important;
+  box-sizing: border-box;
   border: 1px solid color-mix(in srgb, var(--cc98-comfort-border) 62%, transparent) !important;
   border-radius: 14px !important;
   background: var(--cc98-comfort-surface) !important;
   background-color: var(--cc98-comfort-surface) !important;
+}
+
+:root.cc98-comfort #cc98-comfort-app[data-page-kind="message"] .cc98-rebuild-native-message .message-message-wcContent {
+  max-width: min(800px, calc(100% - 66px)) !important;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 :root.cc98-comfort #cc98-comfort-app[data-page-kind="message"] .cc98-rebuild-native-message .cc98-rebuild-message-editor {
@@ -14577,14 +14900,15 @@
 }
 
 :root.cc98-comfort .cc98-rebuild-native-editor > .cc98-rebuild-editor-emoji-panel {
-  position: absolute !important;
+  position: fixed !important;
   top: var(--cc98-editor-emoji-panel-top, 72px) !important;
-  left: 28px !important;
-  right: 28px !important;
+  left: var(--cc98-editor-emoji-panel-left, 28px) !important;
+  right: auto !important;
+  width: var(--cc98-editor-emoji-panel-width, min(720px, calc(100vw - 24px))) !important;
   z-index: 2147483200 !important;
   display: grid !important;
   grid-template-rows: auto minmax(0, 1fr);
-  max-height: min(380px, 55vh) !important;
+  max-height: var(--cc98-editor-emoji-panel-height, min(380px, 55vh)) !important;
   overflow: auto !important;
   padding: 0 0 10px !important;
   border: 1px solid var(--cc98-comfort-border) !important;

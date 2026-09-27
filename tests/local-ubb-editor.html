@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CC98 Reborn UBB editor regression</title>
   <link rel="stylesheet" href="/src/styles.css">
+  <link rel="stylesheet" href="/src/extended-ubb.css">
   <style>
     :root {
       --cc98-comfort-bg: #f4f6f5;
@@ -96,6 +97,12 @@
         <div class="ubb-buttons">
           <button type="button" class="ubb-button" title="加粗">B</button>
           <button type="button" class="ubb-button" title="斜体">I</button>
+          <button type="button" class="ubb-button" title="回复后可见">隐</button>
+          <div class="ubb-button ubb-button-fontSize" title="字号">
+            <div class="fa fa-text-height ubb-button-icon"></div>
+            <select><option value="">字号</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select>
+          </div>
+          <div class="ubb-button ubb-button-color" title="颜色"><span class="sp-preview" style="background-color: #ff0000"></span></div>
           <button type="button" class="ubb-button ubb-emoji-button" title="表情">表情</button>
         </div>
         <textarea>[b]alpha[/b]
@@ -123,6 +130,10 @@
       </div>
     </section>
   </main>
+  <script src="/src/extended-ubb-core.js"></script>
+  <script src="/src/extended-ubb.js"></script>
+  <script src="/src/vendor/showdown/showdown.min.js"></script>
+  <script src="/src/markup-converter.js"></script>
   <script src="/src/content.js"></script>
   <script>
     (() => {

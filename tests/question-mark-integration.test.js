@@ -8,7 +8,7 @@ const manifest = JSON.parse(read("manifest.json"));
 const questionPath = "experiments/question-mark/";
 const origin = "https://cc98-question-mark-demo.coran-zju.chatgpt.site";
 
-assert.equal(manifest.version, "0.3.5");
+assert.equal(manifest.version, "0.3.5.1");
 assert(manifest.host_permissions.includes(`${origin}/*`));
 
 const pageScript = manifest.content_scripts.find((entry) => entry.js?.includes("src/content.js"));

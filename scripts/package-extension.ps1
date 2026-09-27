@@ -50,6 +50,7 @@ New-Item -ItemType Directory -Force -Path (Join-Path $stage "src") | Out-Null
   "content.js",
   "extended-ubb-core.js",
   "extended-ubb.js",
+  "markup-converter.js",
   "extended-ubb.css",
   "openid-webvpn-bridge.js",
   "page-submit-monitor.js",

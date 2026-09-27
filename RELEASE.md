@@ -1,6 +1,6 @@
 # Release Checklist
 
-Current release target: `0.3.5`.
+Current release target: `0.3.5.1`.
 
 1. Confirm `manifest.json` version.
 2. Run validation:
@@ -9,6 +9,7 @@ Current release target: `0.3.5`.
 node --check .\src\content.js
 node --check .\src\extended-ubb-core.js
 node --check .\src\extended-ubb.js
+node --check .\src\markup-converter.js
 node --check .\src\background.js
 node --check .\src\openid-webvpn-bridge.js
 node --check .\src\page-submit-monitor.js
@@ -22,6 +23,7 @@ node -e "JSON.parse(require('fs').readFileSync('manifest.json','utf8')); console
 node .\tests\page-submit-monitor.test.js
 node .\tests\openid-refresh.test.js
 node .\tests\extended-ubb-core.test.js
+node .\tests\markup-converter-core.test.js
 node .\tests\question-mark-integration.test.js
 ```
 
@@ -68,6 +70,7 @@ third-party fixtures are intentionally excluded.
 - `src/extended-ubb-core.js`
 - `src/extended-ubb.js`
 - `src/extended-ubb.css`
+- `src/markup-converter.js`
 - `src/openid-webvpn-bridge.js`
 - `src/page-submit-monitor.js`
 - `src/styles.css`
