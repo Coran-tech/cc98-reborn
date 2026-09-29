@@ -1,5 +1,5 @@
 /* Experimental question reaction. Never send a CC98 access token or post body. */
-const QUESTION_API_ORIGIN = "https://cc98-question-mark-demo.coran-zju.chatgpt.site";
+const QUESTION_API_ORIGIN = "https://question.coranqwq.xyz";
 const QUESTION_SESSION_KEY = "cc98RebornQuestionSession:v1";
 const QUESTION_AUTHORIZED_KEY = "cc98RebornQuestionAuthorized:v1";
 const QUESTION_PRIVACY_KEY = "cc98RebornQuestionPrivacyAccepted:v1";

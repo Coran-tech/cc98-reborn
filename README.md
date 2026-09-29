@@ -4,7 +4,7 @@
 
 它的主要目标很简单：让 CC98 的页面更统一、更清爽，也顺手补上一些日常浏览真正用得上的便利功能。扩展会在浏览器本地读取原页面已经加载的内容，构建新的阅读界面；发帖、回复、上传、收藏、评分、关注、私信等关键操作则尽量继续调用原站逻辑。
 
-当前版本：`0.3.5.1`
+当前版本：`0.3.5.2`
 
 [下载发布包](https://github.com/Coran-tech/cc98-reborn/releases) ·
 [提交 Bug](https://github.com/Coran-tech/cc98-reborn/issues) ·
@@ -125,7 +125,7 @@
 
 问号功能的服务端尚无法独立确认楼层存在性或原站访问权限，请勿将实验功能视为原站官方能力；目前仅在直连页面验证。AI 搜索联想和高级模糊搜索的外部接口当前保持停用。
 
-完整说明见 [PRIVACY.md](./PRIVACY.md) 和[问号功能独立隐私说明](https://cc98-question-mark-demo.coran-zju.chatgpt.site/privacy)。
+完整说明见 [PRIVACY.md](./PRIVACY.md) 和[问号功能独立隐私说明](https://question.coranqwq.xyz/privacy)。
 
 ## 已知限制
 
@@ -189,8 +189,8 @@ node .\tests\question-mark-integration.test.js
 生成文件：
 
 ```text
-dist/cc98-reborn-0.3.5.1.zip
-dist/cc98-reborn-0.3.5.1/
+dist/cc98-reborn-0.3.5.2.zip
+dist/cc98-reborn-0.3.5.2/
 ```
 
 发布包不包含 `reference/`、`tests/`、`.git/` 或其他开发期文件。
@@ -201,7 +201,7 @@ CC98 Reborn is a Chrome/Edge extension that rebuilds common CC98 pages into a cl
 
 It supports direct CC98 access and ZJU WebVPN, improves post reading and media viewing, provides local drafts, search history, per-user read-later storage, board pinning, user hover cards, update checks, and optional OpenID-based local watermarking. An experimental question reaction is available on direct CC98 pages and is off by default.
 
-The extension does not upload posts, private messages, search terms, drafts, or settings to the external question service. If users enable and consent to the optional question reaction, an OpenID ID Token and numeric topic/floor identifiers are sent to that service. See [PRIVACY.md](./PRIVACY.md) and the [question feature privacy notice](https://cc98-question-mark-demo.coran-zju.chatgpt.site/privacy) for details.
+The extension does not upload posts, private messages, search terms, drafts, or settings to the external question service. If users enable and consent to the optional question reaction, an OpenID ID Token and numeric topic/floor identifiers are sent to that service. See [PRIVACY.md](./PRIVACY.md) and the [question feature privacy notice](https://question.coranqwq.xyz/privacy) for details.
 
 Install the latest package from [GitHub Releases](https://github.com/Coran-tech/cc98-reborn/releases), extract it to a fixed folder, then load that folder from `chrome://extensions/` or `edge://extensions/` with Developer mode enabled.
 
