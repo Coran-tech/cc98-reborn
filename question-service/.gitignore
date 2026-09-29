@@ -1,0 +1,5 @@
+/config.php
+/data/
+/backups/
+/migration-data.json
+/migration-data.sql

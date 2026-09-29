@@ -2,7 +2,7 @@
   "use strict";
 
   const BUTTON_CLASS = "cc98-question-action";
-  const PRIVACY_URL = "https://cc98-question-mark-demo.coran-zju.chatgpt.site/privacy";
+  const PRIVACY_URL = "https://question.coranqwq.xyz/privacy";
   const SETTINGS_KEY = "cc98ComfortSettings";
   let enabled = false;
   let scheduled = false;

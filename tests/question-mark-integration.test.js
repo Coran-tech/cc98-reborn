@@ -6,9 +6,9 @@ const root = path.resolve(__dirname, "..");
 const read = (name) => fs.readFileSync(path.join(root, name), "utf8");
 const manifest = JSON.parse(read("manifest.json"));
 const questionPath = "experiments/question-mark/";
-const origin = "https://cc98-question-mark-demo.coran-zju.chatgpt.site";
+const origin = "https://question.coranqwq.xyz";
 
-assert.equal(manifest.version, "0.3.5.1");
+assert.equal(manifest.version, "0.3.5.2");
 assert(manifest.host_permissions.includes(`${origin}/*`));
 
 const pageScript = manifest.content_scripts.find((entry) => entry.js?.includes("src/content.js"));

@@ -9,6 +9,7 @@ Thumbs.db
 *.log
 *.tmp
 *.temp
+tests/local-forum/.runtime/
 
 # Build/release artifacts
 dist/
@@ -18,3 +19,9 @@ build/
 
 # Dependencies, if local tooling is added later
 node_modules/
+# Local Codex state and reference material
+.codex/
+reference/
+tmp/
+# Separate Sites source checkout
+question-mark-sites-demo/
