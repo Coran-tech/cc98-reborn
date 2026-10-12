@@ -10255,6 +10255,16 @@ function findPostVoteContentNode(post) {
     : null;
 }
 
+function findPostLotteryContentNode(post) {
+  if (!(post instanceof Element)) {
+    return null;
+  }
+  return [...post.querySelectorAll(".reply-content .ant-card-body")]
+    .find((node) => !node.closest("#cc98-comfort-app")
+      && !node.closest(".substance, .signature")
+      && cleanupPostText(node.querySelector(":scope > p")?.textContent) === "该主题帖启用了抽奖功能") || null;
+}
+
 function getPostFloorNumber(post, index) {
   const readNumber = (value, patterns) => {
     for (const pattern of patterns) {
@@ -11015,6 +11025,7 @@ function getPostSignatureContent(post, supplementalMediaSources = []) {
   if (!(post instanceof Element)) {
     return null;
   }
+  const lotteryContent = findPostLotteryContentNode(post);
   const primarySignatureSelectors = [
     ".signature > article",
     ".signature article",
@@ -11039,6 +11050,7 @@ function getPostSignatureContent(post, supplementalMediaSources = []) {
     && node !== post
     && !node.matches(".vote-content")
     && !node.closest(".vote-content")
+    && !(lotteryContent && node.contains(lotteryContent))
     && !node.closest(".reply-content .substance, .substance")
     && isRenderableSignatureCandidate(node);
   const signatureSource = [...post.querySelectorAll(primarySignatureSelectors)]
@@ -11359,7 +11371,8 @@ function findCapturedTopicPostSnapshot(post, floor) {
 function getPostItems() {
   const directReplies = [...document.querySelectorAll(".reply")]
     .filter((node) => !node.closest("#cc98-comfort-app"))
-    .filter((node) => hasRenderablePostContent(findPostContentNode(node)) || Boolean(findPostVoteContentNode(node)));
+    .filter((node) => hasRenderablePostContent(findPostContentNode(node))
+      || Boolean(findPostVoteContentNode(node) || findPostLotteryContentNode(node)));
 
   const selectors = [
     '[class*="floor"]',
@@ -11373,7 +11386,8 @@ function getPostItems() {
     ? directReplies
     : [...document.querySelectorAll(selectors)]
       .filter((node) => !node.closest("#cc98-comfort-app"))
-      .filter((node) => hasRenderablePostContent(findPostContentNode(node)) || Boolean(findPostVoteContentNode(node)));
+      .filter((node) => hasRenderablePostContent(findPostContentNode(node))
+        || Boolean(findPostVoteContentNode(node) || findPostLotteryContentNode(node)));
 
   const compact = [];
   candidates.forEach((candidate) => {
@@ -11391,7 +11405,8 @@ function getPostItems() {
   const items = compact.map((post, index) => {
     const contentNode = findPostContentNode(post);
     const voteContent = findPostVoteContentNode(post);
-    if (!contentNode && !voteContent) {
+    const lotteryContent = findPostLotteryContentNode(post);
+    if (!contentNode && !voteContent && !lotteryContent) {
       return null;
     }
     const floorNumber = getPostFloorNumber(post, index);
@@ -11444,6 +11459,7 @@ function getPostItems() {
       text,
       content,
       voteContent,
+      lotteryContent,
       signature,
       awards,
       awardSourcePost: post,
@@ -11459,7 +11475,7 @@ function getPostItems() {
       isCurrentUser: Boolean(uidMatch?.[1] && uidMatch[1] === getCc98AccountId(getStoredCc98UserInfo())),
       isHot
     };
-  }).filter((item) => item && (hasRenderedPostContent(item.content) || item.voteContent));
+  }).filter((item) => item && (hasRenderedPostContent(item.content) || item.voteContent || item.lotteryContent));
   const viewCount = getTopicMetricCount("viewtimes");
   const firstRegularItem = items.find((item) => !item.isHot) || items[0];
   if (firstRegularItem && viewCount !== "") {
@@ -11484,6 +11500,7 @@ function getPostItems() {
     text,
     content: sanitizePostContent(article),
     voteContent: null,
+    lotteryContent: null,
     signature: null,
     awards: [],
     publishedAt: "",
@@ -13438,6 +13455,25 @@ function renderPostVoteContent(voteContent) {
   return voteContent;
 }
 
+function renderPostLotteryContent(lotteryContent) {
+  if (!(lotteryContent instanceof HTMLElement)) {
+    return null;
+  }
+  const card = createElement("section", "cc98-rebuild-post-lottery");
+  card.setAttribute("aria-label", "主题抽奖信息");
+  [...lotteryContent.querySelectorAll(":scope > p")].forEach((source, index) => {
+    const text = source.textContent?.trim();
+    if (!text) {
+      return;
+    }
+    const className = index === 0
+      ? "cc98-rebuild-post-lottery-title"
+      : index === 1 ? "cc98-rebuild-post-lottery-notice" : "cc98-rebuild-post-lottery-detail";
+    card.append(createElement("p", className, text));
+  });
+  return card.children.length ? card : null;
+}
+
 function getPostAuthorFollowState(action) {
   const text = cleanupPostText(getActionText(action?.control) || action?.text || "");
   const followed = /^(?:\u53d6\u5173|\u53d6\u6d88\u5173\u6ce8)$/.test(text);
@@ -13670,6 +13706,10 @@ function renderPostCard(item) {
   const voteContent = renderPostVoteContent(item.voteContent);
   if (voteContent) {
     body.append(voteContent);
+  }
+  const lotteryContent = renderPostLotteryContent(item.lotteryContent);
+  if (lotteryContent) {
+    body.append(lotteryContent);
   }
   if (item.content) {
     body.append(item.content);

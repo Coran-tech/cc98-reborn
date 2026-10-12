@@ -3633,6 +3633,40 @@
   word-break: break-word;
 }
 
+:root.cc98-comfort .cc98-rebuild-post-lottery {
+  width: min(460px, 100%);
+  margin: 0 auto 1.2rem;
+  padding: 14px 18px;
+  border: 1px solid color-mix(in srgb, #c83d46 32%, var(--cc98-comfort-border));
+  border-radius: 8px;
+  background: color-mix(in srgb, #c83d46 7%, var(--cc98-comfort-surface));
+  box-sizing: border-box;
+}
+
+:root.cc98-comfort .cc98-rebuild-post-lottery > p {
+  margin: 0 !important;
+  line-height: 1.6 !important;
+  font-size: 0.84rem !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-post-lottery > p + p {
+  margin-top: 4px !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-post-lottery :is(.cc98-rebuild-post-lottery-title, .cc98-rebuild-post-lottery-notice) {
+  color: #b42332 !important;
+  text-align: center;
+}
+
+:root.cc98-comfort .cc98-rebuild-post-lottery .cc98-rebuild-post-lottery-title {
+  font-size: 1rem !important;
+  font-weight: 700;
+}
+
+:root.cc98-comfort[data-cc98-comfort-tone="dark"] .cc98-rebuild-post-lottery :is(.cc98-rebuild-post-lottery-title, .cc98-rebuild-post-lottery-notice) {
+  color: #ff8489 !important;
+}
+
 :root.cc98-comfort .cc98-rebuild-post-body .cc98-rebuild-native-vote {
   display: grid !important;
   gap: 12px !important;
