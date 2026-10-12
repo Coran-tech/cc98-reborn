@@ -1,0 +1,39 @@
+server {
+    listen 80;
+    server_name question.coranqwq.xyz;
+    root /srv/question-service/public;
+    location ^~ /.well-known/acme-challenge/ {
+        default_type text/plain;
+        try_files $uri =404;
+    }
+    location / { return 301 https://question.coranqwq.xyz$request_uri; }
+}
+
+server {
+    listen 443 ssl;
+    server_name question.coranqwq.xyz;
+    server_tokens off;
+    root /srv/question-service/public;
+    index index.php;
+
+    ssl_certificate /usr/local/lighthouse/softwares/nginx/certificates/question.coranqwq.xyz/fullchain.cer;
+    ssl_certificate_key /usr/local/lighthouse/softwares/nginx/certificates/question.coranqwq.xyz/privkey.pem;
+    ssl_protocols TLSv1.2;
+    ssl_session_timeout 5m;
+
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy no-referrer always;
+    add_header X-Frame-Options DENY always;
+
+    location / { try_files $uri /index.php?$query_string; }
+    location = /index.php {
+        include fastcgi.conf;
+        fastcgi_param HTTP_AUTHORIZATION $http_authorization;
+        fastcgi_pass unix:/run/php-fpm-question.sock;
+    }
+    location ~ \.php(?:/|$) { return 404; }
+    location ~ /\. { return 404; }
+
+    access_log logs/question.coranqwq.xyz.log;
+    error_log logs/question.coranqwq.xyz.error.log;
+}

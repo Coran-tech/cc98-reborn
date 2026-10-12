@@ -2,6 +2,12 @@
 
 All notable changes to CC98 Reborn are documented here.
 
+## 0.3.5.2 - 2026-09-29
+
+### 问号实验
+
+- 问号服务迁移至 https://question.coranqwq.xyz，保留原有有效问号记录与身份摘要，并更新隐私说明。
+
 ## 0.3.5.1 - 2026-09-27
 
 ### 编辑器
@@ -26,7 +32,7 @@ All notable changes to CC98 Reborn are documented here.
 
 ### 说明
 
-- 此功能使用独立 HTTPS 服务，会传输 OpenID ID Token、数字帖号及已加载楼层号；不传输帖子标题、正文、作者、图片或私信。详情见弹窗链接的[问号功能隐私说明](https://cc98-question-mark-demo.coran-zju.chatgpt.site/privacy)。
+- 此功能使用独立 HTTPS 服务，会传输 OpenID ID Token、数字帖号及已加载楼层号；不传输帖子标题、正文、作者、图片或私信。详情见弹窗链接的[问号功能隐私说明](https://question.coranqwq.xyz/privacy)。
 - 当前仅在 CC98 直连页面验证了交互；WebVPN 下的问号授权尚未接入。服务端尚不能独立核验楼层是否存在或其原站访问权限，因此功能保持实验性且默认关闭。
 
 ## 0.3.4.2 - 2026-09-24

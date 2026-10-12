@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1790346082230,
+      "tag": "0000_little_human_cannonball",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1790350495845,
+      "tag": "0001_confused_landau",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1790354588943,
+      "tag": "0002_happy_frank_castle",
+      "breakpoints": true
+    }
+  ]
+}

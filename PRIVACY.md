@@ -29,7 +29,7 @@ OpenID binding does not persist access tokens or refresh tokens. A short-lived t
 
 Question-service authorization is separate from local watermark binding. An ID Token is signed, not encrypted: the service can read its identity claims while verifying them. The extension uses it to obtain a short-lived session, and does not persist that ID Token. The service stores an identity-derived keyed digest for reaction records, rather than raw UID; the operator can still access service-side data. Ordinary users receive only aggregate floor counts and their own selection status, not other users' individual reaction records. Changes in aggregate counts may still be observable. The service currently cannot independently verify whether a referenced CC98 floor exists or whether the requester may view it on the original forum. The question experiment is currently validated only for direct CC98 access; WebVPN authorization is not supported.
 
-The full [question feature privacy notice](https://cc98-question-mark-demo.coran-zju.chatgpt.site/privacy) describes the external service and consent terms.
+The full [question feature privacy notice](https://question.coranqwq.xyz/privacy) describes the external service and consent terms.
 
 When OpenID binding is enabled, the floating watermark is rendered locally from the stored `watermarkId` prefix. The extension does not use the webpage login session for this watermark path and does not upload page content for watermarking.
 
