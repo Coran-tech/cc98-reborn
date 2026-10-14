@@ -173,6 +173,11 @@
   function placeButton(actions, button) {
     const like = actions.querySelector('[data-action-kind="like"]');
     const dislike = actions.querySelector('[data-action-kind="dislike"]');
+    const capsule = (like || dislike)?.closest(".cc98-rebuild-vote-capsule");
+    if (capsule?.parentElement === actions) {
+      if (capsule.nextElementSibling !== button) capsule.after(button);
+      return;
+    }
     if (like && like.nextElementSibling !== button) {
       like.after(button);
     } else if (!like && dislike && button.nextElementSibling !== dislike) {

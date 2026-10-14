@@ -1,0 +1,223 @@
+{
+  "concepts": 24,
+  "dimensions": "1440x900",
+  "errors": [],
+  "layout": [
+    {
+      "id": "01",
+      "key": "interface",
+      "width": 1440,
+      "height": 900,
+      "contentBottom": 789.34375,
+      "footTop": 823.65625,
+      "outside": []
+    },
+    {
+      "id": "02",
+      "key": "themes",
+      "width": 1440,
+      "height": 900,
+      "contentBottom": 789.34375,
+      "footTop": 823.65625,
+      "outside": []
+    },
+    {
+      "id": "03",
+      "key": "ascii",
+      "width": 1440,
+      "height": 900,
+      "contentBottom": 789.34375,
+      "footTop": 823.65625,
+      "outside": []
+    },
+    {
+      "id": "04",
+      "key": "navigation",
+      "width": 1440,
+      "height": 900,
+      "contentBottom": 789.34375,
+      "footTop": 823.65625,
+      "outside": []
+    },
+    {
+      "id": "05",
+      "key": "ranking",
+      "width": 1440,
+      "height": 900,
+      "contentBottom": 789.34375,
+      "footTop": 823.65625,
+      "outside": []
+    },
+    {
+      "id": "06",
+      "key": "search",
+      "width": 1440,
+      "height": 900,
+      "contentBottom": 789.34375,
+      "footTop": 823.65625,
+      "outside": []
+    },
+    {
+      "id": "07",
+      "key": "readlater",
+      "width": 1440,
+      "height": 900,
+      "contentBottom": 789.34375,
+      "footTop": 823.65625,
+      "outside": []
+    },
+    {
+      "id": "08",
+      "key": "conversation",
+      "width": 1440,
+      "height": 900,
+      "contentBottom": 789.34375,
+      "footTop": 823.65625,
+      "outside": []
+    },
+    {
+      "id": "09",
+      "key": "viewer",
+      "width": 1440,
+      "height": 900,
+      "contentBottom": 789.34375,
+      "footTop": 823.65625,
+      "outside": []
+    },
+    {
+      "id": "10",
+      "key": "media",
+      "width": 1440,
+      "height": 900,
+      "contentBottom": 789.34375,
+      "footTop": 823.65625,
+      "outside": []
+    },
+    {
+      "id": "11",
+      "key": "actions",
+      "width": 1440,
+      "height": 900,
+      "contentBottom": 789.34375,
+      "footTop": 823.65625,
+      "outside": []
+    },
+    {
+      "id": "12",
+      "key": "favorites",
+      "width": 1440,
+      "height": 900,
+      "contentBottom": 789.34375,
+      "footTop": 823.65625,
+      "outside": []
+    },
+    {
+      "id": "13",
+      "key": "notes",
+      "width": 1440,
+      "height": 900,
+      "contentBottom": 789.34375,
+      "footTop": 823.65625,
+      "outside": []
+    },
+    {
+      "id": "14",
+      "key": "pins",
+      "width": 1440,
+      "height": 900,
+      "contentBottom": 789.34375,
+      "footTop": 823.65625,
+      "outside": []
+    },
+    {
+      "id": "15",
+      "key": "messages",
+      "width": 1440,
+      "height": 900,
+      "contentBottom": 789.34375,
+      "footTop": 823.65625,
+      "outside": []
+    },
+    {
+      "id": "16",
+      "key": "settings",
+      "width": 1440,
+      "height": 900,
+      "contentBottom": 789.34375,
+      "footTop": 823.65625,
+      "outside": []
+    },
+    {
+      "id": "17",
+      "key": "backup",
+      "width": 1440,
+      "height": 900,
+      "contentBottom": 789.34375,
+      "footTop": 823.65625,
+      "outside": []
+    },
+    {
+      "id": "18",
+      "key": "editor",
+      "width": 1440,
+      "height": 900,
+      "contentBottom": 789.34375,
+      "footTop": 823.65625,
+      "outside": []
+    },
+    {
+      "id": "19",
+      "key": "syntax",
+      "width": 1440,
+      "height": 900,
+      "contentBottom": 789.34375,
+      "footTop": 823.65625,
+      "outside": []
+    },
+    {
+      "id": "20",
+      "key": "conversion",
+      "width": 1440,
+      "height": 900,
+      "contentBottom": 789.34375,
+      "footTop": 823.65625,
+      "outside": []
+    },
+    {
+      "id": "21",
+      "key": "poll",
+      "width": 1440,
+      "height": 900,
+      "contentBottom": 789.34375,
+      "footTop": 823.65625,
+      "outside": []
+    },
+    {
+      "id": "22",
+      "key": "filters",
+      "width": 1440,
+      "height": 900,
+      "contentBottom": 789.34375,
+      "footTop": 823.65625,
+      "outside": []
+    },
+    {
+      "id": "23",
+      "key": "updates",
+      "width": 1440,
+      "height": 900,
+      "contentBottom": 789.34375,
+      "footTop": 823.65625,
+      "outside": []
+    },
+    {
+      "id": "24",
+      "key": "question",
+      "width": 1440,
+      "height": 900,
+      "contentBottom": 789.34375,
+      "footTop": 823.65625,
+      "outside": []
+    }
+  ]
+}

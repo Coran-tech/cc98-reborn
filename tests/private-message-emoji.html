@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>私信表情回归 - CC98论坛</title>
+  <link rel="stylesheet" href="/src/theme-tokens.css">
+  <link rel="stylesheet" href="/src/styles.css">
+  <style>
+    body { margin: 0; }
+    .message-message-person { cursor: pointer; }
+    .message-message-wcText p { margin: 0 0 12px; }
+    .fixture-notifications { margin-top: 18px; display: grid; gap: 12px; }
+    .fixture-notifications > div { padding: 12px; }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <div id="native-message" class="message-root">
+      <div class="message-content">
+        <nav class="message-nav"><a href="/message/message">私信</a><a href="/message/response">回复通知</a></nav>
+        <div class="message-right">
+          <div class="message-message">
+            <aside class="message-message-people">
+              <div id="person-a" class="message-message-person"><img class="message-message-pPortraitUrl" src="/uploads/avatar-face.png" alt="头像"><span class="message-message-pName">同学 A</span></div>
+              <div id="person-b" class="message-message-person"><span class="message-message-pName">同学 B</span></div>
+            </aside>
+            <section class="message-message-window">
+              <header class="message-message-wHeader"><strong class="message-message-wTitle">与同学 A 的私信</strong></header>
+              <div id="chat-scroll" class="message-message-wContent"></div>
+              <div class="message-message-wPost">
+                <textarea id="message-draft" class="message-message-wPostArea">未发送的回复草稿。</textarea>
+                <button class="message-message-wPostButton" type="button">发送</button>
+              </div>
+            </section>
+          </div>
+          <section class="fixture-notifications">
+            <div class="message-box-content">回复通知 <img id="notice-ac" src="/images/ac/04.png" width="200" height="200" alt="AC"></div>
+            <div class="message-system-box-content">系统通知 <img id="notice-tb" src="/images/tb/tb03.png" width="200" height="200" alt="贴吧"></div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const known = [
+      ["ac", "/images/ac/01.png"], ["tb", "/images/tb/tb01.png"],
+      ["cc98", "/images/CC98/CC9801.gif"], ["mahjong", "/images/mahjong/face2017/180.png"]
+    ];
+    window.__messageFixture = {
+      render(conversation = "A") {
+        const content = document.getElementById("chat-scroll");
+        content.innerHTML = `
+          <div class="message-message-wcSender" id="message-mixed">
+            <img id="message-avatar" class="message-message-wcPortraitUrl" src="/uploads/avatar-face.png" alt="头像">
+            <div class="message-message-wcText"><article>混合正文 ${conversation}：${known.map(([id, src]) => `<img id="mixed-${id}" src="${src}" width="200" height="200" alt="${id}">`).join("  ")} 这里还有后续文字。</article></div>
+          </div>
+          <div class="message-message-wcReceiver" id="message-only"><div class="message-message-wcText"><article><img id="only-ac" src="/images/ac/02.png" width="200" height="200" alt="AC"></article></div></div>
+          <div class="message-message-wcSender" id="message-regular"><div class="message-message-wcText"><article>聊天图片：
+            <img id="regular-upload" src="/uploads/01.png" width="160" alt="上传图片">
+            <img id="regular-emoji" src="/uploads/emoji-photo.png" width="160" alt="普通图片">
+            <img id="regular-face" src="/uploads/face-photo.png" width="160" alt="普通图片">
+          </article></div></div>
+          <div class="message-message-wcSender" id="message-responsive"><div class="message-message-wcText"><article>响应式表情与图片：
+            <img id="known-srcset" src="/images/ac/03.png" srcset="/images/ac/03.png 1x, /images/ac/04.png 2x" width="200" height="200" alt="AC">
+            <picture><source id="known-picture-source" srcset="/images/ac/04.png 1x, /images/ac/05.png 2x"><img id="known-picture" src="/images/ac/04.png" width="200" height="200" alt="AC"></picture>
+            <img id="regular-srcset" src="/images/ac/04.png" srcset="/uploads/srcset-photo.png 1x, /uploads/srcset-photo-large.png 2x" width="160" alt="响应式聊天图片">
+            <picture><source srcset="/uploads/picture-photo.png"><img id="regular-picture" src="/images/ac/05.png" width="160" alt="响应式聊天图片"></picture>
+            <picture><source media="(max-width:600px)" srcset="/images/ac/06.png"><img id="picture-mobile-source" src="/uploads/desktop-photo.png" width="160" alt="桌面聊天图片"></picture>
+          </article></div></div>
+          ${Array.from({ length: 22 }, (_, i) => `<div class="message-message-wcSender"><div class="message-message-wcText">历史消息 ${conversation}-${i + 1}，用于验证消息区滚动位置。</div></div>`).join("")}`;
+        document.querySelector(".message-message-wTitle").textContent = `与同学 ${conversation} 的私信`;
+      },
+      addImage(id, attr, src) {
+        const image = document.createElement("img");
+        image.id = id;
+        image.width = image.height = 200;
+        image.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1' height='1'/%3E";
+        if (attr) image.setAttribute(attr, src);
+        document.querySelector("#message-mixed .message-message-wcText article").append(image);
+      }
+    };
+    document.getElementById("person-b").addEventListener("click", () => __messageFixture.render("B"));
+    __messageFixture.render();
+  </script>
+  <script src="/src/theme-core.js"></script>
+  <script src="/src/extended-ubb-core.js"></script>
+  <script src="/src/markup-converter.js"></script>
+  <script src="/src/content.js"></script>
+</body>
+</html>

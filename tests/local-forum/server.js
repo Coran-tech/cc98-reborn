@@ -1,14 +1,25 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const { createLocalForumBackend } = require("./local-backend");
 
 const PORT = Number.parseInt(process.env.CC98_LOCAL_PORT || "44303", 10);
-const HOST = process.env.CC98_LOCAL_HOST || "127.0.0.1";
+// This simulator contains test accounts and intentionally relaxed compatibility
+// paths. Never let an environment override expose it to a LAN or the Internet.
+const HOST = "127.0.0.1";
+const ALLOWED_HOST_HEADERS = new Set([`${HOST}:${PORT}`, `localhost:${PORT}`]);
 const OUTPUT_LOG_PATH = process.env.CC98_LOCAL_OUTPUT_LOG || "";
 const ERROR_LOG_PATH = process.env.CC98_LOCAL_ERROR_LOG || "";
+const NATIVE_FRONTEND = process.env.CC98_LOCAL_NATIVE_FRONTEND === "1";
 const projectRoot = path.resolve(__dirname, "..", "..");
 const forumRoot = path.join(projectRoot, "reference", "Forum-main", "dist", "static");
 const extensionRoot = projectRoot;
+const backend = createLocalForumBackend({
+  dataPath: process.env.CC98_LOCAL_DATA_PATH || path.join(__dirname, ".runtime", "forum-data.json"),
+  uploadRoot: process.env.CC98_LOCAL_UPLOAD_ROOT || path.join(__dirname, ".runtime", "uploads"),
+  backupRoot: process.env.CC98_LOCAL_BACKUP_ROOT || path.join(__dirname, ".runtime", "backups"),
+  requireAuth: process.env.CC98_LOCAL_REQUIRE_AUTH === "1"
+});
 const requestLog = [];
 const startedAt = new Date();
 
@@ -31,189 +42,34 @@ function writeRuntimeLog(message, isError = false) {
   (isError ? console.error : console.log)(text);
 }
 
-const user = {
-  id: 795406,
-  name: "LocalTester",
-  portraitUrl: "/static/images/default_avatar_girl.png",
-  privilege: "\u6b63\u5f0f\u7528\u6237",
-  displayTitle: "\u672c\u5730\u6d4b\u8bd5\u7528\u6237",
-  displayTitleId: 0,
-  postCount: 1234,
-  fanCount: 42,
-  followCount: 18,
-  popularity: 7,
-  prestige: 1,
-  gender: 1,
-  theme: 4,
-  isFollowing: false,
-  isVerified: true,
-  lockState: 0,
-  lastLogOnTime: new Date().toISOString(),
-  signatureCode: "[color=#2d7890][b]CC98 Reborn \u672c\u5730\u6d4b\u8bd5\u7b7e\u540d[/b][/color]"
-};
-
-const otherUser = {
-  ...user,
-  id: 100002,
-  name: "SyntaxTester",
-  portraitUrl: "/static/images/default_avatar_boy.png",
-  fanCount: 8,
-  isFollowing: true,
-  signatureCode: "[u][color=#39785a]\u7b7e\u540d\u6863\u6837\u5f0f\u6d4b\u8bd5[/color][/u]"
-};
-
-const board = {
-  id: 81,
-  name: "\u672c\u5730\u6d4b\u8bd5\u7248",
-  description: "[b]\u8fd9\u662f\u4e00\u4e2a\u4e0d\u8fde\u63a5\u751f\u4ea7 API \u7684 CC98 \u672c\u5730\u6d4b\u8bd5\u7248\u9762\u3002[/b]",
-  boardMasters: [],
-  anonymousState: 0,
-  canEntry: true,
-  todayCount: 12,
-  topicCount: 345,
-  postCount: 678,
-  isLocked: false
-};
-
-const topic = {
-  id: 6500000,
-  boardId: 81,
-  userId: user.id,
-  userName: user.name,
-  title: "CC98 Reborn \u672c\u5730 UBB \u4e0e Markdown \u6d4b\u8bd5\u5e16",
-  time: "2026-08-09T00:00:00+08:00",
-  lastPostTime: "2026-08-09T00:05:00+08:00",
-  replyCount: 2,
-  hitCount: 531,
-  favoriteCount: 10,
-  state: 0,
-  type: 0,
-  tag1: 1,
-  tag2: 0,
-  floor: 2,
-  isAnonymous: false,
-  isVote: false,
-  todayCount: 0,
-  notifyAllReplierPostIds: [],
-  lotteryTopicDetail: null
-};
-
-const posts = [
-  {
-    id: 900001,
-    topicId: topic.id,
-    userId: user.id,
-    userName: user.name,
-    floor: 1,
-    contentType: 0,
-    content: [
-      "[b]\u7c97\u4f53[/b] [i]\u659c\u4f53[/i] [u]\u4e0b\u5212\u7ebf[/u] [del]\u5220\u9664\u7ebf[/del]",
-      "[color=#e5484d]\u7ea2\u8272[/color] [size=5]\u5927\u5b57[/size] [url=https://www.cc98.org]\u7edd\u5bf9\u94fe\u63a5[/url]",
-      "[align=right]\u53f3\u5bf9\u9f50\u8868\u60c5 [ac01][/align]",
-      "[left]\u5de6\u5bf9\u9f50\u522b\u540d[/left]",
-      "[center][font=KaiTi]\u5c45\u4e2d\u4e0e\u5b57\u4f53\u6807\u7b7e[/font][/center]",
-      "[right]\u53f3\u5bf9\u9f50\u522b\u540d[/right]",
-      "[quote][md]### Markdown in UBB\n\n- \u5217\u8868\u9879 A\n- \u5217\u8868\u9879 B\n\n| \u8bed\u6cd5 | \u72b6\u6001 |\n| --- | --- |\n| Markdown | \u6b63\u5e38 |[/md][/quote]",
-      "[line]",
-      "[code]const answer = 98;\nconsole.log(answer);[/code]",
-      "[table][tr][th]\u8bed\u6cd5[/th][th]\u7ed3\u679c[/th][/tr][tr][td]UBB[/td][td]\u6b63\u5e38[/td][/tr][/table]",
-      "[img]/static/images/default_avatar_girl.png[/img]",
-      "[img=1]/static/images/default_avatar_boy.png[/img]",
-      "[upload=png]/static/images/default_avatar_girl.png[/upload]",
-      "[upload]/__test/download/example.txt[/upload]",
-      "[math]x^2 + y^2 = z^2[/math]"
-    ].join("\n"),
-    time: "2026-08-09T00:00:00+08:00",
-    lastUpdateAuthor: user.name,
-    lastUpdateTime: "2026-08-09T00:01:00+08:00",
-    isAnonymous: false,
-    isDeleted: false,
-    isLZ: true,
-    isMe: true,
-    likeCount: 6,
-    dislikeCount: 1,
-    likeState: 0,
-    awards: []
-  },
-  {
-    id: 900002,
-    topicId: topic.id,
-    userId: otherUser.id,
-    userName: otherUser.name,
-    floor: 2,
-    contentType: 1,
-    content: "## Markdown \u56de\u590d\n\n- \u5217\u8868\u4e00\n- \u5217\u8868\u4e8c\n\n> \u5f15\u7528\u5185\u5bb9\n\n`inline code` \u548c **bold**\u3002",
-    time: "2026-08-09T00:03:00+08:00",
-    lastUpdateAuthor: "",
-    lastUpdateTime: "",
-    isAnonymous: false,
-    isDeleted: false,
-    isLZ: false,
-    isMe: false,
-    likeCount: 19,
-    dislikeCount: 0,
-    likeState: 0,
-    awards: []
-  },
-  {
-    id: 900003,
-    topicId: topic.id,
-    userId: user.id,
-    userName: user.name,
-    floor: 3,
-    contentType: 0,
-    content: "[align=center]\u7f16\u8f91\u3001\u56de\u5e16\u4e0e\u8868\u60c5\u540c\u6b65\u6d4b\u8bd5 [em01][/align]",
-    time: "2026-08-09T00:05:00+08:00",
-    lastUpdateAuthor: "",
-    lastUpdateTime: "",
-    isAnonymous: false,
-    isDeleted: false,
-    isLZ: false,
-    isMe: true,
-    likeCount: 2,
-    dislikeCount: 0,
-    likeState: 0,
-    awards: []
-  }
-];
-
-const tags = [{ id: 1, name: "\u8ba8\u8bba" }, { id: 2, name: "\u6c42\u52a9" }];
-
-function topicLink(id, title, boardId = board.id, boardName = board.name) {
-  return { id, title, boardId, boardName };
-}
-
-const homeData = {
-  academics: [topicLink(6500000, "\u5b66\u672f\u8bed\u6cd5\u6d4b\u8bd5")],
-  announcement: "[color=#2d7890][b]CC98 Reborn \u672c\u5730\u6a21\u62df\u8bba\u575b[/b][/color]",
-  emotion: [topicLink(6500000, "\u60c5\u611f\u533a\u6d4b\u8bd5\u5e16")],
-  fleaMarket: [topicLink(6500000, "\u5e02\u573a\u533a\u6d4b\u8bd5\u5e16")],
-  fullTimeJob: [topicLink(6500000, "\u6c42\u804c\u6d4b\u8bd5\u5e16")],
-  hotTopic: Array.from({ length: 10 }, (_, index) => topicLink(6500000, `${index + 1}. \u672c\u5730\u70ed\u95e8\u8bdd\u9898`, board.id, board.name)),
-  lastUserName: user.name,
-  onlineUserCount: 25,
-  partTimeJob: [topicLink(6500000, "\u517c\u804c\u6d4b\u8bd5\u5e16")],
-  postCount: 67890,
-  recommendationFunction: [],
-  recommendationReading: [{ imageUrl: "/static/images/board.jpg", title: "\u672c\u5730\u6d4b\u8bd5\u6307\u5357", url: "/topic/6500000", content: "\u6240\u6709\u8bf7\u6c42\u90fd\u7559\u5728\u672c\u673a\u3002" }],
-  schoolEvent: [topicLink(6500000, "\u6821\u56ed\u6d3b\u52a8\u6d4b\u8bd5")],
-  schoolNews: [],
-  specialOffer: [],
-  study: [topicLink(6500000, "UBB \u4e0e Markdown \u8bed\u6cd5")],
-  todayCount: 12,
-  todayTopicCount: 3,
-  topicCount: 345,
-  userCount: 999
-};
-
 function send(res, status, body, contentType) {
   const payload = Buffer.isBuffer(body) ? body : Buffer.from(String(body));
-  res.writeHead(status, {
+  const headers = {
     "Content-Type": contentType,
     "Content-Length": payload.length,
     "Cache-Control": "no-store",
-    "Access-Control-Allow-Origin": "*"
-  });
+    "Referrer-Policy": "no-referrer",
+    "X-Content-Type-Options": "nosniff"
+  };
+  if (res.cc98LocalCorsOrigin) {
+    headers["Access-Control-Allow-Origin"] = res.cc98LocalCorsOrigin;
+    headers.Vary = "Origin";
+  }
+  if (String(contentType).startsWith("text/html")) {
+    headers["Content-Security-Policy"] = [
+      "default-src 'self' data: blob:",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob: https:",
+      "media-src 'self' data: blob: https:",
+      "font-src 'self' data:",
+      "connect-src 'self'",
+      "frame-src 'self' https:",
+      "object-src 'none'",
+      "base-uri 'none'"
+    ].join("; ");
+  }
+  res.writeHead(status, headers);
   res.end(payload);
 }
 
@@ -264,6 +120,24 @@ function serveFile(res, root, relativePath) {
   return true;
 }
 
+function serveForumStatic(res, relativePath) {
+  const normalizedPath = String(relativePath || "").replace(/\\/g, "/");
+  if (NATIVE_FRONTEND && normalizedPath === "scripts/main.js") {
+    const filePath = safePath(forumRoot, normalizedPath);
+    if (!filePath || !fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
+      return false;
+    }
+    // The released Forum bundle hard-codes the six default avatars to the
+    // production host. Keep the native UI and click handlers intact while
+    // serving those same bundled assets from this isolated local instance.
+    const source = fs.readFileSync(filePath, "utf8")
+      .replaceAll("//www.cc98.org/static/images/", "/static/images/");
+    send(res, 200, source, "text/javascript; charset=utf-8");
+    return true;
+  }
+  return serveFile(res, forumRoot, normalizedPath);
+}
+
 function localContentScript() {
   let source = fs.readFileSync(path.join(extensionRoot, "src", "content.js"), "utf8");
   const marker = "function isDirectCc98Host(hostname = location.hostname) {";
@@ -274,23 +148,291 @@ function localContentScript() {
     marker,
     `${marker}\n  if (hostname === "127.0.0.1" || hostname === "localhost") {\n    return true;\n  }`
   );
+  const tagClickInterception = `      if (item instanceof HTMLElement && row.contains(item)) {
+        event.preventDefault();
+        event.stopPropagation();
+        syncEditorTagValue(row, item);
+        setEditorTagDropdownOpen(row, false);
+        return;
+      }`;
+  if (!source.includes(tagClickInterception)) {
+    throw new Error("Could not locate rebuilt tag click interception in src/content.js");
+  }
+  source = source.replace(
+    tagClickInterception,
+    `      if (item instanceof HTMLElement && row.contains(item)) {
+        // Keep the rebuilt visual state, then let the upstream React li
+        // handler receive the same click so InputTitle updates its parent.
+        syncEditorTagValue(row, item);
+        setEditorTagDropdownOpen(row, false);
+        return;
+      }`
+  );
+  const siteManageKindMarker = '  if (isReadLaterRoute()) {\n    return "readLater";\n  }';
+  if (!source.includes(siteManageKindMarker)) {
+    throw new Error("Could not locate read-later page kind in src/content.js");
+  }
+  source = source.replace(
+    siteManageKindMarker,
+    siteManageKindMarker
+      + '\n  if (globalThis.__CC98_LOCAL_BOOTSTRAP__ && /^\\/(?:usercenter|logon|register|account\\/password)(?:\\/|$|[?#])/i.test(cc98RoutePath)) {\n    return "localAccount";\n  }'
+      + '\n  if (globalThis.__CC98_LOCAL_BOOTSTRAP__ && /^\\/sitemanage(?:\\/|$|[?#])/i.test(cc98RoutePath)) {\n    return "localSiteManage";\n  }'
+  );
+  const userCenterRouteMarker = 'function isUserCenterRoutePath(path = getCurrentCc98RoutePath()) {';
+  if (!source.includes(userCenterRouteMarker)) {
+    throw new Error("Could not locate user-center route detection in src/content.js");
+  }
+  source = source.replace(
+    userCenterRouteMarker,
+    `${userCenterRouteMarker}\n  if (globalThis.__CC98_LOCAL_BOOTSTRAP__ && /^\\/(?:usercenter|logon|register|account\\/password)(?:\\/|$|[?#])/i.test(String(path || ""))) {\n    return false;\n  }`
+  );
+  const routePathMarker = '|| /^\\/(?:boardList|boardlist|newTopics|recommendedTopics|searchBoard|usercenter|topic|board|focus|search|user|message|editor|signin|logOn)(?:\\/|$|\\?)/i.test(path);';
+  if (!source.includes(routePathMarker)) {
+    throw new Error("Could not locate CC98 route path matcher in src/content.js");
+  }
+  source = source.replace(
+    routePathMarker,
+    '|| /^\\/(?:boardList|boardlist|newTopics|recommendedTopics|searchBoard|usercenter|topic|board|focus|search|user|message|editor|signin|logOn|register|account\\/password|sitemanage)(?:\\/|$|[?#])/i.test(path);'
+  );
+  const genericRendererMarker = "function renderGeneric(app) {";
+  if (!source.includes(genericRendererMarker)) {
+    throw new Error("Could not locate renderGeneric in src/content.js");
+  }
+  const siteManageRenderer = [
+    "function renderLocalAccount(app) {",
+    "  if (!globalThis.CC98LocalAccountApp?.render) {",
+    "    const fallback = createElement(\"section\", \"cc98-rebuild-section\");",
+    "    fallback.append(createElement(\"h2\", \"\", \"账号模块未载入\"));",
+    "    fallback.append(createElement(\"p\", \"cc98-rebuild-card-meta\", \"请刷新页面后重试。\"));",
+    "    app.append(fallback);",
+    "    return;",
+    "  }",
+    "  globalThis.CC98LocalAccountApp.render(app);",
+    "  globalThis.CC98RebornFavoriteShare?.mount(app);",
+    "}",
+    "",
+    "function renderLocalSiteManage(app) {",
+    "  const hero = createElement(\"section\", \"cc98-rebuild-hero cc98-local-site-manage-hero\");",
+    "  hero.append(createElement(\"p\", \"cc98-rebuild-kicker\", \"LOCAL ADMINISTRATION\"));",
+    "  hero.append(createElement(\"h1\", \"\", \"本地全站管理\"));",
+    "  hero.append(createElement(\"p\", \"cc98-local-site-manage-lead\", \"论坛权限、内容与 CC98 Reborn 本地配置由同一控制台维护。\"));",
+    "  app.append(hero);",
+    "  const metrics = createElement(\"section\", \"cc98-rebuild-section cc98-local-site-manage-status\");",
+    "  const heading = createElement(\"div\", \"cc98-rebuild-section-heading\");",
+    "  heading.append(createElement(\"h2\", \"\", \"服务状态\"));",
+    "  metrics.append(heading);",
+    "  const metricGrid = createElement(\"div\", \"cc98-local-site-manage-metrics\");",
+    "  [\"用户\", \"版面\", \"主题\", \"回复\"].forEach((label) => {",
+    "    const item = createElement(\"div\", \"cc98-local-site-manage-metric\");",
+    "    item.append(createElement(\"span\", \"\", label), createElement(\"strong\", \"\", \"--\"));",
+    "    metricGrid.append(item);",
+    "  });",
+    "  metrics.append(metricGrid);",
+    "  const refreshMetrics = () => fetch(\"/__test/health\", { cache: \"no-store\", credentials: \"same-origin\" })",
+    "    .then((response) => response.ok ? response.json() : Promise.reject(new Error(String(response.status))))",
+    "    .then((health) => {",
+    "      const values = [health.backend?.users, health.backend?.boards, health.backend?.topics, health.backend?.posts];",
+    "      metricGrid.querySelectorAll(\"strong\").forEach((element, index) => { element.textContent = String(values[index] ?? \"--\"); });",
+    "      metrics.classList.remove(\"is-unavailable\");",
+    "    })",
+    "    .catch(() => { metrics.classList.add(\"is-unavailable\"); });",
+    "  globalThis.__cc98LocalAdminMetricsRefresh = refreshMetrics;",
+    "  refreshMetrics();",
+    "  app.append(metrics);",
+    "  const section = createElement(\"section\", \"cc98-rebuild-section\");",
+    "  const sectionHeading = createElement(\"div\", \"cc98-rebuild-section-heading\");",
+    "  sectionHeading.append(createElement(\"h2\", \"\", \"管理功能\"));",
+    "  section.append(sectionHeading);",
+    "  const grid = createElement(\"div\", \"cc98-local-site-manage-grid\");",
+    "  [",
+    "    [\"账号与权限\", \"设置站务、版主、账号状态与注册策略\", \"accounts\"],",
+    "    [\"版面管理\", \"创建版面、编辑说明并分配版主\", \"boards\"],",
+    "    [\"主题管理\", \"搜索、锁定、置顶、精华、删除与恢复\", \"topics\"],",
+    "    [\"首页内容\", \"维护全站公告、推荐阅读与首页栏目\", \"homepage\"],",
+    "    [\"插件控制\", \"按 UID 管理主题、浏览行为和本地数据\", \"extension\"],",
+    "    [\"数据维护\", \"完整性检查、备份、恢复和审计记录\", \"data\"]",
+    "  ].forEach(([title, description, panel]) => {",
+    "    const link = createElement(\"a\", \"cc98-local-site-manage-card\");",
+    "    link.href = \"/__local/console#\" + panel;",
+    "    link.target = \"_blank\";",
+    "    link.rel = \"noopener\";",
+    "    link.append(createElement(\"strong\", \"\", title), createElement(\"span\", \"\", description));",
+    "    grid.append(link);",
+    "  });",
+    "  section.append(grid);",
+    "  app.append(section);",
+    "  const adminSection = createElement(\"section\", \"cc98-rebuild-section cc98-local-site-admin-section\");",
+    "  const adminHost = createElement(\"div\", \"cc98-local-site-admin-host\");",
+    "  adminHost.append(createElement(\"p\", \"cc98-rebuild-card-meta\", \"正在读取站务权限与论坛数据...\"));",
+    "  adminSection.append(adminHost);",
+    "  app.append(adminSection);",
+    "  globalThis.CC98LocalAccountApp?.renderAdminConsole?.(adminHost);",
+    "}",
+    "",
+    genericRendererMarker
+  ].join("\n");
+  source = source.replace(genericRendererMarker, siteManageRenderer);
+  const dispatchPattern = /    } else if \(kind === "userCenter"\) \{\r?\n      renderUserCenter\(app\);\r?\n    } else \{\r?\n      renderGeneric\(app\);\r?\n    }/;
+  if (!dispatchPattern.test(source)) {
+    throw new Error("Could not locate rebuilt page dispatch in src/content.js");
+  }
+  source = source.replace(
+    dispatchPattern,
+    '    } else if (kind === "userCenter") {\n      renderUserCenter(app);\n    } else if (kind === "localAccount") {\n      renderLocalAccount(app);\n    } else if (kind === "localSiteManage") {\n      renderLocalSiteManage(app);\n    } else {\n      renderGeneric(app);\n    }'
+  );
+  const genericHeroKinds = '["board", "userCenter", "message", "signin", "login", "error", "blacklist"]';
+  if (!source.includes(genericHeroKinds)) {
+    throw new Error("Could not locate generic hero page kinds in src/content.js");
+  }
+  source = source.replace(
+    genericHeroKinds,
+    '["board", "userCenter", "message", "signin", "login", "error", "blacklist", "localAccount", "localSiteManage"]'
+  );
+  const fallbackGuard = 'if (!["login", "error", "blacklist"].includes(kind) && !app.querySelector(".cc98-rebuild-blocked-page") && app.children.length <= 2) {';
+  if (!source.includes(fallbackGuard)) {
+    throw new Error("Could not locate rebuilt fallback guard in src/content.js");
+  }
+  source = source.replace(
+    fallbackGuard,
+    'if (!["login", "error", "blacklist", "localAccount"].includes(kind) && !app.querySelector(".cc98-rebuild-blocked-page") && app.children.length <= 2) {'
+  );
+  const topbarStoredAccountPattern = /  if \(hasFreshCc98LoginSession\(\)\) \{\r?\n    return createForcedTopbarUserEntry\(\);\r?\n  \}/;
+  if (!topbarStoredAccountPattern.test(source)) {
+    throw new Error("Could not locate stored topbar account fallback in src/content.js");
+  }
+  source = source.replace(
+    topbarStoredAccountPattern,
+    '  if (globalThis.__CC98_LOCAL_BOOTSTRAP__?.user || hasFreshCc98LoginSession()) {\n    return createForcedTopbarUserEntry();\n  }'
+  );
+  const syncAppMarker = '  if (\n    getPageKind() === "userCenter"';
+  if (!source.includes(syncAppMarker)) {
+    throw new Error("Could not locate rebuilt content sync entry in src/content.js");
+  }
+  source = source.replace(
+    syncAppMarker,
+    '  const localPageKind = getPageKind();\n  if (["localAccount", "localSiteManage"].includes(localPageKind)) {\n    return;\n  }\n  if (\n    localPageKind === "userCenter"'
+  );
   return source;
 }
-function localIndex() {
-  const source = fs.readFileSync(path.join(forumRoot, "index.html"), "utf8");
-  const testAssets = [
+function isStandaloneLocalAccountRoute(pathname = "/") {
+  return /^\/(?:usercenter(?:\/|$)|logon(?:\/|$)|register(?:\/|$)|account\/password(?:\/|$)|sitemanage(?:\/|$))/i.test(String(pathname || "/"));
+}
+
+function localIndex(req = { headers: {} }, pathname = "/") {
+  let source = fs.readFileSync(path.join(forumRoot, "index.html"), "utf8");
+  const standaloneAccountPage = NATIVE_FRONTEND
+    ? /^\/(?:register(?:\/|$)|account\/password(?:\/|$)|usercenter\/security(?:\/|$)|sitemanage(?:\/|$))/i.test(String(pathname || "/"))
+    : isStandaloneLocalAccountRoute(pathname);
+  if (standaloneAccountPage) {
+    const forumBundleMarker = 'const jsFileNames = ["vendors.js","main.js"];';
+    if (!source.includes(forumBundleMarker)) {
+      throw new Error("Could not locate Forum application bundle loader");
+    }
+    // Account pages have their own local frontend. Starting the legacy React
+    // application here would keep replacing form nodes while users type.
+    source = source.replace(forumBundleMarker, "const jsFileNames = [];");
+  }
+  const bootstrap = backend.getBrowserBootstrap(req);
+  const sharedTestAssets = [
+    `<script>
+      // Browser automation cannot read native alert text. Opt-in capture keeps
+      // the real page code unchanged for ordinary simulator sessions while
+      // making validation failures observable in local UI regression runs.
+      (function installLocalDialogCapture() {
+        var params = new URLSearchParams(window.location.search);
+        if (params.get("__cc98CaptureDialogs") !== "1") return;
+        window.__CC98_LOCAL_DIALOGS__ = [];
+        window.alert = function (message) {
+          var entry = { type: "alert", message: String(message), at: Date.now() };
+          window.__CC98_LOCAL_DIALOGS__.push(entry);
+          console.warn("[CC98 local dialog]", entry.message);
+        };
+      })();
+    </script>`,
+    `<script>
+      // The released Forum bundle only recognizes /search?boardId=0&keyword=...
+      // while Reborn also supports the shorter /search?keyword=... route.
+      // Keep both routes valid in the local simulator without changing either
+      // the bundled frontend or the extension's production navigation.
+      (function normalizeLocalSearchRoute() {
+        var url = new URL(window.location.href);
+        if (url.pathname !== "/search" || !url.searchParams.has("keyword") || url.searchParams.has("boardId")) return;
+        var params = new URLSearchParams();
+        // Search.tsx uses a legacy ordered regexp rather than URLSearchParams.
+        // Keep the historical boardId-then-keyword order for its parser.
+        params.set("boardId", "0");
+        params.set("keyword", url.searchParams.get("keyword") || "");
+        url.searchParams.forEach(function (value, key) {
+          if (key !== "boardId" && key !== "keyword") params.append(key, value);
+        });
+        window.history.replaceState(null, "", url.pathname + "?" + params.toString() + url.hash);
+      })();
+    </script>`,
+    `<script>
+      window.__CC98_LOCAL_STRICT_AUTH__=${process.env.CC98_LOCAL_REQUIRE_AUTH === "1" ? "true" : "false"};
+      window.__CC98_LOCAL_NATIVE_FRONTEND__=${NATIVE_FRONTEND ? "true" : "false"};
+      window.__CC98_LOCAL_BOOTSTRAP__=${JSON.stringify(bootstrap).replace(/</g, "\\u003c")};
+      window.__CC98_LOCAL_STANDALONE_ACCOUNT__=${standaloneAccountPage ? "true" : "false"};
+      if (window.__CC98_LOCAL_STANDALONE_ACCOUNT__) {
+        document.documentElement.dataset.cc98LocalStandaloneAccount = "true";
+      }
+    </script>`
+  ];
+  const frontendAssets = NATIVE_FRONTEND ? [
+    '<script src="/__test/native-bootstrap.js"></script>',
+    ...(standaloneAccountPage ? [
+      '<link rel="stylesheet" href="/__local/site-account.css">',
+      '<script src="/__local/site-account.js"></script>',
+      '<script>document.addEventListener("DOMContentLoaded", function () { CC98LocalAccountApp.render(document.getElementById("root")); }, { once: true });</script>'
+    ] : [])
+  ] : [
     '<script src="/__test/chrome-shim.js"></script>',
+    '<link rel="stylesheet" href="/src/theme-tokens.css">',
     '<link rel="stylesheet" href="/src/vendor/katex/katex.min.css">',
     '<link rel="stylesheet" href="/__test/styles.css">',
     '<link rel="stylesheet" href="/src/extended-ubb.css">',
+    '<link rel="stylesheet" href="/src/user-notes.css">',
+    '<link rel="stylesheet" href="/src/interface-styles.css">',
+    '<link rel="stylesheet" href="/__test/site-portal.css">',
+    '<link rel="stylesheet" href="/__local/site-account.css">',
     '<script src="/src/vendor/showdown/showdown.min.js"></script>',
+    '<script src="/src/theme-core.js"></script>',
+    '<script src="/src/interface-style.js"></script>',
     '<script src="/src/vendor/katex/katex.min.js"></script>',
     '<script src="/src/extended-ubb-core.js"></script>',
     '<script src="/src/extended-ubb.js"></script>',
     '<script src="/__test/page-submit-monitor.js"></script>',
+    '<script src="/__local/site-account.js"></script>',
+    '<script src="/src/conversation-core.js"></script>',
+    '<script src="/src/conversation.js"></script>',
+    '<link rel="stylesheet" href="/src/topic-search.css">',
+    '<script src="/src/topic-search.js"></script>',
+    '<script src="/src/favorite-share-core.js"></script>',
+    '<script src="/src/favorite-share-service.js"></script>',
+    '<script src="/src/favorite-share.js"></script>',
+    '<script src="/src/user-notes-core.js"></script>',
+    '<script src="/src/user-notes.js"></script>',
     '<script src="/__test/content.js"></script>'
-  ].join("\n  ");
+  ];
+  const testAssets = [...sharedTestAssets, ...frontendAssets].join("\n  ");
   return source.replace("</head>", `  ${testAssets}\n</head>`);
+}
+
+function isFrontendOnlyGetRoute(pathname) {
+  return /^\/(?:usercenter(?:\/|$)|account\/password(?:\/|$)|register(?:\/|$)|focus(?:\/|$)|newtopics(?:\/|$)|recommendedtopics(?:\/|$)|searchboard(?:\/|$)|search(?:\/|$)|signin(?:\/|$)|sitemanage(?:\/|$)|editor(?:\/|$)|annual-review(?:-|\/|$)|index\/?$|list(?:\/|$)|logon(?:\/|$))/i.test(pathname);
+}
+
+function allowedBrowserOrigin(value) {
+  if (!value) return "";
+  try {
+    const origin = new URL(value);
+    const port = origin.port || (origin.protocol === "http:" ? "80" : "");
+    if (origin.protocol !== "http:" || port !== String(PORT)) return "";
+    if (origin.hostname !== HOST && origin.hostname !== "localhost") return "";
+    return origin.origin;
+  } catch {
+    return "";
+  }
 }
 
 function readBody(req) {
@@ -303,96 +445,28 @@ function readBody(req) {
 }
 
 async function handleApi(req, res, url) {
-  const route = url.pathname.toLowerCase();
-  if (route === "/config/index") return sendJson(res, homeData);
-  if (route === "/config/global/advertisement") return sendJson(res, []);
-  if (route === "/config/global/alltag") return sendJson(res, tags);
-  if (route === "/config/global") return sendJson(res, { allowRegister: true });
-  if (route === "/me") return sendJson(res, { ...user, watermarkId: "LOCAL001-WATERMARK" });
-  if (route === "/me/all-message-count" || route === "/me/unread-count") {
-    return sendJson(res, { atCount: 0, messageCount: 0, replyCount: 0, systemCount: 0 });
-  }
-  if (route === "/me/favorite-topic-group") {
-    return sendJson(res, [{ id: 0, name: "\u9ed8\u8ba4\u5206\u7ec4", count: topic.favoriteCount, createTime: topic.time }]);
-  }
-  if (/^\/me\/favorite\/\d+$/.test(route) && /^(?:PUT|DELETE)$/.test(req.method)) {
-    return sendText(res, "ok");
-  }
-  if (route === "/board/all") return sendJson(res, [board]);
-  if (route === "/board/81/tag-v2") return sendJson(res, { layers: 1, tags });
-  if (route === "/board/81/tag") return sendJson(res, tags);
-  if (route === "/board/81") return sendJson(res, board);
-  if (route === "/topic/6500000/isfavorite" || /^\/topic\/\d+\/isfavorite$/.test(route)) return sendJson(res, false);
-  if (route === "/topic/6500000/hot-post" || /^\/topic\/\d+\/hot-post$/.test(route)) return sendJson(res, [posts[1]]);
-  if (/^\/topic\/\d+\/post$/.test(route) && req.method === "GET") {
-    const from = Number.parseInt(url.searchParams.get("from") || "0", 10);
-    const size = Number.parseInt(url.searchParams.get("size") || "10", 10);
-    return sendJson(res, posts.slice(from, from + size));
-  }
-  if (/^\/topic\/\d+$/.test(route) && req.method === "GET") return sendJson(res, topic);
-  if (/^\/topic\/(new|new-media|school-event|academics|study|emotion|flea-market|full-time-job|part-time-job)/.test(route)) return sendJson(res, homeData.hotTopic);
-  if (route === "/user" || route === "/user/name") {
-    const ids = url.searchParams.getAll("id");
-    const names = url.searchParams.getAll("name");
-    const values = ids.length ? ids.map(Number) : names;
-    return sendJson(res, values.map((value) => String(value) === String(otherUser.id) || value === otherUser.name ? otherUser : user));
-  }
-  if (/^\/user\/name\//.test(route)) {
-    const name = decodeURIComponent(url.pathname.split("/").pop() || "");
-    return sendJson(res, name.toLowerCase() === otherUser.name.toLowerCase() ? otherUser : user);
-  }
-  if (/^\/user\/\d+$/.test(route) || /^\/user\/basic\/\d+$/.test(route)) {
-    const id = Number.parseInt(url.pathname.split("/").pop(), 10);
-    return sendJson(res, id === otherUser.id ? otherUser : user);
-  }
-  if (route === "/post/900001/original") {
-    return sendJson(res, { ...posts[0], boardId: board.id, title: topic.title });
-  }
-  if (route === "/post/rating-reason") {
-    const type = Number.parseInt(url.searchParams.get("type") || "1", 10);
-    return sendJson(res, [{
-      id: type === 2 ? 2 : 1,
-      reason: type === 2 ? "\u672c\u5730\u6d4b\u8bd5\u53cd\u5bf9" : "\u672c\u5730\u6d4b\u8bd5\u652f\u6301",
-      type,
-      enabled: true
-    }]);
-  }
-  if (/^\/post\/\d+\/rating-v2$/.test(route) && req.method === "PUT") {
-    await readBody(req);
-    return sendText(res, "ok");
-  }
-  if (/^\/post\/\d+\/like$/.test(route)) {
-    return sendJson(res, { likeCount: 6, dislikeCount: 1, likeState: req.method === "PUT" ? 1 : 0 });
-  }
-  if (/^\/post\/\d+$/.test(route) && req.method === "PUT") {
-    await readBody(req);
-    return sendText(res, "ok");
-  }
-  if (/^\/me\/followee\/\d+$/.test(route)) return sendText(res, "ok");
-  if (route === "/board/81/topic" && req.method === "POST") {
-    await readBody(req);
-    return sendText(res, String(topic.id));
-  }
-  if (/^\/topic\/\d+\/post$/.test(route) && req.method === "POST") {
-    await readBody(req);
-    return sendJson(res, { id: 900004, floor: 4 });
-  }
-  if (route === "/notification/at" && req.method === "POST") {
-    await readBody(req);
-    return sendText(res, "ok");
-  }
-  if (route === "/topic/random-recommendation") return sendJson(res, []);
-  if (route.startsWith("/me/") || route.startsWith("/message/")) return sendJson(res, []);
-  return sendJson(res, []);
+  return backend.handle(req, res, url);
 }
 
 const server = http.createServer(async (req, res) => {
-  const url = new URL(req.url, `http://${req.headers.host || `${HOST}:${PORT}`}`);
+  const requestHost = String(req.headers.host || "").toLowerCase();
+  const requestOrigin = String(req.headers.origin || "");
+  const allowedOrigin = allowedBrowserOrigin(requestOrigin);
+  const fetchSite = String(req.headers["sec-fetch-site"] || "").toLowerCase();
+  if (!ALLOWED_HOST_HEADERS.has(requestHost) || fetchSite === "cross-site" || (requestOrigin && !allowedOrigin)) {
+    return sendJson(res, { error: "local_origin_required" }, 403);
+  }
+  const url = new URL(req.url, `http://${requestHost}`);
+  if (allowedOrigin) res.cc98LocalCorsOrigin = allowedOrigin;
   if (url.pathname !== "/__test/health") {
     requestLog.push({ method: req.method, path: `${url.pathname}${url.search}`, at: Date.now() });
   }
   if (req.method === "OPTIONS") {
-    res.writeHead(204, { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "*", "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS" });
+    res.writeHead(204, {
+      ...(allowedOrigin ? { "Access-Control-Allow-Origin": allowedOrigin, Vary: "Origin" } : {}),
+      "Access-Control-Allow-Headers": "Authorization, Content-Type",
+      "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS"
+    });
     return res.end();
   }
   if (url.pathname === "/__test/health") {
@@ -404,18 +478,42 @@ const server = http.createServer(async (req, res) => {
       startedAt: startedAt.toISOString(),
       uptimeSeconds: Math.max(0, Math.floor(process.uptime())),
       requests: requestLog.length,
-      activityRequests: requestLog.filter((entry) => !entry.path.startsWith("/__test/")).length
+      activityRequests: requestLog.filter((entry) => !entry.path.startsWith("/__test/")).length,
+      frontendMode: NATIVE_FRONTEND ? "native" : "reborn",
+      rebornInjected: !NATIVE_FRONTEND,
+      backend: backend.getStats()
     });
   }
-  if (url.pathname === "/__test/requests") return sendJson(res, requestLog);
+  if (url.pathname === "/__test/shutdown" && req.method === "POST") {
+    const permission = backend.isAdminRequest(req);
+    if (!permission.ok) return sendJson(res, { error: permission.error }, permission.status);
+    sendJson(res, { ok: true, pid: process.pid });
+    return setTimeout(() => server.close(() => process.exit(0)), 20);
+  }
+  if (url.pathname === "/__test/requests") {
+    const permission = backend.isAdminRequest(req);
+    if (!permission.ok) return sendJson(res, { error: permission.error }, permission.status);
+    return sendJson(res, requestLog);
+  }
+  if (url.pathname === "/__local/console") return serveFile(res, __dirname, "admin.html");
+  if (url.pathname === "/__local/admin.css") return serveFile(res, __dirname, "admin.css");
+  if (url.pathname === "/__local/admin.js") return serveFile(res, __dirname, "admin.js");
+  if (url.pathname === "/__local/site-account.css") return serveFile(res, __dirname, "site-account.css");
+  if (url.pathname === "/__local/site-account.js") return serveFile(res, __dirname, "site-account.js");
   if (url.pathname === "/__test/download/example.txt") return sendText(res, "CC98 Reborn local upload test\n");
   if (url.pathname === "/__test/chrome-shim.js") return serveFile(res, __dirname, "chrome-shim.js");
+  if (url.pathname === "/__test/native-bootstrap.js") return serveFile(res, __dirname, "native-bootstrap.js");
   if (url.pathname === "/__test/code-editor-regression.html") return serveFile(res, __dirname, "code-editor-regression.html");
   if (url.pathname === "/__test/code-editor-regression.js") return serveFile(res, __dirname, "code-editor-regression.js");
-  if (url.pathname === "/__test/interaction-regression.html") return serveFile(res, extensionRoot, "tests/interaction-regression.html");
+  if (url.pathname === "/__test/interaction-regression.html") return serveFile(res, __dirname, "interaction-regression.html");
+  if (url.pathname === "/favicon.ico") {
+    if (serveFile(res, extensionRoot, "assets/icon32.png")) return;
+    return send(res, 204, "", "image/x-icon");
+  }
   if (url.pathname === "/__test/content.js") return send(res, 200, localContentScript(), "text/javascript; charset=utf-8");
   if (url.pathname === "/__test/page-submit-monitor.js") return serveFile(res, extensionRoot, "src/page-submit-monitor.js");
   if (url.pathname === "/__test/styles.css") return serveFile(res, extensionRoot, "src/styles.css");
+  if (url.pathname === "/__test/site-portal.css") return serveFile(res, __dirname, "site-portal.css");
   if (url.pathname.startsWith("/src/")) return serveFile(res, extensionRoot, url.pathname.slice(1));
   if (url.pathname.startsWith("/__extension/")) return serveFile(res, extensionRoot, url.pathname.slice("/__extension/".length));
   if (url.pathname === "/static/config.json") {
@@ -423,16 +521,39 @@ const server = http.createServer(async (req, res) => {
   }
   if (url.pathname === "/static/config.Production.json") return sendJson(res, {}, 404);
   if (url.pathname.startsWith("/static/")) {
-    if (serveFile(res, forumRoot, url.pathname.slice("/static/".length))) return;
+    if (serveForumStatic(res, url.pathname.slice("/static/".length))) return;
     return sendJson(res, { error: "static-not-found" }, 404);
   }
+  if (url.pathname.startsWith("/openid/")) {
+    try {
+      return await handleApi(req, res, url);
+    } catch (error) {
+      console.error(error);
+      return sendJson(res, { error: error.message }, Number.isInteger(error.status) ? error.status : 500);
+    }
+  }
   const wantsHtml = req.method === "GET" && String(req.headers.accept || "").includes("text/html");
-  if (wantsHtml) return send(res, 200, localIndex(), "text/html; charset=utf-8");
+  if (wantsHtml) {
+    try {
+      return send(res, 200, localIndex(req, url.pathname), "text/html; charset=utf-8");
+    } catch (error) {
+      writeRuntimeLog(error?.stack || error?.message || error, true);
+      return sendJson(res, { error: "local_page_build_failed", detail: error.message }, 500);
+    }
+  }
+  if (req.method === "GET" && isFrontendOnlyGetRoute(url.pathname)) {
+    try {
+      return send(res, 200, localIndex(req, url.pathname), "text/html; charset=utf-8");
+    } catch (error) {
+      writeRuntimeLog(error?.stack || error?.message || error, true);
+      return sendJson(res, { error: "local_page_build_failed", detail: error.message }, 500);
+    }
+  }
   try {
     return await handleApi(req, res, url);
   } catch (error) {
     console.error(error);
-    return sendJson(res, { error: error.message }, 500);
+    return sendJson(res, { error: error.message }, Number.isInteger(error.status) ? error.status : 500);
   }
 });
 
@@ -442,5 +563,6 @@ server.on("error", (error) => {
 
 server.listen(PORT, HOST, () => {
   writeRuntimeLog(`CC98 local forum: http://${HOST}:${PORT}`);
+  writeRuntimeLog(`Frontend mode: ${NATIVE_FRONTEND ? "native Forum UI (Reborn disabled)" : "Reborn injected"}.`);
   writeRuntimeLog("Production API access is disabled; all API calls are served locally.");
 });

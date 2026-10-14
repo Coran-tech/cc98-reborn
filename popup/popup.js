@@ -3,10 +3,64 @@ const OPENID_BINDING_STORAGE_KEY = "cc98RebornOpenIdBinding:v1";
 const RELEASES_PAGE_URL = "https://github.com/Coran-tech/cc98-reborn/releases";
 const BLACKLIST_ROUTE_HASH = "#cc98-reborn-blacklist";
 const BLACKLIST_PAGE_URL = `https://www.cc98.org/${BLACKLIST_ROUTE_HASH}`;
+const ThemeCore = globalThis.CC98RebornThemeCore;
+const EMBEDDED_PARENT_ORIGIN = getEmbeddedParentOrigin();
+const IS_EMBEDDED = Boolean(EMBEDDED_PARENT_ORIGIN);
+
+function getEmbeddedParentOrigin() {
+  if (new URLSearchParams(location.search).get("embedded") !== "1" || window.parent === window) return "";
+  try {
+    // Chromium provides the actual parent origin even when the referrer is omitted.
+    const value = location.ancestorOrigins?.[0] || document.referrer;
+    const parent = new URL(value);
+    if (!/^https?:$/.test(parent.protocol)) return "";
+    if (/^(?:www\.)?cc98\.org$/i.test(parent.hostname)
+      || /(?:^|\.)webvpn\.zju\.edu\.cn$/i.test(parent.hostname)) {
+      return parent.origin;
+    }
+  } catch {
+    // Unverified or unrelated frames do not get a messaging channel.
+  }
+  return "";
+}
+
+function postEmbeddedMessage(message) {
+  if (!IS_EMBEDDED) return false;
+  window.parent.postMessage(message, EMBEDDED_PARENT_ORIGIN);
+  return true;
+}
+
+function initializeEmbeddedLayout() {
+  if (!IS_EMBEDDED) return;
+  document.documentElement.classList.add("cc98-reborn-embedded");
+  document.querySelector("#settingsSubtitle").textContent = "插件设置 · 修改后自动保存";
+  const panel = document.querySelector(".popup");
+  let previousHeight = 0;
+  let resizeFrame = 0;
+  const queueSize = () => {
+    if (resizeFrame) return;
+    resizeFrame = requestAnimationFrame(() => {
+      resizeFrame = 0;
+      // Measure the content, not viewport-backed scrollHeight, so closing a group shrinks the frame.
+      const height = Math.min(20000, Math.max(320, Math.ceil(panel.getBoundingClientRect().height) + 2));
+      if (height !== previousHeight) {
+        previousHeight = height;
+        postEmbeddedMessage({ type: "cc98-reborn:settings-size", height });
+      }
+    });
+  };
+  const observer = new ResizeObserver(queueSize);
+  observer.observe(panel);
+  window.addEventListener("resize", queueSize);
+  window.addEventListener("load", queueSize);
+  window.addEventListener("pageshow", queueSize);
+  document.fonts?.ready.then(queueSize);
+  queueSize();
+}
 
 const DEFAULT_SETTINGS = {
   enabled: true,
-  theme: "soft",
+  ...ThemeCore.DEFAULTS,
   density: "comfortable",
   fontScale: 110,
   emojiScale: 200,
@@ -40,29 +94,23 @@ const DEFAULT_SETTINGS = {
   placeholderText: "已根据你的屏蔽规则折叠一条内容"
 };
 
-const THEME_LABELS = {
-  soft: "暖纸",
-  mist: "清雾",
-  night: "夜读",
-  sage: "竹影",
-  lake: "湖蓝",
-  rose: "蔷薇",
-  graphite: "石墨",
-  midnight: "星夜",
-  wine: "绛夜"
-};
-
-const PRIMARY_THEME_IDS = new Set(["soft", "mist", "night"]);
-const THEME_IDS = new Set(Object.keys(THEME_LABELS));
-
 const fields = {
   enabled: document.querySelector("#enabled"),
   aboutToggle: document.querySelector("#aboutToggle"),
   aboutPopover: document.querySelector("#aboutPopover"),
   aboutVersion: document.querySelector("#aboutVersion"),
-  themeMoreToggle: document.querySelector("#themeMoreToggle"),
-  themeMoreCurrent: document.querySelector("#themeMoreCurrent"),
-  themeMoreMenu: document.querySelector("#themeMoreMenu"),
+  themeCurrentTone: document.querySelector("#themeCurrentTone"),
+  themeSchedule: document.querySelector("#themeSchedule"),
+  themeDayStart: document.querySelector("#themeDayStart"),
+  themeNightStart: document.querySelector("#themeNightStart"),
+  themeScheduleError: document.querySelector("#themeScheduleError"),
+  themePalettes: document.querySelector("#themePalettes"),
+  themeCustomControls: document.querySelector("#themeCustomControls"),
+  themeCustomPrimary: document.querySelector("#themeCustomPrimary"),
+  themeCustomPrimaryHex: document.querySelector("#themeCustomPrimaryHex"),
+  themeCustomSecondary: document.querySelector("#themeCustomSecondary"),
+  themeCustomSecondaryHex: document.querySelector("#themeCustomSecondaryHex"),
+  themeCustomColorError: document.querySelector("#themeCustomColorError"),
   homeHotOnly: document.querySelector("#homeHotOnly"),
   expandTopicCardsByDefault: document.querySelector("#expandTopicCardsByDefault"),
   prewarmPostImages: document.querySelector("#prewarmPostImages"),
@@ -92,6 +140,9 @@ const fields = {
   openidLogout: document.querySelector("#openidLogout"),
   clearCc98Data: document.querySelector("#clearCc98Data"),
   clearCc98DataStatus: document.querySelector("#clearCc98DataStatus"),
+  clearCc98DataConfirm: document.querySelector("#clearCc98DataConfirm"),
+  confirmClearCc98Data: document.querySelector("#confirmClearCc98Data"),
+  cancelClearCc98Data: document.querySelector("#cancelClearCc98Data"),
   blacklistSummary: document.querySelector("#blacklistSummary"),
   openBlacklist: document.querySelector("#openBlacklist"),
   reset: document.querySelector("#reset")
@@ -101,30 +152,58 @@ let settings = { ...DEFAULT_SETTINGS };
 let isHydrating = false;
 let latestReleaseUrl = RELEASES_PAGE_URL;
 let settingsSaveTimer = null;
-let lastPersistedSettingsSignature = "";
+let pendingSettingsPatch = {};
+let savingSettingsPatch = null;
+let scheduleDraft = null;
+let themeColorDraft = {};
+let stopThemeWatch = null;
+const CUSTOM_COLOR_KEYS = ["themeCustomPrimary", "themeCustomSecondary"];
 
 function readRadio(name) {
   return document.querySelector(`input[name="${name}"]:checked`)?.value ?? DEFAULT_SETTINGS[name];
 }
 
-function normalizeTheme(value) {
-  return THEME_IDS.has(value) ? value : DEFAULT_SETTINGS.theme;
-}
-
 function writeRadio(name, value) {
-  const normalizedValue = name === "theme" ? normalizeTheme(value) : value;
-  const input = document.querySelector(`input[name="${name}"][value="${normalizedValue}"]`);
+  const input = document.querySelector(`input[name="${name}"][value="${value}"]`);
   if (input) {
     input.checked = true;
   }
 }
 
-function setThemeMenuOpen(open) {
-  if (!fields.themeMoreMenu || !fields.themeMoreToggle) {
-    return;
+function renderThemePalettes() {
+  const palettes = [
+    ...ThemeCore.PALETTES.filter((palette) => palette.id !== "custom"),
+    { id: "custom", primary: settings.themeCustomPrimary, secondary: settings.themeCustomSecondary }
+  ];
+  for (const [index, palette] of palettes.entries()) {
+    const label = document.createElement("label");
+    const custom = palette.id === "custom";
+    label.classList.toggle("theme-palette-custom", custom);
+    const input = document.createElement("input");
+    input.type = "radio";
+    input.name = "themePalette";
+    input.value = palette.id;
+    const description = custom ? "自定义配色" : `配色 ${index + 1}，主色 ${palette.primary}，副色 ${palette.secondary}`;
+    input.setAttribute("aria-label", description);
+    label.title = description;
+    const card = document.createElement("span");
+    const swatches = document.createElement("i");
+    swatches.className = "theme-swatches";
+    swatches.setAttribute("aria-hidden", "true");
+    for (const color of [palette.primary, palette.secondary]) {
+      const dot = document.createElement("i");
+      dot.style.backgroundColor = color;
+      swatches.append(dot);
+    }
+    card.append(swatches);
+    if (custom) {
+      const name = document.createElement("strong");
+      name.textContent = "自定义";
+      card.append(name);
+    }
+    label.append(input, card);
+    fields.themePalettes.append(label);
   }
-  fields.themeMoreMenu.hidden = !open;
-  fields.themeMoreToggle.setAttribute("aria-expanded", String(open));
 }
 
 function setAboutPopoverOpen(open) {
@@ -143,14 +222,84 @@ function hydrateAboutVersion() {
 }
 
 function updateThemeDisplay() {
-  const theme = normalizeTheme(readRadio("theme"));
-  if (fields.themeMoreCurrent) {
-    fields.themeMoreCurrent.textContent = `当前：${THEME_LABELS[theme]}`;
+  const tone = ThemeCore.apply(document.documentElement, settings);
+  fields.themeCurrentTone.textContent = `当前${tone === "dark" ? "黑夜" : "白昼"}`;
+  fields.themeSchedule.hidden = settings.themeMode !== "auto";
+  fields.themeCustomControls.hidden = settings.themePalette !== "custom";
+  const customCard = fields.themePalettes.querySelector(".theme-palette-custom");
+  const dots = customCard?.querySelectorAll(".theme-swatches i");
+  if (dots?.length === 2) {
+    dots[0].style.backgroundColor = settings.themeCustomPrimary;
+    dots[1].style.backgroundColor = settings.themeCustomSecondary;
+    const description = `自定义配色，主色 ${settings.themeCustomPrimary}，副色 ${settings.themeCustomSecondary}`;
+    customCard.title = description;
+    customCard.querySelector("input").setAttribute("aria-label", description);
   }
-  if (fields.themeMoreToggle) {
-    fields.themeMoreToggle.classList.toggle("is-active", !PRIMARY_THEME_IDS.has(theme));
+}
+
+function validateThemeColors() {
+  const colors = {};
+  const invalid = [];
+  for (const key of CUSTOM_COLOR_KEYS) {
+    const input = fields[`${key}Hex`];
+    const color = ThemeCore.normalizeColor(input.value);
+    const label = key === "themeCustomPrimary" ? "主色" : "副色";
+    const error = color ? "" : `${label}请输入 #RGB 或 #RRGGBB 格式的颜色。`;
+    input.setAttribute("aria-invalid", String(!color));
+    input.setCustomValidity(error);
+    if (color) colors[key] = color;
+    else invalid.push(label);
   }
-  document.body.dataset.popupTheme = theme;
+  fields.themeCustomColorError.textContent = invalid.length
+    ? `${invalid.join("、")}请输入 #RGB 或 #RRGGBB 格式的颜色。` : "";
+  fields.themeCustomColorError.hidden = !invalid.length;
+  return colors;
+}
+
+function hydrateThemeColors() {
+  for (const key of CUSTOM_COLOR_KEYS) {
+    const draft = Object.hasOwn(themeColorDraft, key) ? themeColorDraft[key] : settings[key];
+    fields[`${key}Hex`].value = draft;
+    fields[key].value = ThemeCore.normalizeColor(draft, settings[key]);
+  }
+  validateThemeColors();
+}
+
+function editThemeColor(event) {
+  if (isHydrating) return;
+  const input = event.target;
+  const key = input.dataset.themeColor;
+  if (!CUSTOM_COLOR_KEYS.includes(key)) return;
+  if (input.type === "color") {
+    delete themeColorDraft[key];
+    fields[`${key}Hex`].value = input.value;
+  } else {
+    themeColorDraft[key] = input.value;
+    const color = ThemeCore.normalizeColor(input.value);
+    if (color) fields[key].value = color;
+  }
+  save(event);
+}
+
+function restartThemeWatch() {
+  stopThemeWatch?.();
+  stopThemeWatch = ThemeCore.watch(() => settings, updateThemeDisplay);
+}
+
+function validateThemeSchedule() {
+  const day = fields.themeDayStart.value;
+  const night = fields.themeNightStart.value;
+  const validTime = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
+  const error = !validTime.test(day) || !validTime.test(night)
+    ? "请填写完整的白昼和黑夜开始时间。"
+    : day === night ? "白昼和黑夜的开始时间不能相同。" : "";
+  fields.themeScheduleError.textContent = error;
+  fields.themeScheduleError.hidden = !error;
+  for (const input of [fields.themeDayStart, fields.themeNightStart]) {
+    input.setAttribute("aria-invalid", String(Boolean(error)));
+    input.setCustomValidity(error);
+  }
+  return !error;
 }
 
 function formatDuration(ms) {
@@ -185,6 +334,7 @@ function updateBlacklistSummary() {
 }
 
 function openBlacklistPage() {
+  if (postEmbeddedMessage({ type: "cc98-reborn:settings-open-blacklist" })) return;
   const openUrl = (url) => {
     try {
       chrome.tabs?.create?.({ url });
@@ -461,7 +611,7 @@ async function exitCurrentAccount() {
       fields.openidStatus.dataset.state = "pending";
       fields.openidStatus.textContent = "\u5df2\u53d1\u8d77\u9000\u51fa\uff0c\u9875\u9762\u5c06\u8df3\u8f6c\u5230\u767b\u5f55\u9875\u3002";
     }
-    window.setTimeout(() => window.close(), 450);
+    if (!IS_EMBEDDED) window.setTimeout(() => window.close(), 450);
     return;
   }
   if (fields.openidStatus) {
@@ -495,10 +645,18 @@ function setClearCc98DataStatus(text, state = "idle") {
   fields.clearCc98DataStatus.dataset.state = state;
 }
 
-async function clearCc98SiteData() {
-  if (!window.confirm("这会用于刷新十大；同时会抹掉本地存储的稍后再看、版面置顶与草稿等数据，请谨慎。确定继续吗？")) {
+async function clearCc98SiteData(confirmed = false) {
+  if (IS_EMBEDDED && !confirmed) {
+    fields.clearCc98DataConfirm.hidden = false;
+    fields.clearCc98Data.setAttribute("aria-expanded", "true");
+    fields.cancelClearCc98Data.focus();
     return;
   }
+  if (!IS_EMBEDDED && !window.confirm("这会用于刷新十大；同时会抹掉本地存储的稍后再看、版面置顶与草稿等数据，请谨慎。确定继续吗？")) {
+    return;
+  }
+  fields.clearCc98DataConfirm.hidden = true;
+  fields.clearCc98Data.setAttribute("aria-expanded", "false");
   if (fields.clearCc98Data) {
     fields.clearCc98Data.disabled = true;
   }
@@ -517,7 +675,7 @@ async function clearCc98SiteData() {
 
 function hydrate(nextSettings) {
   isHydrating = true;
-  settings = { ...DEFAULT_SETTINGS, ...nextSettings };
+  settings = { ...DEFAULT_SETTINGS, ...nextSettings, ...ThemeCore.normalize(nextSettings) };
 
   fields.enabled.checked = settings.enabled;
   fields.homeHotOnly.checked = settings.homeHotOnly;
@@ -528,8 +686,15 @@ function hydrate(nextSettings) {
   fields.sideTopbar.checked = settings.sideTopbar;
   fields.replyRebornTail.checked = settings.replyRebornTail;
   fields.questionMarkEnabled.checked = settings.questionMarkEnabled === true;
-  writeRadio("theme", settings.theme);
+  writeRadio("themeMode", settings.themeMode);
+  writeRadio("themeStyle", settings.themeStyle);
+  writeRadio("themePalette", settings.themePalette);
+  fields.themeDayStart.value = scheduleDraft?.day ?? settings.themeDayStart;
+  fields.themeNightStart.value = scheduleDraft?.night ?? settings.themeNightStart;
+  validateThemeSchedule();
+  hydrateThemeColors();
   updateThemeDisplay();
+  restartThemeWatch();
   fields.fontScale.value = settings.fontScale;
   fields.fontScaleOutput.value = `${settings.fontScale}%`;
   fields.emojiScale.value = settings.emojiScale;
@@ -539,21 +704,23 @@ function hydrate(nextSettings) {
   updatePostImagePrewarmControls();
   updateBlacklistSummary();
 
-  lastPersistedSettingsSignature = JSON.stringify(settings);
   isHydrating = false;
 }
 
 function collect() {
   return {
+    ...settings,
     enabled: fields.enabled.checked,
-    theme: normalizeTheme(readRadio("theme")),
-    density: DEFAULT_SETTINGS.density,
+    themeMode: readRadio("themeMode"),
+    themeStyle: readRadio("themeStyle"),
+    themePalette: readRadio("themePalette"),
+    ...validateThemeColors(),
+    ...(validateThemeSchedule() ? {
+      themeDayStart: fields.themeDayStart.value,
+      themeNightStart: fields.themeNightStart.value
+    } : {}),
     fontScale: Number(fields.fontScale.value),
     emojiScale: Number(fields.emojiScale.value),
-    neutralizeNativeSkin: DEFAULT_SETTINGS.neutralizeNativeSkin,
-    rebuildUi: DEFAULT_SETTINGS.rebuildUi,
-    roundUi: DEFAULT_SETTINGS.roundUi,
-    cornerRadius: DEFAULT_SETTINGS.cornerRadius,
     prewarmPostImages: fields.prewarmPostImages.checked,
     imageLoadDuration: Number(fields.imageLoadDuration.value),
     previsitFirstPageForTopicImages: fields.previsitFirstPageForTopicImages.checked,
@@ -561,34 +728,39 @@ function collect() {
     sideTopbar: fields.sideTopbar.checked,
     replyRebornTail: fields.replyRebornTail.checked,
     questionMarkEnabled: fields.questionMarkEnabled.checked,
-    minimalMode: DEFAULT_SETTINGS.minimalMode,
     homeHotOnly: fields.homeHotOnly.checked,
-    expandTopicCardsByDefault: fields.expandTopicCardsByDefault.checked,
-    softenAvatars: DEFAULT_SETTINGS.softenAvatars,
-    focusReading: DEFAULT_SETTINGS.focusReading,
-    hideSticky: DEFAULT_SETTINGS.hideSticky,
-    aiSearchSuggestEnabled: false,
-    aiSearchSuggestProvider: settings.aiSearchSuggestProvider || DEFAULT_SETTINGS.aiSearchSuggestProvider,
-    aiSearchSuggestEndpoint: settings.aiSearchSuggestEndpoint || DEFAULT_SETTINGS.aiSearchSuggestEndpoint,
-    aiSearchSuggestModel: settings.aiSearchSuggestModel || DEFAULT_SETTINGS.aiSearchSuggestModel,
-    aiSearchSuggestApiKey: settings.aiSearchSuggestApiKey || DEFAULT_SETTINGS.aiSearchSuggestApiKey,
-    externalAiSearchConsent: false,
-    advancedFuzzySearch: false,
-    blockedBoards: settings.blockedBoards || "",
-    blockedTitleKeywords: settings.blockedTitleKeywords || "",
-    blockedUserIds: settings.blockedUserIds || "",
-    placeholderText: settings.placeholderText || DEFAULT_SETTINGS.placeholderText
+    expandTopicCardsByDefault: fields.expandTopicCardsByDefault.checked
   };
 }
 
 function persistSettings() {
   settingsSaveTimer = null;
-  const signature = JSON.stringify(settings);
-  if (signature === lastPersistedSettingsSignature) {
+  if (savingSettingsPatch || !Object.keys(pendingSettingsPatch).length) {
     return;
   }
-  lastPersistedSettingsSignature = signature;
-  chrome.storage.local.set({ [STORAGE_KEY]: settings });
+  savingSettingsPatch = pendingSettingsPatch;
+  pendingSettingsPatch = {};
+  // Read just before writing so a theme edit preserves settings changed in the page.
+  chrome.storage.local.get(STORAGE_KEY, (result) => {
+    if (chrome.runtime.lastError) {
+      pendingSettingsPatch = { ...savingSettingsPatch, ...pendingSettingsPatch };
+      savingSettingsPatch = null;
+      return;
+    }
+    const current = result[STORAGE_KEY] || {};
+    const next = { ...DEFAULT_SETTINGS, ...current, ...ThemeCore.normalize(current), ...savingSettingsPatch };
+    chrome.storage.local.set({ [STORAGE_KEY]: next }, () => {
+      if (chrome.runtime.lastError) {
+        pendingSettingsPatch = { ...savingSettingsPatch, ...pendingSettingsPatch };
+        savingSettingsPatch = null;
+        return;
+      }
+      savingSettingsPatch = null;
+      if (Object.keys(pendingSettingsPatch).length) {
+        persistSettings();
+      }
+    });
+  });
 }
 
 function save(event) {
@@ -596,12 +768,27 @@ function save(event) {
     return;
   }
 
-  settings = collect();
+  const isTimeEdit = event?.target?.matches("input[type='time']");
+  if (isTimeEdit) {
+    scheduleDraft = { day: fields.themeDayStart.value, night: fields.themeNightStart.value };
+    if (!validateThemeSchedule()) {
+      return;
+    }
+    scheduleDraft = null;
+  }
+  const next = collect();
+  for (const [key, value] of Object.entries(next)) {
+    if (value !== settings[key]) {
+      pendingSettingsPatch[key] = value;
+    }
+  }
+  settings = next;
   fields.fontScaleOutput.value = `${settings.fontScale}%`;
   fields.emojiScaleOutput.value = `${settings.emojiScale}%`;
   fields.imageLoadDurationOutput.value = formatDuration(settings.imageLoadDuration);
   updatePostImagePrewarmControls();
   updateThemeDisplay();
+  restartThemeWatch();
   updateBlacklistSummary();
   window.clearTimeout(settingsSaveTimer);
   if (event?.type === "input") {
@@ -613,33 +800,47 @@ function save(event) {
 
 function bind() {
   document.querySelectorAll("input, textarea, select").forEach((input) => {
+    if (input.matches("[data-settings-transfer]")) return;
+    if (input.matches("[data-theme-color]")) return;
     if (input.matches("input[type='range'], input[type='text'], input[type='number'], textarea")) {
       input.addEventListener("input", save);
     }
     input.addEventListener("change", save);
   });
 
+  document.querySelectorAll("[data-theme-color]").forEach((input) => {
+    input.addEventListener("input", editThemeColor);
+    input.addEventListener("change", editThemeColor);
+    if (input.type === "text") {
+      input.addEventListener("blur", () => {
+        const color = ThemeCore.normalizeColor(input.value);
+        if (!color) return;
+        input.value = color;
+        delete themeColorDraft[input.dataset.themeColor];
+        validateThemeColors();
+        save({ type: "change", target: input });
+      });
+    }
+  });
+
+  for (const input of [fields.themeDayStart, fields.themeNightStart]) {
+    input.addEventListener("input", () => {
+      scheduleDraft = { day: fields.themeDayStart.value, night: fields.themeNightStart.value };
+      validateThemeSchedule();
+    });
+  }
+
   window.addEventListener("pagehide", () => {
-    if (!settingsSaveTimer) {
+    if (!settingsSaveTimer && !Object.keys(pendingSettingsPatch).length) {
       return;
     }
     window.clearTimeout(settingsSaveTimer);
     persistSettings();
   });
 
-  fields.themeMoreToggle?.addEventListener("click", (event) => {
-    event.stopPropagation();
-    setThemeMenuOpen(fields.themeMoreMenu?.hidden ?? true);
-  });
-
   fields.aboutToggle?.addEventListener("click", (event) => {
     event.stopPropagation();
     setAboutPopoverOpen(fields.aboutPopover?.hidden ?? true);
-  });
-
-  fields.themeMoreMenu?.addEventListener("change", () => {
-    updateThemeDisplay();
-    setThemeMenuOpen(false);
   });
 
   fields.updateCheck?.addEventListener("click", () => {
@@ -676,6 +877,16 @@ function bind() {
     clearCc98SiteData();
   });
 
+  fields.confirmClearCc98Data?.addEventListener("click", () => {
+    clearCc98SiteData(true);
+  });
+
+  fields.cancelClearCc98Data?.addEventListener("click", () => {
+    fields.clearCc98DataConfirm.hidden = true;
+    fields.clearCc98Data.setAttribute("aria-expanded", "false");
+    fields.clearCc98Data.focus();
+  });
+
   fields.openBlacklist?.addEventListener("click", () => {
     openBlacklistPage();
   });
@@ -686,29 +897,33 @@ function bind() {
         setAboutPopoverOpen(false);
       }
     }
-    if (!fields.themeMoreMenu || fields.themeMoreMenu.hidden) {
-      return;
-    }
-    if (fields.themeMoreMenu.contains(event.target) || fields.themeMoreToggle?.contains(event.target)) {
-      return;
-    }
-    setThemeMenuOpen(false);
   });
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       setAboutPopoverOpen(false);
-      setThemeMenuOpen(false);
+      if (!fields.clearCc98DataConfirm.hidden) {
+        fields.clearCc98DataConfirm.hidden = true;
+        fields.clearCc98Data.setAttribute("aria-expanded", "false");
+        fields.clearCc98Data.focus();
+      }
     }
   });
 
   fields.reset.addEventListener("click", () => {
+    window.clearTimeout(settingsSaveTimer);
+    scheduleDraft = null;
+    themeColorDraft = {};
+    pendingSettingsPatch = { ...DEFAULT_SETTINGS };
     hydrate(DEFAULT_SETTINGS);
-    chrome.storage.local.set({ [STORAGE_KEY]: DEFAULT_SETTINGS });
+    persistSettings();
   });
 }
 
+initializeEmbeddedLayout();
+
 chrome.storage.local.get(STORAGE_KEY, (result) => {
+  renderThemePalettes();
   hydrateAboutVersion();
   hydrate(result[STORAGE_KEY]);
   bind();
@@ -717,12 +932,18 @@ chrome.storage.local.get(STORAGE_KEY, (result) => {
 });
 
 chrome.storage.onChanged?.addListener((changes, areaName) => {
-  if (areaName !== "local" || !changes?.[OPENID_BINDING_STORAGE_KEY]) {
+  if (areaName !== "local") {
     return;
   }
-  const binding = changes[OPENID_BINDING_STORAGE_KEY].newValue;
-  setOpenIdUi({
-    ok: true,
-    binding: binding?.bound ? binding : null
-  });
+  if (changes?.[STORAGE_KEY]) {
+    const current = changes[STORAGE_KEY].newValue || {};
+    hydrate({ ...current, ...ThemeCore.normalize(current), ...savingSettingsPatch, ...pendingSettingsPatch });
+  }
+  if (changes?.[OPENID_BINDING_STORAGE_KEY]) {
+    const binding = changes[OPENID_BINDING_STORAGE_KEY].newValue;
+    setOpenIdUi({
+      ok: true,
+      binding: binding?.bound ? binding : null
+    });
+  }
 });

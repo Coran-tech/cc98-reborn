@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>CC98论坛</title>
+  <link id="mainStylesheet" rel="stylesheet" href="/reference/Forum-main/dist/static/content/css_autumn_2022_light.css">
+  <link rel="stylesheet" href="/src/theme-tokens.css"><link rel="stylesheet" href="/src/styles.css"><link rel="stylesheet" href="/src/extended-ubb.css">
+  <style>body { margin:0; }</style>
+</head>
+<body>
+  <div id="root"><header class="topBar"><div class="topBarRight"><span class="topBarUserName">测试用户</span></div></header><div id="native-host"></div></div>
+  <template id="vote-form-template">
+    <div class="createTopic" id="native-vote-editor">
+      <div class="row" style="align-items:baseline;justify-content:flex-start;color:grey;font-size:.75rem;margin-bottom:1rem"><a href="/">首页</a><i class="fa fa-chevron-right"></i><a href="/board/758">似水流年</a><i class="fa fa-chevron-right"></i><div>发表投票主题</div></div>
+      <div class="createTopicTitle"><div class="createTopicListName">主题标题</div><input id="native-title" placeholder="请输入新主题的标题"></div>
+      <div class="createTopicType"><div class="createTopicListName">发帖类型</div><label><input type="radio" name="type" value="普通" checked>普通</label><label><input type="radio" name="type" value="学术通知">学术通知</label></div>
+      <div class="createTopicType"><div class="createTopicListName">高级选项</div><label><input type="checkbox" name="option" value="notNotice" checked>接收消息提醒</label></div>
+      <!-- Vote markup/inline dimensions match the user's saved MHTML and EditVoteIput.tsx. -->
+      <div class="createTopicTitle" id="vote-settings">
+        <span class="createTopicListName">投票设置</span><span style="padding-left:1rem">有效天数（至少1天，最多1000天）</span>
+        <input style="width:8.5rem;border-width:0 1px 0 0;border-style:solid;border-color:#e9e9e9;box-sizing:border-box;margin:1rem" name="expiredDays" type="number" min="1" max="1000" placeholder="请输入有效天数">
+        <span>最多可投数量（至少1项，最多不超过选项数）</span>
+        <input style="width:10rem;border-width:0 1px 0 0;border-style:solid;border-color:#e9e9e9;box-sizing:border-box;margin:1rem" name="maxVoteCount" type="number" min="1" max="2" placeholder="请输入最多可投数量">
+        <input style="width:1rem" id="needVote" name="needVote" type="checkbox"><label for="needVote">投票后结果可见</label>
+      </div>
+      <button type="button" class="hiddenImage" id="add-vote" style="width:16rem;margin:0 auto 1rem">添加选项（最少2项，最多20项）</button>
+      <div id="content-host"><div class="createTopicContent"><div class="createTopicListName">主题内容</div><div style="color:darkgray">提示：CC98微信小程序现已支持上传时长不超过6分钟的视频。</div><div id="post-topic-changeMode" class="hiddenImage" style="width:12rem;margin-top:0">切换到Markdown编辑器</div><div class="ubb-editor" style="height:20rem">
+        <div class="ubb-buttons">
+          <button type="button" class="fa fa-bold ubb-button" title="加粗"></button>
+          <button type="button" class="fa fa-italic ubb-button" title="斜体"></button>
+          <button type="button" class="fa fa-underline ubb-button" title="下划线"></button>
+          <button type="button" class="fa fa-strikethrough ubb-button" title="删除线"></button>
+          <button type="button" class="ubb-button" title="左对齐">左</button><button type="button" class="ubb-button" title="居中">中</button><button type="button" class="ubb-button" title="右对齐">右</button>
+          <button type="button" class="ubb-button" title="回复后可见">隐</button>
+          <div class="ubb-button ubb-button-fontSize"><div class="fa fa-text-height ubb-button-icon"></div><select><option value="">字号</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select></div>
+          <div class="ubb-button ubb-button-color"><span class="sp-preview" style="background-color:#ff0000"></span></div>
+          <button type="button" class="fa fa-smile-o ubb-button" title="插入表情"></button>
+          <button type="button" class="fa fa-link ubb-button" title="插入url"></button>
+          <button type="button" class="fa fa-picture-o ubb-button" title="插入图片"></button>
+          <button type="button" class="fa fa-play ubb-button" title="插入视频"></button>
+          <button type="button" class="ubb-button" title="Bilibili">Bilibili</button>
+          <button type="button" class="fa fa-music ubb-button" title="插入音频"></button>
+          <label class="fa fa-file ubb-button ubb-button-icon" title="上传文件" for="ubbFileUpload"></label>
+          <button type="button" class="fa fa-undo ubb-button" title="撤销"></button>
+          <button type="button" class="fa fa-repeat ubb-button" title="重做"></button>
+        </div>
+        <div class="ubb-extend" style="height:0rem"></div><textarea id="native-content"></textarea><input id="ubbFileUpload" type="file" style="display:none"><div class="ubb-emoji" style="height:0rem"></div></div></div><div class="row" style="justify-content:center"><button id="post-topic-button" class="button blue">发帖</button></div></div>
+    </div>
+  </template>
+  <script>
+    window.__voteFixture = {
+      options: ['', ''], adds:0, removes:0, posts:0,
+      renderOptions() {
+        document.querySelectorAll('#native-vote-editor .fixture-option').forEach(row => row.remove());
+        this.options.forEach((value, index) => {
+          const row = document.createElement('div'); row.className = 'createTopicTitle fixture-option';
+          const label = document.createElement('span'); label.className = 'createTopicListName'; label.textContent = `投票选项${index+1}`;
+          const input = document.createElement('input'); input.name = 'voteItem'; input.type = 'text'; input.maxLength = 50; input.value = value; input.placeholder = '请输入选项内容，不能为空，最多50个字符';
+          input.addEventListener('input', () => { this.options[index] = input.value; });
+          row.append(label, input);
+          if (this.options.length > 2) { const button = document.createElement('button'); button.type = 'button'; button.className = 'fa fa-times'; button.addEventListener('click', () => { this.options.splice(index,1); this.removes++; this.renderOptions(); }); row.append(button); }
+          document.getElementById('add-vote').before(row);
+        });
+        document.querySelector('input[name="maxVoteCount"]').max = this.options.length;
+      },
+      editor() {
+        document.getElementById('native-host').replaceChildren(document.getElementById('vote-form-template').content.cloneNode(true));
+        const heading = document.querySelector('.createTopicContent'); heading.after(heading.querySelector('.ubb-editor'));
+        this.renderOptions();
+        document.getElementById('add-vote').addEventListener('click', () => { if (this.options.length < 20) { this.options.push(''); this.adds++; this.renderOptions(); } });
+        document.getElementById('post-topic-changeMode').addEventListener('click', () => {
+          const existing = document.querySelector('.react-mde');
+          if (existing) return;
+          document.querySelector('.ubb-editor').hidden = true;
+          const md = document.createElement('div'); md.className = 'react-mde'; md.innerHTML = '<div class="mde-header"><button class="selected">编写</button><button>预览</button></div><div class="mde-textarea-wrapper"><textarea class="mde-text"></textarea></div>';
+          document.querySelector('.ubb-editor').after(md);
+        });
+        document.getElementById('post-topic-button').addEventListener('click', async () => {
+          document.querySelector('.ant-message').textContent = '';
+          const expiredDays = Number(document.querySelector('[name="expiredDays"]').value), maxVoteCount = Number(document.querySelector('[name="maxVoteCount"]').value);
+          const error = expiredDays < 1 || expiredDays > 1000 ? '请输入合法的过期天数' : maxVoteCount < 1 || maxVoteCount > this.options.length ? '请输入合法的最大投票数' : this.options.some(item => !item) ? '投票选项不能为空' : '';
+          if (error) { document.querySelector('.ant-message').innerHTML = '<div class="ant-message-notice-content"></div>'; document.querySelector('.ant-message-notice-content').textContent = error; return; }
+          this.posts++;
+          const body = { title: document.getElementById('native-title').value, content: (document.querySelector('.mde-text') || document.getElementById('native-content')).value, isVote: true, voteInfo: { expiredDays, maxVoteCount, needVote: document.getElementById('needVote').checked, voteItems: this.options } };
+          const result = await fetch('https://api.cc98.org/board/758/topic', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+          this.lastResult = await result.text();
+        });
+      },
+      board() {
+        const query = new URLSearchParams(location.search), legacy = query.has('legacy'), locked = query.has('locked');
+        const action = (label, mode) => legacy ? `<a class="button bgcolor" href="/editor/${mode}/758">${label}</a>` : `<button type="button" class="ant-btn board-head-button" data-mode="${mode}" style="margin-left:1rem" ${locked?'disabled':''}><span>${label}</span></button>`;
+        document.getElementById('native-host').innerHTML = `<div class="board-body"><div class="board-head-body"><div class="board-head-name">似水流年</div><div>版面简介：投票入口回归</div></div><div class="board-head-bar">${action('发主题','postTopic')}${query.has('noVote')?'':action('发投票','postVoteTopic')}</div><div class="board-postItem-body"><div class="board-postItem-title"><a href="/topic/6000000">讨论话题</a></div></div></div>`;
+        document.querySelectorAll('[data-mode]').forEach(button => button.addEventListener('click', () => { sessionStorage.setItem('vote-native-navigation',button.dataset.mode); location.assign(`/editor/${button.dataset.mode}/758`); }));
+      }
+    };
+    document.body.insertAdjacentHTML('beforeend','<div class="ant-message"></div>');
+    if (/\/editor\//.test(location.pathname)) { const delay = Number(new URLSearchParams(location.search).get('delay')) || 0; delay ? setTimeout(() => __voteFixture.editor(),delay) : __voteFixture.editor(); }
+    else __voteFixture.board();
+  </script>
+  <script src="/src/theme-core.js"></script><script src="/src/page-submit-monitor.js"></script><script src="/src/extended-ubb-core.js"></script><script src="/src/extended-ubb.js"></script><script src="/src/markup-converter.js"></script><script src="/src/content.js"></script>
+</body>
+</html>

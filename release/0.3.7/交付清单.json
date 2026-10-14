@@ -1,0 +1,76 @@
+{
+  "version": "0.3.7",
+  "date": "2026-10-13",
+  "extensionFiles": 832,
+  "conceptImages": 24,
+  "conceptSize": [
+    1440,
+    900
+  ],
+  "ciChecksPassed": 37,
+  "realMV3SettingsChecksPassed": 17,
+  "asciiBrowserChecksPassed": 19,
+  "publication": "local files only",
+  "packageSHA256": "a731591f18142e44e056be8065ad483c192f3fb5c116602c9fdf0d3061acdecd",
+  "latestFix": {
+    "date": "2026-10-14",
+    "description": "Unify pager input, page links, jump/share/search/favorite controls at a font-scaled border-box height; use secondary palette for full-text search including hover, keyboard focus and background-running state"
+  },
+  "localFixes": [
+    {
+      "date": "2026-10-14",
+      "description": "ASCII signature/rating body-column placement and square pagination ellipsis"
+    },
+    {
+      "date": "2026-10-14",
+      "description": "First page prewarm runs silently in the background; current page renders immediately and markers update in place"
+    },
+    {
+      "date": "2026-10-14",
+      "description": "Stable page readiness and atomic replacement; deduplicated route follow-ups; retain reading anchors and restore delayed reloads without stale route scroll resets"
+    },
+    {
+      "date": "2026-10-14",
+      "description": "Show the normal plugin shell immediately while native data is pending; keep raw forum hidden and fill content in place with the same shell and navigation nodes"
+    },
+    {
+      "date": "2026-10-14",
+      "description": "Align ASCII homepage hot-list board labels and topic titles on the same grid row; preserve metadata beneath titles"
+    },
+    {
+      "date": "2026-10-14",
+      "description": "Complete ASCII rank movement labels, square nested UI frames, portal menus/dialogs, image viewer and settings; retain native actions, authored formatting and style restoration"
+    },
+    {
+      "date": "2026-10-14",
+      "description": "Preserve account-scoped conversation pages in tab-session snapshots across full-document pagination, reload and browser Back; resume partial scans without rereading cached pages, retaining explicit refresh and safe corrupt-cache recovery"
+    },
+    {
+      "date": "2026-10-14",
+      "description": "Separate ASCII rank-movement labels from read-later controls in compact rows; reserve title space while preserving row height in both tones and wide, medium, narrow viewports"
+    },
+    {
+      "date": "2026-10-14",
+      "description": "Add favorite-adjacent in-topic full-text search with pre-read confirmation, shared conversation cache and serial one-second page queue, background/pagination recovery, pause/retry/refresh, literal highlights, quote option, filtering and responsive Modern/ASCII dialog"
+    },
+    {
+      "date": "2026-10-14",
+      "description": "Unify pager input, page links, jump/share/search/favorite controls at a font-scaled border-box height; use secondary palette for full-text search including hover, keyboard focus and background-running state"
+    }
+  ],
+  "backgroundFirstPageChecksPassed": 7,
+  "lazyMediaRegressionPassed": true,
+  "pageTransitionChecksPassed": 14,
+  "pluginShellChecksPassed": 14,
+  "asciiHotListAlignmentCasesPassed": 12,
+  "asciiFloatingUiChecksPassed": 14,
+  "asciiEditorChecksPassed": 19,
+  "conversationCacheNavigationChecksPassed": 6,
+  "conversationPartialReloadCachePassed": true,
+  "conversationNativeRegressionPassed": true,
+  "asciiRankSpacingCasesPassed": 36,
+  "topicFullTextSearchChecksPassed": 21,
+  "topicFullTextNativeRegressionPassed": true,
+  "topicPagerStyleCasesPassed": 72,
+  "topicPagerStyleStatesPassed": 288
+}

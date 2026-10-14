@@ -1,0 +1,113 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CC98 Reborn 0.3.7 介绍帖预览</title><style>*{box-sizing:border-box}body{margin:0;background:#101815;color:#e6f0e9;font:16px/1.7 "Microsoft YaHei",sans-serif}main{max-width:1120px;margin:auto;padding:42px 24px}h1{font-size:36px}a{color:#80e6d2}nav{display:flex;gap:20px;flex-wrap:wrap;margin:24px 0}.notice{background:#1e3025;padding:18px;border-left:3px solid #80e6d2}article{margin:40px 0 55px;padding-bottom:30px;border-bottom:1px solid #3d5145}article header{display:flex;align-items:center;gap:16px;margin-bottom:14px}article header span{font-family:Consolas;color:#80e6d2}article header h2{font-size:26px;flex:1;margin:0}small{color:#a9cbbb}img{width:100%;height:auto;display:block;border:1px solid #3a5343}article p{font-size:18px;line-height:1.85}textarea{width:100%;height:540px;background:#1b2b20;color:#e6f0e9;border:1px solid #466951;padding:18px;font:16px/1.7 Consolas,"Microsoft YaHei",monospace}button{padding:10px 20px;background:#80e6d2;color:#103629;border:0;cursor:pointer;font:inherit}.copy-head{display:flex;align-items:center;gap:20px}@media(max-width:650px){article header{flex-wrap:wrap}h1{font-size:27px}article header h2{font-size:21px}}</style></head><body><main><h1>CC98 Reborn · 0.3.7</h1><div class="notice">24 张功能概念图 + 保留原帖语气的介绍正文。图中内容均为示意；本地发布包尚需上传到发布页，配图需通过 CC98 原生上传后插入。</div><nav><a href="#copy">复制 UBB 正文</a><a href="介绍帖正文.md">Markdown 正文</a><a href="总览.png">配图总览</a><a href="配图顺序.txt">配图顺序</a></nav><h2>建议标题</h2><p>(已更新至0.3.7) CC98 Reborn | 一个重构网页版CC98 UI的插件</p><article id="feature-01"><header><span>01</span><h2>统一的论坛界面</h2><small>已有功能</small><a href="images/01-interface.png" download>下载 PNG</a></header><img loading="lazy" src="images/01-interface.png" alt="统一的论坛界面概念图"><p>最开始就是想让98看起来更清爽一点（？）所以把首页、版面、帖子、搜索、个人中心、消息中心和编辑页都重新收拾了一遍。常用操作还是尽量沿用原站的逻辑，换了个壳，日常该怎么用还是怎么用。</p></article><article id="feature-02"><header><span>02</span><h2>明暗、配色，分开选</h2><small>0.3.7 新增</small><a href="images/02-themes.png" download>下载 PNG</a></header><img loading="lazy" src="images/02-themes.png" alt="明暗、配色，分开选概念图"><p>这次把明暗和配色拆开了：白昼、黑夜、自动单独选，再挑主色和副色，颜色会用在论坛页面上的各种元素里。嫌预设不够的话也可以自己调。自动模式默认早上7点变亮、晚上7点变暗，时间可以改，切换时不会把正在写的东西清掉。</p></article><article id="feature-03"><header><span>03</span><h2>复古 ASCII 风格</h2><small>实验性</small><a href="images/03-ascii.png" download>下载 PNG</a></header><img loading="lazy" src="images/03-ascii.png" alt="复古 ASCII 风格概念图"><p>另外缝了一套复古ASCII风格：字符边框、等宽字、紧凑列表，按钮也尽量用文字标记。它不是换个颜色，而是整套排版一起换；依旧可以选明暗和主色、副色。目前还在慢慢补适配，先挂个实验性标记呀。</p></article><article id="feature-04"><header><span>04</span><h2>常逛的版面，放近一点</h2><small>已有功能</small><a href="images/04-navigation.png" download>下载 PNG</a></header><img loading="lazy" src="images/04-navigation.png" alt="常逛的版面，放近一点概念图"><p>常逛的版面可以自己置顶，省得每次重新翻目录。也可以把导航换到左侧效率栏，给正文多留一点位置。这两项都可以按自己的使用习惯开关。</p></article><article id="feature-05"><header><span>05</span><h2>十大排名，能看见变化</h2><small>已有功能</small><a href="images/05-ranking.png" download>下载 PNG</a></header><img loading="lazy" src="images/05-ranking.png" alt="十大排名，能看见变化概念图"><p>首页可以只留十大，读起来更干净；和上一次记录相比，排名上升、下降也会有个小提示。不是实时盯着服务器跑，变化是根据本地已有记录对比出来的。</p></article><article id="feature-06"><header><span>06</span><h2>本地分析的搜索联想</h2><small>已有功能</small><a href="images/06-search.png" download>下载 PNG</a></header><img loading="lazy" src="images/06-search.png" alt="本地分析的搜索联想概念图"><p>搜索联想仍然是纯本地分析的小工具，没有接外部AI。支持主题、用户、版面等搜索入口，也有按账号保存的搜索历史；结果可以按原顺序、时间或者浏览量排。联想可能有点粗糙，uu们先凑合用（？）</p></article><article id="feature-07"><header><span>07</span><h2>独立的稍后再看</h2><small>已有功能</small><a href="images/07-readlater.png" download>下载 PNG</a></header><img loading="lazy" src="images/07-readlater.png" alt="独立的稍后再看概念图"><p>看到想读的帖子但现在没空，就先丢进稍后再看。它和原站收藏是分开的，有自己的搜索、已读状态、导入和导出；列表页旁边也能直接打开，省得读完一篇就找不到下一篇。</p></article><article id="feature-08"><header><span>08</span><h2>把一段对话放在一起</h2><small>新增功能</small><a href="images/08-conversation.png" download>下载 PNG</a></header><img loading="lazy" src="images/08-conversation.png" alt="把一段对话放在一起概念图"><p>新增了“查看对话”：从一层出发，把它引用了谁、后面又被谁引用，尽量在一个窗口里串起来。每一级会跟在父引用下面缩进，图片和表情也能一起看。需要时会静默读取其他页，前台页面和草稿不动；读过的页会暂存，再看本帖其他对话时就不用重读一遍了。</p></article><article id="feature-09"><header><span>09</span><h2>更顺手的图片阅读器</h2><small>已有功能</small><a href="images/09-viewer.png" download>下载 PNG</a></header><img loading="lazy" src="images/09-viewer.png" alt="更顺手的图片阅读器概念图"><p>图片点开后可以拖拽移动、滚轮缩放，也能用左右键切换和保存。长图、小字图终于不用反复新开一堆标签页了。</p></article><article id="feature-10"><header><span>10</span><h2>图片和媒体，补齐适配</h2><small>持续优化</small><a href="images/10-media.png" download>下载 PNG</a></header><img loading="lazy" src="images/10-media.png" alt="图片和媒体，补齐适配概念图"><p>图片懒加载、引用里残留的图片标记，这几版都继续修了一轮；音频、视频和文件下载也重新做了适配。下载文件可以直接呼出浏览器下载，隐藏图片仍然要自己点开，不会顺手替uu展开。</p></article><article id="feature-11"><header><span>11</span><h2>楼层操作和风评记录</h2><small>新增 / 优化</small><a href="images/11-actions.png" download>下载 PNG</a></header><img loading="lazy" src="images/11-actions.png" alt="楼层操作和风评记录概念图"><p>楼层下面那排按钮也收拾了：赞、踩合成左右一颗胶囊，其他常用操作换成图标，悬停仍能看说明。评分和评分记录旁会显示带正负号的风评数字，正负颜色统一，不用自己心算啦。</p></article><article id="feature-12"><header><span>12</span><h2>分享一整个收藏夹</h2><small>新增功能</small><a href="images/12-favorites.png" download>下载 PNG</a></header><img loading="lazy" src="images/12-favorites.png" alt="分享一整个收藏夹概念图"><p>想分享一整组好帖的话，不用一条条复制链接了。收藏分组可以导出成一段字符串；别人贴给你的分享串也能先解码预览，再选自己的目标分组导入。已有收藏会跳过，支持停止、继续和失败重试。</p></article><article id="feature-13"><header><span>13</span><h2>给用户留个自己的备注</h2><small>新增功能</small><a href="images/13-notes.png" download>下载 PNG</a></header><img loading="lazy" src="images/13-notes.png" alt="给用户留个自己的备注概念图"><p>老是记不住用户名的uu，可以给对方加个只有自己能看到的备注。关注列表和用户主页都能改，帖子作者旁边也会带出来；原用户名保留，备注跟着UID走，对方改名也不会丢。</p></article><article id="feature-14"><header><span>14</span><h2>常聊的人，私信置顶</h2><small>0.3.7 新增</small><a href="images/14-pins.png" download>下载 PNG</a></header><img loading="lazy" src="images/14-pins.png" alt="常聊的人，私信置顶概念图"><p>近期私信列表加了置顶。常聊的人可以留在前面，不用每次从一长串联系人里翻；切换会话、未读状态和正在写的私信，还是沿用原站的行为。</p></article><article id="feature-15"><header><span>15</span><h2>私信也好好收拾一下</h2><small>已有 / 优化</small><a href="images/15-messages.png" download>下载 PNG</a></header><img loading="lazy" src="images/15-messages.png" alt="私信也好好收拾一下概念图"><p>私信的表情和快捷UBB入口也保留着，这次又把表情尺寸、近期联系人排版和消息分页收了一遍。暗色下ac系列会做反色处理——毕竟ac娘是透明的呀。普通图片不会跟着表情一起缩小。</p></article><article id="feature-16"><header><span>16</span><h2>个人中心也有插件设置</h2><small>0.3.7 新增</small><a href="images/16-settings.png" download>下载 PNG</a></header><img loading="lazy" src="images/16-settings.png" alt="个人中心也有插件设置概念图"><p>不想每次找浏览器右上角的话，现在可以直接进个人中心最底下的“插件设置”。这里包含popup里的全部内容，两处用的是同一份设置，改完会同步。</p></article><article id="feature-17"><header><span>17</span><h2>个人配置，备份一份</h2><small>0.3.7 新增</small><a href="images/17-backup.png" download>下载 PNG</a></header><img loading="lazy" src="images/17-backup.png" alt="个人配置，备份一份概念图"><p>设置最底下加了备份和导入。主题、阅读显示、黑名单、用户备注、私信置顶、版面置顶都可以留一份；换环境时先看导入预览，再恢复。登录凭证、密钥、草稿和稍后再看不混在这份备份里。</p></article><article id="feature-18"><header><span>18</span><h2>上下都能写的双区编辑器</h2><small>已有功能</small><a href="images/18-editor.png" download>下载 PNG</a></header><img loading="lazy" src="images/18-editor.png" alt="上下都能写的双区编辑器概念图"><p>UBB编辑器还是上下双区：上面直接改渲染后的内容，下面改带高亮和行号的源码，两边同步。可以拖分隔线调整空间，也留了“同步”和“旧预览”作为备用。表格里只移动光标再粘贴时跑到旧单元格的问题，也已经修了一轮。</p></article><article id="feature-19"><header><span>19</span><h2>扩展语法，放进工具栏</h2><small>实验性</small><a href="images/19-syntax.png" download>下载 PNG</a></header><img loading="lazy" src="images/19-syntax.png" alt="扩展语法，放进工具栏概念图"><p>工具栏的“扩展”里能插引用、代码块、Markdown、数学公式、原样文本、字体、表格和折叠图片。表格支持1到6行列，复杂格式可以在上区看着改。高级语法仍有实验性，遇到奇怪的组合欢迎把例子丢给lz。</p></article><article id="feature-20"><header><span>20</span><h2>UBB 与 Markdown 互转</h2><small>实验性</small><a href="images/20-conversion.png" download>下载 PNG</a></header><img loading="lazy" src="images/20-conversion.png" alt="UBB 与 Markdown 互转概念图"><p>“互转”可以把常见UBB和Markdown格式来回转，先预览再手动替换。两边语法毕竟不完全一样，不能等价转换的会提示；回复可见这类权限内容也不会让它直接替换。</p></article><article id="feature-21"><header><span>21</span><h2>发投票，也接上新界面</h2><small>0.3.7 优化</small><a href="images/21-poll.png" download>下载 PNG</a></header><img loading="lazy" src="images/21-poll.png" alt="发投票，也接上新界面概念图"><p>版面上的“发投票”也接上统一样式了。有效天数、最多可投数量、投票后结果可见和选项增删都保留原站规则，可以继续用UBB或Markdown写说明。投票主题的标题、正文草稿会和普通主题分开存。</p></article><article id="feature-22"><header><span>22</span><h2>本地屏蔽规则</h2><small>已有功能</small><a href="images/22-filters.png" download>下载 PNG</a></header><img loading="lazy" src="images/22-filters.png" alt="本地屏蔽规则概念图"><p>不想在自己的列表里看到的版面、标题关键词和UID，可以在插件里设置屏蔽。它处理的是自己的阅读界面，不会替你改别人的帖子。</p></article><article id="feature-23"><header><span>23</span><h2>更新检查和数据清理</h2><small>已有功能</small><a href="images/23-updates.png" download>下载 PNG</a></header><img loading="lazy" src="images/23-updates.png" alt="更新检查和数据清理概念图"><p>插件里可以手动或定时检查GitHub Releases的新版本。缓存异常时也留了明确的CC98站点数据清理入口，是否清理由uu自己决定，清完可能需要重新登录呀。</p></article><article id="feature-24"><header><span>24</span><h2>问号键，继续做实验</h2><small>实验性</small><a href="images/24-question.png" download>下载 PNG</a></header><img loading="lazy" src="images/24-question.png" alt="问号键，继续做实验概念图"><p>问号键也还在，默认关闭。想试的话，要先看独立隐私说明，再用同一个CC98账号授权。它用的是独立服务，会传输授权信息和帖号、楼层号；目前只验证了直连授权，WebVPN这部分还没有接上。</p></article><section id="copy"><div class="copy-head"><h2>UBB 正文</h2><button type="button" onclick="const text=document.getElementById('ubb');text.select();navigator.clipboard?.writeText(text.value).then(()=>{this.textContent='已复制'}).catch(()=>{this.textContent='已选中，请复制'});">复制正文</button></div><p>纯文字 UBB 可直接粘贴；配图请在对应小标题后上传插入。</p><textarea id="ubb" spellcheck="false">【依旧观前预警】：本项目含有98.98%的Vibe Coding成分！
+
+本项目仍存在不少bug，并非稳定，还请uu们多多包容、多提意见呀。
+
+这个vibe coding项目是lz心血来潮做的，最初目的是满足lz对极简界面的一些追求（？）后来一边自己用，一边跟着大家的反馈继续缝，慢慢加了一些读帖、写帖和整理资料的小功能。
+
+目前更新到0.3.7。主要目标还是重构和统一网页版98的视觉界面，改善帖子阅读、发帖回复、个人中心、消息中心这些日常页面的使用体验。下面把已有功能和这几版新加的东西一起重新介绍一下。
+
+[b][size=4]先把界面收拾一下[/size][/b]
+
+[b]统一的论坛界面[/b]
+最开始就是想让98看起来更清爽一点（？）所以把首页、版面、帖子、搜索、个人中心、消息中心和编辑页都重新收拾了一遍。常用操作还是尽量沿用原站的逻辑，换了个壳，日常该怎么用还是怎么用。
+
+[b]明暗、配色，分开选[/b]
+这次把明暗和配色拆开了：白昼、黑夜、自动单独选，再挑主色和副色，颜色会用在论坛页面上的各种元素里。嫌预设不够的话也可以自己调。自动模式默认早上7点变亮、晚上7点变暗，时间可以改，切换时不会把正在写的东西清掉。
+
+[b]复古 ASCII 风格（实验性）[/b]
+另外缝了一套复古ASCII风格：字符边框、等宽字、紧凑列表，按钮也尽量用文字标记。它不是换个颜色，而是整套排版一起换；依旧可以选明暗和主色、副色。目前还在慢慢补适配，先挂个实验性标记呀。
+
+[b]常逛的版面，放近一点[/b]
+常逛的版面可以自己置顶，省得每次重新翻目录。也可以把导航换到左侧效率栏，给正文多留一点位置。这两项都可以按自己的使用习惯开关。
+
+[b]十大排名，能看见变化[/b]
+首页可以只留十大，读起来更干净；和上一次记录相比，排名上升、下降也会有个小提示。不是实时盯着服务器跑，变化是根据本地已有记录对比出来的。
+
+[b][size=4]阅读时少来回折腾[/size][/b]
+
+[b]本地分析的搜索联想[/b]
+搜索联想仍然是纯本地分析的小工具，没有接外部AI。支持主题、用户、版面等搜索入口，也有按账号保存的搜索历史；结果可以按原顺序、时间或者浏览量排。联想可能有点粗糙，uu们先凑合用（？）
+
+[b]独立的稍后再看[/b]
+看到想读的帖子但现在没空，就先丢进稍后再看。它和原站收藏是分开的，有自己的搜索、已读状态、导入和导出；列表页旁边也能直接打开，省得读完一篇就找不到下一篇。
+
+[b]把一段对话放在一起[/b]
+新增了“查看对话”：从一层出发，把它引用了谁、后面又被谁引用，尽量在一个窗口里串起来。每一级会跟在父引用下面缩进，图片和表情也能一起看。需要时会静默读取其他页，前台页面和草稿不动；读过的页会暂存，再看本帖其他对话时就不用重读一遍了。
+
+[b]更顺手的图片阅读器[/b]
+图片点开后可以拖拽移动、滚轮缩放，也能用左右键切换和保存。长图、小字图终于不用反复新开一堆标签页了。
+
+[b]图片和媒体，补齐适配[/b]
+图片懒加载、引用里残留的图片标记，这几版都继续修了一轮；音频、视频和文件下载也重新做了适配。下载文件可以直接呼出浏览器下载，隐藏图片仍然要自己点开，不会顺手替uu展开。
+
+[b]楼层操作和风评记录[/b]
+楼层下面那排按钮也收拾了：赞、踩合成左右一颗胶囊，其他常用操作换成图标，悬停仍能看说明。评分和评分记录旁会显示带正负号的风评数字，正负颜色统一，不用自己心算啦。
+
+[b][size=4]把自己的东西整理好[/size][/b]
+
+[b]分享一整个收藏夹[/b]
+想分享一整组好帖的话，不用一条条复制链接了。收藏分组可以导出成一段字符串；别人贴给你的分享串也能先解码预览，再选自己的目标分组导入。已有收藏会跳过，支持停止、继续和失败重试。
+
+[b]给用户留个自己的备注[/b]
+老是记不住用户名的uu，可以给对方加个只有自己能看到的备注。关注列表和用户主页都能改，帖子作者旁边也会带出来；原用户名保留，备注跟着UID走，对方改名也不会丢。
+
+[b]常聊的人，私信置顶[/b]
+近期私信列表加了置顶。常聊的人可以留在前面，不用每次从一长串联系人里翻；切换会话、未读状态和正在写的私信，还是沿用原站的行为。
+
+[b]私信也好好收拾一下[/b]
+私信的表情和快捷UBB入口也保留着，这次又把表情尺寸、近期联系人排版和消息分页收了一遍。暗色下ac系列会做反色处理——毕竟ac娘是透明的呀。普通图片不会跟着表情一起缩小。
+
+[b]个人中心也有插件设置[/b]
+不想每次找浏览器右上角的话，现在可以直接进个人中心最底下的“插件设置”。这里包含popup里的全部内容，两处用的是同一份设置，改完会同步。
+
+[b]个人配置，备份一份[/b]
+设置最底下加了备份和导入。主题、阅读显示、黑名单、用户备注、私信置顶、版面置顶都可以留一份；换环境时先看导入预览，再恢复。登录凭证、密钥、草稿和稍后再看不混在这份备份里。
+
+[b][size=4]写东西时，也少折腾一点[/size][/b]
+
+[b]上下都能写的双区编辑器[/b]
+UBB编辑器还是上下双区：上面直接改渲染后的内容，下面改带高亮和行号的源码，两边同步。可以拖分隔线调整空间，也留了“同步”和“旧预览”作为备用。表格里只移动光标再粘贴时跑到旧单元格的问题，也已经修了一轮。
+
+[b]扩展语法，放进工具栏（实验性）[/b]
+工具栏的“扩展”里能插引用、代码块、Markdown、数学公式、原样文本、字体、表格和折叠图片。表格支持1到6行列，复杂格式可以在上区看着改。高级语法仍有实验性，遇到奇怪的组合欢迎把例子丢给lz。
+
+[b]UBB 与 Markdown 互转（实验性）[/b]
+“互转”可以把常见UBB和Markdown格式来回转，先预览再手动替换。两边语法毕竟不完全一样，不能等价转换的会提示；回复可见这类权限内容也不会让它直接替换。
+
+[b]发投票，也接上新界面[/b]
+版面上的“发投票”也接上统一样式了。有效天数、最多可投数量、投票后结果可见和选项增删都保留原站规则，可以继续用UBB或Markdown写说明。投票主题的标题、正文草稿会和普通主题分开存。
+
+[b][size=4]还有一些小工具[/size][/b]
+
+[b]本地屏蔽规则[/b]
+不想在自己的列表里看到的版面、标题关键词和UID，可以在插件里设置屏蔽。它处理的是自己的阅读界面，不会替你改别人的帖子。
+
+[b]更新检查和数据清理[/b]
+插件里可以手动或定时检查GitHub Releases的新版本。缓存异常时也留了明确的CC98站点数据清理入口，是否清理由uu自己决定，清完可能需要重新登录呀。
+
+[b]问号键，继续做实验（实验性）[/b]
+问号键也还在，默认关闭。想试的话，要先看独立隐私说明，再用同一个CC98账号授权。它用的是独立服务，会传输授权信息和帖号、楼层号；目前只验证了直连授权，WebVPN这部分还没有接上。
+
+[b][size=4]关于本地数据和联网[/size][/b]
+
+页面重构、本地搜索联想、备注和个人配置，主要在浏览器本地处理。查看对话会按需读取原帖的分页，收藏导入会向CC98提交收藏请求；读过的分页会暂存，也可以停止读取。
+
+另外，现在不能再笼统说“没有任何信息外传”了：CC98 OpenID绑定需要和官方授权服务通信，更新检查会访问GitHub；可选的问号键还会使用独立服务，传输授权用的ID Token、数字帖号和楼层号，不传帖子正文、图片或私信。问号默认关闭，使用前会要求阅读独立隐私说明。
+
+本地功能也不等于自动跨设备同步。用户备注和置顶等配置默认保存在当前浏览器；个人设置可以自己备份，稍后再看有独立的导入导出。
+
+插件发布页在这里！
+[url=https://github.com/Coran-tech/cc98-reborn/releases]GitHub Releases[/url]
+
+喜欢的话别忘给lz点个Star呀。遇到问题可以回帖，或者去[url=https://github.com/Coran-tech/cc98-reborn/issues]GitHub Issues[/url]留个例子；带上插件版本、直连还是WebVPN、发生在哪个页面，会方便lz定位一点。
+
+[b][size=4]食用方法[/size][/b]
+
+1. 前往GitHub Releases下载最新版本压缩包，解压到一个固定文件夹。注意：安装后不要随意删除或移动这个文件夹。
+
+2. 打开Edge的edge://extensions/，或者Chrome的chrome://extensions/，开启“开发人员模式”，点击“加载解压缩的扩展”，选择刚才解压出来的插件文件夹。
+
+3. 安装完成后，从浏览器右上角的拼图按钮打开CC98 Reborn，检查插件开关，再打开CC98。个人中心最底下也能找到“插件设置”。需要OpenID绑定的功能，按插件提示使用与网页一致的CC98账号授权。
+
+4. 升级时用新版本文件更新固定文件夹，再到扩展管理页点“重新加载”，然后刷新论坛页面。升级前也可以先备份一份自己的配置。
+</textarea></section></main></body></html>

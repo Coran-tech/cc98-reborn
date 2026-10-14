@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="zh-CN" class="cc98-comfort">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>CC98 Reborn 页面配色预览</title>
+  <link rel="stylesheet" href="/src/theme-tokens.css">
+  <link rel="stylesheet" href="/src/styles.css">
+  <style>
+    /* The fixture only arranges actual forum components; colors come from runtime CSS. */
+    #cc98-comfort-app { max-width: 1160px; margin: auto; padding: 18px 24px 28px; }
+    .fixture-controls { display: flex; align-items: center; gap: 10px; margin: 16px 0 22px; }
+    .fixture-controls label { display: inline-flex; align-items: center; gap: 6px; }
+    .fixture-controls select { min-width: 90px; }
+    .fixture-grid { display: grid; grid-template-columns: 1.05fr 1fr; gap: 18px; align-items: start; }
+    .fixture-grid > section { min-width: 0; }
+    .fixture-grid .cc98-rebuild-post-feed,
+    .fixture-grid .cc98-rebuild-board-topic-feed,
+    .fixture-grid .cc98-rebuild-board-toolbar,
+    .fixture-grid .cc98-rebuild-pager { width: 100%; }
+    .fixture-grid .cc98-rebuild-board-topic { padding: 18px; }
+    .fixture-grid .cc98-rebuild-topic-locked-card { margin-top: 18px; }
+    .fixture-grid h2 { margin: 0 0 12px; font-size: 20px; }
+    .fixture-grid .cc98-rebuild-post { margin-bottom: 14px; }
+    .fixture-grid .cc98-rebuild-post-header { margin-bottom: 10px; }
+    .fixture-grid .cc98-rebuild-board-topic-main { gap: 10px; }
+    .fixture-grid .cc98-rebuild-board-topic + .cc98-rebuild-board-topic { margin-top: 14px; }
+    @media (max-width: 780px) { .fixture-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <!-- These class names and structures mirror renderPostPager, renderPostCard,
+       renderBoardPage and renderPostAuthorMessageAction in src/content.js. -->
+  <main id="cc98-comfort-app" class="cc98-rebuild-shell">
+    <header id="element-topbar" class="cc98-rebuild-topbar">
+      <a id="element-brand" class="cc98-rebuild-brand" href="/">CC98 Reborn</a>
+      <nav class="cc98-rebuild-nav">
+        <a href="/">首页</a><a id="element-active-nav" href="/boardList" aria-current="page">版面</a>
+        <a href="/newTopics">新帖</a><a href="/focus">关注</a>
+      </nav>
+      <form class="cc98-rebuild-search">
+        <input aria-label="搜索帖子" placeholder="搜索帖子" value="页面配色">
+        <button id="element-search" class="cc98-rebuild-search-submit" type="button">搜索</button>
+        <button id="element-refresh" class="cc98-rebuild-search-submit cc98-rebuild-refresh-button" type="button">同步</button>
+      </form>
+    </header>
+    <section class="cc98-rebuild-board-hero">
+      <div class="cc98-rebuild-board-hero-body">
+        <p class="cc98-rebuild-kicker">CC98 Reborn · 配色预览</p>
+        <h1>阅读与交流，每一处都呼应你的配色</h1>
+        <p class="cc98-rebuild-card-meta">主色用于导航与操作，副色用于链接、标签与引用；明暗决定中性底色。</p>
+      </div>
+    </section>
+    <div class="fixture-controls">
+      <label>明暗 <select id="fixture-tone"><option value="light">白昼</option><option value="dark">黑夜</option></select></label>
+      <label>配色 <select id="fixture-palette"><option value="teal">配色 1</option><option value="green">配色 2</option><option value="blue">配色 3</option><option value="violet">配色 4</option><option value="rose">配色 5</option><option value="amber">配色 6</option><option value="custom">自定义</option></select></label>
+      <label id="fixture-custom-primary" hidden>主色 <input id="fixture-primary" type="text" value="#1f7166" size="7"></label>
+      <label id="fixture-custom-secondary" hidden>副色 <input id="fixture-secondary" type="text" value="#326b9b" size="7"></label>
+    </div>
+    <div class="fixture-grid">
+      <section>
+        <h2>版面与导航</h2>
+        <div class="cc98-rebuild-board-toolbar">
+          <a id="element-primary" class="cc98-rebuild-board-post-topic-action" href="/editor/postTopic/81">发表新帖</a>
+          <button id="element-secondary" class="cc98-rebuild-post-author-action is-message" type="button">发送私信</button>
+        </div>
+        <nav class="cc98-rebuild-pager cc98-rebuild-board-pager" aria-label="页码">
+          <a id="element-page" class="cc98-rebuild-page-link is-current" href="/board/81" aria-current="page">1</a>
+          <a class="cc98-rebuild-page-link" href="/board/81/2">2</a><a class="cc98-rebuild-page-link" href="/board/81/3">3</a>
+          <a class="cc98-rebuild-page-link cc98-rebuild-page-next" href="/board/81/2">下一页</a>
+        </nav>
+        <div class="cc98-rebuild-board-topic-feed">
+          <article id="element-card" class="cc98-rebuild-card cc98-rebuild-board-topic">
+            <div id="element-board-marker" class="cc98-rebuild-board-topic-marker">●</div>
+            <div class="cc98-rebuild-board-topic-main">
+              <div class="cc98-rebuild-board-topic-title-row"><a id="element-title-link" class="cc98-rebuild-card-title" href="/topic/6500011">分享今天遇到的小惊喜</a></div>
+              <div class="cc98-rebuild-board-topic-meta"><a id="element-board-link" href="/board/81">校园生活</a><span> · 12 个回复</span></div>
+              <div class="cc98-rebuild-card-top"><a id="element-tag" class="cc98-rebuild-chip" href="/board/81">交流</a> <a class="cc98-rebuild-chip" href="/topic/6500011/2">2 页</a></div>
+            </div>
+          </article>
+          <article class="cc98-rebuild-card cc98-rebuild-board-topic">
+            <div class="cc98-rebuild-board-topic-marker">●</div>
+            <div class="cc98-rebuild-board-topic-main">
+              <div class="cc98-rebuild-board-topic-title-row"><a class="cc98-rebuild-card-title" href="/topic/6500012">周末的图书馆与一杯热茶</a></div>
+              <div class="cc98-rebuild-board-topic-meta"><a href="/board/81">校园生活</a><span> · 8 个回复</span></div>
+              <div class="cc98-rebuild-card-top"><a class="cc98-rebuild-chip" href="/board/81">阅读</a> <a class="cc98-rebuild-chip" href="/board/81">日常</a></div>
+            </div>
+          </article>
+        </div>
+        <div id="element-warning" class="cc98-rebuild-topic-locked-card">🔒 本帖已被锁定：警告颜色保持独立。</div>
+      </section>
+      <section>
+        <h2>正文与引用</h2>
+        <div class="cc98-rebuild-post-feed">
+          <article class="cc98-rebuild-card cc98-rebuild-post">
+            <div class="cc98-rebuild-post-header"><div class="cc98-rebuild-post-user-line"><a class="cc98-rebuild-post-user" href="/user/id/1001">原用户名</a><span class="cc98-rebuild-op-badge">楼主</span></div></div>
+            <div class="cc98-rebuild-post-body">
+              <p>主色和副色会出现在实际页面元素上。<a id="element-body-link" href="/topic/6500013">打开相关讨论</a>，了解其他人的想法。</p>
+              <div id="element-quote" class="cc98-rebuild-quote-box"><p>引用原帖：今天的天空很漂亮。</p><a id="element-quote-link" href="/topic/6500011#1">跳转到原帖</a></div>
+              <p><span id="element-ubb-color" style="color: #c62828">UBB 指定的正文颜色保持原样。</span></p>
+              <p><a id="element-ubb-link" href="/topic/6500014" style="color: #6c36b0">作者指定颜色的正文链接</a></p>
+            </div>
+            <div class="cc98-rebuild-awards"><span class="cc98-rebuild-awards-title">评分记录</span> <strong id="element-positive" class="cc98-rebuild-award-positive">+12</strong> <strong id="element-negative" class="cc98-rebuild-award-negative">−2</strong></div>
+            <footer class="cc98-rebuild-post-footer"><div class="cc98-rebuild-post-actions"><button id="element-footer" class="cc98-rebuild-mini-action cc98-rebuild-icon-action" data-action-kind="quote" type="button" aria-label="引用"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 7H5v6h5V7zm9 0h-5v6h5V7zM5 13c0 3 1 4 3 4m6-4c0 3 1 4 3 4"/></svg></button></div></footer>
+          </article>
+          <article id="element-hot-card" class="cc98-rebuild-card cc98-rebuild-post cc98-rebuild-hot-highlight">
+            <div class="cc98-rebuild-post-header"><span class="cc98-rebuild-hot-badge">🔥</span><strong id="element-hot-label" class="cc98-rebuild-hot-label">热门回复</strong></div>
+            <div class="cc98-rebuild-post-body"><p>评分、热门回复、警告都有各自的含义，选配色后继续保持这些语义。</p></div>
+          </article>
+        </div>
+      </section>
+    </div>
+  </main>
+  <script src="/src/theme-core.js"></script>
+  <script>
+    function applyFixtureTheme() {
+      CC98RebornThemeCore.apply(document.documentElement, {
+        themeMode: document.getElementById("fixture-tone").value,
+        themePalette: document.getElementById("fixture-palette").value,
+        themeCustomPrimary: document.getElementById("fixture-primary").value,
+        themeCustomSecondary: document.getElementById("fixture-secondary").value
+      });
+      const custom = document.getElementById("fixture-palette").value === "custom";
+      document.getElementById("fixture-custom-primary").hidden = !custom;
+      document.getElementById("fixture-custom-secondary").hidden = !custom;
+    }
+    for (const id of ["fixture-tone", "fixture-palette", "fixture-primary", "fixture-secondary"]) document.getElementById(id).addEventListener("change", applyFixtureTheme);
+    applyFixtureTheme();
+  </script>
+</body>
+</html>

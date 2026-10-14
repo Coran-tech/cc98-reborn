@@ -198,6 +198,7 @@
         <StackPanel Orientation="Horizontal">
           <Button x:Name="OpenHomeButton" Style="{StaticResource CommandButton}" MinWidth="112" Content="打开论坛首页" />
           <Button x:Name="OpenEditorButton" Style="{StaticResource CommandButton}" MinWidth="132" Content="打开编辑测试页" Margin="0" />
+          <Button x:Name="OpenConsoleButton" Style="{StaticResource CommandButton}" MinWidth="142" Content="打开全量控制台" Margin="9,0,0,0" />
         </StackPanel>
       </StackPanel>
     </Border>

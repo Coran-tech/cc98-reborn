@@ -79,6 +79,9 @@
 
   const MESSAGE_SOURCE = "cc98-reborn-submit-monitor";
   const DOM_BRIDGE_EVENT = "cc98-reborn-submit-monitor-event";
+  const TOPIC_CONTENT_REQUEST_EVENT = "cc98-reborn-topic-content-request";
+  const topicContentSnapshots = new Map();
+  const MAX_TOPIC_CONTENT_SNAPSHOTS = 12;
   let monitorEventSequence = 0;
 
   function isWebVpnHost(hostname = location.hostname) {
@@ -328,7 +331,7 @@
     emitMonitorMessage("editor-submit-start", payload);
   }
 
-  function reportTopicContentSnapshot(request, data, responseUrl = "") {
+  function reportTopicContentSnapshot(request, data, responseUrl = "", cacheKind = "api") {
     if (!request || !Array.isArray(data)) {
       return;
     }
@@ -342,15 +345,18 @@
       isAnonymous: Boolean(item?.isAnonymous),
       signatureCode: typeof item?.signatureCode === "string" ? item.signatureCode : ""
     }));
-    window.postMessage({
-      source: MESSAGE_SOURCE,
-      type: "topic-content-snapshot",
-      payload: {
-        ...request,
-        responseUrl: String(responseUrl || ""),
-        items
-      }
-    }, location.origin);
+    const payload = {
+      ...request,
+      responseUrl: String(responseUrl || ""),
+      items
+    };
+    const key = `${cacheKind}:${request.topicId}:${request.kind}:${request.from}`;
+    topicContentSnapshots.delete(key);
+    topicContentSnapshots.set(key, payload);
+    while (topicContentSnapshots.size > MAX_TOPIC_CONTENT_SNAPSHOTS) {
+      topicContentSnapshots.delete(topicContentSnapshots.keys().next().value);
+    }
+    emitMonitorMessage("topic-content-snapshot", payload);
   }
 
   const nativeFetch = window.fetch;
@@ -540,7 +546,37 @@
     return { postInfo, userInfo };
   }
 
-  function collectRenderedTopicSnapshot() {
+  function annotateRenderedLazyImageSources(reply) {
+    let changed = false;
+    reply.querySelectorAll(".lazyload-placeholder").forEach((slot) => {
+      let fiber = getReactFiber(slot);
+      for (let depth = 0; fiber && depth < 12; depth += 1, fiber = fiber.return) {
+        const props = fiber.memoizedProps || fiber.pendingProps;
+        if (!props || typeof props !== "object") {
+          continue;
+        }
+        const children = Array.isArray(props.children) ? props.children : [props.children];
+        const image = children.find((child) => child?.type === "img" && typeof child.props?.src === "string");
+        const src = typeof props.imageUri === "string" ? props.imageUri : image?.props.src;
+        if (!src?.trim()) {
+          continue;
+        }
+        const alt = typeof props.title === "string" ? props.title : image?.props.alt;
+        if (slot.getAttribute("data-cc98-lazy-src") !== src) {
+          slot.setAttribute("data-cc98-lazy-src", src);
+          changed = true;
+        }
+        if (typeof alt === "string" && slot.getAttribute("data-cc98-lazy-alt") !== alt) {
+          slot.setAttribute("data-cc98-lazy-alt", alt);
+          changed = true;
+        }
+        break;
+      }
+    });
+    return changed;
+  }
+
+  function collectRenderedTopicSnapshot(force = false) {
     renderedTopicSnapshotTimer = null;
     const route = getCurrentTopicRouteInfo();
     if (!route) {
@@ -550,7 +586,11 @@
     const replies = [...document.querySelectorAll(".reply")]
       .filter((reply) => !reply.closest("#cc98-comfort-app"))
       .slice(0, 30);
+    let mediaSlotsChanged = false;
     const items = replies.map((reply, index) => {
+      // React already knows the URL before react-lazyload mounts its <img>.
+      // Keep this information on the original slot so clones preserve its place.
+      mediaSlotsChanged = annotateRenderedLazyImageSources(reply) || mediaSlotsChanged;
       const { postInfo, userInfo } = collectReactPostProps(reply);
       if (!postInfo || typeof postInfo.content !== "string") {
         return null;
@@ -566,13 +606,20 @@
         signatureCode: typeof userInfo?.signatureCode === "string" ? userInfo.signatureCode : ""
       };
     }).filter(Boolean);
+    const reportMediaChange = () => {
+      if (mediaSlotsChanged) {
+        emitMonitorMessage("topic-content-snapshot", {
+          ...route, kind: "rendered-media", items: [], responseUrl: location.href
+        });
+      }
+    };
     if (!items.length) {
+      reportMediaChange();
       return;
     }
-    const signature = `${route.topicId}:${route.from}:${items
-      .map((item) => `${item.id}:${item.floor}:${item.content.length}:${item.signatureCode.length}`)
-      .join("|")}`;
-    if (signature === renderedTopicSnapshotSignature) {
+    const signature = `${route.topicId}:${route.from}:${JSON.stringify(items)}`;
+    if (!force && signature === renderedTopicSnapshotSignature) {
+      reportMediaChange();
       return;
     }
     renderedTopicSnapshotSignature = signature;
@@ -582,7 +629,7 @@
       from: route.from,
       size: items.length,
       url: location.href
-    }, items, location.href);
+    }, items, location.href, "rendered");
   }
 
   function scheduleRenderedTopicSnapshot() {
@@ -592,6 +639,34 @@
     clearTimeout(renderedTopicSnapshotTimer);
     renderedTopicSnapshotTimer = setTimeout(collectRenderedTopicSnapshot, 120);
   }
+
+  document.addEventListener(TOPIC_CONTENT_REQUEST_EVENT, (event) => {
+    let request;
+    try {
+      request = JSON.parse(String(event.detail || ""));
+    } catch {
+      return;
+    }
+    const route = getCurrentTopicRouteInfo();
+    if (!route
+      || request?.source !== "cc98-reborn-content"
+      || request.type !== "request-topic-content-snapshot"
+      || String(request.topicId) !== route.topicId
+      || !Number.isInteger(request.from)
+      || request.from !== route.from) {
+      return;
+    }
+    // A receiver can attach after a fast API response or lose one bridge event.
+    // Replay only this page (plus its hot posts), without another network read.
+    for (const payload of topicContentSnapshots.values()) {
+      if (String(payload.topicId) === route.topicId
+        && (payload.kind === "hot" || payload.from === route.from)) {
+        emitMonitorMessage("topic-content-snapshot", payload);
+      }
+    }
+    clearTimeout(renderedTopicSnapshotTimer);
+    collectRenderedTopicSnapshot(true);
+  });
 
   const renderedTopicObserver = new MutationObserver(scheduleRenderedTopicSnapshot);
   renderedTopicObserver.observe(document.documentElement, {

@@ -1,0 +1,78 @@
+:root.cc98-comfort .cc98-topic-search-layer {
+  position: fixed; inset: 0; z-index: 2147483400; display: grid; place-items: center;
+  padding: 16px; background: rgb(0 0 0 / 48%); backdrop-filter: blur(4px);
+}
+:root.cc98-comfort .cc98-topic-search-dialog {
+  position: relative; display: flex; flex-direction: column; gap: 12px;
+  width: min(820px, 100%); max-height: calc(100dvh - 32px); padding: 20px;
+  border: 1px solid var(--cc98-comfort-border); border-radius: var(--cc98-comfort-radius, 10px);
+  background: var(--cc98-comfort-surface); color: var(--cc98-comfort-text);
+  box-shadow: 0 24px 64px rgb(0 0 0 / 25%); box-sizing: border-box;
+  overflow: auto; overscroll-behavior: contain;
+}
+:root.cc98-comfort .cc98-topic-search-dialog [hidden] { display: none !important; }
+:root.cc98-comfort .cc98-topic-search-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+:root.cc98-comfort .cc98-topic-search-header h2 { margin: 0; }
+:root.cc98-comfort .cc98-topic-search-dialog button {
+  min-height: 32px; padding: 4px 12px; border: 1px solid var(--cc98-comfort-border);
+  border-radius: var(--cc98-comfort-radius, 10px); color: var(--cc98-comfort-text);
+  background: var(--cc98-comfort-surface-2); font: inherit; cursor: pointer;
+}
+:root.cc98-comfort .cc98-topic-search-dialog button:is(:hover, :focus-visible) { border-color: var(--cc98-comfort-accent); }
+:root.cc98-comfort .cc98-topic-search-dialog button:disabled { opacity: .55; cursor: default; }
+:root.cc98-comfort .cc98-topic-search-dialog .cc98-topic-search-primary {
+  color: var(--cc98-comfort-accent); background: var(--cc98-comfort-accent-2); border-color: var(--cc98-comfort-accent);
+}
+:root.cc98-comfort .cc98-topic-search-close { padding: 2px 10px; font-size: 20px; line-height: 1; }
+:root.cc98-comfort .cc98-topic-search-form { display: grid; gap: 10px; }
+:root.cc98-comfort .cc98-topic-search-query-label { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 12px; }
+:root.cc98-comfort .cc98-topic-search-query {
+  width: 100%; min-width: 0; box-sizing: border-box; min-height: 38px; padding: 6px 10px;
+  border: 1px solid var(--cc98-comfort-border); border-radius: var(--cc98-comfort-radius, 10px);
+  background: var(--cc98-comfort-surface-2); color: var(--cc98-comfort-text); font: inherit;
+}
+:root.cc98-comfort .cc98-topic-search-quotes-label { display: flex; align-items: center; gap: 8px; font-size: .86rem; }
+:root.cc98-comfort .cc98-topic-search-quotes-label input { accent-color: var(--cc98-comfort-accent); }
+:root.cc98-comfort .cc98-topic-search-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+:root.cc98-comfort .cc98-topic-search-warning {
+  padding: 10px 12px; border: 1px solid var(--cc98-comfort-secondary); border-radius: var(--cc98-comfort-radius, 10px);
+  background: var(--cc98-comfort-secondary-soft);
+}
+:root.cc98-comfort .cc98-topic-search-warning p { margin: 0 0 8px; }
+:root.cc98-comfort .cc98-topic-search-warning button + button { margin-left: 8px; }
+:root.cc98-comfort .cc98-topic-search-status { margin: 0; color: var(--cc98-comfort-muted); font-size: .86rem; }
+:root.cc98-comfort .cc98-topic-search-progress { width: 100%; height: 6px; accent-color: var(--cc98-comfort-accent); flex-shrink: 0; }
+:root.cc98-comfort .cc98-topic-search-error { margin: 0; color: var(--cc98-comfort-text); border-left: 3px solid var(--cc98-comfort-secondary); padding-left: 10px; }
+:root.cc98-comfort .cc98-topic-search-results { min-height: 100px; overflow: auto; overscroll-behavior: contain; display: grid; gap: 10px; }
+:root.cc98-comfort .cc98-topic-search-result {
+  padding: 12px 14px; border: 1px solid var(--cc98-comfort-border); border-radius: var(--cc98-comfort-radius, 10px);
+  background: var(--cc98-comfort-surface-2); min-width: 0;
+}
+:root.cc98-comfort .cc98-topic-search-result-link { color: var(--cc98-comfort-secondary) !important; font-weight: 700; }
+:root.cc98-comfort .cc98-topic-search-result-time { margin-left: 12px; color: var(--cc98-comfort-muted); font-size: .75rem; }
+:root.cc98-comfort .cc98-topic-search-snippet { margin: 8px 0 0; overflow-wrap: anywhere; }
+:root.cc98-comfort .cc98-topic-search-snippet mark { color: var(--cc98-comfort-accent); background: var(--cc98-comfort-accent-2); font-weight: 700; }
+:root.cc98-comfort .cc98-topic-search-empty { margin: 20px 0; text-align: center; color: var(--cc98-comfort-muted); }
+:root.cc98-comfort .cc98-topic-search-hint { color: var(--cc98-comfort-muted); font-size: .75rem; }
+.cc98-topic-search-worker { position: fixed !important; top: 0 !important; left: -10000px !important; width: 1px !important; height: 1px !important; overflow: hidden !important; pointer-events: none !important; }
+:root.cc98-comfort #cc98-comfort-app .cc98-rebuild-pager .cc98-topic-search-entry {
+  border-color: var(--cc98-comfort-secondary) !important;
+  background: var(--cc98-comfort-secondary-soft) !important;
+  color: var(--cc98-comfort-secondary) !important;
+}
+:root.cc98-comfort #cc98-comfort-app .cc98-rebuild-pager .cc98-topic-search-entry:is(:hover, :focus-visible) {
+  background: color-mix(in srgb, var(--cc98-comfort-secondary) 16%, var(--cc98-comfort-surface)) !important;
+}
+:root.cc98-comfort #cc98-comfort-app .cc98-rebuild-pager .cc98-topic-search-entry:focus-visible {
+  outline: 2px solid var(--cc98-comfort-secondary) !important;
+  outline-offset: 2px;
+}
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-topic-search-layer { backdrop-filter: none; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-topic-search-result { border-style: dashed; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-topic-search-progress::-webkit-progress-bar,
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-topic-search-progress::-webkit-progress-value { border-radius: 0; }
+@media (max-width: 600px) {
+  :root.cc98-comfort .cc98-topic-search-layer { padding: 8px; }
+  :root.cc98-comfort .cc98-topic-search-dialog { padding: 14px; max-height: calc(100dvh - 16px); gap: 10px; }
+  :root.cc98-comfort .cc98-topic-search-result-time { display: block; margin-left: 0; }
+}

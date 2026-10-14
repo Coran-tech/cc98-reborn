@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>回复我的分页回归 - CC98论坛</title>
+  <link id="mainStylesheet" rel="stylesheet" href="/reference/Forum-main/dist/static/content/css_autumn_2022_light.css">
+  <link rel="stylesheet" href="/src/theme-tokens.css">
+  <link rel="stylesheet" href="/src/styles.css">
+  <style>body { margin: 0; }</style>
+</head>
+<body>
+  <div id="root">
+    <header class="topBar"><div class="topBarRight"><span class="topBarUserName">测试用户</span></div></header>
+    <div id="native-message" class="message-root">
+      <div class="message">
+        <div class="message-title">回复我的</div>
+        <div class="message-content">
+          <nav class="message-nav">
+            <a class="active" href="/message/response"><div id="response" class="nav-div message-nav-focus">回复我的</div></a><hr>
+            <a href="/message/attme"><div class="nav-div">@ 我的</div></a><hr>
+            <a href="/message/system"><div class="nav-div">系统通知</div></a><hr>
+            <a href="/message/message"><div class="nav-div">我的私信</div></a><hr>
+            <a href="/message/setting"><div class="nav-div">消息设置</div></a>
+          </nav>
+          <div class="message-right">
+            <div class="message-response">
+              <div class="message-response-box"><div class="message-response-box-middle"><div class="message-response-box-middle1"><div class="message-response-box-middle-title"><article><a href="/board/1">校园生活</a></article></div><div class="message-response-box-middle-date">2026-10-13 10:00:00</div></div><div class="message-response-box-middle-content"><article>同学 A 在《一起讨论阅读计划》中回复了你。</article></div></div></div>
+              <div class="message-response-box"><div class="message-response-box-middle"><div class="message-response-box-middle1"><div class="message-response-box-middle-title"><article><a href="/board/2">学习交流</a></article></div><div class="message-response-box-middle-date">2026-10-13 09:30:00</div></div><div class="message-response-box-middle-content"><article>同学 B 在《本周课程笔记》中回复了你。</article></div></div></div>
+            </div>
+            <div class="message-pager">
+              <div class="pagination">
+                <ul class="page-nav"></ul>
+                <div class="page-goto"><div><input placeholder="跳转到"></div><div><a href="/message/response/10#1"> Go </a></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Mirror Pager.tsx: seven page links, optional first/previous/next/last,
+    // and a Go Link whose target follows the last valid input value.
+    // The native component has neither a disabled state nor an input key handler.
+    window.__pagerFixture = {
+      current: 10, next: 10, total: 25, navigations: [],
+      render() {
+        let left = Math.max(1, this.current - 3), right = Math.min(this.total, this.current + 3);
+        if (right - left !== 6) {
+          left = Math.max(1, this.current - (6 - (right - this.current)));
+          right = Math.min(this.total, this.current + (6 - (this.current - Math.max(1, this.current - 3))));
+        }
+        const pages = [];
+        if (left !== 1) pages.push({ text: "1", page: 1 }, { text: "‹", page: this.current - 1 });
+        for (let page = left; page <= right; page += 1) pages.push({ text: String(page), page });
+        if (right !== this.total) pages.push({ text: "›", page: this.current + 1 }, { text: String(this.total), page: this.total });
+        const list = document.querySelector(".page-nav");
+        list.replaceChildren(...pages.map(({ text, page }) => {
+          const item = document.createElement("li"), link = document.createElement("a");
+          item.className = "page-item";
+          link.className = `page-link${page === this.current ? " active" : ""}`;
+          link.href = `/message/response/${page}#1`;
+          link.textContent = text;
+          item.append(link);
+          return item;
+        }));
+      }
+    };
+    document.querySelector(".page-goto input").addEventListener("input", (event) => {
+      const next = parseInt(event.target.value, 10);
+      if (Number.isNaN(next) || next < 1 || next > __pagerFixture.total) return;
+      __pagerFixture.next = next;
+      document.querySelector(".page-goto a").href = `/message/response/${next}#1`;
+    });
+    document.querySelector(".pagination").addEventListener("click", (event) => {
+      const link = event.target.closest("a");
+      if (!link) return;
+      event.preventDefault();
+      const target = Number(new URL(link.href).pathname.split("/").pop());
+      __pagerFixture.navigations.push({ target, href: link.getAttribute("href"), source: link.classList.contains("page-link") ? "page" : "go" });
+      __pagerFixture.current = target;
+      history.pushState({}, "", link.href);
+      __pagerFixture.render();
+    });
+    __pagerFixture.render();
+  </script>
+  <script src="/src/theme-core.js"></script>
+  <script src="/src/extended-ubb-core.js"></script>
+  <script src="/src/markup-converter.js"></script>
+  <script src="/src/content.js"></script>
+</body>
+</html>

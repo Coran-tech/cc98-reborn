@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>我的回复 - CC98论坛</title>
+  <link id="mainStylesheet" rel="stylesheet" href="/reference/Forum-main/dist/static/content/css_autumn_2022_light.css">
+  <link rel="stylesheet" href="/src/theme-tokens.css">
+  <link rel="stylesheet" href="/src/styles.css">
+  <link rel="stylesheet" href="/src/extended-ubb.css">
+  <style>body { margin: 0; }</style>
+</head>
+<body>
+  <div id="root">
+    <header class="topBar"><div class="topBarRight"><span class="topBarUserName">测试用户</span></div></header>
+    <div class="user-center"><div class="user-center-content">
+      <div class="user-center-head"><p>我的回复</p></div>
+      <div class="user-center-body">
+        <nav class="user-center-navigation" id="userCenterNavigation"><ul>
+          <li><a href="/usercenter"><div class="center-nav-item">个人主页</div></a></li><hr>
+          <li><a href="/usercenter/myposts/ishot/0/1" class="user-center-navigation-active"><div class="center-nav-item">我的回复</div></a></li><hr>
+          <li><a href="/usercenter/myfans"><div class="center-nav-item">我的粉丝</div></a></li>
+        </ul></nav>
+        <div class="user-center-router" id="fixture-router"><div class="user-posts" id="fixture-posts"></div></div>
+      </div>
+    </div></div>
+  </div>
+  <script>
+    window.__replyFixture = {
+      nested: '[quote][b]以下是引用6楼：用户同学甲在2026-10-13 13:30:57的发言：[url=/topic/6656303/1#6]>>查看原帖<<[/url][/b]\n[quote][b]以下是引用3楼：用户同学乙的发言：[url=/topic/6656303/1#3]>>查看原帖<<[/url][/b]\n去年是在浙大线上小测，每次20道选择题。[b]几乎全是历年小测原题[/b]\n计算器需要买的，很多课都会用到~\n[align=right]——来自「CC98 Reborn」[/align]\n[/quote]\n历年小测原题怎么找呀？[/quote]\n可以参考这篇帖子 [url=/topic/6094641]普化资料分享[/url]\n[ac01] [img]/uploads/reply-chart.png[/img]',
+      add(id, source, href = '/topic/6656303/2#7') {
+        const post = document.createElement('div'); post.className = 'user-post'; post.id = id;
+        const info = document.createElement('div'); info.className = 'user-post-info'; info.textContent = '2026-10-13 13:43:36　赞：0　踩：0　学习天地';
+        const body = document.createElement('div'); body.className = 'user-post-content';
+        const p = document.createElement('p'); const link = document.createElement('a'); link.href = href; link.textContent = source;
+        p.append(link); body.append(p); post.append(info, body); document.getElementById('fixture-posts').append(post);
+      },
+      render() {
+        document.getElementById('fixture-posts').replaceChildren();
+        this.add('nested', this.nested);
+        this.add('quote-only', '[quote]第一行\n第二行 [cc9801]\n[img]/uploads/quoted-chart.png[/img][/quote]\n自己的回复');
+        this.add('siblings', '[QUOTE]第一段引用[/QUOTE]\n正文一\n[quote]第二段引用[/quote]\n正文二');
+        this.add('multiline', '[b]跨行\n粗体[/b]\n[url=/topic/6000000]跨行\n链接[/url]');
+        this.add('literal', '[code][quote]代码里的引用标记[/quote][/code]\n[noubb][quote]原样显示[/quote][/noubb]\n[quote]真实引用[/quote]');
+        this.add('unsafe', '[quote]<img src=x onerror="window.__injected=1">[url=javascript:window.__injected=2]链接[/url][/quote]');
+        this.add('plain', '普通回复保留原生链接');
+      }
+    };
+    __replyFixture.render();
+  </script>
+  <script src="/src/theme-core.js"></script>
+  <script src="/src/extended-ubb-core.js"></script>
+  <script src="/src/extended-ubb.js"></script>
+  <script src="/src/content.js"></script>
+</body>
+</html>

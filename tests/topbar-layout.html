@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-CN" class="cc98-comfort">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>CC98 Reborn 顶栏布局回归</title>
+  <link rel="stylesheet" href="/src/theme-tokens.css">
+  <link rel="stylesheet" href="/src/styles.css">
+  <style>
+    :root { --cc98-comfort-font-scale: 110%; }
+    body { margin: 0; }
+    .fixture-content { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; padding-top: 22px; }
+    .fixture-content h1 { margin: 0 0 8px; font-size: 32px; }
+    .fixture-content > p { margin: 0; }
+    .fixture-panels { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+    .fixture-panels .cc98-rebuild-section { margin: 0; min-width: 0; }
+    .fixture-panels p { line-height: 1.8; }
+    @media (max-width: 680px) { .fixture-panels { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main id="cc98-comfort-app" class="cc98-rebuild-shell" data-page-kind="message">
+    <header class="cc98-rebuild-topbar">
+      <a class="cc98-rebuild-brand" href="/">CC98 Reborn</a>
+      <nav class="cc98-rebuild-nav">
+        <a href="/">首页</a><a href="/boardList">版面</a><a href="/newTopics">新帖</a>
+        <a href="/focus">关注</a><a href="/recommendedTopics">精选</a><a href="/#cc98-reborn-read-later">稍后再看</a>
+      </nav>
+      <form class="cc98-rebuild-search">
+        <div class="cc98-rebuild-search-type-wrap"><button class="cc98-rebuild-search-type" type="button">帖子</button></div>
+        <div class="cc98-rebuild-search-field"><input aria-label="搜索帖子" placeholder="搜索帖子、用户或版面"></div>
+        <button class="cc98-rebuild-search-submit" type="button">搜索</button>
+        <button class="cc98-rebuild-search-submit cc98-rebuild-refresh-button" type="button">同步</button>
+      </form>
+      <div class="cc98-rebuild-actions">
+        <div class="cc98-rebuild-native-user-entry cc98-rebuild-forced-user-entry" tabindex="0">
+          <div class="topBarUserInfo cc98-rebuild-forced-user-info">
+            <div class="topBarUserImg"><img alt="头像" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='40' height='40' rx='20' fill='%234674a0'/%3E%3Ctext x='20' y='26' fill='white' text-anchor='middle' font-size='20'%3EC%3C/text%3E%3C/svg%3E"></div>
+            <span class="topBarUserName cc98-rebuild-native-user-name-link" role="link" tabindex="0">Coran</span>
+          </div>
+        </div>
+      </div>
+    </header>
+    <section class="fixture-content">
+      <div><h1 id="fixture-title">私信</h1><p class="cc98-rebuild-card-meta">顶部导航保持统一宽度，正文按照页面类型使用合适的宽度。</p></div>
+      <div class="fixture-panels">
+        <section class="cc98-rebuild-section"><h2>会话列表</h2><p>同学 A<br>关于本周的讨论<br><br>同学 B<br>一起阅读与交流</p></section>
+        <section class="cc98-rebuild-section"><h2>聊天内容</h2><p>今天的分享很有意思。<br><br>我们可以接着讨论页面中的问题。<br><br>顶部所有控件保留完整的显示空间。</p></section>
+        <section class="cc98-rebuild-section"><h2>回复</h2><p>顶部布局不会改变正文区域的阅读宽度。</p><button type="button" class="cc98-rebuild-search-submit">发送消息</button></section>
+      </div>
+    </section>
+  </main>
+  <script src="/src/theme-core.js"></script>
+  <script>
+    window.setLayoutFixture = function ({ kind = "message", side = false, tone = "light", palette = "teal" } = {}) {
+      const app = document.getElementById("cc98-comfort-app");
+      app.dataset.pageKind = kind === "homeHotOnly" ? "home" : kind;
+      app.dataset.homeHotOnly = String(kind === "homeHotOnly");
+      document.documentElement.dataset.cc98ComfortSideTopbar = String(side);
+      CC98RebornThemeCore.apply(document.documentElement, {
+        themeMode: tone, themePalette: palette, themeCustomPrimary: "#ff9900", themeCustomSecondary: "#0055bb"
+      });
+      document.getElementById("fixture-title").textContent = { message: "私信", post: "帖子阅读", userCenter: "个人中心", login: "登录", homeHotOnly: "首页十大" }[kind];
+    };
+    setLayoutFixture();
+  </script>
+</body>
+</html>

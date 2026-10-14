@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>主题回归测试 - CC98论坛</title>
+  <link rel="stylesheet" href="/src/theme-tokens.css">
+  <link rel="stylesheet" href="/src/styles.css">
+  <link rel="stylesheet" href="/src/interface-styles.css">
+</head>
+<body>
+  <div id="root">
+    <div class="topBar"><a class="topBarCC98" href="/">CC98</a></div>
+    <section class="topicInfo-info">
+      <h1 id="essay1">主题切换不打断正在阅读和编辑的内容</h1>
+      <div class="topicInfo-boardMessage"><a href="/board/81">测试版面</a></div>
+    </section>
+    <div class="reply" id="hot_100002" data-floor="2">
+      <a href="/user/id/1002">热门回复作者</a><span class="reply-floor">2</span>
+      <div class="reply-content"><div class="substance"><article>
+        <p>这是原生热门回复，页面已经具有热门回复指纹，无需再预取第一页。</p>
+      </article></div></div>
+    </div>
+    <div class="reply" id="reply100001" data-floor="1">
+      <a href="/user/id/1001">原用户名</a><span class="reply-floor">1</span>
+      <div class="reply-content"><div class="substance"><article>
+        <p>白昼与黑夜共享同一套中性底色，用户可以独立选择喜欢的配色。</p>
+        <p><a href="/topic/6500001">主题切换时，这个链接仍然可读。</a></p>
+        <p>切换只更新主题属性，保留当前页面的正文、光标和回复草稿。</p>
+        <p><img alt="[ac01]" src="/images/ac/01.png"></p>
+      </article></div></div>
+    </div>
+    <div id="sendTopicInfo" class="sendTopicInfo">
+      <div class="ubb-editor">
+        <div class="ubb-buttons"><button type="button" class="ubb-button" title="加粗">B</button></div>
+        <textarea id="theme-draft">这份回复草稿需要在定时切换后保留。</textarea>
+      </div>
+    </div>
+  </div>
+  <script src="/src/theme-core.js"></script>
+  <script src="/src/interface-style.js"></script>
+  <script src="/src/extended-ubb-core.js"></script>
+  <script src="/src/markup-converter.js"></script>
+  <script src="/src/content.js"></script>
+</body>
+</html>

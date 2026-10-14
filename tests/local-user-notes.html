@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="zh-CN" class="cc98-comfort" data-cc98-comfort-theme="default" data-cc98-comfort-tone="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>用户备注回归</title>
+  <link rel="stylesheet" href="/src/theme-tokens.css">
+  <link rel="stylesheet" href="/src/styles.css">
+  <link rel="stylesheet" href="/src/user-notes.css">
+  <style>
+    body { margin: 0; padding: 28px; background: var(--cc98-comfort-bg); color: var(--cc98-comfort-text); font-family: var(--cc98-comfort-font-body); }
+    main { max-width: 940px; margin: auto; }
+    h1 { font-size: 24px; margin: 0 0 22px; }
+    h2 { font-size: 18px; margin: 24px 0 12px; }
+    .fixture-card { padding: 18px; margin-bottom: 14px; border: 1px solid var(--cc98-comfort-border); border-radius: 16px; background: var(--cc98-comfort-surface); }
+    .user-center-myfollowings-user { display: flex; align-items: center; gap: 16px; }
+    .user-center-myfollowings-user img { width: 44px; height: 44px; border-radius: 50%; }
+    a { color: var(--cc98-comfort-link); }
+    #userId { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    #userId p { margin: 0; }
+    .fixture-author { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-weight: 600; }
+    .fixture-post p { margin-bottom: 0; line-height: 1.7; }
+    @media(max-width: 480px) { body { padding: 14px; } .fixture-card { padding: 14px; } }
+  </style>
+</head>
+<body>
+<main id="router" class="user-center-router">
+  <h1>CC98 Reborn · 用户备注</h1>
+  <h2>我的关注</h2>
+  <section id="following-a" class="fixture-card user-center-myfollowings-user">
+    <img alt="头像" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Crect width='44' height='44' rx='22' fill='%23dceef3'/%3E%3C/svg%3E">
+    <a class="fixture-original-name" href="/user/id/1001">原用户名</a>
+    <button type="button">取消关注</button>
+  </section>
+  <section id="following-b" class="fixture-card user-center-myfollowings-user">
+    <a class="fixture-original-name" href="/user/id/1002">另一个用户</a>
+    <button type="button">取消关注</button>
+  </section>
+  <h2>用户主页</h2>
+  <section class="fixture-card user-profile">
+    <div id="userId"><div id="userId"><p>原用户名<span class="ant-tag">普通用户</span></p><p>风评 +12</p></div></div>
+    <a href="/message/message?id=1001">私信</a>
+    <p>个人简介：一起阅读、交流与学习。</p>
+  </section>
+  <h2>帖子作者</h2>
+  <article id="post-a" class="fixture-card fixture-post">
+    <div class="fixture-author"><a class="fixture-original-name" href="/user/id/1001">原用户名</a></div>
+    <p>我的用户名会保留，备注显示在名字旁边。</p>
+  </article>
+  <article id="post-b" class="fixture-card fixture-post">
+    <div class="fixture-author"><a class="fixture-original-name" href="/user/id/1002">另一个用户</a></div>
+    <p>每位用户的备注独立保存。</p>
+  </article>
+  <article id="post-anonymous" class="fixture-card fixture-post">
+    <div class="fixture-author"><span class="fixture-original-name">匿名</span></div>
+    <p>匿名帖不显示备注。</p>
+  </article>
+  <article id="post-missing-uid" class="fixture-card fixture-post">
+    <div class="fixture-author"><a class="fixture-original-name" href="/user/name/原用户名">原用户名</a></div>
+    <p>没有可靠 UID 时不依名字匹配备注。</p>
+  </article>
+</main>
+<script>
+  window.__ownerUid = "9001";
+  window.lastSettings = { enabled: true };
+  window.getCurrentReadLaterUserId = () => window.__ownerUid;
+  window.getCurrentCc98RoutePath = () => location.pathname;
+  window.makeAbsoluteCc98Url = (href) => new URL(href, location.href).href;
+  window.getCurrentCc98WebAccount = () => ({ userId: window.__ownerUid });
+  window.getStoredCc98UserInfo = () => ({ id: window.__ownerUid });
+  window.getCc98AccountId = (value) => String(value?.id || value?.userId || "");
+  window.hasVisibleCc98GuestLoginEntry = () => [...document.querySelectorAll(".topBarUserInfo a[href*='/logOn'], .cc98-rebuild-guest-user-entry a[href*='/logOn']")].some((node) => node instanceof HTMLElement && getComputedStyle(node).display !== "none");
+  window.__fixture = {
+    decorate() {
+      const notes = window.CC98RebornUserNotes;
+      for (const [id, uid, name, anonymous] of [
+        ["post-a", "1001", "原用户名", false],
+        ["post-b", "1002", "另一个用户", false],
+        ["post-anonymous", "1001", "匿名", true],
+        ["post-missing-uid", "", "原用户名", false]
+      ]) notes.decorateAuthor(document.querySelector(`#${id} .fixture-author`), { uid, name, anonymous });
+    },
+    async boot() {
+      window.CC98RebornUserNotes.mount(document.getElementById("router"));
+      this.decorate();
+      await window.CC98RebornUserNotes.sync();
+      window.__fixtureReady = true;
+    },
+    async route(path) {
+      history.pushState({}, "", path);
+      window.CC98RebornUserNotes.mount(document.getElementById("router"));
+      this.decorate();
+      await window.CC98RebornUserNotes.sync();
+    },
+    async account(uid) {
+      window.__ownerUid = uid;
+      await window.CC98RebornUserNotes.sync();
+    }
+  };
+</script>
+<script src="/src/user-notes-core.js"></script>
+<script src="/src/user-notes.js"></script>
+<script>window.__fixture.boot();</script>
+</body>
+</html>

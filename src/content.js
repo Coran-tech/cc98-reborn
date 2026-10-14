@@ -8,6 +8,7 @@ const SEARCH_HISTORY_CHANGE_EVENT = "cc98-reborn-search-history-change";
 const SEARCH_HISTORY_LIMIT = 12;
 const READ_LATER_ROUTE_HASH = "#cc98-reborn-read-later";
 const BLACKLIST_ROUTE_HASH = "#cc98-reborn-blacklist";
+const USER_SETTINGS_ROUTE_HASH = "#cc98-reborn-settings";
 const EXTENSION_VERSION = globalThis.chrome?.runtime?.getManifest?.()?.version || "dev";
 const LOGIN_REDIRECT_MARK_KEY = "cc98RebornLoginRedirectStartedAt";
 const LOGIN_REDIRECT_SNAPSHOT_KEY = "cc98RebornLoginRedirectSnapshot";
@@ -15,8 +16,9 @@ const LOGIN_HOME_REFRESH_MARK_KEY = "cc98RebornLoginHomeRefreshPendingAt";
 const OPENID_BIND_PROMPT_AFTER_LOGIN_KEY = "cc98RebornOpenIdBindPromptAfterLoginAt";
 const LOGOUT_REDIRECT_MARK_KEY = "cc98RebornLogoutRedirectStartedAt";
 const FIRST_PAGE_PREVISIT_PENDING_KEY = "cc98RebornFirstPagePrevisitPending";
-const FIRST_PAGE_PREVISIT_DONE_PREFIX = "cc98RebornFirstPagePrevisitDone:";
+const FIRST_PAGE_PREVISIT_DONE_PREFIX = "cc98RebornFirstPageBackgroundWarm:v1:";
 const FIRST_PAGE_PREVISIT_TTL = 5 * 60 * 1000;
+const RELOAD_READING_POSITION_KEY = "cc98RebornReloadReadingPosition:v1";
 const HOT_REPLY_FINGERPRINT_CACHE_PREFIX = "cc98RebornHotReplyFingerprints:v1:";
 const HOT_REPLY_FINGERPRINT_KEY_SEPARATOR = "\u001f";
 const VOTE_OPTIMISTIC_COUNT_TTL = 2100;
@@ -47,6 +49,14 @@ const LEGACY_COLOR_PICKER_SELECTOR = [
   ".ubb-color-picker",
   "input[type='color']",
   "input.cc98-rebuild-native-color-input"
+].join(",");
+const NATIVE_MESSAGE_ROOT_SELECTOR = ".message-root, .message, .cc98-rebuild-native-message";
+const NATIVE_MESSAGE_EMOJI_CONTENT_SELECTOR = [
+  ".message-message-wcText",
+  ".message-message-pMessage",
+  ".message-box-content",
+  ".message-system-box-content",
+  ".message-response-box-middle-content"
 ].join(",");
 // Hash targets can become available a little after the first rebuilt shell is
 // mounted (especially on WebVPN).  Keep the retry window finite so this does
@@ -84,7 +94,7 @@ const REPLY_REBORN_TAIL_LEGACY_ALIGN_UBB = `[align=right]\u2014\u2014\u6765\u81e
 
 const DEFAULT_SETTINGS = {
   enabled: true,
-  theme: "soft",
+  ...globalThis.CC98RebornThemeCore.DEFAULTS,
   density: "comfortable",
   fontScale: 110,
   emojiScale: 200,
@@ -98,6 +108,7 @@ const DEFAULT_SETTINGS = {
   openLinksInNewTab: false,
   sideTopbar: false,
   replyRebornTail: true,
+  questionMarkEnabled: false,
   minimalMode: false,
   homeHotOnly: true,
   expandTopicCardsByDefault: false,
@@ -117,100 +128,10 @@ const DEFAULT_SETTINGS = {
   placeholderText: "已根据你的屏蔽规则折叠一条内容"
 };
 
-const THEME_IDS = new Set(["soft", "mist", "night", "sage", "lake", "rose", "graphite", "midnight", "wine"]);
-const DARK_THEME_IDS = new Set(["night", "graphite", "midnight", "wine"]);
 const SEAMLESS_SCROLL_SYNC_PAGE_KINDS = new Set(["home", "boardList", "topics", "search", "boardSearch", "board", "post"]);
 const THEME_LOADING_COLORS = {
-  soft: {
-    bg: "#f4f6f5",
-    surface: "#ffffff",
-    text: "#24302d",
-    muted: "#5f6d68",
-    border: "#dbe3df",
-    accent: "#1f6f66",
-    panelBorder: "rgba(31, 111, 102, 0.18)",
-    shadow: "0 18px 48px rgba(30, 45, 40, 0.16)"
-  },
-  mist: {
-    bg: "#f2f5f8",
-    surface: "#ffffff",
-    text: "#25313a",
-    muted: "#60717c",
-    border: "#d5e0e7",
-    accent: "#286f84",
-    panelBorder: "rgba(40, 111, 132, 0.2)",
-    shadow: "0 18px 48px rgba(30, 45, 55, 0.16)"
-  },
-  sage: {
-    bg: "#eef5ef",
-    surface: "#fbfdfb",
-    text: "#22342a",
-    muted: "#607466",
-    border: "#d1dfd5",
-    accent: "#39785a",
-    panelBorder: "rgba(57, 120, 90, 0.2)",
-    shadow: "0 18px 48px rgba(34, 58, 43, 0.16)"
-  },
-  lake: {
-    bg: "#edf5f7",
-    surface: "#fbfdfe",
-    text: "#21313a",
-    muted: "#5d707a",
-    border: "#cfdfe6",
-    accent: "#2d7890",
-    panelBorder: "rgba(45, 120, 144, 0.2)",
-    shadow: "0 18px 48px rgba(33, 58, 66, 0.16)"
-  },
-  rose: {
-    bg: "#f7f1f4",
-    surface: "#fffafb",
-    text: "#352830",
-    muted: "#75636c",
-    border: "#e0cfd7",
-    accent: "#9a4968",
-    panelBorder: "rgba(154, 73, 104, 0.2)",
-    shadow: "0 18px 48px rgba(61, 39, 50, 0.16)"
-  },
-  night: {
-    bg: "#15191d",
-    surface: "#20262b",
-    text: "#e8edf0",
-    muted: "#b4c0c6",
-    border: "#3d4850",
-    accent: "#8bc7bd",
-    panelBorder: "rgba(139, 199, 189, 0.22)",
-    shadow: "0 18px 52px rgba(0, 0, 0, 0.35)"
-  },
-  graphite: {
-    bg: "#151716",
-    surface: "#202421",
-    text: "#e7ede9",
-    muted: "#b5c1bb",
-    border: "#3b4740",
-    accent: "#9cc8b3",
-    panelBorder: "rgba(156, 200, 179, 0.22)",
-    shadow: "0 18px 52px rgba(0, 0, 0, 0.35)"
-  },
-  midnight: {
-    bg: "#14171d",
-    surface: "#1f242c",
-    text: "#e7edf5",
-    muted: "#b3becb",
-    border: "#3c4654",
-    accent: "#9dbde8",
-    panelBorder: "rgba(157, 189, 232, 0.22)",
-    shadow: "0 18px 52px rgba(0, 0, 0, 0.35)"
-  },
-  wine: {
-    bg: "#1a1518",
-    surface: "#241f22",
-    text: "#efe8ec",
-    muted: "#c7b5bd",
-    border: "#4a3c43",
-    accent: "#e1a3b5",
-    panelBorder: "rgba(225, 163, 181, 0.22)",
-    shadow: "0 18px 52px rgba(0, 0, 0, 0.35)"
-  }
+  light: { bg: "#f6f7f8", surface: "#ffffff", text: "#262b31", muted: "#626b76", border: "#dce1e6", accent: "#1f7166", shadow: "0 18px 48px rgba(20, 28, 36, 0.16)" },
+  dark: { bg: "#16181b", surface: "#212428", text: "#e8ebef", muted: "#b2bac4", border: "#3b4149", accent: "#88c9bb", shadow: "0 18px 52px rgba(0, 0, 0, 0.35)" }
 };
 
 const BLOCKABLE_SELECTORS = [
@@ -230,6 +151,9 @@ const BLOCKABLE_SELECTORS = [
 ].join(",");
 
 let lastSettings = null;
+let pinnedBoardHrefsCache = null;
+let pinnedBoardStorageLoading = false;
+let themeWatcherCleanup = null;
 let observer = null;
 let headObserver = null;
 let rebuiltAppPresenceWatchdog = null;
@@ -240,7 +164,14 @@ let publicProfilePointerSelectionActive = false;
 let filterQueued = false;
 let isFiltering = false;
 let rebuildQueued = false;
+let queuedRebuildIsAutomatic = true;
 let isRebuilding = false;
+let nativeRouteRebuildPending = null;
+let nativeRouteRebuildTimer = null;
+let committedNativeRoute = null;
+let pendingRouteScrollReset = "";
+let topicContentSnapshotRevision = 0;
+let reloadReadingPositionRestored = false;
 let syncQueued = false;
 let delayedRebuildTimers = [];
 let historyPatched = false;
@@ -281,6 +212,9 @@ let newTopicPendingRecheckTimer = null;
 let topicContentCaptureGraceRouteKey = "";
 let topicContentCaptureGraceUntil = 0;
 let topicContentCaptureFallbackTimer = null;
+let topicContentReplayPageKey = "";
+let topicContentReplayCount = 0;
+let topicContentReplayLastAt = 0;
 let lazyPrewarmPromise = null;
 let lazyPrewarmedPageKey = "";
 let homeAvatarPrewarmPromise = null;
@@ -290,7 +224,6 @@ let prewarmedSnapshotPageKey = "";
 let prewarmedPostSnapshots = [];
 let originalPagePrewarmPromise = null;
 let originalPagePrewarmPageKey = "";
-let firstPagePrevisitInProgress = false;
 let loadingOverlayActive = false;
 let loadingOverlayMessage = "";
 let loadingOverlayWatchdog = null;
@@ -349,6 +282,7 @@ let readLaterStorageHydratedKey = "";
 let readLaterStorageHydratingKey = "";
 let blacklistFilterType = "all";
 let embeddedBlacklistOpenPath = "";
+let userSettingsFrameMessageCleanup = null;
 let editorSubmitIntermediateTimer = null;
 let editorDraftAutosaveTimers = new WeakMap();
 let normalPageBooted = false;
@@ -365,6 +299,8 @@ const capturedTopicPostsById = new Map();
 const capturedTopicPostsByFloor = new Map();
 const capturedTopicContentPages = new Set();
 const capturedTopicContentPageCounts = new Map();
+const handledTopicContentMonitorEvents = new Set();
+const revealedPostImageControls = new WeakMap();
 const neutralizedLinks = new WeakMap();
 const reparentedNativeNodes = new WeakMap();
 const nativeEditorStabilizers = new WeakSet();
@@ -450,11 +386,11 @@ const TOPIC_TIME_PATTERN = "(?:刚刚|\\d+\\s*(?:秒前|分钟前|小时前|天�
 const TOPIC_TIME_RE = new RegExp(`^${TOPIC_TIME_PATTERN}$`);
 
 function normalizeSettings(settings = {}) {
-  const theme = THEME_IDS.has(settings.theme) ? settings.theme : DEFAULT_SETTINGS.theme;
+  if (!settings || typeof settings !== "object") settings = {};
   return {
     ...DEFAULT_SETTINGS,
     ...settings,
-    theme,
+    ...globalThis.CC98RebornThemeCore.normalize(settings),
     density: DEFAULT_SETTINGS.density,
     neutralizeNativeSkin: DEFAULT_SETTINGS.neutralizeNativeSkin,
     rebuildUi: DEFAULT_SETTINGS.rebuildUi,
@@ -503,10 +439,7 @@ function clampNumber(value, min, max, fallback) {
 
 function getThemeLoadingColors() {
   const root = document.documentElement;
-  const theme = THEME_IDS.has(lastSettings?.theme)
-    ? lastSettings.theme
-    : normalizeSettings({ theme: root.dataset.cc98ComfortTheme }).theme;
-  const fallback = THEME_LOADING_COLORS[theme] || THEME_LOADING_COLORS.soft;
+  const fallback = THEME_LOADING_COLORS[globalThis.CC98RebornThemeCore.resolveTone(lastSettings)];
   const computed = window.getComputedStyle(root);
   const readVar = (name, fallbackValue) => computed.getPropertyValue(name).trim() || fallbackValue;
   return {
@@ -516,13 +449,53 @@ function getThemeLoadingColors() {
     muted: readVar("--cc98-comfort-muted", fallback.muted),
     border: readVar("--cc98-comfort-border", fallback.border),
     accent: readVar("--cc98-comfort-accent", fallback.accent),
-    panelBorder: fallback.panelBorder,
-    shadow: fallback.shadow
+    panelBorder: "color-mix(in srgb, var(--cc98-comfort-accent) 24%, transparent)",
+    shadow: readVar("--cc98-comfort-shadow", fallback.shadow)
   };
 }
 
+function syncComfortTheme() {
+  if (!lastSettings) return;
+  const root = document.documentElement;
+  const previousTone = root.dataset.cc98ComfortTone;
+  const tone = globalThis.CC98RebornThemeCore.apply(root, isRebornManagementRoute() ? { ...lastSettings, enabled: true } : lastSettings);
+  globalThis.CC98RebornInterfaceStyle?.sync(lastSettings);
+  if (!lastSettings.enabled) return;
+  if (previousTone && previousTone !== tone) {
+    // Only replace tone-specific emoji resources: keep the post/editor DOM and selection intact.
+    document.querySelectorAll("#cc98-comfort-app img, .cc98-rebuild-conversation-layer img, .cc98-rebuild-message-emoji-panel img").forEach((image) => {
+      if (isNativeMessageContentNode(image) && !image.classList.contains("cc98-rebuild-inline-emoji")) return;
+      const src = image.getAttribute("src") || "";
+      if (!/\/images\/ac1?\/\d+\.png(?:[?#].*)?$/i.test(src)) return;
+      const next = getLocalEmojiAssetUrlFromSrc(src);
+      if (next && image.src !== next) image.src = next;
+    });
+  }
+  if (loadingOverlayActive) ensureLoadingOverlayElement();
+}
+
+function settingsWithoutAppearance(settings) {
+  const { theme, themeStyle, themeMode, themePalette, themeCustomPrimary, themeCustomSecondary, themeDayStart, themeNightStart, emojiScale, ...other } = settings;
+  return other;
+}
+
 function applySettings(settings) {
-  lastSettings = normalizeSettings(settings);
+  const nextSettings = normalizeSettings(settings);
+  const appearanceOnlyChange = lastSettings
+    && JSON.stringify(settingsWithoutAppearance(lastSettings)) === JSON.stringify(settingsWithoutAppearance(nextSettings));
+  const messageScrollState = appearanceOnlyChange && lastSettings.emojiScale !== nextSettings.emojiScale
+    ? captureMessageWindowScrollState()
+    : null;
+  const messagePageScrollPosition = messageScrollState?.length ? captureImageViewerScrollPosition() : null;
+  lastSettings = nextSettings;
+  document.documentElement.style.setProperty("--cc98-emoji-size", `${(1.75 * lastSettings.emojiScale / 100).toFixed(3)}em`);
+  document.documentElement.style.setProperty("--cc98-editor-emoji-size", `${(2.2 * lastSettings.emojiScale / 100).toFixed(3)}em`);
+  themeWatcherCleanup?.();
+  themeWatcherCleanup = globalThis.CC98RebornThemeCore.watch(() => isRebornManagementRoute() ? { ...lastSettings, enabled: true } : lastSettings, syncComfortTheme);
+  if (appearanceOnlyChange) {
+    restoreMessageWindowScrollState(messageScrollState, document, messagePageScrollPosition);
+    return;
+  }
   if (!lastSettings.prewarmPostImages && topicContentCaptureFallbackTimer) {
     window.clearTimeout(topicContentCaptureFallbackTimer);
     topicContentCaptureFallbackTimer = null;
@@ -533,15 +506,14 @@ function applySettings(settings) {
   bindOpenLinksInNewTabGuard();
 
   const root = document.documentElement;
-  root.classList.toggle("cc98-comfort", lastSettings.enabled);
-  root.dataset.cc98ComfortTheme = lastSettings.theme;
-  root.dataset.cc98ComfortTone = DARK_THEME_IDS.has(lastSettings.theme) ? "dark" : "light";
+  root.classList.toggle("cc98-comfort", lastSettings.enabled || isRebornManagementRoute());
+  syncComfortTheme();
   root.dataset.cc98ComfortDensity = lastSettings.density;
   root.dataset.cc98ComfortAvatars = String(lastSettings.softenAvatars);
   root.dataset.cc98ComfortHideSticky = String(lastSettings.hideSticky);
   root.dataset.cc98ComfortFocus = String(lastSettings.focusReading);
   root.dataset.cc98ComfortNeutralizeSkin = String(lastSettings.neutralizeNativeSkin);
-  root.dataset.cc98ComfortRebuild = String(lastSettings.rebuildUi);
+  root.dataset.cc98ComfortRebuild = String(lastSettings.rebuildUi || isRebornManagementRoute());
   root.dataset.cc98ComfortRound = String(lastSettings.roundUi);
   root.dataset.cc98ComfortMinimal = String(lastSettings.minimalMode);
   root.dataset.cc98ComfortHomeHotOnly = String(lastSettings.homeHotOnly);
@@ -551,9 +523,8 @@ function applySettings(settings) {
   root.dataset.cc98ComfortOpenLinksInNewTab = String(lastSettings.openLinksInNewTab);
   root.dataset.cc98ComfortSideTopbar = String(lastSettings.sideTopbar);
   root.style.setProperty("--cc98-comfort-font-scale", `${lastSettings.fontScale}%`);
-  root.style.setProperty("--cc98-emoji-size", `${(1.75 * lastSettings.emojiScale / 100).toFixed(3)}em`);
-  root.style.setProperty("--cc98-editor-emoji-size", `${(2.2 * lastSettings.emojiScale / 100).toFixed(3)}em`);
   root.style.setProperty("--cc98-comfort-radius", `${lastSettings.cornerRadius}px`);
+  globalThis.CC98RebornUserNotes?.sync();
   if (!lastSettings.enabled || !lastSettings.rebuildUi) {
     releaseRebuildTransitionVeil({ immediate: true });
   }
@@ -565,6 +536,7 @@ function applySettings(settings) {
   scheduleOpenIdBindPromptAfterLogin();
   syncOpenIdBindingWithWebAccount();
   hydrateReadLaterStorage();
+  hydratePinnedBoardStorage();
   scheduleFiltering();
   stabilizeEmojiRendering(document);
   scheduleRebuild();
@@ -575,7 +547,7 @@ function applySettings(settings) {
   ensureNativeAntUiStabilizer();
   scheduleNativeAntUiStabilize();
   patchHistoryNavigation();
-  handleTopicFirstPagePrevisitNavigation();
+  syncTopicFirstPagePrewarm();
   markCurrentTopicReadLaterRead();
 }
 
@@ -871,6 +843,9 @@ function getLinkNewTabHref(link) {
 }
 
 function shouldForceLinkNewTab(link, href = getLinkNewTabHref(link)) {
+  if (link?.closest?.(".cc98-rebuild-conversation-layer") && link.dataset.cc98ConversationFloor) {
+    return false;
+  }
   if (!lastSettings?.openLinksInNewTab || !(link instanceof HTMLAnchorElement) || !href) {
     return false;
   }
@@ -1412,7 +1387,7 @@ function getViewerImageSrc(image) {
   if (!(image instanceof HTMLImageElement)) {
     return "";
   }
-  return makeAbsoluteCc98Url(getMediaUrl(image) || image.currentSrc || image.src || "");
+  return makeWebVpnCc98ResourceUrl(getMediaUrl(image) || image.currentSrc || image.src || "");
 }
 
 function isImageViewerCandidate(image) {
@@ -1426,7 +1401,8 @@ function isImageViewerCandidate(image) {
 }
 
 function getImageViewerItems(activeImage) {
-  const root = document.querySelector("#cc98-comfort-app") || document;
+  const root = activeImage?.closest?.(".cc98-rebuild-conversation-dialog")
+    || document.querySelector("#cc98-comfort-app") || document;
   const images = [...root.querySelectorAll("img.cc98-rebuild-content-image, img.cc98-rebuild-board-image")]
     .filter(isImageViewerCandidate);
   const items = images.map((node) => ({
@@ -2015,7 +1991,7 @@ function setVoteActionCountText(action, count) {
   }
   const text = formatVoteActionText(action, count);
   if (action.proxyButton) {
-    action.proxyButton.textContent = text;
+    setProxyControlDisplayText(action.proxyButton, text, getActionVoteKind(action));
   }
 }
 
@@ -2157,11 +2133,82 @@ function renderNativeFollowControl(action) {
   return control;
 }
 
+function setPostFooterActionIcon(control, text) {
+  const label = cleanupPostText(text);
+  const paths = {
+    "评分": "M4 7h6M7 4v6M15 17h6M18 6 6 18",
+    "私信": "M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm-1 2 9 6 9-6",
+    "引用": "M10 7H4v6h6V7Zm0 6c0 3-2 5-5 5M20 7h-6v6h6V7Zm0 6c0 3-2 5-5 5",
+    "追踪": "M7 7v7a3 3 0 0 0 3 3h5M17 7v8M9 5a2 2 0 1 1-4 0 2 2 0 0 1 4 0Zm10 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0Zm0 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z",
+    "编辑": "m14 5 5 5M4 20l5-1L20 8a2 2 0 0 0 0-3l-1-1a2 2 0 0 0-3 0L5 15l-1 5Z",
+    "查看对话": "M15 3H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h1v4l4-4h5a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2ZM10 18h4l4 3v-4h1a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2",
+  };
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("width", "18");
+  svg.setAttribute("height", "18");
+  svg.setAttribute("fill", "none");
+  svg.setAttribute("stroke", "currentColor");
+  svg.setAttribute("stroke-width", "1.8");
+  svg.setAttribute("stroke-linecap", "round");
+  svg.setAttribute("stroke-linejoin", "round");
+  svg.setAttribute("aria-hidden", "true");
+  svg.setAttribute("focusable", "false");
+  const path = document.createElementNS(svg.namespaceURI, "path");
+  path.setAttribute("d", paths[label] || "M5 11v2M12 11v2M19 11v2");
+  svg.append(path);
+  control.classList.add("cc98-rebuild-icon-action");
+  control.setAttribute("aria-label", label);
+  control.title = label;
+  control.replaceChildren(svg);
+}
+
+function renderPostFooterAction(action) {
+  const control = renderProxyControl(action);
+  const kind = getActionVoteKind(action) || getPostActionKind(action.control, action.text);
+  if (kind === "like" || kind === "dislike") {
+    control.classList.add("cc98-rebuild-vote-action");
+    control.dataset.actionKind = kind;
+    setProxyControlDisplayText(control, control.textContent || action.text, kind);
+  } else if (kind === "score") {
+    control.classList.add("cc98-rebuild-score-action");
+    control.dataset.actionKind = kind;
+    setProxyControlDisplayText(control, control.textContent || action.displayText || action.text, kind, action.awardDelta);
+  } else {
+    setPostFooterActionIcon(control, control.textContent || action.displayText || action.text);
+  }
+  return control;
+}
+
 function setProxyControlDisplayText(proxy, text, kind = "", scoreDelta = NaN) {
   if (!(proxy instanceof HTMLElement)) {
     return;
   }
   const value = String(text ?? "");
+  if (proxy.classList.contains("cc98-rebuild-vote-action") && (kind === "like" || kind === "dislike")) {
+    const count = value.match(/\d+\s*$/)?.[0].trim() || "0";
+    const label = kind === "like" ? "赞" : "踩";
+    proxy.textContent = count;
+    proxy.title = label;
+    proxy.setAttribute("aria-label", `${label} ${count}`);
+    return;
+  }
+  if (kind === "score" && proxy.classList.contains("cc98-rebuild-score-action")) {
+    setPostFooterActionIcon(proxy, "评分");
+    proxy.setAttribute("aria-label", value || "评分");
+    const delta = value.match(/([+-]\d+)\s*$/)?.[1];
+    if (delta) {
+      const amount = Number.isFinite(scoreDelta) ? scoreDelta : Number(delta);
+      const deltaNode = createElement("span", "cc98-rebuild-action-delta", delta);
+      deltaNode.dataset.awardDelta = amount > 0 ? "positive" : amount < 0 ? "negative" : "zero";
+      proxy.append(deltaNode);
+    }
+    return;
+  }
+  if (proxy.classList.contains("cc98-rebuild-icon-action")) {
+    setPostFooterActionIcon(proxy, value);
+    return;
+  }
   const deltaMatch = kind === "score" ? value.match(/([+-]\d+)\s*$/) : null;
   if (deltaMatch && Number.isFinite(scoreDelta) && scoreDelta !== 0) {
     const delta = deltaMatch[1];
@@ -3312,6 +3359,25 @@ function getBlacklistPageHref() {
   }
 }
 
+function isUserSettingsRoute(url = location.href) {
+  try {
+    return isUserCenterRoutePath(getCc98RoutePathFromHref(url))
+      && new URL(url, location.href).hash === USER_SETTINGS_ROUTE_HASH;
+  } catch {
+    return false;
+  }
+}
+
+function isRebornManagementRoute() {
+  return isUserSettingsRoute() || isBlacklistRoute();
+}
+
+function getUserSettingsPageHref() {
+  const url = new URL(isUserCenterRoutePath() ? location.href : normalizeHref("/userCenter"), location.href);
+  url.hash = USER_SETTINGS_ROUTE_HASH;
+  return url.href;
+}
+
 function getRoutePageKey(url = location.href) {
   try {
     const parsed = new URL(url, location.href);
@@ -3518,7 +3584,7 @@ function scheduleRouteFollowup(targetHref, startedRouteKey = getRoutePageKey()) 
       if (currentRouteKey === targetRouteKey || currentRouteKey !== startedRouteKey) {
         searchPageRouteKey = "";
         scheduleFiltering();
-        scheduleRebuild();
+        scheduleRebuild({ automatic: true });
         scheduleSync();
       }
       if (index === delays.length - 1) {
@@ -3956,7 +4022,7 @@ function clearEditorSubmitIntent() {
     window.clearTimeout(editorSubmitOverlayReleaseTimer);
     editorSubmitOverlayReleaseTimer = null;
   }
-  if (document.documentElement.dataset.cc98ComfortOriginalPrewarming !== "true" && !firstPagePrevisitInProgress) {
+  if (document.documentElement.dataset.cc98ComfortOriginalPrewarming !== "true") {
     editorSubmitOverlayAwaitingRebuild = false;
     hideLoadingOverlay({ force: true });
   }
@@ -4151,11 +4217,40 @@ function pruneCapturedTopicContent() {
   }
 }
 
-function handlePageTopicContentSnapshot(event) {
-  if (event.source !== window || event.origin !== location.origin) {
+function requestCurrentTopicContentSnapshot() {
+  const pageKey = getCurrentTopicContentCapturePageKey();
+  if (!pageKey) {
     return;
   }
-  const message = event.data;
+  if (topicContentReplayPageKey !== pageKey) {
+    topicContentReplayPageKey = pageKey;
+    topicContentReplayCount = 0;
+    topicContentReplayLastAt = 0;
+  }
+  if (topicContentReplayCount >= 3 || Date.now() - topicContentReplayLastAt < 800) {
+    return;
+  }
+  topicContentReplayCount += 1;
+  topicContentReplayLastAt = Date.now();
+  const [topicId, from] = pageKey.split(":");
+  document.dispatchEvent(new CustomEvent("cc98-reborn-topic-content-request", {
+    detail: JSON.stringify({ source: "cc98-reborn-content", type: "request-topic-content-snapshot", topicId, from: Number(from) })
+  }));
+}
+
+function handlePageTopicContentSnapshot(event) {
+  const isDomBridgeEvent = event?.type === EDITOR_SUBMIT_MONITOR_EVENT;
+  if (!isDomBridgeEvent && (event.source !== window || event.origin !== location.origin)) {
+    return;
+  }
+  let message = event.data;
+  if (isDomBridgeEvent) {
+    try {
+      message = JSON.parse(String(event.detail || ""));
+    } catch {
+      return;
+    }
+  }
   if (message?.source !== "cc98-reborn-submit-monitor" || message.type !== "topic-content-snapshot") {
     return;
   }
@@ -4163,6 +4258,16 @@ function handlePageTopicContentSnapshot(event) {
   const topicId = String(payload?.topicId || "").match(/\d+/)?.[0] || "";
   if (!topicId || !Array.isArray(payload?.items)) {
     return;
+  }
+  const monitorEventId = String(message.monitorEventId || "");
+  if (monitorEventId && handledTopicContentMonitorEvents.has(monitorEventId)) {
+    return;
+  }
+  if (monitorEventId) {
+    handledTopicContentMonitorEvents.add(monitorEventId);
+    while (handledTopicContentMonitorEvents.size > 80) {
+      handledTopicContentMonitorEvents.delete(handledTopicContentMonitorEvents.values().next().value);
+    }
   }
   const from = Math.max(0, Number(payload.from) || 0);
   if (payload.kind === "page") {
@@ -4201,7 +4306,8 @@ function handlePageTopicContentSnapshot(event) {
   if (currentTopicId !== topicId) {
     return;
   }
-  scheduleRebuild();
+  topicContentSnapshotRevision += 1;
+  scheduleRebuild({ automatic: true });
 }
 
 function recoverEditorSubmitContextFromMonitor(result) {
@@ -4370,6 +4476,8 @@ function bindPageEditorSubmitResultMonitor() {
   window.addEventListener("message", handlePageEditorSubmitResult);
   document.addEventListener(EDITOR_SUBMIT_MONITOR_EVENT, handlePageEditorSubmitResult);
   window.addEventListener("message", handlePageTopicContentSnapshot);
+  document.addEventListener(EDITOR_SUBMIT_MONITOR_EVENT, handlePageTopicContentSnapshot);
+  requestCurrentTopicContentSnapshot();
 }
 
 function hasRecentEditorSubmitIntent(ttl = 45000) {
@@ -4488,7 +4596,7 @@ function hasVisibleEditorSubmitSuccess() {
 }
 
 function hasVisibleEditorSubmitFailure() {
-  const failurePattern = /\u5931\u8d25|\u9519\u8bef|\u65e0\u6cd5|\u4e0d\u80fd|\u672a\u767b\u5f55|\u6743\u9650|\u9a8c\u8bc1\u7801|\u5185\u5bb9\u4e3a\u7a7a|\u5185\u5bb9\u592a\u957f|\u53d1\u5e16\u8fc7\u5feb|\u8bf7\u7a0d\u540e/;
+  const failurePattern = /\u5931\u8d25|\u9519\u8bef|\u65e0\u6cd5|\u4e0d\u80fd|\u672a\u767b\u5f55|\u6743\u9650|\u9a8c\u8bc1\u7801|\u5185\u5bb9\u4e3a\u7a7a|\u5185\u5bb9\u592a\u957f|\u53d1\u5e16\u8fc7\u5feb|\u8bf7\u7a0d\u540e|请输入合法的(?:过期天数|最大投票数)/;
   const notices = [
     ...document.querySelectorAll([
       ".send-topic-notice-error",
@@ -4590,7 +4698,7 @@ function restoreEditorSubmitOverlayAfterReload() {
   const loadedAfterSubmit = loadedAt > submittedAt;
   const isTopicDestination = Boolean(getTopicRouteInfo());
   const isKnownRecoveryRoute = isTopicDestination
-    || /\/editor\/(?:postTopic|edit)\//i.test(location.pathname)
+    || /\/editor\/(?:postTopic|postVoteTopic|edit)\//i.test(location.pathname)
     || isNativeErrorPage();
   if (!loadedAfterSubmit || !isKnownRecoveryRoute) {
     return false;
@@ -4874,183 +4982,57 @@ function recoverEditorSubmitAfterNavigation() {
   return false;
 }
 
-function readSessionJson(key) {
-  try {
-    return JSON.parse(sessionStorage.getItem(key) || "null");
-  } catch {
-    return null;
-  }
-}
-
-function writeSessionJson(key, value) {
-  try {
-    sessionStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // Session previsit is best-effort.
-  }
-}
-
 function removeSessionItem(key) {
   try {
     sessionStorage.removeItem(key);
   } catch {
-    // Session previsit is best-effort.
+    // Session prewarm records are best-effort.
   }
 }
 
-function getFirstPagePrevisitDoneKey(routeInfo) {
-  if (!routeInfo?.topicId || routeInfo.current <= 1) {
-    return "";
-  }
-  return `${FIRST_PAGE_PREVISIT_DONE_PREFIX}${routeInfo.topicId}:${routeInfo.current}:${encodeURIComponent(routeInfo.routeKey)}`;
+function getFirstPagePrevisitDoneKey(topicInfo) {
+  return topicInfo?.topicId
+    ? `${FIRST_PAGE_PREVISIT_DONE_PREFIX}${getCurrentReadLaterUserId()}:${topicInfo.topicId}`
+    : "";
 }
 
-function hasFreshFirstPagePrevisit(routeInfo) {
-  const key = getFirstPagePrevisitDoneKey(routeInfo);
-  if (!key) {
-    return false;
-  }
-  const timestamp = Number(sessionStorage.getItem(key) || 0);
-  return Number.isFinite(timestamp) && Date.now() - timestamp < FIRST_PAGE_PREVISIT_TTL;
-}
-
-function markFreshFirstPagePrevisit(routeInfo) {
-  const key = getFirstPagePrevisitDoneKey(routeInfo);
-  if (!key) {
-    return;
-  }
+function hasFreshFirstPagePrevisit(topicInfo) {
   try {
-    sessionStorage.setItem(key, String(Date.now()));
+    const timestamp = Number(sessionStorage.getItem(getFirstPagePrevisitDoneKey(topicInfo)) || 0);
+    return timestamp > 0 && Date.now() - timestamp < FIRST_PAGE_PREVISIT_TTL;
   } catch {
-    // Session previsit is best-effort.
+    return false;
   }
 }
 
-function getPendingFirstPagePrevisit() {
-  const pending = readSessionJson(FIRST_PAGE_PREVISIT_PENDING_KEY);
-  if (!pending?.topicId || !pending.targetHref || !pending.targetRouteKey || !pending.startedAt) {
-    removeSessionItem(FIRST_PAGE_PREVISIT_PENDING_KEY);
-    return null;
+function markFreshFirstPagePrevisit(topicInfo) {
+  try {
+    sessionStorage.setItem(getFirstPagePrevisitDoneKey(topicInfo), String(Date.now()));
+  } catch {
+    // Session prewarm records are best-effort.
   }
-  if (Date.now() - Number(pending.startedAt) > FIRST_PAGE_PREVISIT_TTL) {
-    removeSessionItem(FIRST_PAGE_PREVISIT_PENDING_KEY);
-    return null;
-  }
-  return pending;
 }
 
-function waitForOriginalReplyRender(timeout = 3600) {
-  return new Promise((resolve) => {
-    if (document.querySelector(".reply")) {
-      resolve(true);
-      return;
-    }
-
-    const observer = new MutationObserver(() => {
-      if (document.querySelector(".reply")) {
-        observer.disconnect();
-        window.clearTimeout(timer);
-        resolve(true);
-      }
-    });
-    const target = document.querySelector("#root") || document.body || document.documentElement;
-    observer.observe(target, { childList: true, subtree: true });
-    const timer = window.setTimeout(() => {
-      observer.disconnect();
-      resolve(false);
-    }, timeout);
-  });
+function isTopicFirstPagePrewarmEnabled(topicInfo = getTopicRouteInfo()) {
+  return Boolean(lastSettings?.enabled && lastSettings.previsitFirstPageForTopicImages
+    && topicInfo?.current > 1 && !isNativeErrorPage());
 }
 
-function startFirstPagePrevisitReturn(pending) {
-  if (firstPagePrevisitInProgress) {
-    return true;
-  }
-  firstPagePrevisitInProgress = true;
-  showLoadingOverlay("\u6b63\u5728\u9884\u70ed\u5e16\u5b50\u7b2c\u4e00\u9875...");
-
-  (async () => {
-    await waitForDomReady();
-    await Promise.race([
-      waitForOriginalReplyRender(),
-      wait(4200)
-    ]);
-    const identity = getOriginalPosterIdentityFromRoot(document);
-    if (identity) {
-      setCachedOriginalPosterIdentity(pending.topicId, identity);
+function syncTopicFirstPagePrewarm() {
+  // Retire pending foreground redirects left by earlier versions.
+  removeSessionItem(FIRST_PAGE_PREVISIT_PENDING_KEY);
+  const topicInfo = getTopicRouteInfo();
+  const enabled = isTopicFirstPagePrewarmEnabled(topicInfo);
+  const owner = getCurrentReadLaterUserId();
+  for (const [topicId, task] of originalPosterIdentityPrefetches) {
+    if (!enabled || topicId !== topicInfo.topicId || task.owner !== owner) {
+      task.controller.abort();
+      originalPosterIdentityPrefetches.delete(topicId);
     }
-    cacheHotReplyFingerprintsFromRoot(pending.topicId, document);
-    await wait(260);
-  })()
-    .catch(() => {})
-    .finally(() => {
-      const targetInfo = getTopicRouteInfo(pending.targetHref);
-      if (targetInfo) {
-        markFreshFirstPagePrevisit(targetInfo);
-      }
-      removeSessionItem(FIRST_PAGE_PREVISIT_PENDING_KEY);
-      showLoadingOverlay("\u6b63\u5728\u8fd4\u56de\u539f\u9875\u9762\u52a0\u8f7d\u56fe\u7247...");
-      location.replace(pending.targetHref);
-    });
-
-  return true;
-}
-
-function handleTopicFirstPagePrevisitNavigation() {
-  if (!lastSettings) {
-    return Boolean(getPendingFirstPagePrevisit());
   }
-
-  if (!lastSettings?.enabled || !lastSettings.previsitFirstPageForTopicImages) {
-    firstPagePrevisitInProgress = false;
-    removeSessionItem(FIRST_PAGE_PREVISIT_PENDING_KEY);
-    return false;
+  if (enabled) {
+    scheduleOriginalPosterIdentityPrefetch(topicInfo);
   }
-
-  if (isNativeErrorPage()) {
-    firstPagePrevisitInProgress = false;
-    removeSessionItem(FIRST_PAGE_PREVISIT_PENDING_KEY);
-    return false;
-  }
-
-  const routeInfo = getTopicRouteInfo();
-  if (!routeInfo) {
-    firstPagePrevisitInProgress = false;
-    removeSessionItem(FIRST_PAGE_PREVISIT_PENDING_KEY);
-    return false;
-  }
-
-  const pending = getPendingFirstPagePrevisit();
-  if (pending) {
-    if (routeInfo.routeKey === pending.targetRouteKey) {
-      if (firstPagePrevisitInProgress) {
-        return true;
-      }
-      markFreshFirstPagePrevisit(routeInfo);
-      removeSessionItem(FIRST_PAGE_PREVISIT_PENDING_KEY);
-      return false;
-    }
-    if (routeInfo.topicId === pending.topicId && routeInfo.current === 1) {
-      return startFirstPagePrevisitReturn(pending);
-    }
-    removeSessionItem(FIRST_PAGE_PREVISIT_PENDING_KEY);
-  }
-
-  if (routeInfo.current <= 1 || hasFreshFirstPagePrevisit(routeInfo)) {
-    return false;
-  }
-
-  writeSessionJson(FIRST_PAGE_PREVISIT_PENDING_KEY, {
-    topicId: routeInfo.topicId,
-    targetHref: routeInfo.href,
-    targetRouteKey: routeInfo.routeKey,
-    targetPage: routeInfo.current,
-    startedAt: Date.now()
-  });
-  firstPagePrevisitInProgress = true;
-  showLoadingOverlay("\u6b63\u5728\u5148\u8bbf\u95ee\u5e16\u5b50\u7b2c\u4e00\u9875...");
-  location.replace(routeInfo.firstHref);
-  return true;
 }
 
 function dispatchNativeLazySignals() {
@@ -5846,7 +5828,7 @@ function isSoftLoadingOverlayMessage(message = loadingOverlayMessage) {
 }
 
 function isUserCenterRoutePath(path = getCurrentCc98RoutePath()) {
-  return /\/usercenter(?:\/|$)/i.test(String(path || ""));
+  return /\/usercenter(?:\/|$)/i.test(String(path || "").split(/[?#]/, 1)[0]);
 }
 
 function getUserCenterNativeShell() {
@@ -5995,7 +5977,6 @@ function clearPublicUserProfileLoadingOverlay() {
     return false;
   }
   nativeLazyScrollOverlayDepth = 0;
-  firstPagePrevisitInProgress = false;
   editorSubmitOverlayAwaitingRebuild = false;
   delete document.documentElement.dataset.cc98ComfortNativeLazyScrolling;
   delete document.documentElement.dataset.cc98ComfortOriginalPrewarming;
@@ -6046,7 +6027,6 @@ function clearUserCenterStaleLoadingOverlay(kind = getPageKind()) {
     clearEditorSubmitIntent();
     resetReleasedNativeEditors();
   }
-  firstPagePrevisitInProgress = false;
   removeSessionItem(FIRST_PAGE_PREVISIT_PENDING_KEY);
   delete document.documentElement.dataset.cc98ComfortOriginalPrewarming;
   delete document.documentElement.dataset.cc98ComfortPrewarming;
@@ -6096,7 +6076,9 @@ function ensureLoadingOverlayElement() {
     ? "原页面正在加载；若 WebVPN 响应较慢，遮罩会自动收起。"
     : "\u539f\u7248\u9875\u9762\u6b63\u5728\u906e\u7f69\u540e\u9762\u9884\u70ed\uff0c\u5b8c\u6210\u540e\u4f1a\u81ea\u52a8\u663e\u793a\u5b8c\u6574\u9605\u8bfb\u754c\u9762\u3002";
   const renderKey = JSON.stringify([
-    lastSettings?.theme || "soft",
+    lastSettings?.themePalette || "teal",
+    lastSettings?.themeCustomPrimary,
+    lastSettings?.themeCustomSecondary,
     document.documentElement.dataset.cc98ComfortTone || "light",
     isSoft,
     isDismissible,
@@ -6168,7 +6150,6 @@ function showLoadingOverlay(message = "\u6b63\u5728\u52a0\u8f7d\u5e16\u5b50\u56f
   const nextSoft = !options.opaque
     && isSoftLoadingOverlayMessage(message)
     && !editorSubmitOverlayAwaitingRebuild
-    && !firstPagePrevisitInProgress
     && document.documentElement.dataset.cc98ComfortOriginalPrewarming !== "true"
     && document.documentElement.dataset.cc98ComfortPrewarming !== "true";
   const shouldRestartOverlayTimer = !loadingOverlayActive || loadingOverlaySoft !== nextSoft;
@@ -6232,10 +6213,6 @@ function showLoadingOverlay(message = "\u6b63\u5728\u52a0\u8f7d\u5e16\u5b50\u56f
       const elapsed = Date.now() - loadingOverlayStartedAt;
       if (elapsed < failsafeDelay - 500) {
         return;
-      }
-      if (firstPagePrevisitInProgress) {
-        firstPagePrevisitInProgress = false;
-        removeSessionItem(FIRST_PAGE_PREVISIT_PENDING_KEY);
       }
       if (document.documentElement.dataset.cc98ComfortOriginalPrewarming === "true") {
         lazyPrewarmedPageKey = getLazyPrewarmPageKey();
@@ -6426,8 +6403,25 @@ function getCurrentWebVpnFileResourcePrefix() {
   }
 }
 
-function makeWebVpnCc98ResourceUrl(value) {
+function upgradeCc98AssetUrl(value) {
   const raw = String(value || "").trim();
+  if (!raw) return "";
+  try {
+    const url = new URL(raw, location.href);
+    if (url.protocol === "http:" && !url.port
+      && /^(?:(?:www|file)\.)?cc98\.org$/i.test(url.hostname)
+      && /^\/(?:static|v4-upload)(?:\/|$)/i.test(url.pathname)) {
+      url.protocol = "https:";
+      return url.href;
+    }
+  } catch {
+    // Keep other URL formats for the existing resource resolver.
+  }
+  return raw;
+}
+
+function makeWebVpnCc98ResourceUrl(value) {
+  const raw = upgradeCc98AssetUrl(value);
   if (!raw) {
     return "";
   }
@@ -6701,6 +6695,7 @@ function setupRebuiltImagePlaceholders(root) {
 }
 
 function startPostLazyFallbackPrewarm() {
+  requestCurrentTopicContentSnapshot();
   if (!isPostImagePrewarmEnabled()) {
     if (topicContentCaptureFallbackTimer) {
       window.clearTimeout(topicContentCaptureFallbackTimer);
@@ -6876,6 +6871,7 @@ function scheduleWebVpnBootProbe() {
 
 function getPageKind() {
   const cc98RoutePath = getCurrentCc98RoutePath();
+  if (isUserSettingsRoute()) return "userCenter";
   if (isBlacklistRoute()) {
     return "blacklist";
   }
@@ -6897,7 +6893,7 @@ function getPageKind() {
   if (cc98RoutePath.includes("search")) {
     return "search";
   }
-  if (/\/editor\/(?:postTopic|edit)\/\d+/i.test(cc98RoutePath) || document.querySelector(".createTopic")) {
+  if (/\/editor\/(?:postTopic|postVoteTopic|edit)\/\d+/i.test(cc98RoutePath) || document.querySelector(".createTopic")) {
     return "editor";
   }
   if (/\/logOn/i.test(cc98RoutePath) || document.querySelector(".login")) {
@@ -6909,11 +6905,11 @@ function getPageKind() {
   if (cc98RoutePath.includes("/message") || document.querySelector(".message-root, .message")) {
     return "message";
   }
-  if (document.querySelector(".boardList")) {
-    return "boardList";
-  }
-  if (/\/board\/\d+/i.test(cc98RoutePath) && document.querySelector(".board-body, .board-postItem-body")) {
+  if (/\/board\/\d+/i.test(cc98RoutePath)) {
     return "board";
+  }
+  if (/^\/boardList\/?$/i.test(cc98RoutePath) || document.querySelector(".boardList")) {
+    return "boardList";
   }
   if (isPublicUserProfilePage() || isUserCenterRoutePath(cc98RoutePath) || document.querySelector(".user-center")) {
     return "userCenter";
@@ -6921,6 +6917,7 @@ function getPageKind() {
   if (/^\/(?:newTopics|focus|recommendedTopics)(?:\/|$)/i.test(cc98RoutePath)) {
     return "topics";
   }
+  if (cc98RoutePath === "/") return "home";
   if (document.querySelector(".focus-topic, .card-topic")) {
     return document.title.includes("搜索") ? "search" : "topics";
   }
@@ -7016,7 +7013,7 @@ function getPageTitle() {
     home: "首页",
     boardList: "版面列表",
     board: getFirstText(document, ".board-head-name") || document.title.replace(" - CC98论坛", "") || "版面",
-    editor: /\/editor\/edit\/\d+/i.test(cc98RoutePath) ? "编辑帖子" : "发表主题",
+    editor: /\/editor\/postVoteTopic\/\d+/i.test(cc98RoutePath) ? "发表投票主题" : /\/editor\/edit\/\d+/i.test(cc98RoutePath) ? "编辑帖子" : "发表主题",
     login: "登录",
     signin: "签到",
     error: getFirstText(document, ".errorText") || document.title.replace(" - CC98论坛", "") || "出错了",
@@ -7043,10 +7040,10 @@ function parseTopicMetaText(text) {
   const replyInfo = raw.match(new RegExp(`(?:标签[:：]\\s*(.*?)\\s*/\\s*(.*?)\\s*)?(${timePattern})\\s+(\\d+)\\s*最后回复[:：]\\s*(.*?)\\s*(${timePattern})(?:\\s|$)`));
   if (replyInfo) {
     const [, tag, author, _postedAt, replyCount, lastReplyUser, lastReplyAt] = replyInfo;
-    const tagText = tag ? `🏷️标签: ${tag.trim()} / ${author?.trim() || ""} ` : "";
+    const tagText = tag ? `标签: ${tag.trim()} / ${author?.trim() || ""} ` : "";
     return {
       meta: "",
-      hoverMeta: `${tagText}⏰️最后回复: ${lastReplyAt.trim()} ${lastReplyUser.trim()} 💬回复数: ${replyCount.trim()}`,
+      hoverMeta: `${tagText}最后回复: ${lastReplyAt.trim()} ${lastReplyUser.trim()} 回复数: ${replyCount.trim()}`,
       author: author?.trim() || "",
       replyCount: replyCount.trim(),
       lastReplyUser: lastReplyUser.trim(),
@@ -7060,7 +7057,7 @@ function parseTopicMetaText(text) {
     const [, viewCount, replyCount, lastReplyUser, lastReplyAt] = cardInfo;
     return {
       meta: "",
-      hoverMeta: `⏰️最后回复: ${lastReplyAt.trim()} ${lastReplyUser.trim()} 💬回复数: ${replyCount.trim()} 👁️浏览数: ${viewCount.trim()}`,
+      hoverMeta: `最后回复: ${lastReplyAt.trim()} ${lastReplyUser.trim()} 回复数: ${replyCount.trim()} 浏览数: ${viewCount.trim()}`,
       author: "",
       replyCount: replyCount.trim(),
       viewCount: viewCount.trim(),
@@ -7075,7 +7072,7 @@ function parseTopicMetaText(text) {
     const [, listedAt, viewCount, lastReplyUser] = searchInfo;
     return {
       meta: "",
-      hoverMeta: `⏰️时间: ${listedAt.trim()} 👁️浏览数: ${viewCount.trim()} 最后回复: ${lastReplyUser.trim()}`,
+      hoverMeta: `时间: ${listedAt.trim()} 浏览数: ${viewCount.trim()} 最后回复: ${lastReplyUser.trim()}`,
       author: "",
       replyCount: "",
       viewCount: viewCount.trim(),
@@ -7088,7 +7085,7 @@ function parseTopicMetaText(text) {
   const dateSummary = raw.match(/^(\d{4}-\d{1,2}-\d{1,2})(.+)$/);
   if (dateSummary && !/(?:最后回复|回复|回帖)/.test(raw)) {
     return {
-      meta: `📅日期: ${dateSummary[1].trim()} ✏️摘要: ${dateSummary[2].trim()}`,
+      meta: `日期: ${dateSummary[1].trim()} 摘要: ${dateSummary[2].trim()}`,
       author: "",
       replyCount: "",
       hasDetails: true
@@ -7164,7 +7161,7 @@ function parseStructuredTopicMeta(topic) {
     if (viewCount && replyCount && lastReplyUser && lastReplyAt) {
       return {
         meta: "",
-        hoverMeta: `⏰️最后回复: ${lastReplyAt} ${lastReplyUser} 💬回复数: ${replyCount} 👁️浏览数: ${viewCount}`,
+        hoverMeta: `最后回复: ${lastReplyAt} ${lastReplyUser} 回复数: ${replyCount} 浏览数: ${viewCount}`,
         author: "",
         replyCount,
         viewCount,
@@ -7192,9 +7189,9 @@ function parseStructuredTopicMeta(topic) {
       || "";
     if ((listedAt || tag) && viewCount && lastReplyUser) {
       const hoverMeta = [
-        tag ? `🏷️标签: ${tag}` : "",
-        listedAt ? `⏰️时间: ${listedAt}` : "",
-        `👁️浏览数: ${viewCount}`,
+        tag ? `标签: ${tag}` : "",
+        listedAt ? `时间: ${listedAt}` : "",
+        `浏览数: ${viewCount}`,
         `最后回复: ${lastReplyUser}`
       ].filter(Boolean).join(" ");
       return {
@@ -7521,6 +7518,7 @@ function getOwnMediaUrl(node) {
   const attrs = [
     "src",
     "href",
+    "data-cc98-lazy-src",
     "data-src",
     "data-original",
     "data-url",
@@ -7602,7 +7600,8 @@ function getExtensionAssetUrl(assetPath) {
 
 function isDarkComfortTheme() {
   return document.documentElement.dataset.cc98ComfortTone === "dark"
-    || DARK_THEME_IDS.has(lastSettings?.theme);
+    || (!document.documentElement.dataset.cc98ComfortTone
+      && globalThis.CC98RebornThemeCore.resolveTone(lastSettings) === "dark");
 }
 
 function getLocalAcEmojiFolder() {
@@ -7683,7 +7682,7 @@ function getNonDecorativeImageSrc(image) {
   if (!(image instanceof HTMLImageElement)) {
     return "";
   }
-  const src = makeAbsoluteCc98Url(getMediaUrl(image) || image.currentSrc || image.src || "");
+  const src = makeWebVpnCc98ResourceUrl(getMediaUrl(image) || image.currentSrc || image.src || "");
   return src && !isDecorativeFrameImageUrl(src) ? src : "";
 }
 
@@ -8362,6 +8361,7 @@ function markRebuiltEmojiImage(image, src = image?.src) {
 
 function markInlineEmojiContainers(root) {
   root.querySelectorAll("img.cc98-rebuild-inline-emoji").forEach((image) => {
+    if (isNativeMessageContentNode(image)) return;
     let parent = image.parentElement;
     while (parent && parent !== root && parent.childElementCount === 1 && cleanupPostText(parent.textContent) === "") {
       if (!/^(DIV|SPAN|P)$/i.test(parent.tagName)) {
@@ -8480,6 +8480,7 @@ function mergeEmojiOnlyParagraphRuns(root) {
     ...(root.querySelectorAll?.(".cc98-rebuild-post-body article, article") ?? [])
   ];
   [...new Set(articles)].forEach((article) => {
+    if (isNativeMessageContentNode(article)) return;
     let mergeTarget = null;
     [...article.children].forEach((child) => {
       if (!(child instanceof HTMLElement)) {
@@ -8624,6 +8625,10 @@ function stabilizeEmojiRendering(root = document) {
     if (!(image instanceof HTMLImageElement)) {
       return;
     }
+    if (isNativeMessageContentNode(image)) {
+      markNativeMessageEmojiImage(image);
+      return;
+    }
     const src = getMediaUrl(image) || image.currentSrc || image.src || "";
     if (!isEmojiImageUrl(src)) {
       return;
@@ -8641,6 +8646,7 @@ function isSkippablePostElement(node) {
   return node.matches([
     "script",
     "style",
+    ".cc98-ascii-decoration",
     "button",
     "input",
     "textarea",
@@ -8726,6 +8732,9 @@ function getDeferredImageCandidates(scope) {
 function createDeferredImageProxy(sourceControl, sourceRoot) {
   const button = createElement("button", "cc98-rebuild-hidden-image-button", "\u70b9\u51fb\u67e5\u770b\u56fe\u7247");
   button.type = "button";
+  if (revealedPostImageControls.get(sourceControl) === getRoutePageKey()) {
+    button.dataset.cc98ImageRevealed = "true";
+  }
 
   button.addEventListener("click", () => {
     if (button.dataset.status === "loading") {
@@ -8734,6 +8743,7 @@ function createDeferredImageProxy(sourceControl, sourceRoot) {
 
     const directSrc = makeWebVpnCc98ResourceUrl(button.dataset.cc98DirectImageSrc || "");
     if (directSrc) {
+      revealedPostImageControls.set(sourceControl, getRoutePageKey());
       const replacement = createContentImageFromUrl(directSrc, "");
       replacement.classList.add("cc98-rebuild-content-image");
       button.replaceWith(replacement);
@@ -8849,7 +8859,9 @@ function restoreDeferredImageControls(sourceRoot, clone) {
 
 function normalizeRichContentNode(root, options = {}) {
   const clone = root.cloneNode(true);
-  clone.querySelectorAll("script, style, button, input, textarea, select, [role='button'], .awardInfo, [class*='awardInfo'], [class*='AwardInfo']").forEach((node) => {
+  materializeCapturedLazySlots(clone);
+  normalizeFragmentedMarkdownImages(clone);
+  clone.querySelectorAll("script, style, .cc98-ascii-decoration, button, input, textarea, select, [role='button'], .awardInfo, [class*='awardInfo'], [class*='AwardInfo']").forEach((node) => {
     if (!isDeferredPostImageControl(node)) {
       node.remove();
     }
@@ -9485,23 +9497,24 @@ function extractCapturedPostMediaSources(rawContent) {
     return [];
   }
   const sources = [];
-  const seen = new Set();
   const append = (value, kind, alt = "") => {
     const src = normalizeCapturedMediaUrl(value);
-    const key = normalizeMediaKey(src);
-    if (!src || !key || seen.has(key)) {
+    if (!src) {
       return;
     }
     if (kind === "image" && isDecorativeFrameImageUrl(src)) {
       return;
     }
-    seen.add(key);
     sources.push({ src, alt: cleanupPostText(alt), kind, captured: true });
   };
   let ubbMatch;
-  const ubbMediaPattern = /\[(img|video)(?:=[^\]]*)?(?:\s+[^\]]*)?\]([\s\S]*?)\[\/\1\]/gi;
+  const ubbMediaPattern = /\[(img|video|upload)(?:=([^\]]*))?(?:\s+[^\]]*)?\]([\s\S]*?)\[\/\1\]/gi;
   while ((ubbMatch = ubbMediaPattern.exec(raw))) {
-    append(ubbMatch[2], ubbMatch[1].toLowerCase() === "video" ? "video" : "image");
+    const tag = ubbMatch[1].toLowerCase();
+    if (tag === "upload" && !/^(?:jpg|jpeg|png|gif|bmp|webp)(?:\s*,|$)/i.test((ubbMatch[2] || "").trim())) {
+      continue;
+    }
+    append(ubbMatch[3], tag === "video" ? "video" : "image");
   }
 
   let markdownMatch;
@@ -9520,16 +9533,40 @@ function extractCapturedPostMediaSources(rawContent) {
   return sources;
 }
 
+function materializeCapturedLazySlots(clone) {
+  // The native React lazy loader may never mount while its page is hidden.
+  // MAIN-world capture annotates each slot, so repeated URLs keep their positions.
+  clone.querySelectorAll(".lazyload-placeholder[data-cc98-lazy-src]").forEach((slot) => {
+    const src = normalizeCapturedMediaUrl(slot.getAttribute("data-cc98-lazy-src"));
+    if (!src || slot.closest(".hiddenImage")) {
+      return;
+    }
+    const image = createContentImageFromUrl(src, slot.getAttribute("data-cc98-lazy-alt") || "");
+    image.classList.add("cc98-rebuild-content-image");
+    slot.replaceWith(image);
+  });
+}
+
 function hydrateCapturedLazyMediaSlots(clone, mediaSources) {
   if (!(clone instanceof Element) || !mediaSources?.length) {
     return;
   }
-  const present = new Set([...clone.querySelectorAll("img, video, source")]
-    .map((node) => normalizeMediaKey(getMediaUrl(node) || node.currentSrc || node.src || ""))
-    .filter(Boolean));
+  const mediaKey = (src) => makeWebVpnCc98ResourceUrl(src).replace(/#.*$/, "");
+  const present = new Map();
+  clone.querySelectorAll("img, video, source").forEach((node) => {
+    if (node.matches("source") && node.closest("video[src]")) return;
+    const key = mediaKey(getMediaUrl(node) || node.currentSrc || node.src || "");
+    if (key) present.set(key, (present.get(key) || 0) + 1);
+  });
   const missing = mediaSources.filter((item) => {
-    const key = normalizeMediaKey(item.src);
-    return key && !present.has(key);
+    const key = mediaKey(item.src);
+    if (!key) return false;
+    const count = present.get(key) || 0;
+    if (count) {
+      present.set(key, count - 1);
+      return false;
+    }
+    return true;
   });
   if (!missing.length) {
     return;
@@ -9544,7 +9581,11 @@ function hydrateCapturedLazyMediaSlots(clone, mediaSources) {
     }
     if (slot.classList.contains("cc98-rebuild-hidden-image-button") && item.kind === "image") {
       slot.dataset.cc98DirectImageSrc = item.src;
-      present.add(normalizeMediaKey(item.src));
+      if (slot.dataset.cc98ImageRevealed === "true") {
+        const image = createContentImageFromUrl(item.src, item.alt);
+        image.classList.add("cc98-rebuild-content-image");
+        slot.replaceWith(image);
+      }
       sourceIndex += 1;
       return;
     }
@@ -9555,7 +9596,6 @@ function hydrateCapturedLazyMediaSlots(clone, mediaSources) {
       media.classList.add("cc98-rebuild-content-image");
     }
     slot.replaceWith(media);
-    present.add(normalizeMediaKey(item.src));
     sourceIndex += 1;
   });
 }
@@ -9563,7 +9603,7 @@ function hydrateCapturedLazyMediaSlots(clone, mediaSources) {
 function collectPostMediaSources(root) {
   const sources = [];
   const seen = new Set();
-  root.querySelectorAll("img, video, source, a[href], [style*='url('], [data-src], [data-original], [data-url], [data-img], [data-image], [data-full], [data-full-src], [data-file], [data-href]").forEach((node) => {
+  root.querySelectorAll("img, video, source, a[href], [style*='url('], [data-cc98-lazy-src], [data-src], [data-original], [data-url], [data-img], [data-image], [data-full], [data-full-src], [data-file], [data-href]").forEach((node) => {
     if (!(node instanceof Element) || node.closest('[class*="signature"], [class*="Signature"]')) {
       return;
     }
@@ -9745,12 +9785,13 @@ function ensurePostMediaCoverage(clone, originalSources) {
     return;
   }
 
+  const mediaKey = (src) => normalizeMediaKey(makeWebVpnCc98ResourceUrl(src));
   const present = new Set([...clone.querySelectorAll("img, video, source, .cc98-rebuild-hidden-image-button[data-cc98-direct-image-src]")]
-    .map((node) => normalizeMediaKey(
+    .map((node) => mediaKey(
       node.dataset?.cc98DirectImageSrc || getMediaUrl(node) || node.src
     ))
     .filter(Boolean));
-  const missing = originalSources.filter((item) => !present.has(normalizeMediaKey(item.src)));
+  const missing = originalSources.filter((item) => !present.has(mediaKey(item.src)));
   const imageMissing = missing.filter((item) => (
     !isDecorativeFrameImageUrl(item.src)
     && !isDownloadFileUrl(item.src)
@@ -9802,6 +9843,7 @@ function removePostChromeNodes(clone) {
   clone.querySelectorAll([
     "script",
     "style",
+    ".cc98-ascii-decoration",
     "button",
     "input",
     "textarea",
@@ -9830,6 +9872,114 @@ function removePostChromeNodes(clone) {
     if (!isDeferredPostImageControl(node)) {
       node.remove();
     }
+  });
+}
+
+function normalizeFragmentedMarkdownImages(root) {
+  if (!(root instanceof Element)) {
+    return;
+  }
+  // UBB quotes can contain Markdown whose URL was already rendered as an
+  // upload link/image. Match the surrounding text across inline DOM nodes,
+  // keeping the media node itself and never crossing quotes or literal code.
+  const parts = [];
+  const media = new Map();
+  let text = "";
+  const append = (value, node = null) => {
+    const start = text.length;
+    text += value;
+    if (node) parts.push({ node, start, end: text.length });
+  };
+  const walk = (node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      append(node.nodeValue || "", node);
+      return;
+    }
+    if (!(node instanceof Element)) {
+      return;
+    }
+    if (node.matches("pre, code, script, style, textarea, .ubb-code, .cc98-local-experimental-noubb")) {
+      append("\ufffd");
+      return;
+    }
+    let image = null;
+    let imageUrl = "";
+    if (node.matches("img")) {
+      image = node;
+    } else if (node.matches("a[href], picture")) {
+      const images = node.querySelectorAll("img");
+      const label = (node.textContent || "").trim();
+      if (images.length === 1 && (!label || /^(?:点击下载文件|下载文件|download(?: file)?)$/i.test(label))) {
+        image = images[0];
+      }
+      if (!images.length && node.matches("a[href]") && isProbablyPostImageUrl(node.getAttribute("href"))) {
+        const href = node.getAttribute("href");
+        if (!label || label === href || label === node.href || /^(?:点击下载文件|下载文件)$/i.test(label)) {
+          imageUrl = href;
+        }
+      }
+    }
+    const hiddenImage = node.matches(".cc98-rebuild-hidden-image-button, .hiddenImage")
+      && (node.hasAttribute("data-cc98-direct-image-src") || isDeferredPostImageControl(node));
+    if (image || imageUrl || hiddenImage) {
+      media.set(text.length, { node, image, imageUrl });
+      append("\ufffc");
+      return;
+    }
+    const boundary = node !== root && (node.matches("blockquote, p, li, td, th, br")
+      || node.classList.contains("cc98-rebuild-legacy-quote")
+      || isLegacyQuoteStyle(node.getAttribute("style"), ""));
+    if (boundary) append("\ufffd");
+    node.childNodes.forEach(walk);
+    if (boundary) append("\ufffd");
+  };
+  walk(root);
+  if (!text.includes("![")) return;
+
+  const edits = new Map();
+  const patterns = [
+    /!\[([^\]\n\ufffc\ufffd]*)\]\([ \t]*(?:<[ \t]*)?\ufffc(?:[ \t]*>)?(?:[ \t]+["'][^"'\n\ufffc\ufffd]*["'])?[ \t]*\)/g,
+    /!\[(?:img|image)?\]\([ \t]*\)[ \t]*\ufffc|\ufffc[ \t]*!\[(?:img|image)?\]\([ \t]*\)/gi
+  ];
+  patterns.forEach((pattern) => {
+    let match;
+    while ((match = pattern.exec(text))) {
+      const start = match.index;
+      const end = start + match[0].length;
+      // Escaped Markdown is intentional text, even when followed by an image.
+      const before = text.slice(0, start).match(/\\+$/)?.[0] || "";
+      if (before.length % 2 || text[start - 1] === "`") continue;
+      const item = media.get(start + match[0].indexOf("\ufffc"));
+      if (!item) continue;
+      if (!item.image && item.imageUrl) {
+        item.image = createContentImageFromUrl(item.imageUrl, match[1] || "");
+      }
+      parts.forEach((part) => {
+        if (part.end <= start || part.start >= end) return;
+        const ranges = edits.get(part.node) || [];
+        ranges.push([Math.max(0, start - part.start), Math.min(part.end, end) - part.start]);
+        edits.set(part.node, ranges);
+      });
+      if (item.node.matches("a") && item.image) {
+        // Drop the mistaken download card/icon, retaining picture sources.
+        const picture = item.image.closest("picture");
+        item.node.replaceWith(picture && item.node.contains(picture) ? picture : item.image);
+      }
+      if (item.image && match[1]) {
+        const alt = item.image.getAttribute("alt") || "";
+        const href = item.node.getAttribute("href") || "";
+        if (!alt || alt === href || alt === item.node.href || /^(?:点击下载文件|下载文件)$/i.test(alt)) {
+          item.image.alt = match[1];
+        }
+      }
+    }
+  });
+  edits.forEach((ranges, node) => {
+    const original = node.nodeValue || "";
+    const removed = new Uint8Array(original.length);
+    ranges.forEach(([start, end]) => removed.fill(1, start, end));
+    node.nodeValue = original.split("").filter((_character, index) => !removed[index]).join("");
+    if (!node.nodeValue) node.remove();
   });
 }
 
@@ -9898,16 +10048,16 @@ function forceLegacyQuoteStyle(node) {
   node.style.setProperty("box-sizing", "border-box", "important");
   node.style.setProperty("width", "100%", "important");
   node.style.setProperty("margin", "0.85em 0", "important");
-  node.style.setProperty("padding", "10px 17px", "important");
+  node.style.setProperty("padding", "var(--cc98-quote-padding, 10px 17px)", "important");
   node.style.setProperty("max-height", "800px", "important");
   node.style.setProperty("overflow-y", "auto", "important");
-  node.style.setProperty("border-width", "1px", "important");
-  node.style.setProperty("border-style", "solid", "important");
+  node.style.setProperty("border-width", "var(--cc98-quote-border-width, 1px)", "important");
+  node.style.setProperty("border-style", "var(--cc98-quote-border-style, solid)", "important");
   node.style.setProperty("border-color", "var(--cc98-comfort-border, rgba(148, 163, 184, 0.35))", "important");
-  node.style.setProperty("border-left-width", "3px", "important");
-  node.style.setProperty("border-left-style", "solid", "important");
-  node.style.setProperty("border-left-color", "var(--cc98-comfort-accent, rgb(126, 188, 224))", "important");
-  node.style.setProperty("border-radius", "8px", "important");
+  node.style.setProperty("border-left-width", "var(--cc98-quote-left-width, 3px)", "important");
+  node.style.setProperty("border-left-style", "var(--cc98-quote-border-style, solid)", "important");
+  node.style.setProperty("border-left-color", "var(--cc98-comfort-secondary, rgb(126, 188, 224))", "important");
+  node.style.setProperty("border-radius", "var(--cc98-quote-radius, 8px)", "important");
   node.style.setProperty("background", "var(--cc98-rebuild-legacy-quote-bg, var(--cc98-comfort-surface-2, rgb(245, 250, 255)))", "important");
   node.style.setProperty("background-color", "var(--cc98-rebuild-legacy-quote-bg, var(--cc98-comfort-surface-2, rgb(245, 250, 255)))", "important");
   node.style.setProperty("background-image", "none", "important");
@@ -10080,6 +10230,7 @@ function hasRenderedPostContent(root) {
 
 function sanitizeClonedPostContent(contentNode, options = {}) {
   const clone = contentNode.cloneNode(true);
+  materializeCapturedLazySlots(clone);
   repairWebVpnExternalProxyLinks(clone);
   if (options.markdown) {
     markMarkdownPostContent(clone);
@@ -10092,10 +10243,12 @@ function sanitizeClonedPostContent(contentNode, options = {}) {
   rewriteLegacyQuoteInlineStyles(clone);
   materializeAudioPlayers(clone, contentNode);
   materializePostMedia(clone);
+  normalizeFragmentedMarkdownImages(clone);
   normalizePostContentClone(clone);
   parseInlineUbbTextNodes(clone);
   materializeAudioPlayers(clone, contentNode);
   materializePostMedia(clone);
+  normalizeFragmentedMarkdownImages(clone);
   rewriteLegacyQuoteInlineStyles(clone);
   classifyPostImages(clone);
   stabilizePostQuoteBlocks(clone);
@@ -10338,7 +10491,13 @@ function getPostFloorNumber(post, index) {
 function isHotPostNode(post) {
   const id = post?.id || post?.getAttribute?.("data-id") || "";
   return /^hot[_-]\d+/i.test(id)
-    || Boolean(post?.querySelector?.('img[src*="/hot.png"], img[src$="hot.png"], img[src*="hot"]'));
+    || [...post?.querySelectorAll?.("img[src]") || []].some((image) => {
+      try {
+        return /\/hot\.(?:png|gif|svg)$/i.test(new URL(image.getAttribute("src"), location.href).pathname);
+      } catch {
+        return false;
+      }
+    });
 }
 
 function isLightDefaultAvatarUrl(src) {
@@ -10649,139 +10808,147 @@ function getOriginalPosterIdentityFromRoot(root) {
   return getPostIdentityFromNode(firstFloor || replies[0]);
 }
 
-function readOriginalPosterIdentityFromStaticHtml(html) {
-  if (!html) {
-    return "";
+function readFirstPagePrewarmData(root) {
+  // Frame nodes belong to a different JavaScript realm. Import only detached
+  // reply trees so existing native parsers work without touching either page.
+  const snapshot = document.createElement("div");
+  for (const reply of root?.querySelectorAll(".reply") || []) {
+    if (!reply.closest("#cc98-comfort-app")) {
+      snapshot.append(document.importNode(reply, true));
+    }
   }
-  const doc = new DOMParser().parseFromString(html, "text/html");
-  return getOriginalPosterIdentityFromRoot(doc);
+  return {
+    identity: getOriginalPosterIdentityFromRoot(snapshot),
+    fingerprints: getHotReplyFingerprintsFromRoot(snapshot)
+  };
 }
 
-function fetchOriginalPosterIdentityFromHtml(topicInfo) {
-  return fetch(buildTopicPageHref(topicInfo.topicId, 1), {
-    credentials: "include",
-    cache: "no-store"
-  })
-    .then((response) => response.ok ? response.text() : "")
-    .then((html) => {
-      const doc = new DOMParser().parseFromString(html || "", "text/html");
-      cacheHotReplyFingerprintsFromRoot(topicInfo.topicId, doc);
-      return getOriginalPosterIdentityFromRoot(doc);
-    })
-    .catch(() => "");
+async function fetchFirstPagePrewarmData(topicInfo, signal) {
+  // Static pages can be read without running a second forum application.
+  // A stalled request must not prevent the SPA fallback from being tried.
+  const htmlController = new AbortController();
+  const abortHtml = () => htmlController.abort();
+  signal.addEventListener("abort", abortHtml, { once: true });
+  const htmlTimeout = window.setTimeout(abortHtml, 3000);
+  try {
+    const response = await fetch(buildTopicPageHref(topicInfo.topicId, 1), {
+      credentials: "include", cache: "no-store", signal: htmlController.signal
+    });
+    const responseInfo = getTopicRouteInfo(response.url);
+    if (response.ok && responseInfo?.topicId === topicInfo.topicId && responseInfo.current === 1) {
+      const html = await response.text();
+      if (signal.aborted) return null;
+      const data = readFirstPagePrewarmData(new DOMParser().parseFromString(html, "text/html"));
+      if (data.identity) return data;
+    }
+  } catch {
+    // An SPA shell, blocked request or timeout falls back to a hidden frame.
+  } finally {
+    window.clearTimeout(htmlTimeout);
+    signal.removeEventListener("abort", abortHtml);
+  }
+  if (signal.aborted) return null;
+  return fetchFirstPagePrewarmDataFromRenderedPage(topicInfo, signal);
 }
 
-function fetchOriginalPosterIdentityFromRenderedPage(topicInfo) {
+function fetchFirstPagePrewarmDataFromRenderedPage(topicInfo, signal) {
   return new Promise((resolve) => {
     const host = document.body || document.documentElement;
-    if (!host) {
-      resolve("");
+    if (!host || signal.aborted) {
+      resolve(null);
       return;
     }
-
     const iframe = document.createElement("iframe");
     iframe.setAttribute("aria-hidden", "true");
     iframe.setAttribute("tabindex", "-1");
     iframe.setAttribute("data-cc98-reborn-op-prefetch", "true");
-    iframe.title = "CC98 original poster prefetch";
+    iframe.setAttribute("sandbox", "allow-scripts allow-same-origin");
+    iframe.setAttribute("allow", "autoplay 'none'");
+    iframe.title = "CC98 first page background prewarm";
     Object.assign(iframe.style, {
-      position: "fixed",
-      left: "-10000px",
-      top: "-10000px",
-      width: "1px",
-      height: "1px",
-      opacity: "0",
-      pointerEvents: "none",
-      visibility: "hidden",
-      border: "0"
+      position: "fixed", left: "-10000px", top: "-10000px",
+      width: "1px", height: "1px", opacity: "0",
+      pointerEvents: "none", visibility: "hidden", border: "0"
     });
-
     let settled = false;
-    let pollTimer = 0;
-    let timeoutTimer = 0;
-
-    const finish = (identity = "") => {
-      if (settled) {
-        return;
-      }
+    const finish = (data = null) => {
+      if (settled) return;
       settled = true;
       window.clearInterval(pollTimer);
       window.clearTimeout(timeoutTimer);
+      signal.removeEventListener("abort", abort);
       iframe.remove();
-      resolve(identity);
+      resolve(data);
     };
-
-    const readRenderedIdentity = () => {
-      let doc = null;
-      try {
-        doc = iframe.contentDocument || iframe.contentWindow?.document || null;
-      } catch {
-        return "";
-      }
-      cacheHotReplyFingerprintsFromRoot(topicInfo.topicId, doc);
-      return getOriginalPosterIdentityFromRoot(doc);
-    };
-
+    const abort = () => finish();
     const tryRead = () => {
-      const identity = readRenderedIdentity();
-      if (identity) {
-        finish(identity);
+      try {
+        const frameInfo = getTopicRouteInfo(iframe.contentWindow.location.href);
+        if (frameInfo?.topicId !== topicInfo.topicId || frameInfo.current !== 1) return;
+        const data = readFirstPagePrewarmData(iframe.contentDocument);
+        if (data.identity) finish(data);
+      } catch {
+        // Login redirects and cross-origin frame policies are best-effort.
       }
     };
-
-    iframe.addEventListener("load", () => {
-      tryRead();
-      pollTimer = window.setInterval(tryRead, 180);
-    }, { once: true });
-
-    timeoutTimer = window.setTimeout(() => finish(""), 6500);
+    const pollTimer = window.setInterval(tryRead, 180);
+    const timeoutTimer = window.setTimeout(() => finish(), 6500);
+    signal.addEventListener("abort", abort, { once: true });
+    iframe.addEventListener("load", tryRead);
     iframe.src = `${buildTopicPageHref(topicInfo.topicId, 1)}#cc98-reborn-op-probe`;
     host.appendChild(iframe);
   });
 }
 
-async function fetchOriginalPosterIdentityFromFirstPage(topicInfo) {
-  const staticIdentity = await fetchOriginalPosterIdentityFromHtml(topicInfo);
-  if (staticIdentity) {
-    return staticIdentity;
+function refreshFirstPagePostMarkers() {
+  if (!lastSettings?.rebuildUi) return;
+  const cards = new Map([...document.querySelectorAll("#cc98-comfort-app .cc98-rebuild-post")]
+    .map((card) => [card.dataset.itemKey, card]));
+  // Patch only markers. Rebuilding the page here would disturb selection,
+  // focused editors, scroll position and open controls while the reader types.
+  for (const item of getPostItems()) {
+    const card = cards.get(`post:${item.id}`);
+    if (!card) continue;
+    const line = card.querySelector(".cc98-rebuild-post-user-line");
+    const badge = line?.querySelector(".cc98-rebuild-op-badge");
+    if (item.isOriginalPoster && line && !badge) {
+      line.append(createElement("span", "cc98-rebuild-op-badge", "楼主"));
+    } else if (!item.isOriginalPoster) {
+      badge?.remove();
+    }
+    card.classList.toggle("cc98-rebuild-hot-highlight", Boolean(item.isHot || item.isHotHighlight));
   }
-  return fetchOriginalPosterIdentityFromRenderedPage(topicInfo);
 }
 
 function scheduleOriginalPosterIdentityPrefetch(topicInfo) {
-  if (!topicInfo?.topicId) {
+  if (!isTopicFirstPagePrewarmEnabled(topicInfo)
+    || getTopicRouteInfo()?.topicId !== topicInfo.topicId
+    || hasFreshFirstPagePrevisit(topicInfo)
+    || originalPosterIdentityPrefetches.has(topicInfo.topicId)) {
     return;
   }
-  const hasOriginalPoster = Boolean(getCachedOriginalPosterIdentity(topicInfo.topicId));
-  const hasHotReplies = readCachedHotReplyFingerprints(topicInfo.topicId).length > 0;
-  if (hasOriginalPoster && hasHotReplies) {
-    return;
-  }
-  if (originalPosterIdentityPrefetches.has(topicInfo.topicId)) {
-    return;
-  }
-  const promise = fetchOriginalPosterIdentityFromFirstPage(topicInfo)
-    .then((identity) => {
-      let shouldRefresh = false;
-      if (identity) {
-        setCachedOriginalPosterIdentity(topicInfo.topicId, identity);
-        shouldRefresh = true;
-      }
-      if (!hasHotReplies && readCachedHotReplyFingerprints(topicInfo.topicId).length > 0) {
-        shouldRefresh = true;
-      }
-      if (shouldRefresh) {
-        scheduleRebuild();
-        setTimeout(scheduleSync, 180);
-      }
+  const task = { controller: new AbortController(), owner: getCurrentReadLaterUserId() };
+  originalPosterIdentityPrefetches.set(topicInfo.topicId, task);
+  task.promise = fetchFirstPagePrewarmData(topicInfo, task.controller.signal)
+    .then((data) => {
+      if (task.controller.signal.aborted || task.owner !== getCurrentReadLaterUserId()) return;
+      // Record attempts even on failure, so a topic with no hot replies or an
+      // unavailable first page does not get re-requested on every DOM update.
+      markFreshFirstPagePrevisit(topicInfo);
+      if (!data || !isTopicFirstPagePrewarmEnabled()
+        || getTopicRouteInfo()?.topicId !== topicInfo.topicId) return;
+      if (data.identity) setCachedOriginalPosterIdentity(topicInfo.topicId, data.identity);
+      mergeCachedHotReplyFingerprints(topicInfo.topicId, data.fingerprints);
+      refreshFirstPagePostMarkers();
     })
     .catch(() => {
-      // If the first page cannot be fetched, simply avoid showing a false OP badge.
+      // Background reads must never interrupt the foreground page.
     })
     .finally(() => {
-      originalPosterIdentityPrefetches.delete(topicInfo.topicId);
+      if (originalPosterIdentityPrefetches.get(topicInfo.topicId) === task) {
+        originalPosterIdentityPrefetches.delete(topicInfo.topicId);
+      }
     });
-  originalPosterIdentityPrefetches.set(topicInfo.topicId, promise);
 }
 
 function markOriginalPosterItems(items) {
@@ -11177,7 +11344,25 @@ function renderPostAwardTable(rows, options = {}) {
   }
   const section = createElement("section", "cc98-rebuild-awards");
   const headerRow = createElement("div", "cc98-rebuild-awards-header");
-  headerRow.append(createElement("div", "cc98-rebuild-awards-title", "\u8bc4\u5206\u8bb0\u5f55"));
+  const title = createElement("div", "cc98-rebuild-awards-title", "\u8bc4\u5206\u8bb0\u5f55");
+  const total = createElement("span", "cc98-rebuild-action-delta cc98-rebuild-awards-total");
+  total.title = "风评合计";
+  const updateTotal = (delta) => {
+    total.hidden = !Number.isFinite(delta);
+    if (total.hidden) return;
+    total.textContent = formatAwardDelta(delta);
+    total.dataset.awardDelta = delta > 0 ? "positive" : delta < 0 ? "negative" : "zero";
+    total.setAttribute("aria-label", `风评合计 ${total.textContent}`);
+  };
+  // Collapsed native tables contain only a subset of the award records.
+  // Use a previously known full total until all rows have been read.
+  const cachedDelta = postAwardDeltaCache.get(options.awardKey);
+  const actionDelta = (options.actions || []).find((action) => getActionVoteKind(action) === "score"
+    && Number.isFinite(action.awardDelta))?.awardDelta;
+  updateTotal(options.expanded || !options.collapsible ? getAwardReputationDelta(rows)
+    : Number.isFinite(cachedDelta) ? cachedDelta : actionDelta);
+  title.append(total);
+  headerRow.append(title);
   let toggleButton = null;
   if (options.collapsible && options.sourcePost instanceof Element) {
     toggleButton = createButton(
@@ -11206,8 +11391,9 @@ function renderPostAwardTable(rows, options = {}) {
             toggleButton.disabled = false;
             toggleButton.classList.remove("is-pending");
           }
-          if (nextState.expanded) {
+          if (nextState.expanded || !nextState.collapsible) {
             syncAwardDeltaActions(options.actions, nextState.rows, options.awardKey);
+            updateTotal(getAwardReputationDelta(nextState.rows));
           }
         };
         [40, 120, 260, 520, 900, 1400].forEach((delay) => {
@@ -11783,13 +11969,14 @@ function normalizePinnedBoardHref(href) {
     return "";
   }
   try {
-    return new URL(value, location.origin).href.replace(/\/$/, "");
+    return makeAbsoluteCc98Url(value).replace(/\/$/, "");
   } catch {
     return value.replace(/\/$/, "");
   }
 }
 
 function readPinnedBoardHrefs() {
+  if (pinnedBoardHrefsCache) return pinnedBoardHrefsCache;
   try {
     const value = JSON.parse(localStorage.getItem(PINNED_BOARDS_STORAGE_KEY) || "[]");
     return Array.isArray(value)
@@ -11800,12 +11987,28 @@ function readPinnedBoardHrefs() {
   }
 }
 
+function hydratePinnedBoardStorage() {
+  if (pinnedBoardStorageLoading || pinnedBoardHrefsCache) return;
+  pinnedBoardStorageLoading = true;
+  const legacy = readPinnedBoardHrefs();
+  chrome.storage.local.get(PINNED_BOARDS_STORAGE_KEY, (result) => {
+    pinnedBoardStorageLoading = false;
+    if (chrome.runtime.lastError) return;
+    if (pinnedBoardHrefsCache) return;
+    const stored = result?.[PINNED_BOARDS_STORAGE_KEY];
+    writePinnedBoardHrefs(Array.isArray(stored) ? stored : legacy);
+    if (getPageKind() === "boards") scheduleRebuild();
+  });
+}
+
 function writePinnedBoardHrefs(hrefs) {
+  pinnedBoardHrefsCache = [...new Set(hrefs.map(normalizePinnedBoardHref).filter(Boolean))];
   try {
-    localStorage.setItem(PINNED_BOARDS_STORAGE_KEY, JSON.stringify([...new Set(hrefs.map(normalizePinnedBoardHref).filter(Boolean))]));
+    localStorage.setItem(PINNED_BOARDS_STORAGE_KEY, JSON.stringify(pinnedBoardHrefsCache));
   } catch {
     // Board pins are a local convenience; ignore storage failures.
   }
+  chrome.storage.local.set({ [PINNED_BOARDS_STORAGE_KEY]: pinnedBoardHrefsCache });
 }
 
 function togglePinnedBoard(board) {
@@ -11850,6 +12053,13 @@ function getBoardPageData() {
   const followButton = [...head.querySelectorAll("button")]
     .find((button) => button.textContent?.includes("关注"));
   const postTopicLink = getFirstLink(root ?? document, '.board-head-bar a[href*="/editor/postTopic/"]');
+  const voteTopicLink = getFirstLink(root ?? document, '.board-head-bar a[href*="/editor/postVoteTopic/"]');
+  const composeButtons = [...(root ?? document).querySelectorAll(".board-head-bar button, .board-head-body button.board-head-button")]
+    .filter(control => !control.closest("#cc98-comfort-app"));
+  const nativeComposeAction = (text) => {
+    const control = composeButtons.find(button => cleanupPostText(button.textContent) === text);
+    return control ? { text, control } : null;
+  };
   const adAnchor = [...(root ?? document).querySelectorAll(".board-head-bar a[href]")]
     .find((link) => link.querySelector("img"));
   const adLink = adAnchor ? { href: adAnchor.href } : null;
@@ -11869,7 +12079,8 @@ function getBoardPageData() {
     stats: getBoardPageStats(head),
     notice,
     followAction: followButton ? { text: followButton.textContent?.trim() || "关注", control: followButton } : null,
-    postTopic: postTopicLink,
+    postTopic: postTopicLink || nativeComposeAction("发主题"),
+    postVoteTopic: voteTopicLink || nativeComposeAction("发投票"),
     ad: adImage ? { image: adImage, href: adLink?.href || "" } : null,
     filters,
     footerActions
@@ -13378,6 +13589,8 @@ function renderTopicCard(item) {
         item.rankMovementAnimated ? "is-animated" : ""
       ].filter(Boolean).join(" ");
       const motion = createElement("span", motionClass, motionText);
+      motion.dataset.cc98AsciiRankLabel = item.rankMovement === "new"
+        ? "[NEW]" : `[${item.rankMovement === "up" ? "+" : "-"}${item.rankDelta || 0}]`;
       const motionLabel = item.rankMovement === "up"
         ? `\u6392\u540d\u4e0a\u5347 ${item.rankDelta || 0}`
         : (item.rankMovement === "down" ? `\u6392\u540d\u4e0b\u964d ${item.rankDelta || 0}` : "\u65b0\u589e\u70ed\u95e8");
@@ -13581,6 +13794,9 @@ function renderPostAuthorCard(item) {
     ? createLink("cc98-rebuild-post-author-card-name", item.user, item.userHref)
     : createElement("strong", "cc98-rebuild-post-author-card-name", item.user);
   identity.append(name);
+  globalThis.CC98RebornUserNotes?.decorateAuthor(identity, {
+    uid: item.uid, name: item.user, anonymous: Boolean(item.anonymousCode)
+  });
   if (item.authorCard.gender) {
     identity.append(createElement(
       "span",
@@ -13649,7 +13865,7 @@ function renderPostCard(item) {
   let authorPopover = null;
   if (item.avatar) {
     const avatar = createElement("img", "cc98-rebuild-avatar");
-    avatar.src = item.avatar;
+    avatar.src = makeWebVpnCc98ResourceUrl(item.avatar);
     avatar.alt = "";
     if (isLightDefaultAvatarUrl(item.avatar)) {
       avatar.classList.add("cc98-rebuild-avatar-light-default");
@@ -13683,6 +13899,9 @@ function renderPostCard(item) {
   } else {
     userLine.append(createElement("span", "cc98-rebuild-post-user", displayUser));
   }
+  globalThis.CC98RebornUserNotes?.decorateAuthor(userLine, {
+    uid: item.uid, name: item.user, anonymous: Boolean(item.anonymousCode)
+  });
   if (item.isOriginalPoster) {
     userLine.append(createElement("span", "cc98-rebuild-op-badge", "\u697c\u4e3b"));
   }
@@ -13748,7 +13967,9 @@ function renderPostCard(item) {
   }
 
   const hasViewCount = item.viewCount !== undefined && item.viewCount !== null && item.viewCount !== "";
-  if (item.publishedAt || item.editedAt || hasViewCount || item.actions?.length) {
+  const canViewConversation = !item.isHot && Number.isFinite(floor) && floor > 0
+    && Boolean(globalThis.CC98RebornConversation && getTopicPageInfo());
+  if (item.publishedAt || item.editedAt || hasViewCount || item.actions?.length || canViewConversation) {
     const footer = createElement("div", "cc98-rebuild-post-footer");
     if (item.publishedAt || item.editedAt || hasViewCount) {
       const metaRow = createElement("div", "cc98-rebuild-post-meta-row");
@@ -13768,12 +13989,33 @@ function renderPostCard(item) {
       }
       footer.append(metaRow);
     }
-    if (item.actions?.length) {
+    if (item.actions?.length || canViewConversation) {
       const actionWrap = createElement("div", "cc98-rebuild-post-actions");
-      item.actions.forEach((action) => {
-        actionWrap.append(renderProxyControl(action));
+      let voteCapsule = null;
+      (item.actions || []).forEach((action) => {
+        const control = renderPostFooterAction(action);
+        const kind = getActionVoteKind(action);
+        if (kind === "like" || kind === "dislike") {
+          if (!voteCapsule) {
+            voteCapsule = createElement("div", "cc98-rebuild-vote-capsule");
+            voteCapsule.setAttribute("role", "group");
+            voteCapsule.setAttribute("aria-label", "赞和踩");
+            actionWrap.append(voteCapsule);
+          }
+          if (kind === "like") voteCapsule.prepend(control);
+          else voteCapsule.append(control);
+        } else {
+          actionWrap.append(control);
+        }
       });
-      item.actions.forEach(enforceVoteGroupMutualExclusion);
+      if (canViewConversation) {
+        const conversation = createElement("button", "cc98-rebuild-mini-action cc98-rebuild-conversation-action", "查看对话");
+        conversation.type = "button";
+        setPostFooterActionIcon(conversation, "查看对话");
+        conversation.addEventListener("click", () => globalThis.CC98RebornConversation.open(item, conversation));
+        actionWrap.append(conversation);
+      }
+      (item.actions || []).forEach(enforceVoteGroupMutualExclusion);
       footer.append(actionWrap);
     }
     card.append(footer);
@@ -13857,6 +14099,19 @@ function renderPostPager() {
     pager.append(shareButton);
   }
   const favoriteAction = topicActions.favorite;
+  if (globalThis.CC98RebornTopicSearch) {
+    const search = createButton("cc98-rebuild-pager-action cc98-topic-search-entry", "全文搜索", event => {
+      event.preventDefault();
+      const info = getTopicPageInfo();
+      if (!info || info.topicId !== search.dataset.topicId) {
+        showRebuiltTransientToast(search, "当前页面仍在加载，请稍后搜索。");
+        return;
+      }
+      globalThis.CC98RebornTopicSearch.open(info, search);
+    });
+    search.dataset.topicId = pageInfo.topicId;
+    pager.append(search);
+  }
   if (favoriteAction) {
     const favoriteButton = renderProxyControl(favoriteAction);
     favoriteButton.classList.add("cc98-rebuild-pager-action", "cc98-rebuild-topic-favorite-action");
@@ -13986,10 +14241,10 @@ function renderBoardTopicCard(item) {
     meta.append(item.userHref ? createLink("cc98-rebuild-muted", `作者: ${item.user}`, item.userHref) : createElement("span", "cc98-rebuild-muted", `作者: ${item.user}`));
   }
   if (item.viewCount) {
-    meta.append(createElement("span", "cc98-rebuild-muted", `👁️点击: ${item.viewCount}`));
+    meta.append(createElement("span", "cc98-rebuild-muted", `点击: ${item.viewCount}`));
   }
   if (item.replyCount) {
-    meta.append(createElement("span", "cc98-rebuild-muted", `💬回复: ${item.replyCount}`));
+    meta.append(createElement("span", "cc98-rebuild-muted", `回复: ${item.replyCount}`));
   }
   if (item.lastReplyUser || item.lastReplyAt) {
     const lastText = `最后回复: ${[item.lastReplyUser, item.lastReplyAt].filter(Boolean).join(" / ")}`;
@@ -14052,12 +14307,15 @@ function renderBoardPage(app) {
   }
 
   const toolbar = createElement("section", "cc98-rebuild-board-toolbar");
-  if (data.postTopic?.href) {
-    toolbar.append(createLink(
-      "cc98-rebuild-action cc98-rebuild-board-post-topic-action",
-      "发主题",
-      data.postTopic.href
-    ));
+  for (const [action, label, className] of [
+    [data.postTopic, "发主题", "cc98-rebuild-board-post-topic-action"],
+    [data.postVoteTopic, "发投票", "cc98-rebuild-board-post-vote-action"]
+  ]) {
+    if (!action) continue;
+    const control = action.href ? createLink("", label, action.href) : renderProxyControl(action);
+    control.classList.add("cc98-rebuild-action", className);
+    if (control instanceof HTMLButtonElement) control.disabled = Boolean(action.control?.matches(":disabled, [disabled], [aria-disabled='true']"));
+    toolbar.append(control);
   }
   data.filters.forEach((filter) => toolbar.append(renderProxyControl(filter)));
   app.append(toolbar);
@@ -14102,9 +14360,10 @@ function restoreNativeNode(node) {
   if (!node) {
     return;
   }
-  if (node.dataset?.cc98EmbeddedBlacklistHidden === "true") {
+  if (node.dataset?.cc98EmbeddedBlacklistHidden === "true" || node.dataset?.cc98EmbeddedSettingsHidden === "true") {
     node.hidden = false;
     delete node.dataset.cc98EmbeddedBlacklistHidden;
+    delete node.dataset.cc98EmbeddedSettingsHidden;
   }
   if (node.classList?.contains("cc98-rebuild-native-vote")) {
     node.querySelectorAll?.(".cc98-rebuild-native-vote-button").forEach((button) => {
@@ -14123,7 +14382,8 @@ function restoreNativeNode(node) {
     delete node.dataset.followLabel;
   }
   if (node.classList?.contains("cc98-rebuild-native-user-nav")) {
-    node.querySelectorAll?.(".cc98-rebuild-blacklist-nav-entry").forEach((entry) => {
+    delete node.dataset.cc98SettingsOpen;
+    node.querySelectorAll?.(".cc98-rebuild-blacklist-nav-entry, .cc98-rebuild-settings-nav-entry").forEach((entry) => {
       const parent = entry.parentElement;
       entry.remove();
       if (parent instanceof HTMLLIElement && !cleanupPostText(parent.textContent) && !parent.children.length) {
@@ -14190,6 +14450,7 @@ function isEditorAuxiliarySubmitControl(control) {
     return true;
   }
   if (control.matches("#post-topic-changeMode, .changeEditor, .cc98-rebuild-markdown-entry")
+    || control.matches("[data-cc98-vote-action]")
     || Boolean(control.closest(".react-mde"))) {
     return true;
   }
@@ -14467,14 +14728,16 @@ function isNativeEditorInsideReactRoot(editor) {
 
 function getEditorPageData() {
   const editor = document.querySelector(".createTopic");
-  const isEdit = /\/editor\/edit\/\d+/i.test(location.pathname)
-    || Boolean(editor && /编辑/.test(cleanupPostText(editor.textContent)));
-  const breadcrumbLinks = [...(editor?.querySelectorAll(".row:first-child a[href]") ?? [])]
+  const isVote = /\/editor\/postVoteTopic\/\d+/i.test(getCurrentCc98RoutePath())
+    || Boolean(editor?.querySelector('input[name="voteItem"]'));
+  const isEdit = !isVote && (/\/editor\/edit\/\d+/i.test(location.pathname)
+    || Boolean(editor && /编辑/.test(cleanupPostText(editor.textContent))));
+  const breadcrumbLinks = [...(editor?.querySelectorAll(".row:first-child a[href], .cc98-rebuild-editor-breadcrumb a[href]") ?? [])]
     .map((link) => ({ text: link.textContent?.trim() ?? "", href: link.href }))
     .filter((item) => item.text);
   const board = [...breadcrumbLinks].reverse().find((item) => /\/board\/\d+/i.test(item.href));
   const titleInput = editor?.querySelector(".createTopicTitle input");
-  const editorHeading = [...(editor?.querySelectorAll(".row:first-child div") ?? [])]
+  const editorHeading = [...(editor?.querySelectorAll(".row:first-child div, .cc98-rebuild-editor-breadcrumb div") ?? [])]
     .map((node) => cleanupPostText(node.textContent))
     .reverse()
     .find((text) => /编辑|发表|回复/.test(text));
@@ -14483,8 +14746,8 @@ function getEditorPageData() {
     editor,
     board,
     isEdit,
-    pageTitle: isEdit ? (editorHeading || "编辑帖子") : "发表主题",
-    modeLabel: isEdit ? "Edit" : "Compose",
+    pageTitle: isVote ? "发表投票主题" : isEdit ? (editorHeading || "编辑帖子") : "发表主题",
+    modeLabel: isVote ? "Poll" : isEdit ? "Edit" : "Compose",
     titlePlaceholder: titleInput?.getAttribute("placeholder") || titleInput?.value || (isEdit ? "正在编辑已有内容" : "请输入标题"),
     submitLabel
   };
@@ -15158,10 +15421,11 @@ function getNativeEditorDraftKey(editor) {
       || "";
     return `${EDITOR_DRAFT_STORAGE_PREFIX}reply:${normalizeEditorDraftKeyPart(topicId || getRoutePageKey())}`;
   }
-  const boardId = location.pathname.match(/\/editor\/postTopic\/(\d+)/i)?.[1]
+  const boardId = getCurrentCc98RoutePath().match(/\/editor\/(?:postTopic|postVoteTopic)\/(\d+)/i)?.[1]
     || editor.querySelector('a[href*="/board/"]')?.getAttribute("href")?.match(/\/board\/(\d+)/i)?.[1]
     || "";
-  return `${EDITOR_DRAFT_STORAGE_PREFIX}post:${normalizeEditorDraftKeyPart(boardId || getRoutePageKey())}`;
+  const isVote = /\/editor\/postVoteTopic\//i.test(getCurrentCc98RoutePath()) || Boolean(editor.querySelector('input[name="voteItem"]'));
+  return `${EDITOR_DRAFT_STORAGE_PREFIX}${isVote ? "vote" : "post"}:${normalizeEditorDraftKeyPart(boardId || getRoutePageKey())}`;
 }
 
 function getNativeEditorDraftSnapshot(editor) {
@@ -19348,7 +19612,11 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
       return;
     }
     event.preventDefault();
-    restoreProfileSignatureWysiwygRange(editor, visual);
+    // Moving between table cells can change the live caret before the saved
+    // toolbar range catches up. Paste must keep that current selection.
+    if (!getProfileSignatureWysiwygRange(visual)) {
+      restoreProfileSignatureWysiwygRange(editor, visual);
+    }
     document.execCommand("insertText", false, plainText);
     rememberProfileSignatureWysiwygRange(editor, visual);
     syncFromVisual(false);
@@ -19426,11 +19694,38 @@ function stabilizeNativeDualUbbEditor(editor) {
   createNativeDualUbbEditor(editor, ubbEditor, textarea);
 }
 
+function stabilizeNativeVoteEditor(editor) {
+  editor.querySelectorAll(".createTopicTitle").forEach(row => {
+    row.classList.toggle("cc98-rebuild-vote-settings", Boolean(row.querySelector('input[name="expiredDays"], input[name="maxVoteCount"]')));
+    const option = row.querySelector('input[name="voteItem"]');
+    row.classList.toggle("cc98-rebuild-vote-option", Boolean(option));
+    if (option) {
+      const label = cleanupPostText(row.querySelector(".createTopicListName")?.textContent);
+      option.setAttribute("aria-label", label || "投票选项");
+      row.querySelectorAll("button").forEach(button => {
+        button.dataset.cc98VoteAction = "remove";
+        button.title = `删除${label || "投票选项"}`;
+        button.setAttribute("aria-label", button.title);
+      });
+    }
+  });
+  editor.querySelectorAll('input[name="expiredDays"], input[name="maxVoteCount"]').forEach(input => {
+    input.setAttribute("aria-label", input.name === "expiredDays" ? "投票有效天数" : "最多可投数量");
+  });
+  editor.querySelectorAll("button.hiddenImage").forEach(button => {
+    if (!cleanupPostText(button.textContent).startsWith("添加选项")) return;
+    button.dataset.cc98VoteAction = "add";
+    button.classList.add("cc98-rebuild-vote-add");
+  });
+}
+
 function stabilizeNativeEditor(editor) {
   if (!editor) {
     return;
   }
   editor.classList.add("cc98-rebuild-native-editor");
+  [...editor.children].find(child => child.matches(".row") && child.querySelector('a[href*="/board/"]'))?.classList.add("cc98-rebuild-editor-breadcrumb");
+  stabilizeNativeVoteEditor(editor);
   ensureNativeEditorDraftControls(editor);
   labelEditorToolbarButtons(editor);
   labelEditorToolbarButtonsWithUnicode(editor);
@@ -19814,7 +20109,7 @@ function captureMessageWindowScrollState(root = document) {
     }));
 }
 
-function restoreMessageWindowScrollState(state, root = document) {
+function restoreMessageWindowScrollState(state, root = document, pagePosition = null) {
   if (!Array.isArray(state) || !state.length) {
     return;
   }
@@ -19830,6 +20125,7 @@ function restoreMessageWindowScrollState(state, root = document) {
         node.scrollTop = snapshot.top || 0;
         node.scrollLeft = snapshot.left || 0;
       });
+    if (pagePosition) restoreImageViewerScrollPosition(pagePosition);
   };
   restore();
   requestAnimationFrame(restore);
@@ -19892,6 +20188,61 @@ function stabilizeNativeMessageSurfaces(source) {
       node.style.setProperty("background-image", "none", "important");
     }
   });
+  stabilizeNativeMessageEmojis(source);
+  globalThis.CC98RebornPrivateMessagePins?.mount(source);
+}
+
+function isNativeMessageContentNode(node) {
+  return node instanceof Element
+    && Boolean(node.closest(NATIVE_MESSAGE_ROOT_SELECTOR))
+    && !node.closest(".cc98-rebuild-message-editor, .cc98-rebuild-message-emoji-panel");
+}
+
+function getNativeMessageEmojiSource(image) {
+  const fallback = getOwnMediaUrl(image) || image.currentSrc || image.src || "";
+  const candidates = [
+    ...Array.from(image.closest("picture")?.querySelectorAll("source") || []),
+    image
+  ].map((node) => {
+    const attribute = node.getAttribute("srcset") ? "srcset"
+      : node.getAttribute("data-srcset") ? "data-srcset" : "";
+    return { node, attribute, value: attribute ? node.getAttribute(attribute) : "" };
+  }).filter((entry) => entry.value);
+  if (candidates.length) {
+    const sources = candidates.flatMap(({ value }) => value.split(",").map((item) => item.trim().split(/\s+/)[0]).filter(Boolean));
+    // Include the fallback: inactive picture sources must never replace an
+    // ordinary photo. A mixed responsive set keeps its native image sizing.
+    if ((fallback && !getLocalEmojiAssetUrlFromSrc(fallback))
+      || !sources.length || !sources.every((value) => getLocalEmojiAssetUrlFromSrc(value))) return null;
+    return { src: fallback || sources[0], candidates };
+  }
+  return { src: fallback, candidates: [] };
+}
+
+function markNativeMessageEmojiImage(image) {
+  if (!(image instanceof HTMLImageElement) || !isNativeMessageContentNode(image)) return;
+  const source = getNativeMessageEmojiSource(image);
+  // Uploaded photos can have names like face.png or 123.png. Only known
+  // forum emoji asset paths identify an emoticon in a native message.
+  if (image.closest(NATIVE_MESSAGE_EMOJI_CONTENT_SELECTOR) && source && getLocalEmojiAssetUrlFromSrc(source.src)) {
+    markRebuiltEmojiImage(image, source.src);
+    source.candidates.forEach(({ node, attribute, value }) => {
+      // Leave lazy metadata to the native renderer. Creating srcset here can
+      // override a later photo when React reuses this image element.
+      if (attribute !== "srcset") return;
+      const local = value.split(",").map((item) => item.trim().replace(/^\S+/, (url) => getLocalEmojiAssetUrlFromSrc(url))).join(", ");
+      if (node.getAttribute("srcset") !== local) node.setAttribute("srcset", local);
+    });
+  } else {
+    // React can reuse an IMG when changing conversations or replacing media.
+    image.classList.remove("cc98-rebuild-inline-emoji", "cc98-rebuild-invertible-emoji");
+  }
+}
+
+function stabilizeNativeMessageEmojis(root) {
+  if (!(root instanceof Element)) return;
+  if (root instanceof HTMLImageElement) markNativeMessageEmojiImage(root);
+  root.querySelectorAll("img").forEach(markNativeMessageEmojiImage);
 }
 
 function setNativeMessageInputValue(input, value) {
@@ -20666,6 +21017,7 @@ function bindMessageTitleSync(source, heroTitle, heroTop) {
   };
 
   messageTitleClickHandler = (event) => {
+    if (event.target?.closest?.(".cc98-message-pin")) return;
     const person = event.target?.closest?.(".message-message-person");
     if (!person || !source.contains(person)) {
       return;
@@ -20683,8 +21035,24 @@ function bindMessageTitleSync(source, heroTitle, heroTop) {
   };
   source.addEventListener("click", messageTitleClickHandler, true);
 
-  messageTitleObserver = new MutationObserver(() => scheduleTitleSync());
-  messageTitleObserver.observe(source, { childList: true, subtree: true, characterData: true });
+  messageTitleObserver = new MutationObserver((records) => {
+    // Mark newly inserted/retargeted media before the next paint. Do not merge
+    // or replace the React-owned message paragraphs or rebuild the page.
+    records.forEach((record) => {
+      if (record.type === "attributes") {
+        if (record.target instanceof HTMLSourceElement) stabilizeNativeMessageEmojis(record.target.closest("picture"));
+        else markNativeMessageEmojiImage(record.target);
+      } else if (record.type === "childList") {
+        record.addedNodes.forEach(stabilizeNativeMessageEmojis);
+        if (record.target instanceof Element && record.target.closest("picture")) stabilizeNativeMessageEmojis(record.target.closest("picture"));
+      }
+    });
+    scheduleTitleSync();
+  });
+  messageTitleObserver.observe(source, {
+    childList: true, subtree: true, characterData: true, attributes: true,
+    attributeFilter: ["src", "srcset", "data-src", "data-srcset", "data-original", "data-cc98-lazy-src", "data-lazy-src", "data-original-src"]
+  });
   syncTitle();
   syncMessageReadAllProxy(source, heroTop);
   stabilizeNativeMessageSurfaces(source);
@@ -21228,9 +21596,9 @@ function getUserCenterActiveTitle() {
 function updateUserCenterHero(app = document.querySelector("#cc98-comfort-app")) {
   const title = app?.querySelector(".cc98-rebuild-user-hero h1");
   if (title) {
-    const nextTitle = app.querySelector(".cc98-rebuild-user-blacklist-panel:not([hidden])")
-      ? "黑名单"
-      : getUserCenterActiveTitle();
+    const nextTitle = app.querySelector(".cc98-rebuild-user-settings-panel:not([hidden])")
+      ? "插件设置"
+      : app.querySelector(".cc98-rebuild-user-blacklist-panel:not([hidden])") ? "黑名单" : getUserCenterActiveTitle();
     if (title.textContent !== nextTitle) {
       title.textContent = nextTitle;
     }
@@ -23370,7 +23738,9 @@ function stabilizeProfileSignatureToolbar(router) {
           return;
         }
         event.preventDefault();
-        restoreProfileSignatureWysiwygRange(editor, wysiwyg);
+        if (!getProfileSignatureWysiwygRange(wysiwyg)) {
+          restoreProfileSignatureWysiwygRange(editor, wysiwyg);
+        }
         document.execCommand("insertText", false, plainText);
         rememberProfileSignatureWysiwygRange(editor, wysiwyg);
         syncGeneratedSource(false);
@@ -23814,12 +24184,17 @@ function stabilizeUserDescriptionSignatures(router) {
 }
 
 function appendMultilineInlineUbb(target, source) {
-  String(source ?? "").split(/\r?\n/).forEach((line, index) => {
-    if (index > 0) {
-      target.append(document.createElement("br"));
+  const extendedUbb = window.CC98RebornExtendedUbb;
+  if (extendedUbb?.shouldHandle?.(source)) {
+    const rendered = extendedUbb.render(source);
+    if (rendered instanceof HTMLElement) {
+      target.classList.add("cc98-local-experimental-syntax");
+      target.append(...rendered.childNodes);
+      return;
     }
-    appendInlineUbbText(target, line);
-  });
+  }
+  // Parse the whole reply so formatting and media pairs can cross newlines.
+  appendInlineUbbText(target, String(source ?? ""), { preserveLineBreaks: true });
 }
 
 function bindUserReplyContentNavigation(content, href) {
@@ -23853,11 +24228,11 @@ function bindUserReplyContentNavigation(content, href) {
 function stabilizeUserReplyUbbContents(router) {
   const ubbPattern = /\[(?:cc98\d{2}|ac(?:\d{2}|\d{4})|[acf]:\d{3}|tb\d{2}|ms\d{2}|em\d{2}|\/?(?:b|i|u|s|del|url|color|size|align|img|audio|mp3|video|bili|bilibili)(?:=[^\]]+)?)\]/i;
   router.querySelectorAll('.user-post-content a[href*="/topic/"]').forEach((link) => {
-    if (!(link instanceof HTMLAnchorElement)) {
+    if (!(link instanceof HTMLAnchorElement) || link.closest(".cc98-rebuild-user-reply-ubb")) {
       return;
     }
     const rawText = link.textContent || "";
-    if (!ubbPattern.test(rawText)) {
+    if (!ubbPattern.test(rawText) && !window.CC98RebornExtendedUbb?.shouldHandle?.(rawText)) {
       return;
     }
     const href = link.href || makeAbsoluteCc98Url(link.getAttribute("href") || "");
@@ -24018,9 +24393,11 @@ function stabilizeNativeUserCenter(router) {
     }
   });
   stabilizeUserCenterFavoriteActions(router);
+  globalThis.CC98RebornFavoriteShare?.mount(router);
   stabilizeUserCenterSearchButtons(router);
   stabilizeProfileSignatureToolbar(router);
   stabilizeUserProfileStats(router);
+  globalThis.CC98RebornUserNotes?.mount(router);
   stabilizeUserDescriptionSignatures(router);
   stabilizeUserReplyUbbContents(router);
   stabilizeUserCenterUserLinks(router);
@@ -24796,7 +25173,7 @@ function getCurrentTopicBlockedAuthorInfo(postItems = null) {
 }
 
 function getCurrentPageBlockedInfo(postItems = null) {
-  if (isBlacklistRoute()) {
+  if (isRebornManagementRoute()) {
     return null;
   }
   return getCurrentProfilePageBlockedInfo() || getCurrentTopicBlockedAuthorInfo(postItems);
@@ -24920,6 +25297,14 @@ function renderBoards(app) {
 }
 
 function showEmbeddedBlacklistPanel(router, panel, app, navSource) {
+  const settingsPanel = app?.querySelector(".cc98-rebuild-user-settings-panel");
+  if (settingsPanel && !settingsPanel.hidden) {
+    if (!lastSettings.enabled || !lastSettings.rebuildUi) {
+      navigateToRebuiltHref(getBlacklistPageHref());
+      return;
+    }
+    leaveUserSettingsRoute(router, settingsPanel, app);
+  }
   if (!(router instanceof HTMLElement) || !(panel instanceof HTMLElement)) {
     navigateToRebuiltHref(getBlacklistPageHref());
     return;
@@ -25008,6 +25393,138 @@ function createEmbeddedBlacklistPanel() {
   return panel;
 }
 
+function hideEmbeddedUserSettingsPanel(router, panel, app) {
+  if (router instanceof HTMLElement) {
+    router.hidden = false;
+    delete router.dataset.cc98EmbeddedSettingsHidden;
+  }
+  if (panel instanceof HTMLElement) panel.hidden = true;
+  app?.querySelectorAll(".cc98-rebuild-native-user-nav, .cc98-rebuild-user-nav").forEach((nav) => delete nav.dataset.cc98SettingsOpen);
+  app?.querySelectorAll(".cc98-rebuild-settings-nav-entry").forEach((entry) => {
+    entry.classList.remove("is-active");
+    entry.removeAttribute("aria-current");
+  });
+  updateUserCenterHero(app);
+}
+
+function showEmbeddedUserSettingsPanel(router, panel, app, navSource) {
+  if (!(router instanceof HTMLElement) || !(panel instanceof HTMLElement) || !(navSource instanceof HTMLElement)) return;
+  embeddedBlacklistOpenPath = "";
+  app.querySelectorAll(".cc98-rebuild-user-blacklist-panel").forEach((node) => { node.hidden = true; });
+  navSource.querySelectorAll(".cc98-rebuild-blacklist-nav-entry").forEach((node) => node.classList.remove("is-active"));
+  router.hidden = true;
+  delete router.dataset.cc98EmbeddedBlacklistHidden;
+  router.dataset.cc98EmbeddedSettingsHidden = "true";
+  panel.hidden = false;
+  navSource.dataset.cc98SettingsOpen = "true";
+  navSource.querySelectorAll(".cc98-rebuild-settings-nav-entry").forEach((entry) => {
+    entry.classList.add("is-active");
+    entry.setAttribute("aria-current", "page");
+  });
+  if (!panel.querySelector("iframe")) {
+    const frame = createElement("iframe", "cc98-rebuild-user-settings-frame");
+    frame.title = "CC98 Reborn 插件设置";
+    frame.src = `${chrome.runtime.getURL("popup/popup.html")}?embedded=1`;
+    frame.height = "1200";
+    const extensionOrigin = chrome.runtime.getURL("").replace(/\/$/, "");
+    const onMessage = (event) => {
+      if (!panel.isConnected || event.source !== frame.contentWindow || event.origin !== extensionOrigin) return;
+      if (event.data?.type === "cc98-reborn:settings-size" && typeof event.data.height === "number" && Number.isFinite(event.data.height)) {
+        frame.style.height = `${Math.max(160, Math.min(12000, Math.ceil(event.data.height)))}px`;
+      } else if (event.data?.type === "cc98-reborn:settings-open-blacklist") {
+        if (!lastSettings.enabled || !lastSettings.rebuildUi) {
+          navigateToRebuiltHref(getBlacklistPageHref());
+          return;
+        }
+        const url = new URL(location.href);
+        url.hash = "";
+        history.replaceState(history.state, "", url.href);
+        hideEmbeddedUserSettingsPanel(router, panel, app);
+        showEmbeddedBlacklistPanel(router, app.querySelector(".cc98-rebuild-user-blacklist-panel"), app, navSource);
+      }
+    };
+    userSettingsFrameMessageCleanup?.();
+    window.addEventListener("message", onMessage);
+    userSettingsFrameMessageCleanup = () => window.removeEventListener("message", onMessage);
+    panel.append(frame);
+  }
+  updateUserCenterHero(app);
+}
+
+function createEmbeddedUserSettingsPanel() {
+  const panel = createElement("section", "cc98-rebuild-user-settings-panel");
+  panel.hidden = true;
+  return panel;
+}
+
+function createUserSettingsNavLink() {
+  const link = createElement("button", "fa fa-sliders cc98-rebuild-settings-nav-entry");
+  link.type = "button";
+  link.append(createElement("span", "center-nav-item", "插件设置"));
+  link.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!isUserSettingsRoute()) history.pushState(history.state, "", getUserSettingsPageHref());
+    syncUserSettingsRoute();
+  });
+  return link;
+}
+
+function injectUserSettingsNavEntry(navSource) {
+  if (!(navSource instanceof HTMLElement) || navSource.querySelector(".cc98-rebuild-settings-nav-entry")) return;
+  const link = createUserSettingsNavLink();
+  const list = navSource.querySelector("ul");
+  if (list) {
+    const row = createElement("li", "cc98-rebuild-settings-nav-row");
+    row.append(link);
+    list.append(row);
+  } else {
+    navSource.append(link);
+  }
+}
+
+function getUserSettingsShellParts(app) {
+  return {
+    router: app?.querySelector(".cc98-rebuild-user-router-host > .user-center-router, .cc98-rebuild-user-router-host > .cc98-rebuild-section"),
+    nav: app?.querySelector(".cc98-rebuild-native-user-nav, .cc98-rebuild-user-nav")
+  };
+}
+
+function syncUserSettingsRoute() {
+  const app = document.querySelector("#cc98-comfort-app");
+  const panel = app?.querySelector(".cc98-rebuild-user-settings-panel");
+  const { router, nav } = getUserSettingsShellParts(app);
+  if (app?.dataset.routeKey === getRoutePageKey() && panel && router && nav) {
+    if (isUserSettingsRoute()) {
+      document.documentElement.classList.add("cc98-comfort");
+      syncComfortTheme();
+      showEmbeddedUserSettingsPanel(router, panel, app, nav);
+      return true;
+    }
+    if (!panel.hidden) {
+      hideEmbeddedUserSettingsPanel(router, panel, app);
+      if (!lastSettings.enabled || !lastSettings.rebuildUi) scheduleRebuild();
+      return true;
+    }
+  }
+  if (isUserSettingsRoute()) {
+    applySettings(lastSettings);
+    scheduleRebuild();
+    return true;
+  }
+  return false;
+}
+
+function leaveUserSettingsRoute(router, panel, app) {
+  if (isUserSettingsRoute()) {
+    const url = new URL(location.href);
+    url.hash = "";
+    history.replaceState(history.state, "", url.href);
+  }
+  if (!panel.hidden) hideEmbeddedUserSettingsPanel(router, panel, app);
+  if (!lastSettings.enabled || !lastSettings.rebuildUi) scheduleRebuild();
+}
+
 function renderUserCenter(app) {
   const blockedPageInfo = getCurrentPageBlockedInfo();
   if (blockedPageInfo && !isCurrentBlockedPageRevealed(blockedPageInfo)) {
@@ -25076,13 +25593,20 @@ function renderUserCenter(app) {
     }
     const panel = createEmbeddedBlacklistPanel();
     nav.append(createBlacklistNavLink(main, panel, app, nav));
+    const settingsPanel = createEmbeddedUserSettingsPanel();
+    injectUserSettingsNavEntry(nav);
     const host = createElement("div", "cc98-rebuild-user-router-host");
-    host.append(main, panel);
+    host.append(main, panel, settingsPanel);
     layout.append(nav, host);
     app.append(layout);
     if (embeddedBlacklistOpenPath === getCurrentCc98RoutePath()) {
       showEmbeddedBlacklistPanel(main, panel, app, nav);
     }
+    if (isUserSettingsRoute()) showEmbeddedUserSettingsPanel(main, settingsPanel, app, nav);
+    nav.addEventListener("click", (event) => {
+      if (event.target.closest(".cc98-rebuild-settings-nav-entry")) return;
+      leaveUserSettingsRoute(main, settingsPanel, app);
+    });
     return;
   }
 
@@ -25093,22 +25617,27 @@ function renderUserCenter(app) {
   router.classList.add("cc98-rebuild-native-user-router");
   const panel = createEmbeddedBlacklistPanel();
   injectBlacklistUserNavEntry(navSource, router, panel, app);
+  const settingsPanel = createEmbeddedUserSettingsPanel();
+  injectUserSettingsNavEntry(navSource);
   bindNativeUserCenterStabilizer(router);
   navSource.addEventListener("click", (event) => {
-    if (event.target?.closest?.(".cc98-rebuild-blacklist-nav-entry")) {
+    if (event.target?.closest?.(".cc98-rebuild-settings-nav-entry")) {
       return;
     }
+    leaveUserSettingsRoute(router, settingsPanel, app);
+    if (event.target?.closest?.(".cc98-rebuild-blacklist-nav-entry")) return;
     hideEmbeddedBlacklistPanel(router, panel, app);
     window.setTimeout(() => updateUserCenterHero(app), 120);
     window.setTimeout(() => updateUserCenterHero(app), 600);
   });
   const host = createElement("div", "cc98-rebuild-user-router-host");
-  host.append(router, panel);
+  host.append(router, panel, settingsPanel);
   layout.append(navSource, host);
   app.append(layout);
   if (embeddedBlacklistOpenPath === getCurrentCc98RoutePath()) {
     showEmbeddedBlacklistPanel(router, panel, app, navSource);
   }
+  if (isUserSettingsRoute()) showEmbeddedUserSettingsPanel(router, settingsPanel, app, navSource);
 }
 
 function encodeSearchKeyword(keyword) {
@@ -27743,7 +28272,7 @@ function hashSeamlessNativeContentPart(hash, value) {
   return next >>> 0;
 }
 
-function getSeamlessNativeContentSignature(kind = getPageKind()) {
+function getSeamlessNativeContentSignature(kind = getPageKind(), options = {}) {
   const selector = getSeamlessNativeContentSelector(kind);
   if (!selector || !document.body) {
     return "";
@@ -27757,7 +28286,7 @@ function getSeamlessNativeContentSignature(kind = getPageKind()) {
     hash = hashSeamlessNativeContentPart(hash, value);
     hash = hashSeamlessNativeContentPart(hash, "\u001f");
   };
-  append(getRoutePageKey());
+  if (options.includeRoute !== false) append(getRoutePageKey());
   append(kind);
   append(roots.length);
 
@@ -27834,7 +28363,7 @@ function captureSeamlessRebuildScrollState() {
       return rect.bottom > Math.max(0, topbarBottom) + 4 && rect.top < window.innerHeight - 4;
     });
   return {
-    routeKey: getRoutePageKey(),
+    routeKey: app?.dataset.routeKey || getRoutePageKey(),
     position: captureImageViewerScrollPosition(),
     anchorKey: anchor?.getAttribute("data-item-key") || "",
     anchorTop: anchor?.getBoundingClientRect?.().top || 0,
@@ -27868,6 +28397,37 @@ function restoreSeamlessRebuildScrollState(state, interactionRevision, force = f
   if (Number.isFinite(delta) && Math.abs(delta) >= 0.5) {
     window.scrollBy({ top: delta, left: 0, behavior: "auto" });
   }
+}
+
+function rememberReadingPositionBeforeReload() {
+  const app = document.querySelector("#cc98-comfort-app");
+  if (!lastSettings?.enabled || !lastSettings.rebuildUi || nativeRouteRebuildPending
+    || app?.dataset.routeKey !== getRoutePageKey()) return;
+  try {
+    sessionStorage.setItem(RELOAD_READING_POSITION_KEY, JSON.stringify({
+      ...captureSeamlessRebuildScrollState(), savedAt: Date.now()
+    }));
+  } catch {
+    // Native history restoration remains available if session storage is full.
+  }
+}
+
+function restoreReloadReadingPosition() {
+  if (reloadReadingPositionRestored || performance.getEntriesByType("navigation")[0]?.type !== "reload") return;
+  let state;
+  try {
+    state = JSON.parse(sessionStorage.getItem(RELOAD_READING_POSITION_KEY) || "null");
+  } catch { return; }
+  if (!state || state.routeKey !== getRoutePageKey() || Date.now() - state.savedAt > 10 * 60 * 1000
+    || !getNativeRouteRenderState(getPageKind()).ready) return;
+  reloadReadingPositionRestored = true;
+  removeSessionItem(RELOAD_READING_POSITION_KEY);
+  // A reload restores where the reader left off, including after scrolling
+  // away from a URL fragment. Later hash retries must not undo that position.
+  rebuiltHashScrollSuppressedKey = getRebuiltHashScrollKey();
+  const revision = seamlessScrollInteractionRevision;
+  restoreSeamlessRebuildScrollState(state, revision);
+  requestAnimationFrame(() => restoreSeamlessRebuildScrollState(state, revision));
 }
 
 function hasVisibleNativeDialog() {
@@ -28011,7 +28571,7 @@ function isSeamlessNativeContentMutation(record, app = document.querySelector("#
   const candidates = [record.target, ...record.addedNodes, ...record.removedNodes];
   return candidates.some((node) => {
     const element = node instanceof Element ? node : node?.parentElement;
-    if (!(element instanceof Element) || app?.contains(element) || element.closest("#cc98-comfort-app")) {
+    if (!(element instanceof Element) || app?.contains(element) || element.closest("#cc98-comfort-app, .cc98-rebuild-conversation-layer")) {
       return false;
     }
     return element.matches(selector)
@@ -28047,6 +28607,11 @@ function refreshRebuiltFromLoadedNativeContent(button, options = {}) {
     if (!automatic && button instanceof HTMLButtonElement) {
       showRebuiltTransientToast(button, "当前页面暂时无法同步");
     }
+    return;
+  }
+  if (automatic && (nativeRouteRebuildPending
+    || document.querySelector("#cc98-comfort-app")?.dataset.routeKey !== getRoutePageKey())) {
+    scheduleRebuild({ automatic: true });
     return;
   }
 
@@ -28148,15 +28713,161 @@ function refreshRebuiltFromLoadedNativeContent(button, options = {}) {
   }
 }
 
+function getNativeRouteRenderState(kind) {
+  const selector = getSeamlessNativeContentSelector(kind);
+  const nodes = selector ? [...document.querySelectorAll(selector)]
+    .filter((node) => !node.closest("#cc98-comfort-app")) : [];
+  let ready = nodes.some((node) => cleanupPostText(node.textContent)
+    || node.querySelector("img, .lazyload-placeholder, video, audio"));
+  if (kind === "post") {
+    const topic = getTopicRouteInfo();
+    const replies = nodes.filter((node) => !isHotPostNode(node));
+    ready = replies.some((node, index) => {
+      const floor = getPostFloorNumber(node, index);
+      return getTopicPageFromFloor(floor) === topic?.current
+        && (hasRenderablePostContent(findPostContentNode(node))
+          || findPostVoteContentNode(node) || findPostLotteryContentNode(node));
+    });
+  }
+  const empty = document.querySelector("#noResultBoard, .noResultText, .no-topic");
+  if (empty && !empty.closest("#cc98-comfort-app")) {
+    ready = true;
+    nodes.push(empty);
+  }
+  const stamp = getSeamlessNativeContentSignature(kind, { includeRoute: false });
+  const metadata = [...document.querySelectorAll(".topicInfo-info, .pagination, .ant-pagination")]
+    .filter((node) => !node.closest("#cc98-comfort-app"))
+    .map((node) => `${cleanupPostText(node.textContent)}|${[...node.querySelectorAll("a[href]")].map((link) => link.getAttribute("href")).join(",")}`)
+    .join("|");
+  const signature = `${getRoutePageKey()}|${stamp}|${document.title}|${metadata}|${kind === "post" ? topicContentSnapshotRevision : ""}`;
+  return { nodes, ready, stamp, signature, title: document.title };
+}
+
+function clearNativeRouteRebuildPending() {
+  window.clearTimeout(nativeRouteRebuildTimer);
+  nativeRouteRebuildTimer = null;
+  nativeRouteRebuildPending = null;
+  document.querySelector(".cc98-rebuild-route-status")?.remove();
+  document.querySelector("#cc98-comfort-app")?.removeAttribute("aria-busy");
+}
+
+function shouldWaitForNativeRoute(existing, kind) {
+  if (!lastSettings?.enabled || !lastSettings.rebuildUi
+    || !SEAMLESS_SCROLL_SYNC_PAGE_KINDS.has(kind)) {
+    clearNativeRouteRebuildPending();
+    return false;
+  }
+  const routeKey = getRoutePageKey();
+  if (existing?.dataset.routeKey === routeKey && !nativeRouteRebuildPending) return false;
+  if (nativeRouteRebuildPending?.routeKey !== routeKey) {
+    clearNativeRouteRebuildPending();
+    nativeRouteRebuildPending = { routeKey, startedAt: Date.now(), waited: false, candidate: "", candidateAt: 0 };
+  }
+  const pending = nativeRouteRebuildPending;
+  const state = getNativeRouteRenderState(kind);
+  // React updates the URL before replacing the old page's DOM. Do not label
+  // those old rows as the destination page just because its pathname changed.
+  const stale = existing && existing.dataset.routeKey !== routeKey
+    && committedNativeRoute?.kind === kind && state.stamp === committedNativeRoute.stamp
+    && state.nodes.some((node) => committedNativeRoute.nodes.includes(node));
+  if (state.ready && !stale) {
+    if (!pending.waited || (pending.candidate === state.signature && Date.now() - pending.candidateAt >= 60)) {
+      clearNativeRouteRebuildPending();
+      return false;
+    }
+    if (pending.candidate !== state.signature) {
+      pending.candidate = state.signature;
+      pending.candidateAt = Date.now();
+    }
+  } else {
+    pending.candidate = "";
+  }
+  pending.waited = true;
+  if (existing) {
+    existing.setAttribute("aria-busy", "true");
+    let status = existing.querySelector(".cc98-rebuild-pending-label, .cc98-rebuild-route-status");
+    if (!status) {
+      status = createElement("div", "cc98-rebuild-route-status");
+      status.setAttribute("role", "status");
+      existing.append(status);
+    }
+    status.textContent = Date.now() - pending.startedAt > 6000
+      ? "内容仍在加载，可点击同步重试" : "正在载入当前页…";
+  }
+  if (!nativeRouteRebuildTimer) {
+    nativeRouteRebuildTimer = window.setTimeout(() => {
+      nativeRouteRebuildTimer = null;
+      scheduleRebuild({ automatic: true });
+    }, Date.now() - pending.startedAt > 6000 ? 500 : 100);
+  }
+  return true;
+}
+
+function renderPendingPageContent(app, kind) {
+  app.dataset.cc98ContentPending = "true";
+  app.setAttribute("aria-busy", "true");
+  const content = createElement("section", "cc98-rebuild-pending-content");
+  const status = createElement("p", "cc98-rebuild-card-meta cc98-rebuild-pending-label", "正在加载内容…");
+  status.setAttribute("role", "status");
+  content.append(status);
+  const feed = createElement("div", kind === "post" ? "cc98-rebuild-feed cc98-rebuild-post-feed" : "cc98-rebuild-list");
+  for (let index = 0; index < 3; index += 1) {
+    const card = createElement("article", `cc98-rebuild-card cc98-rebuild-pending-card${kind === "post" ? " cc98-rebuild-post" : ""}`);
+    card.setAttribute("aria-hidden", "true");
+    if (kind === "post") {
+      const header = createElement("div", "cc98-rebuild-post-header");
+      header.append(createElement("span", "cc98-rebuild-pending-avatar cc98-rebuild-pending-block"));
+      header.append(createElement("span", "cc98-rebuild-pending-author cc98-rebuild-pending-block"));
+      card.append(header);
+    }
+    const body = createElement("div", "cc98-rebuild-post-body cc98-rebuild-pending-body");
+    for (let line = 0; line < 4; line += 1) {
+      body.append(createElement("span", "cc98-rebuild-pending-line cc98-rebuild-pending-block"));
+    }
+    card.append(body);
+    feed.append(card);
+  }
+  content.append(feed);
+  app.append(content);
+}
+
 function renderRebuiltUi(options = {}) {
   if (isRebuilding) {
     return;
   }
-  isRebuilding = true;
-  clearTopbarStabilizeTimers();
-
   const existing = document.querySelector("#cc98-comfort-app");
   const currentKind = getPageKind();
+  if (!options.pending && shouldWaitForNativeRoute(existing, currentKind)) {
+    if (!existing) renderRebuiltUi({ pending: true });
+    return;
+  }
+  const sameRoute = existing?.dataset.routeKey === getRoutePageKey();
+  const stableKind = SEAMLESS_SCROLL_SYNC_PAGE_KINDS.has(currentKind);
+  if (options.automatic && sameRoute && stableKind
+    && getNativeRouteRenderState(currentKind).signature === committedNativeRoute?.signature) {
+    return;
+  }
+  if (options.automatic && sameRoute && isSeamlessNativeContentSyncBlocked()) {
+    markSeamlessNativeContentDirty();
+    return;
+  }
+  const preservedPageScroll = sameRoute && stableKind ? captureSeamlessRebuildScrollState() : null;
+  const scrollRevision = seamlessScrollInteractionRevision;
+  const keepMounted = Boolean(existing && stableKind && lastSettings?.enabled && lastSettings.rebuildUi);
+  const oldMinHeight = existing?.style.minHeight || "";
+  if (keepMounted) existing.style.minHeight = `${existing.getBoundingClientRect().height}px`;
+  isRebuilding = true;
+  clearTopbarStabilizeTimers();
+  document.documentElement.classList.toggle("cc98-comfort", Boolean(lastSettings?.enabled || isRebornManagementRoute()));
+  const settingsShell = getUserSettingsShellParts(existing);
+  if (isUserSettingsRoute() && existing?.dataset.routeKey === getRoutePageKey()
+    && settingsShell.router && settingsShell.nav && existing.querySelector(".cc98-rebuild-user-settings-frame")) {
+    syncUserSettingsRoute();
+    hideLoadingOverlay({ force: true });
+    releaseRebuildTransitionVeil({ immediate: true });
+    isRebuilding = false;
+    return;
+  }
   // Removing/reinserting the rebuilt shell temporarily exposes the native
   // topic tree.  On a URL with a fragment that transition can make the
   // browser restore scroll position to 0 before the rebuilt floor exists.
@@ -28164,7 +28875,8 @@ function renderRebuiltUi(options = {}) {
   const preservedHashScrollPosition = currentKind === "post" && getRebuiltHashScrollKey()
     ? captureImageViewerScrollPosition()
     : null;
-  if (currentKind === "topics" && shouldDeferNewTopicsRebuild()) {
+  if (!options.pending && currentKind === "topics" && shouldDeferNewTopicsRebuild()) {
+    if (keepMounted) existing.style.minHeight = oldMinHeight;
     beginRebuildTransitionVeil(location.href);
     scheduleNewTopicsPendingRecheck();
     isRebuilding = false;
@@ -28175,8 +28887,10 @@ function renderRebuiltUi(options = {}) {
     newTopicPendingRecheckTimer = null;
   }
 
-  document.documentElement.classList.remove("cc98-comfort-rebuild-active");
-  document.documentElement.dataset.cc98ComfortRebuildReady = "false";
+  if (!keepMounted) {
+    document.documentElement.classList.remove("cc98-comfort-rebuild-active");
+    document.documentElement.dataset.cc98ComfortRebuildReady = "false";
+  }
 
   updateNewTopicAutoRefreshVisitState();
   clearUserCenterStaleLoadingOverlay(currentKind);
@@ -28194,13 +28908,17 @@ function renderRebuiltUi(options = {}) {
     isRebuilding = false;
     return;
   }
-  if (!lastSettings.enabled || !lastSettings.rebuildUi) {
+  if ((!lastSettings.enabled || !lastSettings.rebuildUi) && !isRebornManagementRoute()) {
+    delete document.documentElement.dataset.cc98ComfortLoadingShell;
     if (existing) {
       legacyQuoteGuardObserver?.disconnect();
       legacyQuoteGuardObserver = null;
       restoreReparentedNativeNodes(existing);
       existing.remove();
     }
+    userSettingsFrameMessageCleanup?.();
+    userSettingsFrameMessageCleanup = null;
+    if (isUserCenterRoutePath()) injectUserSettingsNavEntry(getUserCenterNativeShell().navSource);
     editorSubmitOverlayAwaitingRebuild = false;
     hideLoadingOverlay({ force: true });
     releaseRebuildTransitionVeil({ immediate: true });
@@ -28209,11 +28927,13 @@ function renderRebuiltUi(options = {}) {
   }
 
   if (existing) {
+    userSettingsFrameMessageCleanup?.();
+    userSettingsFrameMessageCleanup = null;
     legacyQuoteGuardObserver?.disconnect();
     legacyQuoteGuardObserver = null;
     restoreReparentedNativeNodes(existing);
     preservedSearchForm?.remove();
-    existing.remove();
+    if (!keepMounted) existing.remove();
   }
 
   if (currentKind === "userCenter" && isPublicUserProfilePage() && isUserCenterPendingNativeLoad()) {
@@ -28252,14 +28972,19 @@ function renderRebuiltUi(options = {}) {
       brand.setAttribute("aria-label", "返回 CC98 首页");
       nav.append(brand);
       const navLinks = createElement("nav", "cc98-rebuild-nav");
+      const navPath = getCurrentCc98RoutePath();
       [
-        ["首页", "https://www.cc98.org/"],
-        ["版面", "https://www.cc98.org/boardList"],
-        ["新帖", "https://www.cc98.org/newTopics"],
-        ["关注", "https://www.cc98.org/focus"],
-        ["精选", "https://www.cc98.org/recommendedTopics"],
-        ["\u7a0d\u540e\u518d\u770b", getReadLaterPageHref()]
-      ].forEach(([label, href]) => navLinks.append(createLink("", label, href)));
+        ["首页", "https://www.cc98.org/", kind === "home"],
+        ["版面", "https://www.cc98.org/boardList", ["boardList", "board", "boardSearch"].includes(kind)],
+        ["新帖", "https://www.cc98.org/newTopics", /^\/newTopics(?:\/|$)/i.test(navPath)],
+        ["关注", "https://www.cc98.org/focus", /^\/focus(?:\/|$)/i.test(navPath)],
+        ["精选", "https://www.cc98.org/recommendedTopics", /^\/recommendedTopics(?:\/|$)/i.test(navPath)],
+        ["\u7a0d\u540e\u518d\u770b", getReadLaterPageHref(), kind === "readLater"]
+      ].forEach(([label, href, current]) => {
+        const link = createLink("", label, href);
+        if (current) link.setAttribute("aria-current", "page");
+        navLinks.append(link);
+      });
       nav.append(navLinks);
       const searchForm = preservedSearchForm instanceof HTMLFormElement
         ? preservedSearchForm
@@ -28290,11 +29015,15 @@ function renderRebuiltUi(options = {}) {
     if (!["board", "userCenter", "message", "signin", "login", "error", "blacklist"].includes(kind) && !(kind === "home" && lastSettings.homeHotOnly)) {
       const hero = createElement("section", "cc98-rebuild-hero");
       hero.append(createElement("p", "cc98-rebuild-kicker cc98-rebuild-version-kicker", `Reborn View · v${EXTENSION_VERSION}`));
-      hero.append(createElement("h1", "", getPageTitle()));
+      const title = options.pending && kind === "post" ? getFirstText(document, ".topicInfo-info #essay1")
+        : (options.pending ? "" : getPageTitle());
+      hero.append(createElement("h1", options.pending && !title ? "cc98-rebuild-pending-title cc98-rebuild-pending-block" : "", title));
       app.append(hero);
     }
 
-    if (kind === "home") {
+    if (options.pending) {
+      renderPendingPageContent(app, kind);
+    } else if (kind === "home") {
       renderHome(app);
     } else if (kind === "boardList") {
       renderBoards(app);
@@ -28333,39 +29062,57 @@ function renderRebuiltUi(options = {}) {
       app.append(fallback);
     }
 
+    let mountedApp = app;
+    if (keepMounted) {
+      const topbar = existing.querySelector(":scope > .cc98-rebuild-topbar");
+      const nextTopbar = app.querySelector(":scope > .cc98-rebuild-topbar");
+      if (topbar && nextTopbar) {
+        topbar.replaceChildren(...nextTopbar.childNodes);
+        nextTopbar.replaceWith(topbar);
+      }
+      existing.replaceChildren(...app.childNodes);
+      for (const name of Object.keys(existing.dataset)) delete existing.dataset[name];
+      Object.assign(existing.dataset, app.dataset);
+      existing.style.minHeight = oldMinHeight;
+      mountedApp = existing;
+    }
     const rootHost = document.querySelector("#root");
     const isolateFromWebVpnUserProfileRoot = isWebVpnHost() && isPublicUserProfilePage();
     if (rootHost instanceof HTMLElement && !isolateFromWebVpnUserProfileRoot) {
-      rootHost.prepend(app);
+      if (mountedApp.parentElement !== rootHost) rootHost.prepend(mountedApp);
       document.documentElement.dataset.cc98ComfortAppRoot = "true";
     } else {
-      document.body.prepend(app);
+      if (mountedApp.parentElement !== document.body) document.body.prepend(mountedApp);
       document.documentElement.removeAttribute("data-cc98-comfort-app-root");
     }
     if (kind === "message") {
-      restoreMessageWindowScrollState(preservedMessageScrollState, app);
+      restoreMessageWindowScrollState(preservedMessageScrollState, mountedApp);
     }
     if (preservedHashScrollPosition) {
       restoreImageViewerScrollPosition(preservedHashScrollPosition);
     }
-    restoreRebuiltSearchUiState(app, preservedSearchState);
-    stabilizeTopbarUserEntry(app);
-    armPublicProfileTopbarRecovery(app);
-    scheduleTopbarStabilization(app);
-    rewriteLegacyQuoteInlineStyles(app);
-    stabilizePostQuoteBlocks(app);
-    forceLegacyQuotesInRebuiltRoot(app);
-    stabilizeEmojiRendering(app);
-    installLegacyQuoteGuard(app);
+    restoreRebuiltSearchUiState(mountedApp, preservedSearchState);
+    stabilizeTopbarUserEntry(mountedApp);
+    armPublicProfileTopbarRecovery(mountedApp);
+    scheduleTopbarStabilization(mountedApp);
+    rewriteLegacyQuoteInlineStyles(mountedApp);
+    stabilizePostQuoteBlocks(mountedApp);
+    forceLegacyQuotesInRebuiltRoot(mountedApp);
+    stabilizeEmojiRendering(mountedApp);
+    installLegacyQuoteGuard(mountedApp);
     requestAnimationFrame(() => {
-      rewriteLegacyQuoteInlineStyles(app);
-      stabilizePostQuoteBlocks(app);
-      forceLegacyQuotesInRebuiltRoot(app);
-      stabilizeEmojiRendering(app);
+      rewriteLegacyQuoteInlineStyles(mountedApp);
+      stabilizePostQuoteBlocks(mountedApp);
+      forceLegacyQuotesInRebuiltRoot(mountedApp);
+      stabilizeEmojiRendering(mountedApp);
     });
-    setupRebuiltImagePlaceholders(app);
+    setupRebuiltImagePlaceholders(mountedApp);
     document.documentElement.classList.add("cc98-comfort-rebuild-active");
     document.documentElement.dataset.cc98ComfortRebuildReady = "true";
+    if (!preservedPageScroll && pendingRouteScrollReset === getRoutePageKey()) {
+      pendingRouteScrollReset = "";
+      if (!location.hash) window.scrollTo(0, 0);
+    }
     if (preservedHashScrollPosition) {
       const currentHashKey = getRebuiltHashScrollKey();
       const hashPositionIsStable = Boolean(
@@ -28379,18 +29126,25 @@ function renderRebuiltUi(options = {}) {
         restoreImageViewerScrollPosition(preservedHashScrollPosition);
       }
     }
-    releaseRebuildTransitionVeilWhenReady();
-    if (app.dataset.cc98UserCenterPending === "true") {
+    if (preservedPageScroll) restoreSeamlessRebuildScrollState(preservedPageScroll, scrollRevision);
+    if (stableKind && !options.pending) restoreReloadReadingPosition();
+    document.documentElement.dataset.cc98ComfortLoadingShell = String(Boolean(options.pending));
+    if (options.pending) releaseRebuildTransitionVeil({ immediate: true });
+    else releaseRebuildTransitionVeilWhenReady();
+    if (mountedApp.dataset.cc98UserCenterPending === "true") {
       showLoadingOverlay("正在加载个人中心...", { allowUserCenter: true });
       scheduleUserCenterPendingRebuild();
     } else {
-      hideLoadingOverlayWhenReady(app, {
+      hideLoadingOverlayWhenReady(mountedApp, {
         skipHashScroll: Boolean(options.preserveScroll)
       });
     }
     armAutoLoader();
-    rememberSeamlessNativeContentSignature();
-    startPostLazyFallbackPrewarm();
+    if (!options.pending) {
+      rememberSeamlessNativeContentSignature();
+      committedNativeRoute = stableKind ? { routeKey: getRoutePageKey(), kind, ...getNativeRouteRenderState(kind) } : null;
+      startPostLazyFallbackPrewarm();
+    }
   } catch (error) {
     console.error("[CC98 Reborn] rebuild failed", error);
     legacyQuoteGuardObserver?.disconnect();
@@ -28634,9 +29388,7 @@ function recoverMissingRebuiltApp() {
     return false;
   }
 
-  root.classList.remove("cc98-comfort-rebuild-active");
-  root.dataset.cc98ComfortRebuildReady = "false";
-  root.removeAttribute("data-cc98-comfort-app-root");
+  root.dataset.cc98ComfortLoadingShell = "true";
   clearPublicUserProfileLoadingOverlay();
   scheduleRebuild();
   return true;
@@ -28654,7 +29406,7 @@ function ensureRebuiltAppPresenceWatchdog() {
   }, 1600);
 }
 
-function scheduleRebuild() {
+function scheduleRebuild(options = {}) {
   if (!lastSettings || !document.body) {
     return;
   }
@@ -28668,9 +29420,7 @@ function scheduleRebuild() {
   if (clearUserCenterStaleLoadingOverlay()) {
     // Continue rebuilding the user center after clearing stale transition overlays.
   }
-  if (handleTopicFirstPagePrevisitNavigation()) {
-    return;
-  }
+  syncTopicFirstPagePrewarm();
   if (shouldPrewarmHomeAvatarBeforeRebuild()) {
     startHomeAvatarPrewarm();
     return;
@@ -28683,11 +29433,14 @@ function scheduleRebuild() {
     return;
   }
   if (rebuildQueued) {
+    queuedRebuildIsAutomatic = queuedRebuildIsAutomatic && Boolean(options.automatic);
     return;
   }
 
   rebuildQueued = true;
+  queuedRebuildIsAutomatic = Boolean(options.automatic);
   requestAnimationFrame(() => {
+    const automatic = queuedRebuildIsAutomatic;
     rebuildQueued = false;
     if (deferPublicProfileRebuildForSelection()) {
       return;
@@ -28696,9 +29449,7 @@ function scheduleRebuild() {
     if (clearUserCenterStaleLoadingOverlay()) {
       // Continue rebuilding the user center after clearing stale transition overlays.
     }
-    if (handleTopicFirstPagePrevisitNavigation()) {
-      return;
-    }
+    syncTopicFirstPagePrewarm();
     if (shouldPrewarmHomeAvatarBeforeRebuild()) {
       startHomeAvatarPrewarm();
       return;
@@ -28710,7 +29461,7 @@ function scheduleRebuild() {
     if (isEditingRebuiltSearchOnCurrentRoute()) {
       return;
     }
-    renderRebuiltUi();
+    renderRebuiltUi({ automatic });
   });
 }
 
@@ -28721,7 +29472,7 @@ function scheduleDelayedRebuilds() {
   delayedRebuildTimers = [120, 520, 1300].map((delay, index, delays) => (
     window.setTimeout(() => {
       scheduleFiltering();
-      scheduleRebuild();
+      scheduleRebuild({ automatic: true });
       if (index === delays.length - 1) {
         delayedRebuildTimers = [];
       }
@@ -28791,11 +29542,18 @@ function reconcileCardFeed(feed, entries) {
 }
 
 function syncRebuiltContent() {
+  globalThis.CC98RebornUserNotes?.sync();
   if (isRebuilding || !lastSettings?.enabled || !lastSettings.rebuildUi) {
     return;
   }
 
   const app = document.querySelector("#cc98-comfort-app");
+  const wasPending = Boolean(nativeRouteRebuildPending);
+  if (shouldWaitForNativeRoute(app, getPageKind())) return;
+  if (wasPending || (app && app.dataset.routeKey !== getRoutePageKey())) {
+    scheduleRebuild({ automatic: true });
+    return;
+  }
   if (
     getPageKind() === "userCenter"
     && isPublicUserProfilePage()
@@ -28807,6 +29565,7 @@ function syncRebuiltContent() {
   stabilizeTopbarUserEntry(app);
   const feed = app?.querySelector("[data-feed-kind]");
   if (getPageKind() === "userCenter") {
+    syncUserSettingsRoute();
     clearUserCenterStaleLoadingOverlay("userCenter");
     if (isPublicUserProfilePage()) {
       const router = app?.querySelector(".cc98-rebuild-native-user-router");
@@ -28995,6 +29754,11 @@ function armAutoLoader() {
 }
 
 function isRebuiltInternalMutationTarget(record, app) {
+  const changed = [...record.addedNodes, ...record.removedNodes];
+  if (changed.length && changed.every((node) => node instanceof Element
+    && (node.matches(".cc98-rebuild-conversation-layer, .cc98-topic-search-layer, .cc98-topic-search-worker, .cc98-favorite-share-layer, .cc98-user-note-layer, .cc98-user-note-ui") || node.closest(".cc98-rebuild-conversation-layer, .cc98-topic-search-layer, .cc98-topic-search-worker, .cc98-favorite-share-layer, .cc98-user-note-layer, .cc98-user-note-ui")))) {
+    return true;
+  }
   const target = record.target instanceof Element ? record.target : record.target?.parentElement;
   if (!(target instanceof Element)) {
     return false;
@@ -29005,6 +29769,12 @@ function isRebuiltInternalMutationTarget(record, app) {
   return Boolean(target.closest([
     "#cc98-comfort-loading",
     "#cc98-comfort-image-viewer",
+    ".cc98-rebuild-conversation-layer",
+    ".cc98-topic-search-layer",
+    ".cc98-topic-search-worker",
+    ".cc98-favorite-share-layer",
+    ".cc98-user-note-layer",
+    ".cc98-user-note-ui",
     ".cc98-rebuild-color-popover",
     ".cc98-rebuild-font-size-popover",
     ".cc98-rebuild-message-emoji-panel",
@@ -29018,6 +29788,9 @@ function ensureObserver() {
   }
 
   observer = new MutationObserver((records) => {
+    if (isUserCenterRoutePath() && !document.querySelector("#cc98-comfort-app")) {
+      injectUserSettingsNavEntry(getUserCenterNativeShell().navSource);
+    }
     if (redirectCurrentWebVpnExternalPage() || isCurrentWebVpnExternalProxyPage()) {
       return;
     }
@@ -29052,7 +29825,8 @@ function ensureObserver() {
       const target = record.target;
       const changedNodes = [...record.addedNodes, ...record.removedNodes];
       const onlyRebuildNodes = changedNodes.length > 0 && changedNodes.every((node) => {
-        return node instanceof Element && (node.id === "cc98-comfort-app" || Boolean(node.closest?.("#cc98-comfort-app")));
+        return node instanceof Element && (node.id === "cc98-comfort-app" || node.matches(".cc98-rebuild-conversation-layer, .cc98-topic-search-layer, .cc98-topic-search-worker, .cc98-favorite-share-layer, .cc98-user-note-layer, .cc98-user-note-ui")
+          || Boolean(node.closest?.("#cc98-comfort-app, .cc98-rebuild-conversation-layer, .cc98-topic-search-layer, .cc98-topic-search-worker, .cc98-favorite-share-layer, .cc98-user-note-layer, .cc98-user-note-ui")));
       });
       if (onlyRebuildNodes) {
         return false;
@@ -29189,11 +29963,10 @@ function patchHistoryNavigation() {
         scheduleFiltering();
         if (nextRouteKey !== beforeRouteKey) {
           clearRebuiltHashScrollIntent();
-          if (movedToAnotherPath) {
-            window.scrollTo(0, 0);
-          }
+          if (movedToAnotherPath) pendingRouteScrollReset = nextRouteKey;
           scheduleDelayedRebuilds();
         } else {
+          if (syncUserSettingsRoute()) return;
           scrollToCurrentRebuiltHash();
           scheduleSync();
         }
@@ -29219,10 +29992,12 @@ function patchHistoryNavigation() {
       return;
     }
     clearRebuiltHashScrollIntent();
+    if (syncUserSettingsRoute()) return;
     scrollToCurrentRebuiltHash();
     scheduleSync();
   });
   window.addEventListener("hashchange", () => {
+    if (syncUserSettingsRoute()) return;
     if (Date.now() < imageViewerSuppressHashScrollUntil) {
       return;
     }
@@ -29242,8 +30017,11 @@ function ensureHeadObserver() {
 
   headObserver = new MutationObserver(() => {
     applyNativeSkinPolicy();
+    if (committedNativeRoute && document.title !== committedNativeRoute.title) {
+      scheduleRebuild({ automatic: true });
+    }
   });
-  headObserver.observe(document.head, { childList: true, subtree: true, attributes: true, attributeFilter: ["href", "media", "rel", "id"] });
+  headObserver.observe(document.head, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["href", "media", "rel", "id"] });
   applyNativeSkinPolicy();
 }
 
@@ -29261,6 +30039,12 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 
   if (changes[STORAGE_KEY]) {
     applySettings(changes[STORAGE_KEY].newValue);
+  }
+
+  if (changes[PINNED_BOARDS_STORAGE_KEY]) {
+    pinnedBoardHrefsCache = [...new Set((Array.isArray(changes[PINNED_BOARDS_STORAGE_KEY].newValue) ? changes[PINNED_BOARDS_STORAGE_KEY].newValue : []).map(normalizePinnedBoardHref).filter(Boolean))];
+    try { localStorage.setItem(PINNED_BOARDS_STORAGE_KEY, JSON.stringify(pinnedBoardHrefsCache)); } catch {}
+    if (getPageKind() === "boards") scheduleRebuild();
   }
 
   const readLaterStorageKey = getReadLaterStorageKey();
@@ -29325,6 +30109,7 @@ function initializeNormalPageDom() {
     return;
   }
   normalPageDomBooted = true;
+  window.addEventListener("pagehide", rememberReadingPositionBeforeReload);
   clearPublicUserProfileLoadingOverlay();
   injectSecurityWatermarkPageBridge();
   ensureSecurityWatermark();

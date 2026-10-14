@@ -1,9 +1,10 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="cc98-reborn-popup">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>CC98 Reborn</title>
+    <link rel="stylesheet" href="../src/theme-tokens.css">
     <link rel="stylesheet" href="popup.css">
   </head>
   <body>
@@ -11,7 +12,7 @@
       <header class="header">
         <div>
           <h1>CC98 Reborn</h1>
-          <p>舒适阅读设置</p>
+          <p id="settingsSubtitle">舒适阅读设置</p>
         </div>
         <div class="header-actions">
           <button id="aboutToggle" class="about-toggle" type="button" aria-expanded="false" aria-controls="aboutPopover" title="关于 CC98 Reborn">ℹ️</button>
@@ -39,50 +40,64 @@
         <span id="updateTopText">&#21457;&#29616;&#26032;&#29256;&#26412;</span>
       </button>
 
-      <section class="group" aria-labelledby="theme-label">
-        <div id="theme-label" class="label">主题</div>
+      <section class="group theme-settings" aria-labelledby="theme-label">
+        <div id="style-label" class="label">界面风格</div>
+        <div class="interface-styles" role="radiogroup" aria-labelledby="style-label">
+          <label><input type="radio" name="themeStyle" value="modern"><span><strong>Reborn</strong><small>当前的卡片与胶囊界面</small></span></label>
+          <label><input type="radio" name="themeStyle" value="ascii"><span><strong>ASCII / BBS <span class="experimental-note">（实验性）</span></strong><small>复古ASCII风格</small></span></label>
+        </div>
+        <p class="interface-style-note">改变论坛页面的整体排版，与明暗和配色独立。</p>
+        <div class="theme-heading">
+          <div id="theme-label" class="label">明暗</div>
+          <span id="themeCurrentTone" class="theme-current" aria-live="polite"></span>
+        </div>
         <div class="segmented" role="radiogroup" aria-labelledby="theme-label">
-          <label><input type="radio" name="theme" value="soft"><span>暖纸</span></label>
-          <label><input type="radio" name="theme" value="mist"><span>清雾</span></label>
-          <label><input type="radio" name="theme" value="night"><span>夜读</span></label>
+          <label><input type="radio" name="themeMode" value="light"><span>白昼</span></label>
+          <label><input type="radio" name="themeMode" value="dark"><span>黑夜</span></label>
+          <label><input type="radio" name="themeMode" value="auto"><span>自动</span></label>
         </div>
-        <div class="theme-more-row">
-          <button id="themeMoreToggle" class="theme-more-toggle" type="button" aria-expanded="false" aria-controls="themeMoreMenu">更多……</button>
-          <span id="themeMoreCurrent" class="theme-current" aria-live="polite"></span>
+        <div id="themeSchedule" class="theme-schedule" hidden>
+          <p class="theme-schedule-note">按本地时间自动切换</p>
+          <div class="theme-time-fields">
+            <label for="themeDayStart">白昼开始<input id="themeDayStart" type="time" value="07:00" required aria-describedby="themeScheduleError"></label>
+            <label for="themeNightStart">黑夜开始<input id="themeNightStart" type="time" value="19:00" required aria-describedby="themeScheduleError"></label>
+          </div>
+          <p id="themeScheduleError" class="theme-error" role="alert" hidden></p>
         </div>
-        <div id="themeMoreMenu" class="theme-more-menu" role="radiogroup" aria-label="更多配色方案" hidden>
-          <label>
-            <input type="radio" name="theme" value="sage">
-            <span><i class="theme-swatch theme-swatch-sage"></i><strong>竹影</strong><small>清绿低饱和</small></span>
-          </label>
-          <label>
-            <input type="radio" name="theme" value="lake">
-            <span><i class="theme-swatch theme-swatch-lake"></i><strong>湖蓝</strong><small>清爽冷色</small></span>
-          </label>
-          <label>
-            <input type="radio" name="theme" value="rose">
-            <span><i class="theme-swatch theme-swatch-rose"></i><strong>蔷薇</strong><small>柔和暖粉</small></span>
-          </label>
-          <label>
-            <input type="radio" name="theme" value="graphite">
-            <span><i class="theme-swatch theme-swatch-graphite"></i><strong>石墨</strong><small>中性暗色</small></span>
-          </label>
-          <label>
-            <input type="radio" name="theme" value="midnight">
-            <span><i class="theme-swatch theme-swatch-midnight"></i><strong>星夜</strong><small>深色冷调</small></span>
-          </label>
-          <label>
-            <input type="radio" name="theme" value="wine">
-            <span><i class="theme-swatch theme-swatch-wine"></i><strong>绛夜</strong><small>深色暖调</small></span>
-          </label>
+        <div class="theme-heading theme-palette-heading">
+          <div id="palette-label" class="label">论坛页面配色</div>
+          <span class="theme-current">主色 / 副色</span>
         </div>
+        <div id="themePalettes" class="theme-palettes" role="radiogroup" aria-labelledby="palette-label"></div>
+        <div id="themeCustomControls" class="theme-custom" hidden>
+          <div class="theme-custom-fields">
+            <div class="theme-custom-color">
+              <label for="themeCustomPrimaryHex">主色</label>
+              <div class="theme-color-inputs">
+                <input id="themeCustomPrimary" type="color" data-theme-color="themeCustomPrimary" aria-label="选择自定义主色">
+                <input id="themeCustomPrimaryHex" type="text" data-theme-color="themeCustomPrimary" spellcheck="false" autocomplete="off" placeholder="#1f7166" aria-label="自定义主色 HEX" aria-describedby="themeCustomColorError">
+              </div>
+            </div>
+            <div class="theme-custom-color">
+              <label for="themeCustomSecondaryHex">副色</label>
+              <div class="theme-color-inputs">
+                <input id="themeCustomSecondary" type="color" data-theme-color="themeCustomSecondary" aria-label="选择自定义副色">
+                <input id="themeCustomSecondaryHex" type="text" data-theme-color="themeCustomSecondary" spellcheck="false" autocomplete="off" placeholder="#326b9b" aria-label="自定义副色 HEX" aria-describedby="themeCustomColorError">
+              </div>
+            </div>
+          </div>
+          <p id="themeCustomColorError" class="theme-error" role="alert" hidden></p>
+          <p class="theme-custom-hint">明暗模式下自动适配</p>
+        </div>
+        <p class="theme-schedule-note">主色用于导航和主要按钮；副色用于标签、引用和辅助操作。</p>
       </section>
 
-      <section class="checks">
+      <section class="checks" aria-label="浏览与阅读">
+        <div class="label embedded-section-label">浏览与阅读</div>
         <label><input id="homeHotOnly" type="checkbox" checked><span>&#39318;&#39029;&#21482;&#20445;&#30041;&#21313;&#22823;</span></label>
         <label><input id="expandTopicCardsByDefault" type="checkbox"><span>&#24086;&#23376;&#21345;&#29255;&#40664;&#35748;&#23637;&#24320;&#65288;&#20851;&#38381;&#24748;&#28014;&#21160;&#30011;&#65289;</span></label>
         <label><input id="prewarmPostImages" type="checkbox"><span>&#39044;&#28909;&#24086;&#23376;&#22270;&#29255;&#65288;&#21487;&#33021;&#24310;&#36831;&#36827;&#20837;&#24086;&#23376;&#65289;</span></label>
-        <label><input id="previsitFirstPageForTopicImages" type="checkbox" checked><span>&#39044;&#28909;&#31532;&#19968;&#39029;&#65288;&#26356;&#22909;&#22320;&#35782;&#21035;&#27004;&#20027;&#65289;</span></label>
+        <label><input id="previsitFirstPageForTopicImages" type="checkbox" checked><span>后台预热第一页（识别楼主与热评）</span></label>
         <label><input id="openLinksInNewTab" type="checkbox"><span>&#38142;&#25509;&#22312;&#26032;&#39029;&#38754;&#25171;&#24320;</span></label>
         <label><input id="sideTopbar" type="checkbox"><span>&#24038;&#20391;&#25928;&#29575;&#26639;</span></label>
         <label><input id="replyRebornTail" type="checkbox" checked><span>&#22238;&#22797;&#26102;&#28155;&#21152;&#23567;&#23614;&#24052;</span></label>
@@ -92,7 +107,8 @@
         </div>
       </section>
 
-      <section class="group">
+      <section class="group reading-size-settings" aria-label="显示与图片">
+        <div class="label embedded-section-label">显示与图片</div>
         <label class="range">
           <span>字号</span>
           <output id="fontScaleOutput">110%</output>
@@ -131,6 +147,13 @@
         <div id="site-data-label" class="label">账号与站点数据</div>
         <p id="clearCc98DataStatus" class="site-data-status">用于刷新十大；同时会抹掉本地存储的稍后再看、版面置顶与草稿等数据，请谨慎。</p>
         <button id="clearCc98Data" class="danger-action" type="button">清除 CC98 Cookie</button>
+        <div id="clearCc98DataConfirm" class="site-data-confirm" role="group" aria-label="确认清除站点数据" hidden>
+          <p>这会清除 CC98 Cookie、稍后再看、版面置顶和本地草稿。确定继续吗？</p>
+          <div class="site-data-confirm-actions">
+            <button id="cancelClearCc98Data" type="button">取消</button>
+            <button id="confirmClearCc98Data" class="danger-action" type="button">确认清除</button>
+          </div>
+        </div>
       </section>
 
       <section class="group update-card" aria-labelledby="update-label">
@@ -147,9 +170,27 @@
       </section>
 
       <footer>
-        <button id="reset" type="button">恢复默认</button>
+        <div class="settings-footer-actions">
+          <button id="reset" type="button">恢复默认</button>
+          <button id="backupSettings" type="button">备份设置</button>
+          <button id="restoreSettings" type="button">导入备份</button>
+        </div>
+        <input id="settingsBackupFile" type="file" accept="application/json,.json" data-settings-transfer hidden>
+        <p id="settingsBackupStatus" class="settings-backup-status" role="status" aria-live="polite"></p>
+        <div id="settingsBackupPreview" class="settings-backup-preview" hidden>
+          <p id="settingsBackupSummary"></p>
+          <p>将覆盖同名配置，保留其他数据。用户备注与私信置顶按原账号恢复。</p>
+          <div class="settings-footer-actions">
+            <button id="cancelRestoreSettings" type="button">取消</button>
+            <button id="confirmRestoreSettings" type="button">确认导入</button>
+          </div>
+        </div>
       </footer>
     </main>
+    <script src="../src/theme-core.js"></script>
+    <script src="../src/private-message-pins-core.js"></script>
+    <script src="../src/settings-backup-core.js"></script>
     <script src="popup.js"></script>
+    <script src="settings-backup.js"></script>
   </body>
 </html>

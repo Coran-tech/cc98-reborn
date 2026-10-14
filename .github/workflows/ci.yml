@@ -19,13 +19,27 @@ jobs:
       - name: Check JavaScript syntax
         run: |
           node --check src/content.js
+          node --check src/theme-core.js
+          node --check src/interface-style.js
           node --check src/extended-ubb-core.js
           node --check src/extended-ubb.js
           node --check src/markup-converter.js
+          node --check src/conversation-core.js
+          node --check src/conversation.js
+          node --check src/topic-search.js
+          node --check src/favorite-share-core.js
+          node --check src/favorite-share-service.js
+          node --check src/favorite-share.js
+          node --check src/user-notes-core.js
+          node --check src/user-notes.js
+          node --check src/private-message-pins-core.js
+          node --check src/private-message-pins.js
+          node --check src/settings-backup-core.js
           node --check src/background.js
           node --check src/openid-webvpn-bridge.js
           node --check src/page-submit-monitor.js
           node --check popup/popup.js
+          node --check popup/settings-backup.js
           node --check experiments/question-mark/background.js
           node --check experiments/question-mark/content.js
           node --check experiments/question-mark/admin-key-store.js
@@ -48,3 +62,23 @@ jobs:
 
       - name: Test question reaction integration
         run: node tests/question-mark-integration.test.js
+
+      - name: Test conversation graph
+        run: node tests/conversation-core.test.js
+
+      - name: Test media resource URLs
+        run: node tests/media-resource-url.test.js
+
+      - name: Test favorite sharing
+        run: |
+          node tests/favorite-share-core.test.js
+          node tests/favorite-share-service.test.js
+
+      - name: Test local user notes
+        run: node tests/user-notes-core.test.js
+
+      - name: Test personal configuration backups
+        run: node tests/settings-backup-core.test.js
+
+      - name: Test theme schedule and migration
+        run: node tests/theme-core.test.js

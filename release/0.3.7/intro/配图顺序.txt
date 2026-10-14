@@ -1,0 +1,24 @@
+01. 统一的论坛界面 → images/01-interface.png
+02. 明暗、配色，分开选 → images/02-themes.png
+03. 复古 ASCII 风格 → images/03-ascii.png
+04. 常逛的版面，放近一点 → images/04-navigation.png
+05. 十大排名，能看见变化 → images/05-ranking.png
+06. 本地分析的搜索联想 → images/06-search.png
+07. 独立的稍后再看 → images/07-readlater.png
+08. 把一段对话放在一起 → images/08-conversation.png
+09. 更顺手的图片阅读器 → images/09-viewer.png
+10. 图片和媒体，补齐适配 → images/10-media.png
+11. 楼层操作和风评记录 → images/11-actions.png
+12. 分享一整个收藏夹 → images/12-favorites.png
+13. 给用户留个自己的备注 → images/13-notes.png
+14. 常聊的人，私信置顶 → images/14-pins.png
+15. 私信也好好收拾一下 → images/15-messages.png
+16. 个人中心也有插件设置 → images/16-settings.png
+17. 个人配置，备份一份 → images/17-backup.png
+18. 上下都能写的双区编辑器 → images/18-editor.png
+19. 扩展语法，放进工具栏 → images/19-syntax.png
+20. UBB 与 Markdown 互转 → images/20-conversion.png
+21. 发投票，也接上新界面 → images/21-poll.png
+22. 本地屏蔽规则 → images/22-filters.png
+23. 更新检查和数据清理 → images/23-updates.png
+24. 问号键，继续做实验 → images/24-question.png

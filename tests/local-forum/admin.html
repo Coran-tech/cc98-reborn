@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CC98 本地论坛控制台</title>
+  <link rel="stylesheet" href="/__local/admin.css">
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">LOCAL ONLY</p>
+      <h1>CC98 本地论坛控制台</h1>
+      <p>论坛内容、权限与 Reborn 配置统一管理</p>
+    </div>
+    <div class="header-actions">
+      <span id="server-pill" class="status-pill">等待连接</span>
+      <a class="button ghost" href="/" target="_blank" rel="noopener">打开论坛</a>
+      <button id="logout" class="ghost hidden">退出</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="login-view" class="login-band">
+      <div>
+        <h2>管理员登录</h2>
+        <p>仅接受本机站务管理员账号。</p>
+      </div>
+      <form id="login-form" class="inline-form">
+        <label><span>用户名</span><input id="username" autocomplete="username" value="LocalTester"></label>
+        <label><span>密码</span><input id="password" type="password" autocomplete="current-password" placeholder="LocalTest!2026"></label>
+        <button class="primary" type="submit">登录控制台</button>
+      </form>
+      <p id="login-message" class="message"></p>
+    </section>
+
+    <div id="console-view" class="console-layout hidden">
+      <nav class="section-nav" aria-label="控制台功能">
+        <button class="active" data-panel="overview">概览</button>
+        <button data-panel="extension">插件控制</button>
+        <button data-panel="accounts">账号权限</button>
+        <button data-panel="boards">版面管理</button>
+        <button data-panel="topics">主题管理</button>
+        <button data-panel="homepage">首页内容</button>
+        <button data-panel="data">数据维护</button>
+      </nav>
+
+      <div class="panel-host">
+        <section class="panel active" data-panel-content="overview">
+          <div class="panel-heading">
+            <div><p class="eyebrow">OVERVIEW</p><h2>运行概览</h2></div>
+            <button id="refresh-overview">刷新</button>
+          </div>
+          <div id="metrics" class="metrics"></div>
+          <div class="split-band">
+            <div>
+              <h3>模拟登录账号</h3>
+              <p class="hint">兼容模式下，论坛刷新后会使用此账号。严格登录模式仍以实际会话为准。</p>
+              <div class="inline-form compact">
+                <select id="active-user"></select>
+                <button id="apply-active-user" class="primary">切换账号</button>
+              </div>
+            </div>
+            <div>
+              <h3>快速入口</h3>
+              <div class="link-grid">
+                <a href="/" target="_blank" rel="noopener">论坛首页</a>
+                <a href="/newTopics" target="_blank" rel="noopener">新帖</a>
+                <a href="/board/81" target="_blank" rel="noopener">测试版面</a>
+                <a href="/sitemanage" target="_blank" rel="noopener">全站管理</a>
+              </div>
+            </div>
+          </div>
+          <p id="overview-message" class="message"></p>
+        </section>
+
+        <section class="panel" data-panel-content="extension">
+          <div class="panel-heading">
+            <div><p class="eyebrow">REBORN</p><h2>插件全量控制</h2></div>
+            <div class="inline-form compact">
+              <select id="extension-user"></select>
+              <button id="reload-extension">重新读取</button>
+            </div>
+          </div>
+          <p class="hint">设置按 UID 隔离并保存在后端。已打开的本地论坛标签会自动接收更新；敏感 OpenID 凭据不会由此控制台读取或写入。</p>
+          <form id="extension-form">
+            <div class="settings-grid">
+              <fieldset>
+                <legend>界面</legend>
+                <label class="switch-row"><span>启用插件</span><input name="enabled" type="checkbox"></label>
+                <label class="switch-row"><span>启用重构界面</span><input name="rebuildUi" type="checkbox"></label>
+                <label class="field-row"><span>配色</span><select name="theme">
+                  <option value="soft">暖纸</option><option value="mist">清雾</option><option value="night">夜读</option>
+                  <option value="sage">竹影</option><option value="lake">湖蓝</option><option value="rose">蔷薇</option>
+                  <option value="graphite">石墨</option><option value="midnight">星夜</option><option value="wine">绛夜</option>
+                </select></label>
+                <label class="field-row"><span>密度</span><select name="density"><option value="comfortable">舒适</option><option value="compact">紧凑</option></select></label>
+                <label class="range-row"><span>字号 <output data-output="fontScale"></output></span><input name="fontScale" type="range" min="80" max="130" step="1"></label>
+                <label class="range-row"><span>表情缩放 <output data-output="emojiScale"></output></span><input name="emojiScale" type="range" min="60" max="180" step="5"></label>
+                <label class="switch-row"><span>圆角界面</span><input name="roundUi" type="checkbox"></label>
+                <label class="range-row"><span>圆角半径 <output data-output="cornerRadius"></output></span><input name="cornerRadius" type="range" min="0" max="24" step="1"></label>
+                <label class="switch-row"><span>柔化头像</span><input name="softenAvatars" type="checkbox"></label>
+                <label class="switch-row"><span>中和原站皮肤</span><input name="neutralizeNativeSkin" type="checkbox"></label>
+              </fieldset>
+              <fieldset>
+                <legend>浏览</legend>
+                <label class="switch-row"><span>链接在新标签页打开</span><input name="openLinksInNewTab" type="checkbox"></label>
+                <label class="switch-row"><span>左侧效率栏</span><input name="sideTopbar" type="checkbox"></label>
+                <label class="switch-row"><span>首页只显示热门</span><input name="homeHotOnly" type="checkbox"></label>
+                <label class="switch-row"><span>默认展开帖子卡片</span><input name="expandTopicCardsByDefault" type="checkbox"></label>
+                <label class="switch-row"><span>隐藏置顶帖</span><input name="hideSticky" type="checkbox"></label>
+                <label class="switch-row"><span>专注阅读</span><input name="focusReading" type="checkbox"></label>
+                <label class="switch-row"><span>极简模式</span><input name="minimalMode" type="checkbox"></label>
+                <label class="switch-row"><span>回复时添加小尾巴</span><input name="replyRebornTail" type="checkbox"></label>
+              </fieldset>
+              <fieldset>
+                <legend>图片</legend>
+                <label class="switch-row"><span>预热帖子图片</span><input name="prewarmPostImages" type="checkbox"></label>
+                <label class="switch-row"><span>预访第一页图片</span><input name="previsitFirstPageForTopicImages" type="checkbox"></label>
+                <label class="range-row"><span>图片加载时限 <output data-output="imageLoadDuration"></output></span><input name="imageLoadDuration" type="range" min="300" max="8000" step="100"></label>
+              </fieldset>
+              <fieldset>
+                <legend>屏蔽与联想</legend>
+                <label><span>屏蔽版面</span><textarea name="blockedBoards" rows="2"></textarea></label>
+                <label><span>标题关键词</span><textarea name="blockedTitleKeywords" rows="2"></textarea></label>
+                <label><span>屏蔽 UID</span><textarea name="blockedUserIds" rows="2"></textarea></label>
+                <label><span>折叠提示</span><input name="placeholderText"></label>
+                <label class="switch-row"><span>高级模糊搜索</span><input name="advancedFuzzySearch" type="checkbox"></label>
+                <label class="switch-row"><span>AI 联想（默认禁用）</span><input name="aiSearchSuggestEnabled" type="checkbox"></label>
+                <p class="warning">本地控制台不配置外部 AI 密钥。启用前请自行确认数据传输边界。</p>
+              </fieldset>
+            </div>
+            <div class="form-actions">
+              <button class="primary" type="submit">保存并应用</button>
+              <button id="reset-extension-settings" type="button">恢复默认设置</button>
+            </div>
+          </form>
+          <details class="raw-editor">
+            <summary>原始插件存储</summary>
+            <p class="hint">可管理稍后再看、搜索历史等键值。系统会拒绝令牌、密钥类键名和超过 2 MiB 的数据。</p>
+            <textarea id="extension-raw" rows="14" spellcheck="false"></textarea>
+            <div class="form-actions">
+              <button id="save-extension-raw" class="primary">覆盖当前用户存储</button>
+              <button id="clear-extension-storage" class="danger">重置当前用户存储</button>
+            </div>
+          </details>
+          <p id="extension-message" class="message"></p>
+        </section>
+
+        <section class="panel" data-panel-content="accounts">
+          <div class="panel-heading"><div><p class="eyebrow">IDENTITY</p><h2>账号与权限</h2></div><button id="reload-users">刷新列表</button></div>
+          <form id="register-form" class="inline-form">
+            <label><span>新用户名</span><input id="new-username" required></label>
+            <label><span>初始密码</span><input id="new-password" type="password" minlength="8" required></label>
+            <button class="primary" type="submit">创建账号</button>
+          </form>
+          <div class="table-wrap"><table><thead><tr><th>用户</th><th>论坛头衔</th><th>权威角色</th><th>状态</th><th>操作</th></tr></thead><tbody id="user-list"></tbody></table></div>
+          <div class="split-band">
+            <form id="registration-form">
+              <h3>注册策略</h3>
+              <label class="switch-row"><span>允许注册</span><input id="registration-enabled" type="checkbox"></label>
+              <label class="switch-row"><span>需要邀请码</span><input id="registration-invite" type="checkbox"></label>
+              <label><span>邀请码（开启后必填）</span><input id="registration-invite-code" maxlength="128" autocomplete="off"></label>
+              <button class="primary" type="submit">保存策略</button>
+            </form>
+            <div>
+              <h3>会话</h3>
+              <button id="load-sessions">读取活动会话</button>
+              <div id="session-list" class="compact-list"></div>
+            </div>
+          </div>
+          <p id="account-message" class="message"></p>
+        </section>
+
+        <section class="panel" data-panel-content="boards">
+          <div class="panel-heading"><div><p class="eyebrow">BOARDS</p><h2>版面与版主</h2></div><button id="reload-boards">刷新</button></div>
+          <form id="board-form" class="editor-form">
+            <input id="board-id" type="hidden">
+            <div class="inline-form">
+              <label><span>版面名称</span><input id="board-name" required></label>
+              <label><span>匿名模式</span><select id="board-anonymous"><option value="0">关闭</option><option value="1">强制匿名</option><option value="2">楼主可匿名</option><option value="3">发帖可匿名</option></select></label>
+              <label class="switch-row"><span>允许进入/发帖</span><input id="board-entry" type="checkbox" checked></label>
+              <label class="switch-row"><span>允许投票</span><input id="board-vote" type="checkbox" checked></label>
+              <label class="switch-row"><span>锁定版面</span><input id="board-locked" type="checkbox"></label>
+            </div>
+            <label><span>版面说明（UBB）</span><textarea id="board-description" rows="4"></textarea></label>
+            <div class="form-actions"><button class="primary" type="submit">保存版面</button><button id="clear-board-form" type="button">新建模式</button></div>
+          </form>
+          <div id="board-list" class="record-list"></div>
+          <p id="board-message" class="message"></p>
+        </section>
+
+        <section class="panel" data-panel-content="topics">
+          <div class="panel-heading"><div><p class="eyebrow">MODERATION</p><h2>主题管理</h2></div></div>
+          <form id="topic-search-form" class="inline-form">
+            <input id="topic-keyword" placeholder="标题或作者">
+            <select id="topic-board"><option value="0">全部版面</option></select>
+            <button class="primary" type="submit">搜索</button>
+          </form>
+          <div class="table-wrap"><table><thead><tr><th>主题</th><th>版面</th><th>作者/时间</th><th>状态</th><th>管理</th></tr></thead><tbody id="topic-list"></tbody></table></div>
+          <p id="topic-message" class="message"></p>
+        </section>
+
+        <section class="panel" data-panel-content="homepage">
+          <div class="panel-heading"><div><p class="eyebrow">SITE</p><h2>首页与公告</h2></div><a class="button" href="/sitemanage" target="_blank" rel="noopener">查看原版管理页</a></div>
+          <form id="announcement-form">
+            <label><span>全站公告（UBB）</span><textarea id="announcement" rows="8"></textarea></label>
+            <div class="form-actions"><button class="primary" type="submit">保存公告</button><button id="clear-home-cache" type="button">刷新首页数据</button></div>
+          </form>
+          <h3>首页栏目</h3>
+          <form id="column-form" class="editor-form">
+            <input id="column-id" type="hidden">
+            <div class="inline-form">
+              <label><span>类型</span><select id="column-type"><option value="1">推荐阅读</option><option value="2">推荐功能</option><option value="3">校园新闻</option><option value="4">广告</option><option value="7">特别推荐</option></select></label>
+              <label><span>标题</span><input id="column-title" required></label>
+              <label><span>链接</span><input id="column-url"></label>
+              <label><span>图片</span><input id="column-image"></label>
+              <label class="switch-row"><span>启用</span><input id="column-enabled" type="checkbox" checked></label>
+            </div>
+            <label><span>内容</span><textarea id="column-content" rows="3"></textarea></label>
+            <div class="form-actions"><button class="primary" type="submit">保存栏目</button><button id="clear-column-form" type="button">新建模式</button></div>
+          </form>
+          <div id="column-list" class="record-list"></div>
+          <p id="homepage-message" class="message"></p>
+        </section>
+
+        <section class="panel" data-panel-content="data">
+          <div class="panel-heading"><div><p class="eyebrow">MAINTENANCE</p><h2>数据维护</h2></div></div>
+          <div class="action-grid">
+            <button id="integrity" class="primary">检查完整性</button>
+            <button id="backup">立即备份</button>
+            <button id="export">导出 JSON</button>
+            <button id="load-audit">读取审计记录</button>
+            <button id="reset" class="danger">恢复种子数据</button>
+          </div>
+          <details><summary>恢复 JSON 备份</summary><div class="inline-form"><input id="restore-file" type="file" accept="application/json,.json"><button id="restore">恢复选中文件</button></div></details>
+          <pre id="diagnostic-output" class="hidden"></pre>
+          <div class="table-wrap"><table><thead><tr><th>时间</th><th>操作者</th><th>动作</th><th>目标</th></tr></thead><tbody id="audit-list"></tbody></table></div>
+          <p id="data-message" class="message"></p>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <template id="confirm-template">
+    <dialog class="confirm-dialog"><form method="dialog"><h2>确认操作</h2><p data-confirm-message></p><div class="form-actions"><button value="cancel">取消</button><button value="confirm" class="danger">确认</button></div></form></dialog>
+  </template>
+  <script src="/__local/admin.js"></script>
+</body>
+</html>

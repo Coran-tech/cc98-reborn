@@ -1,0 +1,131 @@
+/* Tone controls neutral surfaces; palettes only supply primary and secondary colors. */
+:root:is(.cc98-comfort, .cc98-reborn-popup) {
+  --cc98-comfort-bg: #f6f7f8;
+  --cc98-comfort-surface: #ffffff;
+  --cc98-comfort-surface-2: #f0f1f3;
+  --cc98-comfort-surface-3: #e6e8eb;
+  --cc98-comfort-text: #25282e;
+  --cc98-comfort-muted: #646a73;
+  --cc98-comfort-subtle: #747b85;
+  --cc98-comfort-border: #dce0e5;
+  --cc98-comfort-accent: #1f7166;
+  --cc98-comfort-accent-2: #e3f1ed;
+  --cc98-comfort-on-accent: #ffffff;
+  --cc98-comfort-secondary: #326b9b;
+  --cc98-comfort-secondary-soft: #e8f0f8;
+  --cc98-comfort-link: var(--cc98-comfort-secondary);
+  --cc98-comfort-danger: #b5474a;
+  --cc98-comfort-warning: #8b641d;
+  --cc98-award-positive: #16a34a;
+  --cc98-award-negative: #dc2626;
+  --cc98-comfort-shadow: 0 8px 24px rgba(20, 24, 32, 0.07);
+  color-scheme: light;
+}
+
+:root:is(.cc98-comfort, .cc98-reborn-popup)[data-cc98-comfort-tone="dark"] {
+  --cc98-comfort-bg: #16181b;
+  --cc98-comfort-surface: #212428;
+  --cc98-comfort-surface-2: #2b2e33;
+  --cc98-comfort-surface-3: #353940;
+  --cc98-comfort-text: #e9ebef;
+  --cc98-comfort-muted: #b6bcc6;
+  --cc98-comfort-subtle: #969eaa;
+  --cc98-comfort-border: #424750;
+  --cc98-comfort-accent: #88c9bb;
+  --cc98-comfort-accent-2: #293e39;
+  --cc98-comfort-on-accent: #16181b;
+  --cc98-comfort-secondary: #96bfe8;
+  --cc98-comfort-secondary-soft: #2b3746;
+  --cc98-comfort-danger: #f0a4a7;
+  --cc98-comfort-warning: #e2c16e;
+  --cc98-award-positive: #86efac;
+  --cc98-award-negative: #fca5a5;
+  --cc98-comfort-shadow: 0 12px 32px rgba(0, 0, 0, 0.24);
+  color-scheme: dark;
+}
+
+/* 青竹 — teal and blue. Also the default for missing/unknown palettes. */
+:root:is(.cc98-comfort, .cc98-reborn-popup)[data-cc98-comfort-palette="teal"] {
+  --cc98-comfort-accent: #1f7166;
+  --cc98-comfort-accent-2: #e3f1ed;
+  --cc98-comfort-secondary: #326b9b;
+  --cc98-comfort-secondary-soft: #e8f0f8;
+}
+
+:root:is(.cc98-comfort, .cc98-reborn-popup)[data-cc98-comfort-palette="green"] {
+  --cc98-comfort-accent: #3e744f;
+  --cc98-comfort-accent-2: #e8f1e9;
+  --cc98-comfort-secondary: #80682e;
+  --cc98-comfort-secondary-soft: #f4efe2;
+}
+
+:root:is(.cc98-comfort, .cc98-reborn-popup)[data-cc98-comfort-palette="blue"] {
+  --cc98-comfort-accent: #326fa9;
+  --cc98-comfort-accent-2: #e6eff8;
+  --cc98-comfort-secondary: #735baa;
+  --cc98-comfort-secondary-soft: #efeaf7;
+}
+
+:root:is(.cc98-comfort, .cc98-reborn-popup)[data-cc98-comfort-palette="violet"] {
+  --cc98-comfort-accent: #7957a5;
+  --cc98-comfort-accent-2: #f0eaf7;
+  --cc98-comfort-secondary: #26747b;
+  --cc98-comfort-secondary-soft: #e4f1f2;
+}
+
+:root:is(.cc98-comfort, .cc98-reborn-popup)[data-cc98-comfort-palette="rose"] {
+  --cc98-comfort-accent: #a34e70;
+  --cc98-comfort-accent-2: #f7e9ef;
+  --cc98-comfort-secondary: #5e7040;
+  --cc98-comfort-secondary-soft: #eef2e6;
+}
+
+:root:is(.cc98-comfort, .cc98-reborn-popup)[data-cc98-comfort-palette="amber"] {
+  --cc98-comfort-accent: #92621d;
+  --cc98-comfort-accent-2: #f8efdd;
+  --cc98-comfort-secondary: #486e92;
+  --cc98-comfort-secondary-soft: #e8eff6;
+}
+
+/* Dark variants keep the same color pairing with a readable luminance. */
+:root:is(.cc98-comfort, .cc98-reborn-popup)[data-cc98-comfort-tone="dark"][data-cc98-comfort-palette="teal"] {
+  --cc98-comfort-accent: #88c9bb;
+  --cc98-comfort-accent-2: #293e39;
+  --cc98-comfort-secondary: #96bfe8;
+  --cc98-comfort-secondary-soft: #2b3746;
+}
+
+:root:is(.cc98-comfort, .cc98-reborn-popup)[data-cc98-comfort-tone="dark"][data-cc98-comfort-palette="green"] {
+  --cc98-comfort-accent: #a3cfa7;
+  --cc98-comfort-accent-2: #2e3e32;
+  --cc98-comfort-secondary: #dac38a;
+  --cc98-comfort-secondary-soft: #3e392d;
+}
+
+:root:is(.cc98-comfort, .cc98-reborn-popup)[data-cc98-comfort-tone="dark"][data-cc98-comfort-palette="blue"] {
+  --cc98-comfort-accent: #92bee9;
+  --cc98-comfort-accent-2: #29394b;
+  --cc98-comfort-secondary: #bca7e3;
+  --cc98-comfort-secondary-soft: #383149;
+}
+
+:root:is(.cc98-comfort, .cc98-reborn-popup)[data-cc98-comfort-tone="dark"][data-cc98-comfort-palette="violet"] {
+  --cc98-comfort-accent: #c1a8e6;
+  --cc98-comfort-accent-2: #3a3049;
+  --cc98-comfort-secondary: #86c8d0;
+  --cc98-comfort-secondary-soft: #283c40;
+}
+
+:root:is(.cc98-comfort, .cc98-reborn-popup)[data-cc98-comfort-tone="dark"][data-cc98-comfort-palette="rose"] {
+  --cc98-comfort-accent: #e2a0bc;
+  --cc98-comfort-accent-2: #46313b;
+  --cc98-comfort-secondary: #b7cd93;
+  --cc98-comfort-secondary-soft: #343e2d;
+}
+
+:root:is(.cc98-comfort, .cc98-reborn-popup)[data-cc98-comfort-tone="dark"][data-cc98-comfort-palette="amber"] {
+  --cc98-comfort-accent: #e3be7c;
+  --cc98-comfort-accent-2: #443a2b;
+  --cc98-comfort-secondary: #a1c1e0;
+  --cc98-comfort-secondary-soft: #2e3945;
+}

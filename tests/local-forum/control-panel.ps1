@@ -99,6 +99,7 @@ $RestartButton = Find-Control "RestartButton"
 $CheckButton = Find-Control "CheckButton"
 $OpenHomeButton = Find-Control "OpenHomeButton"
 $OpenEditorButton = Find-Control "OpenEditorButton"
+$OpenConsoleButton = Find-Control "OpenConsoleButton"
 $CopyUrlButton = Find-Control "CopyUrlButton"
 $ClearLogButton = Find-Control "ClearLogButton"
 $AutoCheckBox = Find-Control "AutoCheckBox"
@@ -272,6 +273,7 @@ function Set-ButtonState {
   $CheckButton.IsEnabled = !$script:ActionInProgress
   $OpenHomeButton.IsEnabled = $Running
   $OpenEditorButton.IsEnabled = $Running
+  $OpenConsoleButton.IsEnabled = $Running
   $PortTextBox.IsEnabled = !$Running -and !$script:ActionInProgress
 }
 
@@ -396,7 +398,33 @@ function Stop-LocalForum {
   }
 
   Set-StatusVisual -State "checking" -Detail (Get-Text "detailStopping")
-  Stop-Process -Id $serverPid -Force -ErrorAction Stop
+  $gracefulStopAccepted = $false
+  $response = $null
+  $reader = $null
+  try {
+    $request = [Net.HttpWebRequest]::Create("http://127.0.0.1:$port/__test/shutdown")
+    $request.Method = "POST"
+    $request.Proxy = $null
+    $request.Timeout = 1200
+    $request.ReadWriteTimeout = 1200
+    $request.ContentLength = 0
+    $response = $request.GetResponse()
+    $reader = New-Object IO.StreamReader($response.GetResponseStream(), [Text.Encoding]::UTF8)
+    $payload = $reader.ReadToEnd() | ConvertFrom-Json
+    $gracefulStopAccepted = (Get-ObjectProperty $payload "ok" $false) -eq $true -and [int](Get-ObjectProperty $payload "pid" 0) -eq $serverPid
+  } catch {
+    $gracefulStopAccepted = $false
+  } finally {
+    if ($null -ne $reader) { $reader.Dispose() }
+    if ($null -ne $response) { $response.Dispose() }
+  }
+
+  if ($gracefulStopAccepted) {
+    [void](Wait-ForHealth -Port $port -ExpectedRunning $false -TimeoutMilliseconds 3500)
+  }
+  if ($null -ne (Get-LocalForumHealth -Port $port -TimeoutMilliseconds 450)) {
+    Stop-Process -Id $serverPid -Force -ErrorAction Stop
+  }
   [void](Wait-ForHealth -Port $port -ExpectedRunning $false -TimeoutMilliseconds 3500)
   Write-PanelLog ((Get-Text "stoppedProcess") -f $serverPid)
 }
@@ -512,6 +540,7 @@ $RestartButton.Add_Click({
 $CheckButton.Add_Click({ Update-Dashboard -Manual })
 $OpenHomeButton.Add_Click({ Start-Process (Get-ForumUrl) })
 $OpenEditorButton.Add_Click({ Start-Process (Get-ForumUrl "/editor/postTopic/81") })
+$OpenConsoleButton.Add_Click({ Start-Process (Get-ForumUrl "/__local/console") })
 $CopyUrlButton.Add_Click({
   [Windows.Clipboard]::SetText((Get-ForumUrl))
   Write-PanelLog (Get-Text "urlCopied")

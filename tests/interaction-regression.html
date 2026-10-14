@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <title>CC98 Reborn interaction regression</title>
+  <link rel="stylesheet" href="../src/theme-tokens.css">
   <link rel="stylesheet" href="../src/styles.css">
   <style>
     body { padding: 24px; }
@@ -47,6 +48,7 @@
       }
     };
   </script>
+  <script src="../src/theme-core.js"></script>
   <script src="../src/content.js"></script>
   <script>
     const results = document.querySelector("#results");
@@ -248,6 +250,34 @@
           && stableFeed.children[1] === originalStableCard,
         [...stableFeed.children].map((card) => card.dataset.itemKey).join(",")
       );
+
+      const fontEditor = document.createElement("section");
+      const fontShell = document.createElement("div");
+      fontShell.className = "ubb-editor";
+      const fontToolbar = document.createElement("div");
+      fontToolbar.className = "ubb-buttons";
+      const fontSizeControl = document.createElement("div");
+      fontSizeControl.className = "ubb-button ubb-button-fontSize";
+      fontToolbar.append(fontSizeControl);
+      fontShell.append(fontToolbar);
+      fontEditor.append(fontShell);
+      document.body.append(fontEditor);
+      const fontState = { ubbEditor: fontShell };
+      ensureNativeDualUbbToolbarControls(fontEditor, fontState);
+      const fontFamilySelect = fontToolbar.querySelector(".cc98-rebuild-editor-font-select");
+      const fontToolbarObserver = new MutationObserver(() => {});
+      fontToolbarObserver.observe(fontToolbar, { childList: true });
+      ensureNativeDualUbbToolbarControls(fontEditor, fontState);
+      const fontToolbarMutations = fontToolbarObserver.takeRecords();
+      fontToolbarObserver.disconnect();
+      check(
+        "font picker stabilization keeps the native select mounted",
+        fontFamilySelect instanceof HTMLSelectElement
+          && fontSizeControl.nextElementSibling === fontFamilySelect
+          && fontToolbarMutations.length === 0,
+        `mutations=${fontToolbarMutations.length}`
+      );
+      fontEditor.remove();
 
       const previousSettings = lastSettings;
       const blockedItem = document.createElement("article");

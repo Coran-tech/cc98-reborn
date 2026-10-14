@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>近期私信侧栏回归 - CC98论坛</title>
+  <link id="mainStylesheet" rel="stylesheet" href="/reference/Forum-main/dist/static/content/css_autumn_2022_light.css">
+  <link rel="stylesheet" href="/src/theme-tokens.css">
+  <link rel="stylesheet" href="/src/styles.css">
+  <style>
+    body { margin: 0; }
+    /* Only the surrounding test canvas is arranged here. Native contact styles
+       are supplied by the original forum stylesheet and the extension. */
+    .fixture-layout { display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 22px; }
+    .fixture-layout > .message-message-people { height: 700px; }
+    .fixture-layout .message-message-window { min-width: 0; }
+    @media (max-width: 680px) { .fixture-layout { grid-template-columns: 1fr; } .fixture-layout > .message-message-people { height: 540px; } }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <header class="topBar"><div class="topBarRight"><span class="topBarUserName">测试用户</span></div></header>
+    <div id="native-message" class="message-root">
+      <div class="fixture-layout">
+        <aside class="message-message-people">
+          <div class="message-message-pTitle">近期私信</div>
+          <div id="contact-list" class="message-message-pList">
+            <div id="more-control" class="message-message-plMore"><div id="moreShow">显示更多小伙伴~</div><div id="moreDone" class="displaynone">小伙伴们都出来了~</div></div>
+          </div>
+        </aside>
+        <section class="message-message-window">
+          <header class="message-message-wHeader"><strong class="message-message-wTitle">与同学 A 的私信</strong></header>
+          <div class="message-message-wContent"><div class="message-message-wcSender"><div class="message-message-wcText"><article>聊天正文保持原布局。这份回复草稿在选择联系人和加载更多时也会保留。</article></div></div></div>
+          <div class="message-message-wPost"><textarea id="sidebar-draft" class="message-message-wPostArea">正在编辑的回复草稿。</textarea><button class="message-message-wPostButton" type="button">发送</button></div>
+        </section>
+      </div>
+    </div>
+  </div>
+  <script>
+    const initial = [
+      { id: 1001, name: "同学 A", preview: "收到，谢谢！", read: true },
+      { id: 1002, name: "这是一位用户名特别特别长的同学，名字需要正确省略", preview: "这是很长的消息预览。".repeat(12), read: false },
+      { id: 1003, name: "阅读伙伴", preview: "明天的图书馆见。我们可以接着讨论那本书。".repeat(5), read: true },
+      { id: 1004, name: "表情伙伴", preview: '<img id="preview-emoji" src="/images/ac/01.png" width="200" height="200" alt="AC">', read: true },
+      { id: 1005, name: "摄影同学", preview: '<img id="preview-photo" src="/uploads/preview-face-photo.png" width="200" height="100" alt="普通图片"> 分享一张最近拍的照片。', read: true },
+      { id: 1006, name: "空白预览", preview: "", read: true },
+      ...Array.from({ length: 6 }, (_, i) => ({ id: 1007 + i, name: `近期联系人 ${i + 1}`, preview: `短消息预览 ${i + 1}`, read: true }))
+    ];
+    window.__sidebarFixture = {
+      selected: 1001, switched: 0, loadCalls: 0, total: initial.length,
+      append(data) {
+        const wrapper = document.createElement("div");
+        wrapper.id = `contact_${data.id}`;
+        wrapper.classList.toggle("message-message-pFocus", this.selected === data.id);
+        wrapper.innerHTML = `<div class="message-message-person"><img class="message-message-pPortraitUrl" src="/uploads/avatar-${data.id}.png" alt="头像"><div class="message-message-pInfo"><div class="message-message-pName"></div><div class="message-message-pMessage"><article>${data.preview}</article></div></div><div class="message-counterPerson${data.read ? " displaynone" : ""}"></div></div>`;
+        wrapper.querySelector(".message-message-pName").textContent = data.name;
+        wrapper.addEventListener("click", () => {
+          this.selected = data.id;
+          this.switched += 1;
+          document.querySelectorAll("#contact-list > div").forEach((row) => row.classList.remove("message-message-pFocus"));
+          wrapper.classList.add("message-message-pFocus");
+          wrapper.querySelector(".message-counterPerson").classList.add("displaynone");
+          document.querySelector(".message-message-wTitle").textContent = `与 ${data.name} 的私信`;
+        });
+        document.getElementById("contact-list").insertBefore(wrapper, document.getElementById("more-control"));
+      },
+      loadMore() {
+        this.loadCalls += 1;
+        for (let i = 0; i < 4; i += 1) { this.total += 1; this.append({ id: 1000 + this.total, name: `更多联系人 ${this.total}`, preview: "动态追加后仍然紧凑显示。", read: true }); }
+      }
+    };
+    initial.forEach((row) => __sidebarFixture.append(row));
+    document.getElementById("more-control").addEventListener("click", () => __sidebarFixture.loadMore());
+  </script>
+  <script src="/src/theme-core.js"></script>
+  <script src="/src/private-message-pins-core.js"></script>
+  <script src="/src/private-message-pins.js"></script>
+  <script src="/src/extended-ubb-core.js"></script>
+  <script src="/src/markup-converter.js"></script>
+  <script src="/src/content.js"></script>
+</body>
+</html>

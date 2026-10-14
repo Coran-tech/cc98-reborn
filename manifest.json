@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "CC98 Reborn",
   "description": "A refreshed reading and browsing interface for CC98.",
-  "version": "0.3.5.2",
+  "version": "0.3.7",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsx4AY7VBQLt9+vyQu66ygsM332JqZkzTbXoGodjciunuxrkJ5PmN7qmlyhJQz3hd6rqxIQq7DRwEimcH3SaEYB6ypOh0fSSSWEWhjIbENVOJuVd0j+9ad8Ww9QE+AA/rfGEci0hHx02IvLarBCUBlROqVJjvofOFNg/8rhozdu/3lpcYqPqq+CKzYZWH7J26TC5Tcau0sXodmM27sI/4q5avmL0cFSruuCuqep69delrU/qSBLkJZar53AIpKPwwz48Jj75XQD5PFEpJ/8mTxiSRQ6cgQH2xypLwIiUbbtDMUmkLzVGEo364hUN1/GavubO6h78T5K8ealXNWUqgHQIDAQAB",
   "permissions": [
     "storage",
@@ -26,6 +26,15 @@
     "https://gh-proxy.com/*"
   ],
   "web_accessible_resources": [
+    {
+      "resources": ["popup/popup.html"],
+      "matches": [
+        "*://*.cc98.org/*",
+        "*://cc98.org/*",
+        "*://www-cc98-org-s.webvpn.zju.edu.cn/*",
+        "*://*.webvpn.zju.edu.cn/*"
+      ]
+    },
     {
       "resources": [
         "images/CC98/*",
@@ -90,19 +99,35 @@
         "*://*.webvpn.zju.edu.cn/*/PassKey/LogOn*"
       ],
       "js": [
+        "src/theme-core.js",
+        "src/interface-style.js",
         "src/vendor/showdown/showdown.min.js",
         "src/vendor/katex/katex.min.js",
         "src/extended-ubb-core.js",
         "src/extended-ubb.js",
         "src/markup-converter.js",
+        "src/conversation-core.js",
+        "src/conversation.js",
+        "src/topic-search.js",
+        "src/favorite-share-core.js",
+        "src/favorite-share-service.js",
+        "src/favorite-share.js",
+        "src/user-notes-core.js",
+        "src/user-notes.js",
+        "src/private-message-pins-core.js",
+        "src/private-message-pins.js",
         "src/content.js",
         "experiments/question-mark/content.js"
       ],
       "css": [
+        "src/theme-tokens.css",
         "src/vendor/katex/katex.min.css",
         "src/styles.css",
+        "src/user-notes.css",
+        "src/topic-search.css",
         "src/extended-ubb.css",
-        "experiments/question-mark/content.css"
+        "experiments/question-mark/content.css",
+        "src/interface-styles.css"
       ],
       "run_at": "document_start"
     }
