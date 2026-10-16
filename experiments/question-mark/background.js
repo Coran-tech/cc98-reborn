@@ -48,10 +48,30 @@ function questionLocationMatchesSender(sender, topicId) {
     return false;
   }
   try {
-    return new URL(sender.tab.url).pathname.match(/\/topic\/(\d+)/)?.[1] === String(topicId);
+    // A drawer has its own topic URL while the containing tab remains on the
+    // home/new-topics list. Use browser-provided document metadata, never a URL
+    // supplied in the message; child documents must stay on the tab's origin.
+    const documentUrl = sender.url || (sender.frameId ? "" : sender.tab.url);
+    if (!isCc98WebPageTabUrl(documentUrl)) return false;
+    const url = new URL(documentUrl);
+    return /^https?:$/.test(url.protocol) && url.origin === new URL(sender.tab.url).origin
+      && url.pathname.match(/\/topic\/(\d+)(?:\/|$)/)?.[1] === String(topicId);
   } catch {
     return false;
   }
+}
+
+function questionCurrentWebAccount(sender) {
+  return new Promise((resolve) => {
+    // Document targeting avoids another frame answering first and prevents a
+    // request for a closed/navigated drawer reaching its replacement page.
+    const target = sender.documentId ? { documentId: sender.documentId }
+      : { frameId: Number.isInteger(sender.frameId) ? sender.frameId : 0 };
+    chrome.tabs.sendMessage(sender.tab.id, { type: "CC98_REBORN_GET_CURRENT_WEB_ACCOUNT" }, target, (response) => {
+      const error = chrome.runtime.lastError?.message;
+      resolve(error ? { ok: false, error } : response || { ok: false, error: "empty-response" });
+    });
+  });
 }
 
 function questionNumber(value, max) {
@@ -110,7 +130,7 @@ async function questionAuthenticate(sender, binding, { interactive = true } = {}
   if (isWebVpnPageUrl(sender.tab.url)) {
     throw new Error("问号实验暂只支持 CC98 直连页面；WebVPN 授权尚未接入。");
   }
-  const accountResult = await sendTabMessage(sender.tab.id, { type: "CC98_REBORN_GET_CURRENT_WEB_ACCOUNT" });
+  const accountResult = await questionCurrentWebAccount(sender);
   const webAccount = accountResult?.account;
   if (!webAccount?.userId || String(webAccount.userId) !== String(binding.userId)) {
     throw new Error("当前网页账号与已绑定 OpenID 不一致，请先重新绑定。");
@@ -149,7 +169,7 @@ async function questionAuthenticate(sender, binding, { interactive = true } = {}
 }
 
 async function questionRequireCurrentAccount(sender, binding) {
-  const result = await sendTabMessage(sender.tab.id, { type: "CC98_REBORN_GET_CURRENT_WEB_ACCOUNT" });
+  const result = await questionCurrentWebAccount(sender);
   if (!result?.account?.userId || String(result.account.userId) !== String(binding?.userId)) {
     await removeSessionStorage(QUESTION_SESSION_KEY);
     throw new Error("当前网页账号与已绑定 OpenID 不一致，请先重新绑定。");

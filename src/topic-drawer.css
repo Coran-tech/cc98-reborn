@@ -1,0 +1,57 @@
+:root.cc98-topic-drawer-open { overflow: hidden !important; }
+:root.cc98-topic-drawer-open.cc98-topic-drawer-had-scrollbar { scrollbar-gutter: stable; }
+:root.cc98-comfort.cc98-topic-drawer-open #cc98-comfort-app {
+  transform-origin: left var(--cc98-drawer-fold-origin, 50vh);
+  transform: translateX(calc(var(--cc98-drawer-width) * -.18)) scale(.94);
+  filter: brightness(.8); transition: transform 200ms ease, filter 200ms ease;
+}
+:root.cc98-comfort .cc98-topic-drawer-layer {
+  position: fixed; inset: 0; z-index: 2147483300; color: var(--cc98-comfort-text);
+  font-family: inherit; isolation: isolate;
+}
+:root.cc98-comfort .cc98-topic-drawer-backdrop {
+  position: absolute; inset: 0; width: 100%; height: 100%; border: 0 !important; border-radius: 0 !important;
+  padding: 0; background: rgb(0 0 0 / 20%) !important; cursor: w-resize; box-shadow: none !important;
+}
+:root.cc98-comfort .cc98-topic-drawer-panel {
+  position: absolute; inset: 0 0 0 auto; width: var(--cc98-drawer-width); max-width: 100%;
+  display: flex; flex-direction: column; min-height: 0;
+  background: var(--cc98-comfort-bg); border-left: 1px solid var(--cc98-comfort-border);
+  box-shadow: -16px 0 48px rgb(0 0 0 / 20%);
+}
+:root.cc98-comfort .cc98-topic-drawer-header {
+  display: flex; align-items: center; gap: 12px; flex: 0 0 auto; min-height: 54px;
+  box-sizing: border-box; padding: 8px 16px; border-bottom: 1px solid var(--cc98-comfort-border);
+  background: var(--cc98-comfort-surface);
+}
+:root.cc98-comfort .cc98-topic-drawer-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+:root.cc98-comfort .cc98-topic-drawer-new-tab { color: var(--cc98-comfort-secondary); font-size: .82rem; white-space: nowrap; }
+:root.cc98-comfort .cc98-topic-drawer-panel button {
+  background: var(--cc98-comfort-surface-2); color: var(--cc98-comfort-text); border: 1px solid var(--cc98-comfort-border);
+  border-radius: var(--cc98-comfort-radius, 10px); min-height: 32px; padding: 4px 12px; font: inherit; cursor: pointer;
+}
+:root.cc98-comfort .cc98-topic-drawer-panel :is(button, a, [role="separator"]):focus-visible { outline: 2px solid var(--cc98-comfort-accent); outline-offset: 2px; }
+:root.cc98-comfort .cc98-topic-drawer-panel .cc98-topic-drawer-close { font-size: 20px; line-height: 1; }
+:root.cc98-comfort .cc98-topic-drawer-content { position: relative; flex: 1; min-height: 0; }
+:root.cc98-comfort .cc98-topic-drawer-frame { display: block; width: 100%; height: 100%; border: 0; visibility: hidden; }
+:root.cc98-comfort .cc98-topic-drawer-ready .cc98-topic-drawer-frame { visibility: visible; }
+:root.cc98-comfort .cc98-topic-drawer-loading {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; padding: 24px; text-align: center; color: var(--cc98-comfort-muted);
+}
+:root.cc98-comfort .cc98-topic-drawer-ready .cc98-topic-drawer-loading,
+:root.cc98-comfort .cc98-topic-drawer-panel [hidden] { display: none !important; }
+:root.cc98-comfort .cc98-topic-drawer-resizer { position: absolute; inset: 0 auto 0 -6px; width: 12px; cursor: ew-resize; touch-action: none; z-index: 2; }
+:root.cc98-comfort .cc98-topic-drawer-resizer:is(:hover, :focus-visible) { background: color-mix(in srgb, var(--cc98-comfort-accent) 30%, transparent); }
+:root.cc98-comfort .cc98-topic-drawer-dragging { cursor: ew-resize; user-select: none; }
+:root.cc98-comfort .cc98-topic-drawer-dragging iframe { pointer-events: none; }
+:root.cc98-comfort.cc98-topic-drawer-child #cc98-comfort-app {
+  width: calc(100vw - 36px); max-width: calc(100vw - 36px); margin-left: 18px; margin-right: 18px;
+  padding-left: 0 !important;
+}
+:root.cc98-comfort.cc98-topic-drawer-child #cc98-comfort-app > .cc98-rebuild-topbar { display: none !important; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-topic-drawer-panel { box-shadow: none; border-left: 1px dashed var(--cc98-comfort-accent); }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-topic-drawer-header { border-bottom-style: dashed; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-topic-drawer-panel button { border-radius: 0 !important; }
+@media (prefers-reduced-motion: reduce) { :root.cc98-comfort.cc98-topic-drawer-open #cc98-comfort-app { transition: none; } }
+@media (max-width: 700px) { :root.cc98-comfort .cc98-topic-drawer-header { padding: 8px 12px; gap: 8px; } }

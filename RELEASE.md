@@ -1,6 +1,6 @@
 # Release Checklist
 
-Current release target: `0.3.7`.
+Current release target: `0.3.9`.
 
 1. Confirm `manifest.json` version.
 2. Run validation:
@@ -15,6 +15,7 @@ node --check .\src\markup-converter.js
 node --check .\src\conversation-core.js
 node --check .\src\conversation.js
 node --check .\src\topic-search.js
+node --check .\src\topic-drawer.js
 node --check .\src\favorite-share-core.js
 node --check .\src\favorite-share-service.js
 node --check .\src\favorite-share.js
@@ -46,7 +47,7 @@ node .\tests\theme-core.test.js
 For dual UBB editor changes, start the local forum simulator:
 
 ```powershell
-node .\tests\local-forum\server.js
+node ..\cc98-local-forum\server.js
 ```
 
 For first-page background prewarming, run `node .\tests\first-page-prewarm.test.cjs`
@@ -138,11 +139,11 @@ With Playwright and Edge installed, run `node .\tests\table-paste-selection.test
 to check visual-table paste after caret-only cell navigation, including the
 signature editor. This test serves local fixtures and does not contact CC98.
 
-When `reference/Forum-main` and its local dependencies are available, run the
+When the sibling `cc98-local-forum` project and its frontend dependencies are available, run the
 isolated simulator smoke test first:
 
 ```powershell
-node .\tests\local-forum\smoke.test.js
+node ..\cc98-local-forum\smoke.test.js
 ```
 
 For post images and conversation changes, with Playwright and Edge installed:
@@ -182,6 +183,20 @@ table insertion, legacy preview, manual synchronization, emoji panel, and
 leading-emoji spacing.
 
 3. Build the zip:
+
+For a test package, use `./scripts/package-extension.ps1 -TestBuild` (optional
+`-Build xxx`). Its display version is `beta <version> (build <id>)`.
+It always overwrites `dist/cc98-reborn-beta/` and `dist/cc98-reborn-beta.zip`;
+load that fixed directory once and reload the extension after each build.
+Before testing the unpackaged source checkout, run `./scripts/set-test-build.ps1`
+to stamp a fresh display label. The independent simulator generates its own build at startup.
+The default release command below removes `version_name` from the staged
+manifest, retaining the numeric `version` and stable extension key. Packaging
+must not change the source manifest. Compare release manifests against the
+source with `version_name` omitted; all other packaged runtime files must match.
+Run `node tests/build-version.test.cjs` to verify the simulator's visible build
+label and numeric update status. The real MV3 settings test also checks the
+popup, embedded settings and update card display the manifest's same label.
 
 ```powershell
 .\scripts\package-extension.ps1
@@ -254,6 +269,25 @@ source/draft/scroll and toolbar-width preservation,
 result links, Modern/ASCII light/dark layouts, fresh-read retry, frozen-document
 restoration, pause/continue, same-topic pagination recovery and account isolation.
 The native conversation regression also exercises search on real rendered UBB.
+Username/UID and emotion-code search checks cover anonymous identity protection,
+all bundled emotion families, light/dark AC variants, lazy image sources, literal
+codes, quote inclusion and safe highlighted snippets while reusing cached pages.
+
+For performance changes, run `node tests/performance-regression.test.cjs` with
+Playwright and Edge. The offline 40-post fixture checks that repeated syncs
+retain cards/drafts/caret without reconstructing existing floors; appending a
+floor creates exactly one card, idle Ant lists stop scheduling their own updates,
+and editing does not trigger full-document ASCII scans. New native list items,
+dialogs and ASCII decorations must still appear. Compare timing only within
+the same fixture and machine; the call-count checks are the stable regression.
+
+For the topic drawer, run `node tests/topic-drawer.test.cjs` with full Chromium
+and Playwright. It loads the actual MV3 extension and unchanged native React
+frontend against a temporary local backend, verifying targeted iframe injection,
+real pagination and a persisted native reply, unchanged parent DOM/scroll/draft,
+pointer/keyboard resizing, Modern/ASCII/narrow layouts, and teardown on close or
+disable. Unmarked hidden probes must receive neither a full runtime nor the
+MAIN-world reply/media bridge. Reload the extension after adding `scripting`.
 
 The release includes the active CC98 OpenID authorization code + PKCE flow for direct CC98 and WebVPN sessions. Binding must match the current CC98 web-account UID. Only the local identity summary and watermark prefix captured at binding time are retained; access and refresh tokens are not persisted. Periodic profile refresh code remains disabled.
 

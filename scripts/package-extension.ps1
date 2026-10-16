@@ -1,5 +1,8 @@
 param(
-  [string]$OutputDirectory = "dist"
+  [string]$OutputDirectory = "dist",
+  [switch]$TestBuild,
+  [ValidatePattern('^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$')]
+  [string]$Build
 )
 
 $ErrorActionPreference = "Stop"
@@ -8,11 +11,14 @@ $root = Split-Path -Parent $PSScriptRoot
 $manifestPath = Join-Path $root "manifest.json"
 $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
 $version = $manifest.version
-$packageName = "cc98-reborn-$version.zip"
-$unpackedName = "cc98-reborn-$version"
+if ($Build -and -not $TestBuild) { throw '-Build requires -TestBuild' }
+if ($TestBuild -and -not $Build) { $Build = Get-Date -Format 'yyyyMMdd.HHmmss' }
+$unpackedName = if ($TestBuild) { "cc98-reborn-beta" } else { "cc98-reborn-$version" }
+$packageName = "$unpackedName.zip"
 $dist = Join-Path $root $OutputDirectory
 $zipPath = Join-Path $dist $packageName
-$stage = Join-Path $dist $unpackedName
+$publishedStage = Join-Path $dist $unpackedName
+$stage = if ($TestBuild) { Join-Path $dist '.cc98-reborn-beta-staging' } else { $publishedStage }
 
 New-Item -ItemType Directory -Force -Path $dist | Out-Null
 $distFull = [System.IO.Path]::GetFullPath($dist)
@@ -45,6 +51,25 @@ New-Item -ItemType Directory -Force -Path (Join-Path $stage "src") | Out-Null
   Copy-Item -Path (Join-Path $root $_) -Destination $stage -Recurse
 }
 
+# A development checkout can carry a build label. Never publish that label in
+# the default release artifact, and never mutate the source manifest here.
+$stagedManifestPath = Join-Path $stage 'manifest.json'
+$stagedManifest = [IO.File]::ReadAllText($stagedManifestPath)
+if ($TestBuild) {
+  $label = "beta $version (build $Build)"
+  if ($manifest.PSObject.Properties['version_name']) {
+    $stagedManifest = [regex]::Replace($stagedManifest, '"version_name"\s*:\s*"[^"\r\n]*"', ('"version_name": "' + $label + '"'))
+  } else {
+    $stagedManifest = [regex]::Replace($stagedManifest, '("version"\s*:\s*"[^"\r\n]+"\s*,)', ('$1' + "`n  `"version_name`": `"$label`","))
+  }
+} else {
+  $stagedManifest = [regex]::Replace($stagedManifest, '(?m)^[ \t]*"version_name"\s*:\s*"[^"\r\n]*"\s*,[ \t]*\r?\n', '')
+  if (($stagedManifest | ConvertFrom-Json).PSObject.Properties['version_name']) {
+    throw 'Release manifest must not contain version_name'
+  }
+}
+[IO.File]::WriteAllText($stagedManifestPath, $stagedManifest, [Text.UTF8Encoding]::new($false))
+
 @(
   "background.js",
   "theme-core.js",
@@ -59,6 +84,8 @@ New-Item -ItemType Directory -Force -Path (Join-Path $stage "src") | Out-Null
   "conversation.js",
   "topic-search.js",
   "topic-search.css",
+  "topic-drawer.js",
+  "topic-drawer.css",
   "favorite-share-core.js",
   "favorite-share-service.js",
   "favorite-share.js",
@@ -92,5 +119,27 @@ New-Item -ItemType Directory -Force -Path $questionStage | Out-Null
 
 $releasePaths = Get-ChildItem -Force -Path $stage | ForEach-Object { $_.FullName }
 Compress-Archive -Path $releasePaths -DestinationPath $zipPath -CompressionLevel Optimal
+if ($TestBuild) {
+  $publishedFull = [IO.Path]::GetFullPath($publishedStage)
+  if (-not $publishedFull.StartsWith($distFull + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) { throw 'Beta directory leaves output root' }
+  New-Item -ItemType Directory -Force -Path $publishedStage | Out-Null
+  $links = @(Get-Item -LiteralPath $publishedStage -Force; Get-ChildItem -LiteralPath $publishedStage -Recurse -Force) | Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint }
+  if ($links) { throw 'Refusing linked paths inside the fixed beta directory' }
+  # Keep the directory itself mounted. Replace runtime files in place, prune
+  # stale build files, and write the manifest last so Reload sees a full build.
+  $builtFiles = @(Get-ChildItem -LiteralPath $stage -Recurse -File -Force)
+  foreach ($file in $builtFiles | Where-Object { $_.FullName -ne $stagedManifestPath }) {
+    $relative = $file.FullName.Substring($stageFull.Length + 1)
+    $target = Join-Path $publishedStage $relative
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $target) | Out-Null
+    Copy-Item -LiteralPath $file.FullName -Destination $target -Force
+  }
+  foreach ($file in Get-ChildItem -LiteralPath $publishedStage -Recurse -File -Force) {
+    $relative = $file.FullName.Substring($publishedFull.Length + 1)
+    if (-not (Test-Path -LiteralPath (Join-Path $stage $relative) -PathType Leaf)) { Remove-Item -LiteralPath $file.FullName -Force }
+  }
+  Copy-Item -LiteralPath $stagedManifestPath -Destination (Join-Path $publishedStage 'manifest.json') -Force
+  Remove-Item -LiteralPath $stageFull -Recurse -Force
+}
 Write-Host "Packaged $zipPath"
-Write-Host "Unpacked extension $stage"
+Write-Host "Unpacked extension $publishedStage"

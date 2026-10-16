@@ -1,4 +1,5 @@
 (() => {
+  if (window.top && window.top !== window && (window.parent !== window.top || !/^cc98-reborn-topic-drawer:v1:[a-z0-9-]{20,80}$/i.test(window.name))) return;
   function decodeLocationValue(value) {
     let decoded = String(value || "");
     for (let attempt = 0; attempt < 2; attempt += 1) {

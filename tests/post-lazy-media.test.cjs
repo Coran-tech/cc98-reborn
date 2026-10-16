@@ -4,15 +4,16 @@ const os = require("node:os");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
 const { chromium } = require("playwright");
+const localForum = require('./local-forum-path.cjs');
 
 async function main() {
   const root = path.resolve(__dirname, "..");
   const runtime = await fs.mkdtemp(path.join(os.tmpdir(), "cc98-post-lazy-media-"));
   const port = Number(process.env.CC98_LAZY_TEST_PORT) || 44339;
   const origin = `http://127.0.0.1:${port}`;
-  const server = spawn(process.execPath, [path.join(root, "tests/local-forum/server.js")], {
+  const server = spawn(process.execPath, [localForum.serverPath], {
     cwd: root,
-    env: { ...process.env, CC98_LOCAL_PORT: String(port), CC98_LOCAL_REQUIRE_AUTH: "0", CC98_LOCAL_NATIVE_FRONTEND: "0",
+    env: { ...process.env, ...localForum.environment, CC98_LOCAL_PORT: String(port), CC98_LOCAL_REQUIRE_AUTH: "0", CC98_LOCAL_NATIVE_FRONTEND: "0",
       CC98_LOCAL_DATA_PATH: path.join(runtime, "forum-data.json"), CC98_LOCAL_UPLOAD_ROOT: path.join(runtime, "uploads"), CC98_LOCAL_BACKUP_ROOT: path.join(runtime, "backups") },
     stdio: ["ignore", "pipe", "pipe"]
   });
@@ -55,7 +56,7 @@ async function main() {
       if (message.type() === "error" && /CC98 Reborn|rebuild failed/i.test(message.text())) errors.push(message.text());
     });
     const lateContent = process.argv.includes("--late-content");
-    const imageBytes = await fs.readFile(path.join(root, "reference/Forum-main/dist/static/images/default_avatar_girl.png"));
+    const imageBytes = await fs.readFile(path.join(localForum.frontendRoot, 'dist/static/images/default_avatar_girl.png'));
     await page.route("**/*", async (route) => {
       const url = new URL(route.request().url());
       if (url.origin !== origin) return route.abort();

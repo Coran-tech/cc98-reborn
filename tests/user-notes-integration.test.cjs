@@ -4,14 +4,15 @@ const os = require("node:os");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
 const { chromium } = require("playwright");
+const localForum = require('./local-forum-path.cjs');
 
 async function main() {
   const root = path.resolve(__dirname, "..");
   const runtime = await fs.mkdtemp(path.join(os.tmpdir(), "cc98-user-notes-integration-"));
   const origin = "http://127.0.0.1:44345";
-  const server = spawn(process.execPath, [path.join(root, "tests/local-forum/server.js")], {
+  const server = spawn(process.execPath, [localForum.serverPath], {
     cwd: root,
-    env: { ...process.env, CC98_LOCAL_PORT: "44345", CC98_LOCAL_REQUIRE_AUTH: "0", CC98_LOCAL_NATIVE_FRONTEND: "0",
+    env: { ...process.env, ...localForum.environment, CC98_LOCAL_PORT: "44345", CC98_LOCAL_REQUIRE_AUTH: "0", CC98_LOCAL_NATIVE_FRONTEND: "0",
       CC98_LOCAL_DATA_PATH: path.join(runtime, "forum-data.json"), CC98_LOCAL_UPLOAD_ROOT: path.join(runtime, "uploads"),
       CC98_LOCAL_BACKUP_ROOT: path.join(runtime, "backups") },
     stdio: ["ignore", "pipe", "pipe"]

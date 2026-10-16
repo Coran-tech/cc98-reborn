@@ -23,6 +23,7 @@ User-triggered settings backups download a local JSON file containing interface/
 Network activity includes:
 
 - CC98 pages already visited by the user, for rebuilding the visible interface.
+- Clicking a topic title in the hot list or new-topic list opens the same-origin forum page in a temporary right-hand iframe. The `scripting` permission enables the normal extension UI only in that marked frame; ordinary hidden page-read probes do not receive a full runtime. Native reply actions use the current forum session. Closing the drawer destroys its browsing context; the extension does not keep a hidden pool of these pages or upload their content elsewhere.
 - CC98 same-origin page reads used by optional page prewarming/search helpers.
 - CC98 file downloads triggered by the user.
 - User-triggered favorite sharing reads the selected favorite group and its topic list from CC98. A share string is encoded and decoded locally and contains only the group name, topic IDs and titles. It contains no login credentials or account identity. After the user previews an import and selects a destination group, the extension uses the current webpage login session to check favorite status and add missing favorites through CC98's API. Existing favorites keep their original groups. The extension does not send the share string to a separate service or automatically publish it; copying it to the clipboard is user-triggered.

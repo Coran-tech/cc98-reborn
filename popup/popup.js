@@ -6,6 +6,8 @@ const BLACKLIST_PAGE_URL = `https://www.cc98.org/${BLACKLIST_ROUTE_HASH}`;
 const ThemeCore = globalThis.CC98RebornThemeCore;
 const EMBEDDED_PARENT_ORIGIN = getEmbeddedParentOrigin();
 const IS_EMBEDDED = Boolean(EMBEDDED_PARENT_ORIGIN);
+const EXTENSION_MANIFEST = chrome.runtime.getManifest?.() || {};
+const DISPLAY_VERSION = EXTENSION_MANIFEST.version_name || EXTENSION_MANIFEST.version || "";
 
 function getEmbeddedParentOrigin() {
   if (new URLSearchParams(location.search).get("embedded") !== "1" || window.parent === window) return "";
@@ -72,6 +74,7 @@ const DEFAULT_SETTINGS = {
   imageLoadDuration: 2100,
   previsitFirstPageForTopicImages: true,
   openLinksInNewTab: false,
+  topicDrawerEnabled: true,
   sideTopbar: false,
   replyRebornTail: true,
   questionMarkEnabled: false,
@@ -116,6 +119,7 @@ const fields = {
   prewarmPostImages: document.querySelector("#prewarmPostImages"),
   previsitFirstPageForTopicImages: document.querySelector("#previsitFirstPageForTopicImages"),
   openLinksInNewTab: document.querySelector("#openLinksInNewTab"),
+  topicDrawerEnabled: document.querySelector("#topicDrawerEnabled"),
   sideTopbar: document.querySelector("#sideTopbar"),
   replyRebornTail: document.querySelector("#replyRebornTail"),
   questionMarkEnabled: document.querySelector("#questionMarkEnabled"),
@@ -218,7 +222,7 @@ function hydrateAboutVersion() {
   if (!fields.aboutVersion) {
     return;
   }
-  fields.aboutVersion.textContent = chrome.runtime.getManifest?.().version || "";
+  fields.aboutVersion.textContent = DISPLAY_VERSION;
 }
 
 function updateThemeDisplay() {
@@ -447,7 +451,7 @@ function formatDateTime(timestamp) {
 }
 
 function setUpdateStatus(status = {}) {
-  const currentVersion = status.currentVersion || chrome.runtime.getManifest?.().version || "";
+  const currentVersion = DISPLAY_VERSION || status.currentVersion || "";
   const latestVersion = status.latestVersion || "";
   latestReleaseUrl = status.releaseUrl || RELEASES_PAGE_URL;
   const checkedAt = formatUpdateTime(status.checkedAt);
@@ -474,7 +478,8 @@ function setUpdateStatus(status = {}) {
     fields.updateStatus.textContent = text;
   }
   if (fields.updateCurrentVersion) {
-    fields.updateCurrentVersion.textContent = currentVersion ? `\u5f53\u524d v${currentVersion}` : "";
+    const label = /^beta\s/i.test(currentVersion) ? currentVersion : `v${currentVersion}`;
+    fields.updateCurrentVersion.textContent = currentVersion ? `\u5f53\u524d ${label}` : "";
   }
   if (fields.updateLatestVersion) {
     fields.updateLatestVersion.textContent = latestVersion ? `\u6700\u65b0 v${latestVersion}` : "";
@@ -683,6 +688,7 @@ function hydrate(nextSettings) {
   fields.prewarmPostImages.checked = settings.prewarmPostImages;
   fields.previsitFirstPageForTopicImages.checked = settings.previsitFirstPageForTopicImages;
   fields.openLinksInNewTab.checked = settings.openLinksInNewTab;
+  fields.topicDrawerEnabled.checked = settings.topicDrawerEnabled;
   fields.sideTopbar.checked = settings.sideTopbar;
   fields.replyRebornTail.checked = settings.replyRebornTail;
   fields.questionMarkEnabled.checked = settings.questionMarkEnabled === true;
@@ -725,6 +731,7 @@ function collect() {
     imageLoadDuration: Number(fields.imageLoadDuration.value),
     previsitFirstPageForTopicImages: fields.previsitFirstPageForTopicImages.checked,
     openLinksInNewTab: fields.openLinksInNewTab.checked,
+    topicDrawerEnabled: fields.topicDrawerEnabled.checked,
     sideTopbar: fields.sideTopbar.checked,
     replyRebornTail: fields.replyRebornTail.checked,
     questionMarkEnabled: fields.questionMarkEnabled.checked,

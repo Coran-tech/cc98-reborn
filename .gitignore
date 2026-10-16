@@ -9,7 +9,6 @@ Thumbs.db
 *.log
 *.tmp
 *.temp
-tests/local-forum/.runtime/
 
 # Build/release artifacts
 dist/

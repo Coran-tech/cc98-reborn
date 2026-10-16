@@ -27,7 +27,7 @@
     ".cc98-rebuild-toast", ".cc98-rebuild-route-status", ".cc98-comfort-loading-panel",
     ".cc98-rebuild-openid-bind-dialog", ".cc98-rebuild-convert-dialog",
     ".cc98-rebuild-conversation-dialog", ".cc98-favorite-share-dialog", ".cc98-user-note-dialog",
-    ".cc98-topic-search-dialog",
+    ".cc98-topic-search-dialog", ".cc98-topic-drawer-panel",
     ".cc98-local-syntax-popover", ".cc98-local-syntax-tour-dialog",
     ".cc98-question-privacy-dialog", ".cc98-question-notice", "#cc98-comfort-image-viewer",
     ".ant-modal-content", ".ant-select-dropdown", ".ant-dropdown-menu", ".ant-menu-submenu-popup",
@@ -35,6 +35,7 @@
     ".react-mde-dropdown", ".tagBoxSub"
   ].join(",");
   const floatingGlyphs = [
+    [".cc98-topic-drawer-close", "[X]"],
     [".cc98-topic-search-close", "[X]"],
     [".cc98-rebuild-conversation-close, .cc98-rebuild-convert-close, .cc98-rebuild-toast-close, .cc98-local-syntax-tour-close, .ant-modal-close, .ant-notification-notice-close, .cc98-favorite-share-button[data-favorite-share='close'], .cc98-user-note-button[data-user-note='close'], .cc98-image-viewer-close", "[X]"],
     [".cc98-image-viewer-prev", "[<]"], [".cc98-image-viewer-next", "[>]"], [".cc98-image-viewer-save", "[SAVE]"]
@@ -53,7 +54,15 @@
     [/音频|audio/i, "[AUD]"], [/文件|file|upload/i, "[FILE]"],
     [/撤销|undo/i, "[UNDO]"], [/重做|redo/i, "[REDO]"], [/预览|preview/i, "[PREV]"]
   ];
+  const toolbarSelector = '.cc98-rebuild-native-editor .ubb-button, .cc98-rebuild-native-editor .cc98-rebuild-font-size-apply';
+  const controlSelector = [glyphSelector, toolbarSelector, ...floatingGlyphs.map(([selector]) => selector)].join(',');
+  const inventorySelector = [frameSelector, surfaceSelector, controlSelector].join(',');
+  const authoredSelector = '[contenteditable], .cc98-rebuild-post-body, .cc98-rebuild-signature, .cc98-rebuild-conversation-body, .ubb-preview, .mde-preview-content';
   const frames = new Map();
+  const frameMetrics = new WeakMap();
+  const pendingRoots = new Set();
+  const pendingResizes = new Set();
+  let pruneFrames = false;
   let active = false;
   let mutationObserver = null;
   let resizeObserver = null;
@@ -82,12 +91,13 @@
     charWidth = context.measureText("-").width || 7.2;
   }
 
-  function updateFrame(node, decoration) {
-    const width = node.clientWidth;
-    const height = node.clientHeight;
+  function updateFrame(node, decoration, width, height, frameLabel) {
     if (width < 40 || height < 24) return;
+    const signature = `${width}:${height}:${charWidth}:${frameLabel}`;
+    if (frameMetrics.get(decoration) === signature) return;
+    frameMetrics.set(decoration, signature);
     const cols = Math.max(3, Math.floor(width / charWidth));
-    const label = ` ${labelFor(node)} `;
+    const label = ` ${frameLabel} `;
     const top = cols > label.length + 6
       ? `+--${label}${"-".repeat(cols - label.length - 4)}+`
       : `+${"-".repeat(cols - 2)}+`;
@@ -99,27 +109,23 @@
     });
   }
 
-  function scan() {
-    queued = 0;
-    if (!active || !document.body) return;
-    if (!charWidth) measureCharacter();
-    document.querySelectorAll(surfaceSelector).forEach(node => {
-      if (!node.closest("[contenteditable], .cc98-rebuild-post-body, .cc98-rebuild-signature, .cc98-rebuild-conversation-body")) {
+  function eachIn(root, selector, visit) {
+    if (root instanceof Element && root.matches(selector)) visit(root);
+    root.querySelectorAll(selector).forEach(visit);
+  }
+
+  function scan(root) {
+    eachIn(root, surfaceSelector, node => {
+      if (!node.closest(authoredSelector) && !node.hasAttribute('data-cc98-ascii-surface')) {
         node.setAttribute("data-cc98-ascii-surface", "");
       }
     });
     floatingGlyphs.forEach(([selector, label]) => {
-      document.querySelectorAll(selector).forEach(node => {
-        if (node.closest("[data-cc98-ascii-surface]")) node.setAttribute("data-cc98-ascii-control", label);
+      eachIn(root, selector, node => {
+        if (node.closest("[data-cc98-ascii-surface]") && node.dataset.cc98AsciiControl !== label) node.setAttribute("data-cc98-ascii-control", label);
       });
     });
-    frames.forEach((decoration, node) => {
-      if (!node.isConnected) {
-        resizeObserver?.unobserve(node);
-        frames.delete(node);
-      }
-    });
-    document.querySelectorAll(frameSelector).forEach((node) => {
+    eachIn(root, frameSelector, (node) => {
       if (node.closest("[contenteditable], .cc98-ascii-decoration")) return;
       let decoration = frames.get(node);
       if (!decoration || decoration.parentElement !== node) {
@@ -137,9 +143,9 @@
         frames.set(node, decoration);
         resizeObserver?.observe(node);
       }
-      updateFrame(node, decoration);
+      pendingResizes.add(node);
     });
-    document.querySelectorAll(glyphSelector).forEach((control) => {
+    eachIn(root, glyphSelector, (control) => {
       if (control.closest("[contenteditable]")) return;
       let glyph;
       if (control.matches(".cc98-rebuild-vote-action")) glyph = control.dataset.actionKind === "dislike" ? "v" : "^";
@@ -148,7 +154,7 @@
       else glyph = glyphs[control.title] || "[...]";
       if (control.dataset.cc98AsciiGlyph !== glyph) control.dataset.cc98AsciiGlyph = glyph;
     });
-    document.querySelectorAll('.cc98-rebuild-native-editor .ubb-button, .cc98-rebuild-native-editor .cc98-rebuild-font-size-apply').forEach(control => {
+    eachIn(root, toolbarSelector, control => {
       if (control.closest('[contenteditable]') || control.matches('.ubb-button-fontSize, .ubb-button-color')) return;
       const signature = [control.title, control.getAttribute('aria-label'), control.className].filter(Boolean).join(' ');
       const label = control.matches('.cc98-rebuild-font-size-apply') ? 'T' : toolbarLabels.find(([pattern]) => pattern.test(signature))?.[1];
@@ -158,8 +164,61 @@
     });
   }
 
-  function queue() {
-    if (active && !queued) queued = requestAnimationFrame(scan);
+  function flush() {
+    queued = 0;
+    if (!active || !document.body) return;
+    if (!charWidth) measureCharacter();
+    if (pruneFrames) {
+      for (const node of frames.keys()) if (!node.isConnected) {
+        resizeObserver?.unobserve(node); frames.delete(node); pendingResizes.delete(node);
+      }
+      pruneFrames = false;
+    }
+    const roots = [...pendingRoots]; pendingRoots.clear();
+    roots.forEach(root => { if (root === document || root.isConnected) scan(root); });
+    // Finish geometry reads before changing any character rules. Resizing one
+    // post never requires discovering every control in the document again.
+    const measurements = [...pendingResizes].filter(node => node.isConnected && frames.has(node))
+      .map(node => [node, frames.get(node), node.clientWidth, node.clientHeight, labelFor(node)]);
+    pendingResizes.clear();
+    measurements.forEach(args => updateFrame(...args));
+  }
+
+  function schedule() {
+    if (active && !queued) queued = requestAnimationFrame(flush);
+  }
+
+  function queue(root = document) {
+    if (!active) return;
+    if (root === document) pendingRoots.clear();
+    else {
+      for (const current of pendingRoots) {
+        if (current === document || current.contains(root)) return;
+        if (root.contains(current)) pendingRoots.delete(current);
+      }
+    }
+    pendingRoots.add(root);
+    schedule();
+  }
+
+  function onMutations(records) {
+    for (const record of records) {
+      const target = record.target.nodeType === Node.ELEMENT_NODE ? record.target : record.target.parentElement;
+      if (!target || target.closest('.cc98-ascii-decoration') || target.closest(authoredSelector)) continue;
+      if (record.type === 'attributes') {
+        if (target.matches(inventorySelector)) queue(target);
+        continue;
+      }
+      const control = target.closest(controlSelector);
+      if (control) queue(control);
+      for (const node of record.addedNodes) {
+        if (!(node instanceof Element) || node.matches('.cc98-ascii-decoration') || node.closest(authoredSelector)) continue;
+        if (node.matches(inventorySelector) || node.querySelector(inventorySelector)) queue(node);
+      }
+      if ([...record.removedNodes].some(node => node instanceof Element && !node.matches('.cc98-ascii-decoration'))) {
+        pruneFrames = true; schedule();
+      }
+    }
   }
 
   function stop() {
@@ -178,6 +237,7 @@
       node.removeAttribute("data-cc98-ascii-control");
     });
     frames.clear();
+    pendingRoots.clear(); pendingResizes.clear(); pruneFrames = false;
   }
 
   function sync(settings) {
@@ -185,15 +245,10 @@
     if (!next) { if (active) stop(); return; }
     if (!active) {
       active = true;
-      resizeObserver = new ResizeObserver(queue);
-      mutationObserver = new MutationObserver(records => {
-        if (records.some(record => {
-          const target = record.target.nodeType === Node.ELEMENT_NODE ? record.target : record.target.parentElement;
-          if (target?.closest(".cc98-ascii-decoration")) return false;
-          if (record.type === "attributes") return true;
-          return [...record.addedNodes, ...record.removedNodes].some(node => !node.matches?.(".cc98-ascii-decoration"));
-        })) queue();
+      resizeObserver = new ResizeObserver(entries => {
+        entries.forEach(entry => pendingResizes.add(entry.target)); schedule();
       });
+      mutationObserver = new MutationObserver(onMutations);
       mutationObserver.observe(document.documentElement, { subtree: true, childList: true, attributes: true,
         attributeFilter: ["aria-pressed", "data-action-kind", "data-post-floor", "title"] });
       document.fonts?.ready.then(() => { charWidth = 0; queue(); });

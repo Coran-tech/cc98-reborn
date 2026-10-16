@@ -1,9 +1,9 @@
 const assert = require("node:assert/strict");
 const core = require("../src/settings-backup-core.js");
 const pins = require("../src/private-message-pins-core.js");
-const defaults = { enabled: true, fontScale: 110, emojiScale: 200, imageLoadDuration: 2100, themeStyle: "modern", themeMode: "light", themePalette: "teal", themeDayStart: "07:00", themeNightStart: "19:00", themeCustomPrimary: "#1f7166", themeCustomSecondary: "#326b9b", blockedUserIds: "", aiSearchSuggestApiKey: "" };
+const defaults = { topicDrawerEnabled: true, enabled: true, fontScale: 110, emojiScale: 200, imageLoadDuration: 2100, themeStyle: "modern", themeMode: "light", themePalette: "teal", themeDayStart: "07:00", themeNightStart: "19:00", themeCustomPrimary: "#1f7166", themeCustomSecondary: "#326b9b", blockedUserIds: "", aiSearchSuggestApiKey: "" };
 const records = {
-  [core.SETTINGS_KEY]: { ...defaults, themeStyle: "ascii", themeMode: "auto", blockedUserIds: "123", aiSearchSuggestApiKey: "secret-api-key", futureUnknown: "skip" },
+  [core.SETTINGS_KEY]: { ...defaults, topicDrawerEnabled: false, themeStyle: "ascii", themeMode: "auto", blockedUserIds: "123", aiSearchSuggestApiKey: "secret-api-key", futureUnknown: "skip" },
   [core.BOARDS_KEY]: ["https://www.cc98.org/board/1", "https://www-cc98-org-s.webvpn.zju.edu.cn/https/token/board/2", "/board/1"],
   "cc98RebornUserNote:uid:123:user:456": "同学 😀",
   "cc98RebornUserNote:uid:789:user:456": "另一个账号的备注",
@@ -15,10 +15,11 @@ const records = {
 const text = core.create(records, defaults, "0.3.6", new Date("2026-10-13T00:00:00Z"));
 assert.doesNotMatch(text, /secret-api-key|auth-token|futureUnknown|draft:secret|ReadLater/);
 const result = core.parse(text, defaults);
+assert.equal(result.data[core.SETTINGS_KEY].topicDrawerEnabled, false);
 assert.equal(result.data[core.SETTINGS_KEY].themeMode, "auto");
 assert.equal(result.data[core.SETTINGS_KEY].themeStyle, "ascii");
 assert.deepEqual(result.data[core.BOARDS_KEY], ["/board/1", "/board/2"]);
-assert.deepEqual(core.summary(result.data), { settings: 12, notes: 2, contacts: 2, boards: 2, accounts: 2 });
+assert.deepEqual(core.summary(result.data), { settings: 13, notes: 2, contacts: 2, boards: 2, accounts: 2 });
 assert.deepEqual(core.parse("\uFEFF" + text, defaults).data, result.data);
 for (const change of [
   file => { file.version = 9; },

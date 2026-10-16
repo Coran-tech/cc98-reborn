@@ -7,10 +7,16 @@ const output = path.join(root, 'outputs/topic-search-preview');
 const quote = (floor, text) => `<div style="background-color:#F5FAFF;border:1px solid #ccc;max-height:800px;overflow-y:auto"><b>以下是引用${floor}楼：用户测试的发言：<a href="/topic/100/${Math.ceil(floor / 10)}#${floor}">&gt;&gt;查看原帖&lt;&lt;</a></b><p>${text}</p></div>`;
 const reply = (floor, text) => `<div class="reply" data-floor="${floor}"><span class="reply-floor">${floor}</span><a href="/user/id/${floor + 100}">用户${floor}</a><div class="reply-content"><div class="substance"><article>${text}</article></div></div><div class="comment1">发表于 2026-10-14 12:00:00</div></div>`;
 function native(number, total) {
-  const posts = number === 1 ? reply(1, '<p>Alpha 校园原文</p>') + reply(4, quote(1, 'Alpha 校园原文') + '<p>父层回应</p>')
-    : number === 2 ? reply(11, '<p>ALPHA 当前正文</p><p>literal [a+b] &lt;img src=x onerror=alert(1)&gt;</p>') + reply(12, quote(1, 'Alpha 校园原文') + '<p>正文关键词 beta</p>')
-      : number === 3 ? reply(21, quote(11, 'ALPHA 当前正文') + '<p>alpha 后台命中</p>') + reply(22, '其他内容')
-        : reply((number - 1) * 10 + 1, `<p>Alpha 第 ${number} 页</p>`) + reply((number - 1) * 10 + 2, '无关内容');
+  const image = (src, alt = 'AC') => `<img src="${src}" alt="${alt}">`;
+  const families = ['/images/CC98/CC9801.gif', '/images/tb/tb01.png', '/images/ms/ms01.png', '/images/em/em01.gif',
+    '/images/mahjong/animal2017/001.png', '/images/mahjong/carton2017/018.gif', '/images/mahjong/face2017/004.gif'].map(src => image(src, '')).join('');
+  const posts = number === 1 ? reply(1, '<p>Alpha 校园原文</p>') + reply(4, quote(1, 'Alpha 校园原文') + '<p>父层回应</p>' + families)
+    : number === 2 ? reply(11, '<p>ALPHA 当前正文</p><p>literal [a+b] &lt;img src=x onerror=alert(1)&gt;</p>' + image('/static/images/ac/01.png') + image('/images/ac/1001.png'))
+      + reply(12, quote(1, 'Alpha 校园原文' + image('/images/ac/01.png')) + '<p>正文关键词 beta</p>' + image('/images/ac/02.png'))
+      : number === 3 ? reply(21, quote(11, 'ALPHA 当前正文') + '<p>alpha 后台命中</p>' + image('/images/ac1/01.png'))
+        + reply(22, '其他内容' + image('/uploads/01.png', '普通照片') + image('/images/%61c/03.png', ''))
+        : reply((number - 1) * 10 + 1, `<p>Alpha 第 ${number} 页</p><img data-src="/static/images/ac1/01.png" alt=""><img src="/uploads/unknown.png" alt="[AC04]">`)
+          + reply((number - 1) * 10 + 2, '无关内容 [ac05]').replace('<span class="reply-floor">', '<aside class="userMessage">匿名 ABCD1234</aside><span class="reply-floor">');
   return `<section class="topicInfo-info"><h1 id="essay1">本帖全文搜索</h1><button class="followTopic" id="native-favorite">收藏</button></section>${posts}<div class="pagination"><ul class="page-nav">${Array.from({ length: total }, (_, i) => `<li><a href="/topic/100/${i + 1}">${i + 1}</a></li>`).join('')}</ul></div>`;
 }
 const shim = `<script>window.chrome={runtime:{getURL:p=>location.origin+'/'+p,getManifest:()=>({version:'0.3.7'}),onMessage:{addListener(){}},sendMessage:(m,c)=>{c?.({ok:false});return Promise.resolve({ok:false})}},storage:{local:{get:(k,c)=>{c?.({});return Promise.resolve({})},set:(v,c)=>{c?.();return Promise.resolve()}},onChanged:{addListener(){}}}};</script>`;
@@ -103,6 +109,31 @@ async function main() {
     await page.getByRole('button', { name: '确认开始', exact: true }).click();
     assert.deepEqual(await floors(), [1, 11, 21, 31]);
     assert.equal(requests.length, cachedCount); checks++;
+    const search = async (query, quotes = false) => {
+      await page.getByLabel('关键词', { exact: true }).fill(query);
+      await page.getByLabel('包含引用内容', { exact: true }).setChecked(quotes);
+      await page.getByRole('button', { name: '重新搜索', exact: true }).click();
+      await page.getByRole('button', { name: '确认开始', exact: true }).click();
+      await page.waitForFunction(() => document.querySelector('.cc98-topic-search-status')?.textContent.startsWith('搜索完成'));
+      assert.equal(requests.length, cachedCount, 'username/emotion searches must reuse the same pages');
+      return floors();
+    };
+    for (const query of ['用户31', 'UID 131', '131']) {
+      assert.deepEqual(await search(query), [31]);
+      assert((await page.locator('.cc98-topic-search-snippet mark').first().innerText()).toLowerCase() === query.toLowerCase()); checks++;
+    }
+    assert.deepEqual(await search('匿名 abcd1234'), [32]);
+    assert(!(await page.locator('[data-search-floor="32"]').innerText()).includes('UID 132')); checks++;
+    assert.deepEqual(await search('UID 132'), [], 'anonymous authors must not expose a hidden account ID'); checks++;
+    assert.deepEqual(await search('[AC01]', true), [11, 12, 21, 31]); checks++;
+    assert.deepEqual(await search('[ac01]', false), [11, 21, 31], 'quoted emoji follow the quote option; an ordinary 01.png is not an emoji'); checks++;
+    for (const [query, expected] of [
+      ['[ac02]', [12]], ['[ac03]', [22]], ['[ac04]', [31]], ['[ac05]', [32]], ['[ac1001]', [11]],
+      ['[cc9801]', [4]], ['[tb01]', [4]], ['[ms01]', [4]], ['[em01]', [4]], ['[a:001]', [4]], ['[c:018]', [4]], ['[f:004]', [4]]
+    ]) {
+      assert.deepEqual(await search(query), expected, query);
+      assert.equal(await page.locator('.cc98-topic-search-snippet img').count(), 0, 'indexing and snippets stay inert'); checks++;
+    }
     await page.getByLabel('关键词', { exact: true }).fill('[a+b]');
     await page.getByRole('button', { name: '重新搜索', exact: true }).click();
     await page.getByRole('button', { name: '确认开始', exact: true }).click();
@@ -201,7 +232,7 @@ async function main() {
     assert.equal(requests.length, beforeAccount); checks++;
     assert.deepEqual(errors, []);
     await fs.writeFile(path.join(output, 'validation.json'), JSON.stringify({ checks, layouts, requests }, null, 2));
-    console.log(`topic full-text search: ${checks} groups passed (placement, confirmation/cancel, background work, shared cache/queue, throttling, literal matches/highlights, quotes, source/draft/scroll preservation, links, themes/layout, retry, native favorite, pause/pagination resume and account isolation)`);
+    console.log(`topic full-text search: ${checks} groups passed (usernames/UID, anonymous identity, emotion families/lazy sources, quotes, inert snippets, shared cache/queue, confirmation, background work, literal highlights, source/draft/scroll, themes/layout, retry, pagination and account isolation)`);
   } finally { await browser.close(); }
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

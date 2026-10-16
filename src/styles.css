@@ -686,8 +686,8 @@
 }
 
 :root.cc98-comfort .cc98-rebuild-shell[data-page-kind="home"][data-home-hot-only="true"] {
-  width: 80vw;
-  max-width: none;
+  width: min(1240px, calc(100% - 32px));
+  max-width: 1240px;
 }
 
 :root.cc98-comfort .cc98-rebuild-topbar {
@@ -773,7 +773,7 @@
   }
 
   :root.cc98-comfort[data-cc98-comfort-side-topbar="true"] .cc98-rebuild-shell[data-page-kind="home"][data-home-hot-only="true"] {
-    width: min(80vw, calc(100vw - var(--cc98-side-topbar-gutter) - 32px));
+    width: min(1240px, calc(100vw - var(--cc98-side-topbar-gutter) - 32px));
   }
 
   :root.cc98-comfort[data-cc98-comfort-side-topbar="true"] #cc98-comfort-app > .cc98-rebuild-topbar {
@@ -15441,7 +15441,7 @@
   }
 
   :root.cc98-comfort .cc98-rebuild-shell[data-page-kind="home"][data-home-hot-only="true"] {
-    width: 80vw;
+    width: calc(100% - 24px);
   }
 
   :root.cc98-comfort .cc98-rebuild-home-hot-section .cc98-rebuild-list {
@@ -15730,4 +15730,56 @@
   border-color: var(--cc98-comfort-secondary) !important;
   background: var(--cc98-comfort-secondary-soft) !important;
   color: var(--cc98-comfort-secondary) !important;
+}
+
+/* Keep the hot list readable without forcing every viewport into one screen. */
+:root.cc98-comfort #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] {
+  padding-block: 18px 32px;
+}
+
+:root.cc98-comfort #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] > .cc98-rebuild-home-hot-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 8px;
+  min-height: 104px;
+  margin: 18px 0 20px !important;
+  padding: 20px 16px !important;
+}
+
+:root.cc98-comfort #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] > .cc98-rebuild-home-hot-hero h1 {
+  order: -1;
+  font-size: 2rem !important;
+  line-height: 1.2 !important;
+}
+
+:root.cc98-comfort #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] > .cc98-rebuild-home-hot-hero .cc98-rebuild-kicker {
+  margin: 0;
+  font-size: 0.72rem !important;
+  font-weight: 500;
+  color: var(--cc98-comfort-muted) !important;
+  overflow-wrap: anywhere;
+}
+
+:root.cc98-comfort #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section {
+  margin-bottom: 0;
+}
+
+:root.cc98-comfort:not([data-cc98-comfort-style="ascii"]) #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-list {
+  gap: 14px 18px;
+}
+
+:root.cc98-comfort:not([data-cc98-comfort-style="ascii"]) #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-card {
+  min-height: 112px;
+  padding-block: 16px;
+  padding-left: 20px;
+}
+
+:root.cc98-comfort:not([data-cc98-comfort-style="ascii"]) #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-card-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  line-height: 1.5 !important;
 }

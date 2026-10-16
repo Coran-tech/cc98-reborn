@@ -165,6 +165,11 @@ async function main() {
 
     await popup.goto(`chrome-extension://${extensionId}/popup/popup.html`);
     await popup.locator(palette("custom")).waitFor();
+    const manifest = JSON.parse(await fs.readFile(path.join(root, 'manifest.json'), 'utf8'));
+    const displayVersion = manifest.version_name || manifest.version;
+    assert.equal(await popup.locator('#aboutVersion').textContent(), displayVersion, 'popup must display the build label');
+    assert.equal(await frame.locator('#aboutVersion').textContent(), displayVersion, 'personal-center settings must display the same build label');
+    await popup.waitForFunction(expected => document.querySelector('#updateCurrentVersion')?.textContent.includes(expected), displayVersion);
     assert.equal(await popup.locator("html").evaluate((node) => node.classList.contains("cc98-reborn-embedded")), false, "regular popup should retain standalone layout");
     const controls = await popup.locator("input[id], button[id], select[id], textarea[id]").evaluateAll((nodes) => nodes.map((node) => node.id));
     for (const id of controls) assert.equal(await frame.locator(`#${id}`).count(), 1, `embedded page omitted popup control ${id}`);
@@ -193,6 +198,19 @@ async function main() {
       console.log("user-settings-page: captured wide/narrow light/dark settings and backup-footer previews");
       return;
     }
+
+    assert(await popup.locator('#topicDrawerEnabled').isChecked(), 'old settings without the key default to enabled');
+    assert(await frame.locator('#topicDrawerEnabled').isChecked()); checks++;
+    await popup.bringToFront();
+    await popup.locator('#topicDrawerEnabled').focus(); await popup.locator('#topicDrawerEnabled').press('Space');
+    await frame.waitForFunction(() => document.querySelector('#topicDrawerEnabled')?.checked === false);
+    assert.equal((await getSettings()).topicDrawerEnabled, false);
+    await popup.reload();
+    await popup.waitForFunction(() => document.querySelector('#topicDrawerEnabled')?.checked === false); checks++;
+    await page.bringToFront();
+    await frame.locator('#topicDrawerEnabled').focus(); await frame.locator('#topicDrawerEnabled').press('Space');
+    await popup.waitForFunction(() => document.querySelector('#topicDrawerEnabled')?.checked === true);
+    assert.equal((await getSettings()).topicDrawerEnabled, true); checks++;
 
     if (process.argv.includes("--check-switch")) {
       await popup.bringToFront();

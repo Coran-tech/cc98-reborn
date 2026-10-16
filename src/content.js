@@ -9,7 +9,9 @@ const SEARCH_HISTORY_LIMIT = 12;
 const READ_LATER_ROUTE_HASH = "#cc98-reborn-read-later";
 const BLACKLIST_ROUTE_HASH = "#cc98-reborn-blacklist";
 const USER_SETTINGS_ROUTE_HASH = "#cc98-reborn-settings";
-const EXTENSION_VERSION = globalThis.chrome?.runtime?.getManifest?.()?.version || "dev";
+const EXTENSION_MANIFEST = globalThis.chrome?.runtime?.getManifest?.() || {};
+const EXTENSION_VERSION = EXTENSION_MANIFEST.version_name || EXTENSION_MANIFEST.version || "dev";
+const EXTENSION_VERSION_LABEL = /^beta\s/i.test(EXTENSION_VERSION) ? EXTENSION_VERSION : `v${EXTENSION_VERSION}`;
 const LOGIN_REDIRECT_MARK_KEY = "cc98RebornLoginRedirectStartedAt";
 const LOGIN_REDIRECT_SNAPSHOT_KEY = "cc98RebornLoginRedirectSnapshot";
 const LOGIN_HOME_REFRESH_MARK_KEY = "cc98RebornLoginHomeRefreshPendingAt";
@@ -106,6 +108,7 @@ const DEFAULT_SETTINGS = {
   imageLoadDuration: 2100,
   previsitFirstPageForTopicImages: true,
   openLinksInNewTab: false,
+  topicDrawerEnabled: true,
   sideTopbar: false,
   replyRebornTail: true,
   questionMarkEnabled: false,
@@ -410,6 +413,7 @@ function normalizeSettings(settings = {}) {
       settings.previsitFirstPageForTopicImages ?? DEFAULT_SETTINGS.previsitFirstPageForTopicImages
     ),
     openLinksInNewTab: Boolean(settings.openLinksInNewTab),
+    topicDrawerEnabled: Boolean(settings.topicDrawerEnabled ?? DEFAULT_SETTINGS.topicDrawerEnabled),
     sideTopbar: Boolean(settings.sideTopbar),
     replyRebornTail: Boolean(settings.replyRebornTail ?? DEFAULT_SETTINGS.replyRebornTail),
     expandTopicCardsByDefault: Boolean(
@@ -460,6 +464,7 @@ function syncComfortTheme() {
   const previousTone = root.dataset.cc98ComfortTone;
   const tone = globalThis.CC98RebornThemeCore.apply(root, isRebornManagementRoute() ? { ...lastSettings, enabled: true } : lastSettings);
   globalThis.CC98RebornInterfaceStyle?.sync(lastSettings);
+  globalThis.CC98RebornTopicDrawer?.sync(lastSettings);
   if (!lastSettings.enabled) return;
   if (previousTone && previousTone !== tone) {
     // Only replace tone-specific emoji resources: keep the post/editor DOM and selection intact.
@@ -11588,6 +11593,8 @@ function getPostItems() {
     compact.push(candidate);
   });
 
+  const topicId = getTopicPageInfo()?.topicId || location.pathname;
+  const currentAccountId = getCc98AccountId(getStoredCc98UserInfo());
   const items = compact.map((post, index) => {
     const contentNode = findPostContentNode(post);
     const voteContent = findPostVoteContentNode(post);
@@ -11622,7 +11629,7 @@ function getPostItems() {
     const visibleActions = actions.filter((action) => !isFollowPostAction(action));
     const isHot = isHotPostNode(post);
     const id = post.id || post.getAttribute("data-id") || `floor-${floorNumber}-${text.slice(0, 24)}`;
-    const awardKey = `${getTopicPageInfo()?.topicId || location.pathname}:${id}`;
+    const awardKey = `${topicId}:${id}`;
     const cachedAwardDelta = postAwardDeltaCache.get(awardKey);
     if (awardState.expanded || !awardState.collapsible) {
       const delta = getAwardReputationDelta(awards);
@@ -11658,7 +11665,7 @@ function getPostItems() {
       actions: visibleActions,
       followAction,
       messageAction,
-      isCurrentUser: Boolean(uidMatch?.[1] && uidMatch[1] === getCc98AccountId(getStoredCc98UserInfo())),
+      isCurrentUser: Boolean(uidMatch?.[1] && uidMatch[1] === currentAccountId),
       isHot
     };
   }).filter((item) => item && (hasRenderedPostContent(item.content) || item.voteContent || item.lotteryContent));
@@ -24502,8 +24509,8 @@ function rebuildAntSimplePagination(pagination) {
   if (!(container instanceof HTMLElement)) {
     return;
   }
-  container.classList.add("cc98-rebuild-ant-pagination-host");
-  pagination.classList.add("cc98-rebuild-ant-pagination-source");
+  if (!container.classList.contains("cc98-rebuild-ant-pagination-host")) container.classList.add("cc98-rebuild-ant-pagination-host");
+  if (!pagination.classList.contains("cc98-rebuild-ant-pagination-source")) pagination.classList.add("cc98-rebuild-ant-pagination-source");
 
   const state = getAntSimplePaginationState(pagination);
   let proxy = container.querySelector(":scope > .cc98-rebuild-ant-simple-pager");
@@ -24597,8 +24604,8 @@ function rebuildAntFullPagination(pagination) {
     return;
   }
 
-  container.classList.add("cc98-rebuild-ant-pagination-host");
-  pagination.classList.add("cc98-rebuild-ant-pagination-source");
+  if (!container.classList.contains("cc98-rebuild-ant-pagination-host")) container.classList.add("cc98-rebuild-ant-pagination-host");
+  if (!pagination.classList.contains("cc98-rebuild-ant-pagination-source")) pagination.classList.add("cc98-rebuild-ant-pagination-source");
 
   let proxy = container.querySelector(":scope > .cc98-rebuild-ant-full-pager");
   if (!(proxy instanceof HTMLElement)) {
@@ -24675,11 +24682,11 @@ function stabilizeNativeAntUi() {
   cleanupAntFullPaginationOutsideModals();
   const nativeRoot = document.querySelector("#root");
   nativeRoot?.querySelectorAll(".ant-list, .ant-list-item, .ant-list-item-meta, .ant-list-item-content, .ant-list-item-meta-content").forEach((node) => {
-    node.classList.add("cc98-rebuild-native-ant-list");
+    if (!node.classList.contains("cc98-rebuild-native-ant-list")) node.classList.add("cc98-rebuild-native-ant-list");
   });
   nativeRoot?.querySelectorAll(".ant-list-pagination .ant-pagination-simple, .ant-pagination.ant-pagination-simple").forEach(rebuildAntSimplePagination);
   document.querySelectorAll(".ant-modal-content .ant-list, .ant-modal-content .ant-list-item, .ant-modal-content .ant-list-item-meta, .ant-modal-content .ant-list-item-content, .ant-modal-content .ant-list-item-meta-content").forEach((node) => {
-    node.classList.add("cc98-rebuild-native-ant-list");
+    if (!node.classList.contains("cc98-rebuild-native-ant-list")) node.classList.add("cc98-rebuild-native-ant-list");
   });
   document.querySelectorAll(".ant-modal-content .ant-list-pagination .ant-pagination-simple, .ant-modal-content .ant-pagination.ant-pagination-simple").forEach(rebuildAntSimplePagination);
   document.querySelectorAll(".ant-modal-content .ant-list-pagination .ant-pagination:not(.ant-pagination-simple)").forEach(rebuildAntFullPagination);
@@ -24691,7 +24698,13 @@ function scheduleNativeAntUiStabilize() {
 }
 
 function isNativeAntUiMutation(record) {
-  const candidates = [record.target, ...record.addedNodes, ...record.removedNodes];
+  const target = record.target instanceof Element ? record.target : record.target?.parentElement;
+  if (target?.closest(".cc98-rebuild-ant-simple-pager, .cc98-rebuild-ant-full-pager")) return false;
+  if (target?.matches(NATIVE_ANT_UI_SELECTOR) || target?.closest(NATIVE_ANT_UI_SELECTOR)) return true;
+  if (record.type === "attributes") return false;
+  // Only newly added/removed subtrees need a descendant scan. A change on a
+  // large ancestor does not make its unrelated existing Ant widgets dirty.
+  const candidates = [...record.addedNodes, ...record.removedNodes];
   return candidates.some((node) => {
     const element = node instanceof Element ? node : node?.parentElement;
     if (!(element instanceof Element)) {
@@ -24731,7 +24744,7 @@ function renderHome(app) {
   const visibleSections = hotOnly && hotSections.length > 0 ? hotSections : sections;
   if (hotOnly && visibleSections.length > 0) {
     const hero = createElement("section", "cc98-rebuild-hero cc98-rebuild-home-hot-hero");
-    hero.append(createElement("p", "cc98-rebuild-kicker cc98-rebuild-version-kicker", `Reborn View · v${EXTENSION_VERSION}`));
+    hero.append(createElement("p", "cc98-rebuild-kicker cc98-rebuild-version-kicker", `Reborn View · ${EXTENSION_VERSION_LABEL}`));
     hero.append(createElement("h1", "", visibleSections[0].title));
     app.append(hero);
   }
@@ -24742,6 +24755,7 @@ function renderHome(app) {
   visibleSections.forEach((section) => {
     const block = createElement("section", "cc98-rebuild-section");
     const hotSection = isHotHomeSection(section);
+    block.dataset.homeSectionKind = hotSection ? "hot" : "other";
     if (!hotOnly) {
       const header = createElement("div", "cc98-rebuild-section-heading");
       header.append(createElement("h2", "", section.title));
@@ -24759,6 +24773,10 @@ function renderHome(app) {
         rank: hotSection && index < 10 ? index + 1 : 0
       });
       card.dataset.itemKey = `home-topic:${item.href || `${section.title}:${index}:${item.title}`}`;
+      if (hotOnly && hotSection) {
+        const title = card.querySelector(".cc98-rebuild-card-title");
+        if (title instanceof HTMLAnchorElement) title.title = item.title || "";
+      }
       list.append(card);
     });
     block.append(list);
@@ -28832,6 +28850,7 @@ function renderPendingPageContent(app, kind) {
 }
 
 function renderRebuiltUi(options = {}) {
+  if (globalThis.CC98RebornTopicDrawer?.holdsPage()) return;
   if (isRebuilding) {
     return;
   }
@@ -29014,7 +29033,7 @@ function renderRebuiltUi(options = {}) {
 
     if (!["board", "userCenter", "message", "signin", "login", "error", "blacklist"].includes(kind) && !(kind === "home" && lastSettings.homeHotOnly)) {
       const hero = createElement("section", "cc98-rebuild-hero");
-      hero.append(createElement("p", "cc98-rebuild-kicker cc98-rebuild-version-kicker", `Reborn View · v${EXTENSION_VERSION}`));
+      hero.append(createElement("p", "cc98-rebuild-kicker cc98-rebuild-version-kicker", `Reborn View · ${EXTENSION_VERSION_LABEL}`));
       const title = options.pending && kind === "post" ? getFirstText(document, ".topicInfo-info #essay1")
         : (options.pending ? "" : getPageTitle());
       hero.append(createElement("h1", options.pending && !title ? "cc98-rebuild-pending-title cc98-rebuild-pending-block" : "", title));
@@ -29407,6 +29426,7 @@ function ensureRebuiltAppPresenceWatchdog() {
 }
 
 function scheduleRebuild(options = {}) {
+  if (globalThis.CC98RebornTopicDrawer?.holdsPage()) return;
   if (!lastSettings || !document.body) {
     return;
   }
@@ -29480,13 +29500,14 @@ function scheduleDelayedRebuilds() {
   ));
 }
 
-function appendUniqueCard(feed, key, card) {
+function appendUniqueCard(feed, key, createCard) {
   const escapedKey = typeof CSS !== "undefined" && typeof CSS.escape === "function"
     ? CSS.escape(key)
     : key.replace(/["\\]/g, "\\$&");
   if (!feed || feed.querySelector(`[data-item-key="${escapedKey}"]`)) {
     return false;
   }
+  const card = typeof createCard === "function" ? createCard() : createCard;
   card.dataset.itemKey = key;
   feed.append(card);
   return true;
@@ -29542,6 +29563,7 @@ function reconcileCardFeed(feed, entries) {
 }
 
 function syncRebuiltContent() {
+  if (globalThis.CC98RebornTopicDrawer?.holdsPage()) return;
   globalThis.CC98RebornUserNotes?.sync();
   if (isRebuilding || !lastSettings?.enabled || !lastSettings.rebuildUi) {
     return;
@@ -29638,7 +29660,7 @@ function syncRebuiltContent() {
 
   if (feed.dataset.feedKind === "post") {
     getPostItems().forEach((item) => {
-      appendUniqueCard(feed, `post:${item.id}`, renderPostCard(item));
+      appendUniqueCard(feed, `post:${item.id}`, () => renderPostCard(item));
     });
     setupRebuiltImagePlaceholders(app);
     // The target floor may only have appeared in the native tree during this
@@ -29756,7 +29778,7 @@ function armAutoLoader() {
 function isRebuiltInternalMutationTarget(record, app) {
   const changed = [...record.addedNodes, ...record.removedNodes];
   if (changed.length && changed.every((node) => node instanceof Element
-    && (node.matches(".cc98-rebuild-conversation-layer, .cc98-topic-search-layer, .cc98-topic-search-worker, .cc98-favorite-share-layer, .cc98-user-note-layer, .cc98-user-note-ui") || node.closest(".cc98-rebuild-conversation-layer, .cc98-topic-search-layer, .cc98-topic-search-worker, .cc98-favorite-share-layer, .cc98-user-note-layer, .cc98-user-note-ui")))) {
+    && (node.matches(".cc98-topic-drawer-layer, .cc98-rebuild-conversation-layer, .cc98-topic-search-layer, .cc98-topic-search-worker, .cc98-favorite-share-layer, .cc98-user-note-layer, .cc98-user-note-ui") || node.closest(".cc98-topic-drawer-layer, .cc98-rebuild-conversation-layer, .cc98-topic-search-layer, .cc98-topic-search-worker, .cc98-favorite-share-layer, .cc98-user-note-layer, .cc98-user-note-ui")))) {
     return true;
   }
   const target = record.target instanceof Element ? record.target : record.target?.parentElement;
@@ -29772,6 +29794,7 @@ function isRebuiltInternalMutationTarget(record, app) {
     ".cc98-rebuild-conversation-layer",
     ".cc98-topic-search-layer",
     ".cc98-topic-search-worker",
+    ".cc98-topic-drawer-layer",
     ".cc98-favorite-share-layer",
     ".cc98-user-note-layer",
     ".cc98-user-note-ui",
@@ -29825,8 +29848,8 @@ function ensureObserver() {
       const target = record.target;
       const changedNodes = [...record.addedNodes, ...record.removedNodes];
       const onlyRebuildNodes = changedNodes.length > 0 && changedNodes.every((node) => {
-        return node instanceof Element && (node.id === "cc98-comfort-app" || node.matches(".cc98-rebuild-conversation-layer, .cc98-topic-search-layer, .cc98-topic-search-worker, .cc98-favorite-share-layer, .cc98-user-note-layer, .cc98-user-note-ui")
-          || Boolean(node.closest?.("#cc98-comfort-app, .cc98-rebuild-conversation-layer, .cc98-topic-search-layer, .cc98-topic-search-worker, .cc98-favorite-share-layer, .cc98-user-note-layer, .cc98-user-note-ui")));
+        return node instanceof Element && (node.id === "cc98-comfort-app" || node.matches(".cc98-topic-drawer-layer, .cc98-rebuild-conversation-layer, .cc98-topic-search-layer, .cc98-topic-search-worker, .cc98-favorite-share-layer, .cc98-user-note-layer, .cc98-user-note-ui")
+          || Boolean(node.closest?.("#cc98-comfort-app, .cc98-topic-drawer-layer, .cc98-rebuild-conversation-layer, .cc98-topic-search-layer, .cc98-topic-search-worker, .cc98-favorite-share-layer, .cc98-user-note-layer, .cc98-user-note-ui")));
       });
       if (onlyRebuildNodes) {
         return false;

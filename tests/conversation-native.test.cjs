@@ -4,14 +4,15 @@ const os = require("node:os");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
 const { chromium } = require("playwright");
+const localForum = require('./local-forum-path.cjs');
 
 async function main() {
   const root = path.resolve(__dirname, "..");
   const runtime = await fs.mkdtemp(path.join(os.tmpdir(), "cc98-conversation-native-"));
   const port = 44338;
   const origin = `http://127.0.0.1:${port}`;
-  const server = spawn(process.execPath, [path.join(root, "tests/local-forum/server.js")], {
-    cwd: root, env: { ...process.env, CC98_LOCAL_PORT: String(port), CC98_LOCAL_REQUIRE_AUTH: "0", CC98_LOCAL_NATIVE_FRONTEND: "0",
+  const server = spawn(process.execPath, [localForum.serverPath], {
+    cwd: root, env: { ...process.env, ...localForum.environment, CC98_LOCAL_PORT: String(port), CC98_LOCAL_REQUIRE_AUTH: "0", CC98_LOCAL_NATIVE_FRONTEND: "0",
       CC98_LOCAL_DATA_PATH: path.join(runtime, "forum-data.json"), CC98_LOCAL_UPLOAD_ROOT: path.join(runtime, "uploads"), CC98_LOCAL_BACKUP_ROOT: path.join(runtime, "backups") }, stdio: ["ignore", "pipe", "pipe"]
   });
   let logs = "";
@@ -71,10 +72,20 @@ async function main() {
     await page.getByRole('button', { name: '确认开始', exact: true }).click();
     await page.waitForFunction(() => document.querySelector('.cc98-topic-search-status')?.textContent.startsWith('搜索完成'));
     assert.deepEqual(await page.locator('[data-search-floor]').evaluateAll(nodes => nodes.map(node => Number(node.dataset.searchFloor))), [14], 'native full-text search shares hydrated conversation pages and can exclude flattened quotes');
+    const authorName = (await page.locator('[data-search-floor="14"] .cc98-topic-search-result-link').innerText()).replace(/^#\d+\s*·\s*/, '');
+    await page.getByLabel('关键词', { exact: true }).fill('[ac01]');
+    await page.getByRole('button', { name: '重新搜索', exact: true }).click();
+    await page.getByRole('button', { name: '确认开始', exact: true }).click();
+    assert.deepEqual(await page.locator('[data-search-floor]').evaluateAll(nodes => nodes.map(node => Number(node.dataset.searchFloor))), [1, 4], 'the seed post and fourth floor both contain a real rendered [ac01] emotion');
+    assert.equal(await page.locator('.cc98-topic-search-snippet mark').first().innerText(), '[ac01]');
+    await page.getByLabel('关键词', { exact: true }).fill(authorName);
+    await page.getByRole('button', { name: '重新搜索', exact: true }).click();
+    await page.getByRole('button', { name: '确认开始', exact: true }).click();
+    assert(await page.locator('[data-search-floor="14"]').count(), 'native author names must match even when absent from the post body');
     await page.keyboard.press('Escape');
     assert.deepEqual(await page.evaluate(() => ({ url: location.href, scroll: scrollY, posts: [...document.querySelectorAll('#cc98-comfort-app [data-post-floor]')].map(node => node.dataset.postFloor) })), searchForeground);
     assert.deepEqual(errors, []);
-    console.log("conversation native forum: real UBB flattening, two-page ancestry/descendants, source DOM isolation, shared full-text search and foreground preservation passed");
+    console.log("conversation native forum: real UBB flattening, ancestry/descendants, source isolation, shared full-text username/emotion search and foreground preservation passed");
   } finally {
     if (browser) await browser.close();
     server.kill();

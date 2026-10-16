@@ -27,6 +27,7 @@ jobs:
           node --check src/conversation-core.js
           node --check src/conversation.js
           node --check src/topic-search.js
+          node --check src/topic-drawer.js
           node --check src/favorite-share-core.js
           node --check src/favorite-share-service.js
           node --check src/favorite-share.js

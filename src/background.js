@@ -1848,7 +1848,39 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   }
 });
 
+async function initializeTopicDrawerFrame(message, sender) {
+  if (!sender.tab?.id || !sender.frameId || !sender.documentId || !/^[a-z0-9-]{20,80}$/i.test(message.token || "")) {
+    throw new Error("Invalid topic drawer frame");
+  }
+  const url = new URL(sender.url);
+  const parentUrl = new URL(sender.tab.url);
+  if (url.origin !== parentUrl.origin || !/^https?:$/.test(url.protocol)
+    || !(url.hostname === "cc98.org" || url.hostname === "www.cc98.org" || url.hostname.endsWith(".webvpn.zju.edu.cn"))
+    || !/\/(?:topic\/\d+|editor\/(?:edit\/)?\d+)(?:\/|$)/i.test(url.pathname)) {
+    throw new Error("Unsupported topic drawer URL");
+  }
+  // Address the document, not a reusable frame ID: a fast pagination/close
+  // must not inject an old request into the next document in that frame.
+  const target = { tabId: sender.tab.id, documentIds: [sender.documentId] };
+  const claim = await chrome.scripting.executeScript({ target, func: (token) => {
+    if (window.top === window || window.parent !== window.top || window.name !== `cc98-reborn-topic-drawer:v1:${token}`) return false;
+    if (globalThis.__cc98DrawerRuntimeClaimed) return false;
+    globalThis.__cc98DrawerRuntimeClaimed = true;
+    return true;
+  }, args: [message.token] });
+  if (!claim[0]?.result) return { ok: true };
+  const runtime = chrome.runtime.getManifest().content_scripts.find((script) => script.js?.includes("src/content.js"));
+  if (!runtime) throw new Error("Missing topic drawer runtime");
+  await chrome.scripting.insertCSS({ target, files: runtime.css });
+  await chrome.scripting.executeScript({ target, files: runtime.js, injectImmediately: true });
+  return { ok: true };
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message?.type === "CC98_REBORN_INIT_TOPIC_DRAWER") {
+    initializeTopicDrawerFrame(message, sender).then(sendResponse).catch(() => sendResponse({ ok: false }));
+    return true;
+  }
   if (message?.type === "CC98_REBORN_DOWNLOAD_FILE") {
     return handleDownloadFile(message, sendResponse);
   }

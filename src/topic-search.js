@@ -5,6 +5,8 @@
   let job = null;
   let view = null;
   let pendingStart = null;
+  const textCache = new WeakMap();
+  const emotionCode = /^(?:cc98\d{2}|ac(?:\d{2}|\d{4})|[acf]:\d{3}|tb\d{2}|ms\d{2}|em\d{2})$/i;
 
   function node(tag, className, text) {
     const result = document.createElement(tag);
@@ -22,17 +24,49 @@
     return { topicId: String(info.topicId), scope: scope(), query, includeQuotes, maxPage: Math.max(1, info.maxKnown || 1),
       phase: "idle", pages: new Map(), matches: new Map(), revealed: new Set(), reader: null, epoch: 0, error: "", shown: 100, refreshing: false };
   }
+  function imageEmotion(image) {
+    const tagged = image.closest('[data-cc98-ubb-emotion-tag]')?.getAttribute('data-cc98-ubb-emotion-tag') || '';
+    if (emotionCode.test(tagged)) return `[${tagged.toLowerCase()}]`;
+    for (const attribute of ['src', 'data-src', 'data-original', 'data-lazy-src', 'data-original-src', 'data-url', 'data-actualsrc', 'srcset', 'data-srcset']) {
+      let source = image.getAttribute(attribute) || '';
+      try { source = decodeURIComponent(source); } catch {}
+      let match = source.match(/(?:^|\/)(?:static\/)?images\/ac1?\/(\d{2}|\d{4})\.png(?:[?#\s,]|$)/i);
+      if (match) return `[ac${match[1]}]`;
+      match = source.match(/(?:^|\/)(?:static\/)?images\/CC98\/CC98(\d{2})\.(?:gif|png)(?:[?#\s,]|$)/i);
+      if (match) return `[cc98${match[1]}]`;
+      match = source.match(/(?:^|\/)(?:static\/)?images\/(tb|ms|em)\/\1(\d{2})\.(?:png|gif)(?:[?#\s,]|$)/i);
+      if (match) return `[${match[1].toLowerCase()}${match[2]}]`;
+      match = source.match(/(?:^|\/)(?:static\/)?images\/mahjong\/(animal2017|carton2017|face2017)\/(\d{3})\.(?:png|gif)(?:[?#\s,]|$)/i);
+      if (match) return `[${{ animal2017: 'a', carton2017: 'c', face2017: 'f' }[match[1].toLowerCase()]}:${match[2]}]`;
+    }
+    for (const attribute of ['alt', 'title']) {
+      const label = (image.getAttribute(attribute) || '').trim().replace(/^\[|\]$/g, '');
+      if (emotionCode.test(label)) return `[${label.toLowerCase()}]`;
+    }
+    return '';
+  }
   function searchableText(record, includeQuotes) {
     // Template content is inert: indexing never loads embedded media or runs
     // handlers, and literal queries only become text/mark nodes in the UI.
+    let cached = textCache.get(record);
+    if (!cached || cached.html !== record.contentHtml) {
+      cached = { html: record.contentHtml, values: new Map() }; textCache.set(record, cached);
+    }
+    if (cached.values.has(includeQuotes)) return cached.values.get(includeQuotes);
     const template = document.createElement("template");
     template.innerHTML = record.contentHtml;
     template.content.querySelectorAll("script, style, iframe, object, embed, button").forEach(item => item.remove());
     if (!includeQuotes) template.content.querySelectorAll("blockquote, .cc98-rebuild-quote-box, .cc98-rebuild-legacy-quote, div[style]").forEach(item => {
       if (item.matches("blockquote, .cc98-rebuild-quote-box, .cc98-rebuild-legacy-quote") || isLegacyQuoteStyle(item.getAttribute("style"), "")) item.remove();
     });
+    template.content.querySelectorAll('img').forEach(image => {
+      const token = imageEmotion(image);
+      if (token) image.replaceWith(document.createTextNode(token));
+    });
     template.content.querySelectorAll("p, br, div, li, blockquote, pre, tr, td, th, h1, h2, h3, h4").forEach(item => item.after(document.createTextNode(" ")));
-    return (template.content.textContent || "").replace(/\s+/g, " ").trim();
+    const text = (template.content.textContent || "").replace(/\s+/g, " ").trim();
+    cached.values.set(includeQuotes, text);
+    return text;
   }
   function indexPage(task, page, result) {
     task.pages.set(page, result);
@@ -43,7 +77,13 @@
     for (const record of result.records) {
       const text = searchableText(record, task.includeQuotes);
       const at = text.toLocaleLowerCase().indexOf(query);
-      if (at >= 0) task.matches.set(Number(record.floor), { record, text, at });
+      if (at >= 0) { task.matches.set(Number(record.floor), { record, text, at }); continue; }
+      // Anonymous display identities stay searchable without exposing an
+      // underlying account ID that the forum did not display to readers.
+      const uid = /^匿名(?:\s|$)/.test(record.user || '') ? '' : String(record.uid || '');
+      const author = [record.user || '', uid ? `UID ${uid}` : ''].filter(Boolean).join(' · ');
+      const authorAt = author.toLocaleLowerCase().indexOf(query);
+      if (authorAt >= 0) task.matches.set(Number(record.floor), { record, text: `用户：${author}${text ? ` · ${text}` : ''}`, at: authorAt + 3 });
     }
   }
   function captureCached(task, reader) {
@@ -112,7 +152,7 @@
     view.action.textContent = busy ? "暂停搜索" : job.phase === "idle" ? "开始搜索" : job.phase === "complete" ? "重新搜索" : "继续搜索";
     view.background.hidden = !busy;
     view.refresh.disabled = busy || !job.query;
-    view.status.textContent = job.phase === "idle" ? "输入关键词，搜索本帖所有楼层。"
+    view.status.textContent = job.phase === "idle" ? "支持正文关键词、用户名 / UID 和 [ac01] 等表情编号，搜索本帖所有楼层。"
       : `${busy ? "搜索中" : job.phase === "complete" ? "搜索完成" : job.phase === "error" ? "读取中断" : "已暂停"} · 已读 ${job.pages.size}/${job.maxPage} 页 · 找到 ${job.matches.size} 个楼层`;
     view.progress.max = job.maxPage; view.progress.value = job.pages.size; view.progress.hidden = job.phase === "idle";
     view.error.textContent = job.error; view.error.hidden = !job.error;
@@ -173,7 +213,7 @@
     header.append(title, dismiss);
     const form = node("form", "cc98-topic-search-form");
     const label = node("label", "cc98-topic-search-query-label", "关键词");
-    const input = node("input", "cc98-topic-search-query"); input.type = "search"; input.maxLength = 200; input.value = job.query; input.placeholder = "搜索本帖正文"; input.oninput = () => input.setCustomValidity(""); label.append(input);
+    const input = node("input", "cc98-topic-search-query"); input.type = "search"; input.maxLength = 200; input.value = job.query; input.placeholder = "正文、用户名 / UID、[ac01]"; input.oninput = () => input.setCustomValidity(""); label.append(input);
     const quoteLabel = node("label", "cc98-topic-search-quotes-label");
     const quotes = node("input"); quotes.type = "checkbox"; quotes.checked = job.includeQuotes; quoteLabel.append(quotes, document.createTextNode("包含引用内容"));
     const actions = node("div", "cc98-topic-search-actions");

@@ -793,3 +793,93 @@
   :root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-list > .cc98-rebuild-card:not(.cc98-rebuild-post) { grid-template-columns: 72px minmax(0, 1fr); }
   :root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-list > .cc98-rebuild-card > .cc98-rebuild-card-meta { grid-column: 2; grid-row: 3; }
 }
+
+/* Hot-only home: one baseline for rank, board, title, movement and save. */
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] > .cc98-rebuild-home-hot-hero {
+  min-height: 90px;
+  gap: 6px;
+  margin: 16px 0 !important;
+  padding: 16px 14px !important;
+}
+
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] > .cc98-rebuild-home-hot-hero h1 {
+  font-size: 1.8rem !important;
+}
+
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] > .cc98-rebuild-topbar {
+  min-height: 0;
+  padding: 18px 16px 16px !important;
+  gap: 8px 10px;
+}
+
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-list > .cc98-rebuild-card {
+  grid-template-columns: 2.3rem 7rem minmax(0, 1fr) 3.5rem 2.2rem;
+  grid-template-rows: auto;
+  min-height: 3.2rem;
+  gap: 4px 12px;
+  padding: 10px 10px !important;
+}
+
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-card > .cc98-rebuild-card-top {
+  grid-column: 2;
+  grid-row: 1;
+  margin: 0;
+  min-width: 0;
+}
+
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-card > .cc98-rebuild-card-title {
+  grid-column: 3;
+  grid-row: 1;
+  min-width: 0;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  font-size: 0.96rem !important;
+}
+
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-card > :is(.cc98-rebuild-rank, .cc98-rebuild-rank-motion, .cc98-rebuild-read-later-button) {
+  position: static !important;
+  grid-row: 1;
+  justify-self: center;
+  align-self: center;
+  width: auto !important;
+  height: auto !important;
+  margin: 0;
+  padding: 0 !important;
+}
+
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-card > .cc98-rebuild-rank { grid-column: 1; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-card > .cc98-rebuild-rank-motion { grid-column: 4; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-card > .cc98-rebuild-read-later-button {
+  grid-column: 5;
+  width: 2.2rem !important;
+  height: 1.7rem !important;
+}
+
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-card > :is(.cc98-rebuild-card-meta, .cc98-rebuild-hover-meta) {
+  grid-column: 3 / -1;
+  grid-row: 2;
+  margin: 0 !important;
+  font-size: 0.7rem !important;
+  line-height: 1.3 !important;
+}
+
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-card:has(> .cc98-rebuild-card-meta) > .cc98-rebuild-hover-meta { grid-row: 3; }
+
+@media (max-width: 700px) {
+  :root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-list > .cc98-rebuild-card {
+    grid-template-columns: 2rem minmax(0, 1fr) 3.2rem 2.2rem;
+    padding-block: 6px !important;
+    gap: 2px 6px;
+  }
+  :root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-card > .cc98-rebuild-card-title {
+    grid-column: 2;
+    grid-row: 2;
+    white-space: normal;
+  }
+  :root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-card > :is(.cc98-rebuild-rank, .cc98-rebuild-rank-motion, .cc98-rebuild-read-later-button) { grid-row: 1 / span 2; }
+  :root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-card > .cc98-rebuild-rank-motion { grid-column: 3; }
+  :root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-card > .cc98-rebuild-read-later-button { grid-column: 4; }
+  :root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-card > :is(.cc98-rebuild-card-meta, .cc98-rebuild-hover-meta) { grid-column: 2 / -1; grid-row: 3; }
+  :root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-card:has(> .cc98-rebuild-card-meta) > .cc98-rebuild-hover-meta { grid-row: 4; }
+}
