@@ -38,6 +38,11 @@ if (Test-Path $stage) {
 New-Item -ItemType Directory -Force -Path $stage | Out-Null
 New-Item -ItemType Directory -Force -Path (Join-Path $stage "src") | Out-Null
 
+# Ship the deployable source with the extension so the manual download does
+# not depend on a repository path or a separately published release asset.
+& (Join-Path $PSScriptRoot 'package-semantic-lab.ps1') -OutputDirectory $OutputDirectory
+Copy-Item -LiteralPath (Join-Path $dist 'cc98-semantic-lab.zip') -Destination (Join-Path $root 'assets/semantic-lab.zip') -Force
+
 @(
   "manifest.json",
   "assets",
@@ -77,6 +82,15 @@ if ($TestBuild) {
   "interface-style.js",
   "interface-styles.css",
   "content.js",
+  "content-filter-core.js",
+  "content-filter.js",
+  "content-filter-frame.html",
+  "content-filter-frame.js",
+  "content-filter-worker.js",
+  "semantic-client.js",
+  "semantic-filter-core.js",
+  "semantic-background.js",
+  "semantic-filter.js",
   "extended-ubb-core.js",
   "extended-ubb.js",
   "markup-converter.js",

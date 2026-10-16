@@ -14,6 +14,7 @@ async function main() {
   const browser = await chromium.launch({ channel: "msedge", headless: true });
   const context = await browser.newContext({ viewport: { width: 1440, height: 1050 }, timezoneId: "Asia/Shanghai" });
   let checks = 0;
+  const layouts = [];
   try {
     await fs.mkdir(output, { recursive: true });
     async function broadcast(previous) {
@@ -56,6 +57,7 @@ async function main() {
     await forum.goto(`${origin}/topic/100/1`);
     const post = forum.locator('#cc98-comfort-app [data-post-floor="1"]');
     await post.waitFor();
+    if (!process.argv.includes('--views-only')) {
     await forum.waitForTimeout(4500);
     assert.equal(await forum.locator(".cc98-ascii-decoration").count(), 0);
     const original = await post.evaluate(node => ({ radius: getComputedStyle(node).borderRadius, html: node.innerHTML }));
@@ -143,7 +145,6 @@ async function main() {
     await post.locator('.cc98-rebuild-icon-action[title="引用"]').click();
     assert.equal(await forum.evaluate(() => __nativeQuotes), 1, "ASCII action must retain the native click handler");
     checks++;
-    const layouts = [];
     await forum.bringToFront();
     for (const tone of ["light", "dark"]) {
       await patch({ themeMode: tone });
@@ -255,8 +256,102 @@ async function main() {
     assert(await forum.locator('#ascii-topic-index .cc98-rebuild-card').evaluateAll(nodes => nodes.every(node => node.getBoundingClientRect().height < 80)), "topic index must use compact rows");
     await forum.locator('#ascii-topic-index').screenshot({ path: path.join(output, "ascii-topic-index.png") });
     checks++;
+    }
+    const topicViews = forum.locator('#cc98-comfort-app .cc98-rebuild-hero > .cc98-rebuild-topic-views');
+    const waitForViews = value => forum.waitForFunction(value => document.querySelector('.cc98-rebuild-topic-views')?.textContent === '浏览 ' + value, value, { timeout: 5000 }).catch(async error => {
+      console.error('View-count sync failed: ' + JSON.stringify(await forum.evaluate(() => ({ native: document.querySelector('#viewtimes .timeProp.tagSize')?.textContent, hero: document.querySelector('.cc98-rebuild-topic-views')?.textContent, kind: getPageKind() }))));
+      throw error;
+    });
+    await topicViews.waitFor();
+    assert.equal(await topicViews.count(), 1);
+    assert.equal(await topicViews.textContent(), '浏览 32000');
+    assert.equal(await forum.locator('#cc98-comfort-app .cc98-rebuild-post-views').count(), 0, 'view count no longer appears in any post footer'); checks++;
+    await forum.evaluate(() => { window.__viewsPostIdentity = document.querySelector('#cc98-comfort-app [data-post-floor="1"]'); });
+    await forum.evaluate(() => { document.querySelector('#viewtimes .timeProp.tagSize').textContent = '0'; });
+    await waitForViews('0'); checks++;
+    await forum.evaluate(() => { document.querySelector('#viewtimes .timeProp.tagSize').textContent = '98765'; });
+    await waitForViews('98765'); checks++;
+    await forum.evaluate(() => { document.querySelector('#viewtimes .timeProp.tagSize').firstChild.nodeValue = '98766'; });
+    await waitForViews('98766');
+    assert(await forum.evaluate(() => __viewsPostIdentity === document.querySelector('#cc98-comfort-app [data-post-floor="1"]')), 'count updates preserve the mounted post DOM'); checks++;
+    await forum.evaluate(() => { document.querySelector('#viewtimes').remove(); });
+    await topicViews.waitFor({ state: 'detached', timeout: 5000 });
+    assert.equal(await forum.locator('#cc98-comfort-app .cc98-rebuild-post-views').count(), 0); checks++;
+    const longTitle = '回到字符构成的论坛：' + '长标题下浏览计数与操作控件应各自排版。'.repeat(3);
+    await forum.evaluate(() => {
+      const native = document.createElement('span'); native.id = 'viewtimes';
+      native.innerHTML = '<span class="timeProp tagSize">54321</span>';
+      document.querySelector('.topicInfo-info').append(native);
+    });
+    await waitForViews('54321'); checks++;
+    await forum.evaluate(title => { document.querySelector('.cc98-rebuild-hero h1').textContent = title; }, longTitle);
+    await forum.evaluate(() => {
+      window.__blockedRevealClicks = {};
+      const host = document.createElement('section'); host.id = 'ascii-blocked-layout'; host.className = 'cc98-rebuild-section';
+      for (const [id, reason] of [
+        ['short', '标题：测试'],
+        ['long', '标题：' + '这是一段需要自然折行的长屏蔽原因，操作按钮应保留完整宽度。'.repeat(3)],
+        ['semantic', '语义规则（实验性）：攻击性 90%']
+      ]) {
+        const card = renderBlockedPlaceholder(reason, { onReveal: () => { __blockedRevealClicks[id] = (__blockedRevealClicks[id] || 0) + 1; } });
+        card.dataset.blockedTest = id; host.append(card);
+      }
+      document.querySelector('.cc98-rebuild-hero').after(host);
+    });
+    const controlLayouts = [];
+    for (const style of ['modern', 'ascii']) for (const tone of ['light', 'dark']) {
+      await patch({ themeStyle: style, themeMode: tone });
+      for (const width of [1440, 390]) {
+        await forum.setViewportSize({ width, height: 1050 });
+        await forum.waitForTimeout(150);
+        const result = await forum.evaluate(() => {
+          const hero = document.querySelector('.cc98-rebuild-hero');
+          const title = hero.querySelector('h1'), views = hero.querySelector('.cc98-rebuild-topic-views');
+          const titleBox = title.getBoundingClientRect(), viewsBox = views.getBoundingClientRect();
+          const range = document.createRange(); range.selectNodeContents(views);
+          const textBox = range.getBoundingClientRect();
+          const controls = [...document.querySelectorAll('#ascii-blocked-layout [data-blocked-test]')].map(card => {
+            const cardBox = card.getBoundingClientRect(), reason = card.querySelector('.cc98-rebuild-card-title').getBoundingClientRect();
+            const button = card.querySelector('button'), box = button.getBoundingClientRect(), css = getComputedStyle(button);
+            return { id: card.dataset.blockedTest, label: button.textContent, x: box.x, right: box.right, top: box.top, bottom: box.bottom, width: box.width, height: box.height, cardX: cardBox.x, cardRight: cardBox.right, reasonRight: reason.right, reasonTop: reason.top, reasonBottom: reason.bottom, scrollWidth: button.scrollWidth, clientWidth: button.clientWidth, whiteSpace: css.whiteSpace, writingMode: css.writingMode, radius: css.borderRadius, before: getComputedStyle(button, '::before').content, after: getComputedStyle(button, '::after').content };
+          });
+          return { viewport: innerWidth, scrollWidth: document.documentElement.scrollWidth, viewsCount: document.querySelectorAll('#cc98-comfort-app .cc98-rebuild-topic-views').length, footerViews: document.querySelectorAll('#cc98-comfort-app .cc98-rebuild-post-views').length, titleBottom: titleBox.bottom, titleWidth: title.clientWidth, titleScrollWidth: title.scrollWidth, viewsTop: viewsBox.top, viewsRight: viewsBox.right, textRight: textBox.right, textAlign: getComputedStyle(views).textAlign, controls };
+        });
+        assert.equal(result.viewsCount, 1);
+        assert.equal(result.footerViews, 0);
+        assert.equal(result.textAlign, 'right');
+        assert(result.viewsTop >= result.titleBottom - 1, `${style}/${tone}/${width}: views overlap the long title`);
+        assert(Math.abs(result.textRight - result.viewsRight) < 2, `${style}/${tone}/${width}: view count text must align right`);
+        assert(result.titleScrollWidth <= result.titleWidth + 1, `${style}/${tone}/${width}: long title overflows`);
+        assert(result.scrollWidth <= width + 1, JSON.stringify(result));
+        assert.equal(result.controls.length, 3);
+        for (const control of result.controls) {
+          assert(control.x >= control.cardX - 1 && control.right <= control.cardRight + 1, JSON.stringify(control));
+          assert(control.scrollWidth <= control.clientWidth + 1, JSON.stringify(control));
+          if (style === 'ascii') {
+            assert.equal(control.whiteSpace, 'nowrap');
+            assert.equal(control.writingMode, 'horizontal-tb');
+            assert.equal(control.radius, '0px');
+            assert(control.width > control.height + 10 && control.height <= 42, 'ASCII reveal labels must stay horizontal: ' + JSON.stringify(control));
+            assert(control.x >= control.reasonRight - 1, 'reveal action stays beside the reason: ' + JSON.stringify(control));
+            assert.match(control.before, /\[/); assert.match(control.after, /\]/);
+          }
+        }
+        for (const id of ['short', 'long', 'semantic']) {
+          const before = await forum.evaluate(id => __blockedRevealClicks[id] || 0, id);
+          const button = forum.locator(`#ascii-blocked-layout [data-blocked-test="${id}"] button`);
+          assert.equal(await button.textContent(), id === 'semantic' ? '展开原文' : '显示');
+          await button.click();
+          assert.equal(await forum.evaluate(id => __blockedRevealClicks[id], id), before + 1, 'reveal callback remains connected');
+        }
+        await forum.evaluate(() => scrollTo(0, 0));
+        if (style === 'ascii') await forum.screenshot({ path: path.join(output, `ascii-views-blocked-${width}-${tone}.png`) });
+        controlLayouts.push({ style, tone, ...result }); checks++;
+      }
+    }
     assert.deepEqual(errors, []);
-    await fs.writeFile(path.join(output, 'measurements.json'), JSON.stringify(layouts, null, 2));
+    if (layouts.length) await fs.writeFile(path.join(output, 'measurements.json'), JSON.stringify(layouts, null, 2));
+    await fs.writeFile(path.join(output, 'views-blocked-measurements.json'), JSON.stringify({ passed: true, layouts: controlLayouts, errors }, null, 2));
     console.log(`ASCII interface: ${checks} groups passed (settings/storage, independent palette/tone, native actions, content/draft/selection, frames/resizing, media, dialog, asynchronous content, cleanup and compact index)`);
   } finally { await browser.close(); }
 }

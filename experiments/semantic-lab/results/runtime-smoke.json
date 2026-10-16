@@ -1,0 +1,150 @@
+{
+  "backend": "transformers-pytorch-cpu",
+  "offline": true,
+  "versions": {
+    "torch": "2.9.1+cpu",
+    "transformers": "5.17.0",
+    "tokenizers": "0.23.3",
+    "huggingface-hub": "1.31.0",
+    "safetensors": "0.8.0"
+  },
+  "models": [
+    {
+      "passed": true,
+      "sample": "你就是个傻子，别来这里胡说八道。",
+      "result": {
+        "model": "cold",
+        "repository": "thu-coai/roberta-base-cold",
+        "revision": "614c097a485910d28beb75f60d90c61e3082b518",
+        "task": "toxicity-binary",
+        "scoreType": "softmax",
+        "labels": [
+          {
+            "label": "offensive",
+            "title": "冒犯",
+            "score": 0.9808774
+          },
+          {
+            "label": "non_offensive",
+            "title": "未冒犯",
+            "score": 0.0191226
+          }
+        ],
+        "elapsedMs": 27626,
+        "inferenceMs": 42,
+        "loadMs": 1390,
+        "loadedNow": true,
+        "inputCharacters": 16,
+        "inputTokens": 18,
+        "processedTokens": 18,
+        "maxInputTokens": 512,
+        "truncated": false,
+        "device": "cpu",
+        "dtype": "float32",
+        "toxicityScore": 0.9808774
+      }
+    },
+    {
+      "passed": true,
+      "sample": "谢谢你耐心分享，这份教程帮我解决了问题。",
+      "result": {
+        "model": "horizon",
+        "repository": "Horizon-Labs/multilingual-toxicity-small",
+        "revision": "01adcc628a33848569816d4851a38544c321b92c",
+        "task": "toxicity-multilabel",
+        "scoreType": "independent-sigmoid",
+        "labels": [
+          {
+            "label": "toxicity",
+            "title": "攻击性",
+            "score": 0.0039151
+          },
+          {
+            "label": "sexual_explicit",
+            "title": "露骨性内容",
+            "score": 0.0013741
+          },
+          {
+            "label": "insult",
+            "title": "侮辱",
+            "score": 0.0012888
+          },
+          {
+            "label": "threat",
+            "title": "威胁",
+            "score": 0.0012255
+          },
+          {
+            "label": "obscene",
+            "title": "粗俗",
+            "score": 0.0008477
+          },
+          {
+            "label": "severe_toxicity",
+            "title": "严重攻击性",
+            "score": 0.0004191
+          },
+          {
+            "label": "identity_attack",
+            "title": "身份攻击",
+            "score": 0.0003865
+          }
+        ],
+        "elapsedMs": 4822,
+        "inferenceMs": 22,
+        "loadMs": 4042,
+        "loadedNow": true,
+        "inputCharacters": 20,
+        "inputTokens": 13,
+        "processedTokens": 13,
+        "maxInputTokens": 256,
+        "truncated": false,
+        "device": "cpu",
+        "dtype": "float32",
+        "toxicityScore": 0.0039151
+      }
+    },
+    {
+      "passed": true,
+      "sample": "这段程序的网络请求失败，需要检查代理设置。",
+      "result": {
+        "model": "minilm",
+        "repository": "MoritzLaurer/multilingual-MiniLMv2-L6-mnli-xnli",
+        "revision": "0a71e92a985b6e1ad1828cf67ce9c459639c1dca",
+        "task": "zero-shot-topic",
+        "scoreType": "independent-nli-entailment",
+        "labels": [
+          {
+            "label": "人身攻击",
+            "title": "人身攻击",
+            "score": 0.8361921
+          },
+          {
+            "label": "技术讨论",
+            "title": "技术讨论",
+            "score": 0.4865164
+          }
+        ],
+        "elapsedMs": 3791,
+        "inferenceMs": 14,
+        "loadMs": 3237,
+        "loadedNow": true,
+        "inputCharacters": 21,
+        "inputTokens": 25,
+        "processedTokens": 25,
+        "maxInputTokens": 512,
+        "truncated": false,
+        "device": "cpu",
+        "dtype": "float32",
+        "topicLabels": [
+          "技术讨论",
+          "人身攻击"
+        ],
+        "hypothesisTemplate": "这段文字涉及{}。",
+        "multiLabel": true
+      }
+    }
+  ],
+  "elapsedMs": 36639,
+  "passed": true
+}

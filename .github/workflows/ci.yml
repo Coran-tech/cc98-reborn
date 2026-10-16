@@ -19,6 +19,15 @@ jobs:
       - name: Check JavaScript syntax
         run: |
           node --check src/content.js
+          node --check src/content-filter-core.js
+          node --check src/content-filter.js
+          node --check src/content-filter-frame.js
+          node --check src/content-filter-worker.js
+          node --check src/semantic-client.js
+          node --check src/semantic-filter-core.js
+          node --check src/semantic-background.js
+          node --check src/semantic-filter.js
+          node --check popup/semantic-settings.js
           node --check src/theme-core.js
           node --check src/interface-style.js
           node --check src/extended-ubb-core.js
@@ -83,3 +92,18 @@ jobs:
 
       - name: Test theme schedule and migration
         run: node tests/theme-core.test.js
+
+      - name: Test content rule expressions
+        run: node tests/content-filter-core.test.js
+
+      - name: Test title rule worker matching
+        run: node tests/title-filter.test.js
+
+      - name: Test local semantic client
+        run: node tests/semantic-client.test.js
+
+      - name: Test experimental semantic blocking
+        run: |
+          node tests/semantic-filter-core.test.js
+          node tests/semantic-background.test.js
+          node tests/semantic-filter.test.js

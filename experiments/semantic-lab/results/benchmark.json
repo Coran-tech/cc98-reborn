@@ -1,0 +1,932 @@
+{
+  "syntheticSamplesOnly": true,
+  "notAnAccuracyBenchmark": true,
+  "createdAtUnix": 1792155641.7121575,
+  "topicLabels": [
+    "人身攻击",
+    "正常讨论",
+    "情感话题",
+    "招聘推广",
+    "体育讨论"
+  ],
+  "results": [
+    {
+      "sampleId": "normal",
+      "scenario": "正常讨论",
+      "text": "我觉得这项安排还有改进空间。工作日晚上有课的同学可能不方便参加，能否再提供一个周末时段？大家的需求不太一样，可以先收集一下意见。",
+      "model": "cold",
+      "repository": "thu-coai/roberta-base-cold",
+      "revision": "614c097a485910d28beb75f60d90c61e3082b518",
+      "task": "toxicity-binary",
+      "scoreType": "softmax",
+      "labels": [
+        {
+          "label": "non_offensive",
+          "title": "未冒犯",
+          "score": 0.9948525
+        },
+        {
+          "label": "offensive",
+          "title": "冒犯",
+          "score": 0.0051475
+        }
+      ],
+      "elapsedMs": 11280,
+      "inferenceMs": 100,
+      "loadMs": 1328,
+      "loadedNow": true,
+      "inputCharacters": 64,
+      "inputTokens": 66,
+      "processedTokens": 66,
+      "maxInputTokens": 512,
+      "truncated": false,
+      "device": "cpu",
+      "dtype": "float32",
+      "toxicityScore": 0.0051475,
+      "cached": false
+    },
+    {
+      "sampleId": "attack",
+      "scenario": "直接攻击",
+      "text": "你连这么简单的话都看不懂，还到处装懂，真是个蠢货。闭嘴吧，没人想听你胡说八道。",
+      "model": "cold",
+      "repository": "thu-coai/roberta-base-cold",
+      "revision": "614c097a485910d28beb75f60d90c61e3082b518",
+      "task": "toxicity-binary",
+      "scoreType": "softmax",
+      "labels": [
+        {
+          "label": "offensive",
+          "title": "冒犯",
+          "score": 0.9666899
+        },
+        {
+          "label": "non_offensive",
+          "title": "未冒犯",
+          "score": 0.0333101
+        }
+      ],
+      "elapsedMs": 71,
+      "inferenceMs": 71,
+      "loadMs": 0,
+      "loadedNow": false,
+      "inputCharacters": 39,
+      "inputTokens": 41,
+      "processedTokens": 41,
+      "maxInputTokens": 512,
+      "truncated": false,
+      "device": "cpu",
+      "dtype": "float32",
+      "toxicityScore": 0.9666899,
+      "cached": false
+    },
+    {
+      "sampleId": "quote",
+      "scenario": "引用并反对辱骂",
+      "text": "楼上说“你就是个蠢货，赶紧闭嘴”，我不赞同这样的表达。我们可以反对一个观点，但不应该对别人进行人身攻击。",
+      "model": "cold",
+      "repository": "thu-coai/roberta-base-cold",
+      "revision": "614c097a485910d28beb75f60d90c61e3082b518",
+      "task": "toxicity-binary",
+      "scoreType": "softmax",
+      "labels": [
+        {
+          "label": "offensive",
+          "title": "冒犯",
+          "score": 0.974967
+        },
+        {
+          "label": "non_offensive",
+          "title": "未冒犯",
+          "score": 0.025033
+        }
+      ],
+      "elapsedMs": 79,
+      "inferenceMs": 79,
+      "loadMs": 0,
+      "loadedNow": false,
+      "inputCharacters": 52,
+      "inputTokens": 54,
+      "processedTokens": 54,
+      "maxInputTokens": 512,
+      "truncated": false,
+      "device": "cpu",
+      "dtype": "float32",
+      "toxicityScore": 0.974967,
+      "cached": false
+    },
+    {
+      "sampleId": "sarcasm",
+      "scenario": "反讽",
+      "text": "不愧是懂王，所有人都错了，就你一个人聪明。建议你先把题目读完再来指点江山。",
+      "model": "cold",
+      "repository": "thu-coai/roberta-base-cold",
+      "revision": "614c097a485910d28beb75f60d90c61e3082b518",
+      "task": "toxicity-binary",
+      "scoreType": "softmax",
+      "labels": [
+        {
+          "label": "non_offensive",
+          "title": "未冒犯",
+          "score": 0.9797343
+        },
+        {
+          "label": "offensive",
+          "title": "冒犯",
+          "score": 0.0202657
+        }
+      ],
+      "elapsedMs": 60,
+      "inferenceMs": 60,
+      "loadMs": 0,
+      "loadedNow": false,
+      "inputCharacters": 37,
+      "inputTokens": 39,
+      "processedTokens": 39,
+      "maxInputTokens": 512,
+      "truncated": false,
+      "device": "cpu",
+      "dtype": "float32",
+      "toxicityScore": 0.0202657,
+      "cached": false
+    },
+    {
+      "sampleId": "sport",
+      "scenario": "体育话题",
+      "text": "周六晚上有人一起看篮球比赛吗？这场两队的防守策略变化很有意思，想找几个人赛后聊聊，也欢迎支持另一队的朋友。",
+      "model": "cold",
+      "repository": "thu-coai/roberta-base-cold",
+      "revision": "614c097a485910d28beb75f60d90c61e3082b518",
+      "task": "toxicity-binary",
+      "scoreType": "softmax",
+      "labels": [
+        {
+          "label": "non_offensive",
+          "title": "未冒犯",
+          "score": 0.9963936
+        },
+        {
+          "label": "offensive",
+          "title": "冒犯",
+          "score": 0.0036064
+        }
+      ],
+      "elapsedMs": 79,
+      "inferenceMs": 79,
+      "loadMs": 0,
+      "loadedNow": false,
+      "inputCharacters": 53,
+      "inputTokens": 55,
+      "processedTokens": 55,
+      "maxInputTokens": 512,
+      "truncated": false,
+      "device": "cpu",
+      "dtype": "float32",
+      "toxicityScore": 0.0036064,
+      "cached": false
+    },
+    {
+      "sampleId": "sadness",
+      "scenario": "负面情绪",
+      "text": "今天考试没有考好，心里很难受，也有点担心接下来的安排。想先休息一下，明天再认真看看错在哪里。",
+      "model": "cold",
+      "repository": "thu-coai/roberta-base-cold",
+      "revision": "614c097a485910d28beb75f60d90c61e3082b518",
+      "task": "toxicity-binary",
+      "scoreType": "softmax",
+      "labels": [
+        {
+          "label": "non_offensive",
+          "title": "未冒犯",
+          "score": 0.9936873
+        },
+        {
+          "label": "offensive",
+          "title": "冒犯",
+          "score": 0.0063127
+        }
+      ],
+      "elapsedMs": 75,
+      "inferenceMs": 75,
+      "loadMs": 0,
+      "loadedNow": false,
+      "inputCharacters": 46,
+      "inputTokens": 48,
+      "processedTokens": 48,
+      "maxInputTokens": 512,
+      "truncated": false,
+      "device": "cpu",
+      "dtype": "float32",
+      "toxicityScore": 0.0063127,
+      "cached": false
+    },
+    {
+      "sampleId": "normal",
+      "scenario": "正常讨论",
+      "text": "我觉得这项安排还有改进空间。工作日晚上有课的同学可能不方便参加，能否再提供一个周末时段？大家的需求不太一样，可以先收集一下意见。",
+      "model": "horizon",
+      "repository": "Horizon-Labs/multilingual-toxicity-small",
+      "revision": "01adcc628a33848569816d4851a38544c321b92c",
+      "task": "toxicity-multilabel",
+      "scoreType": "independent-sigmoid",
+      "labels": [
+        {
+          "label": "toxicity",
+          "title": "攻击性",
+          "score": 0.0057384
+        },
+        {
+          "label": "insult",
+          "title": "侮辱",
+          "score": 0.0022171
+        },
+        {
+          "label": "obscene",
+          "title": "粗俗",
+          "score": 0.0016909
+        },
+        {
+          "label": "sexual_explicit",
+          "title": "露骨性内容",
+          "score": 0.0015617
+        },
+        {
+          "label": "identity_attack",
+          "title": "身份攻击",
+          "score": 0.0008836
+        },
+        {
+          "label": "threat",
+          "title": "威胁",
+          "score": 0.0008652
+        },
+        {
+          "label": "severe_toxicity",
+          "title": "严重攻击性",
+          "score": 0.0004544
+        }
+      ],
+      "elapsedMs": 4726,
+      "inferenceMs": 40,
+      "loadMs": 3972,
+      "loadedNow": true,
+      "inputCharacters": 64,
+      "inputTokens": 41,
+      "processedTokens": 41,
+      "maxInputTokens": 256,
+      "truncated": false,
+      "device": "cpu",
+      "dtype": "float32",
+      "toxicityScore": 0.0057384,
+      "cached": false
+    },
+    {
+      "sampleId": "attack",
+      "scenario": "直接攻击",
+      "text": "你连这么简单的话都看不懂，还到处装懂，真是个蠢货。闭嘴吧，没人想听你胡说八道。",
+      "model": "horizon",
+      "repository": "Horizon-Labs/multilingual-toxicity-small",
+      "revision": "01adcc628a33848569816d4851a38544c321b92c",
+      "task": "toxicity-multilabel",
+      "scoreType": "independent-sigmoid",
+      "labels": [
+        {
+          "label": "toxicity",
+          "title": "攻击性",
+          "score": 0.7006414
+        },
+        {
+          "label": "insult",
+          "title": "侮辱",
+          "score": 0.6716898
+        },
+        {
+          "label": "obscene",
+          "title": "粗俗",
+          "score": 0.0767255
+        },
+        {
+          "label": "severe_toxicity",
+          "title": "严重攻击性",
+          "score": 0.0216241
+        },
+        {
+          "label": "sexual_explicit",
+          "title": "露骨性内容",
+          "score": 0.0117862
+        },
+        {
+          "label": "identity_attack",
+          "title": "身份攻击",
+          "score": 0.0064508
+        },
+        {
+          "label": "threat",
+          "title": "威胁",
+          "score": 0.0054124
+        }
+      ],
+      "elapsedMs": 43,
+      "inferenceMs": 43,
+      "loadMs": 0,
+      "loadedNow": false,
+      "inputCharacters": 39,
+      "inputTokens": 34,
+      "processedTokens": 34,
+      "maxInputTokens": 256,
+      "truncated": false,
+      "device": "cpu",
+      "dtype": "float32",
+      "toxicityScore": 0.7006414,
+      "cached": false
+    },
+    {
+      "sampleId": "quote",
+      "scenario": "引用并反对辱骂",
+      "text": "楼上说“你就是个蠢货，赶紧闭嘴”，我不赞同这样的表达。我们可以反对一个观点，但不应该对别人进行人身攻击。",
+      "model": "horizon",
+      "repository": "Horizon-Labs/multilingual-toxicity-small",
+      "revision": "01adcc628a33848569816d4851a38544c321b92c",
+      "task": "toxicity-multilabel",
+      "scoreType": "independent-sigmoid",
+      "labels": [
+        {
+          "label": "toxicity",
+          "title": "攻击性",
+          "score": 0.6484206
+        },
+        {
+          "label": "insult",
+          "title": "侮辱",
+          "score": 0.6306484
+        },
+        {
+          "label": "obscene",
+          "title": "粗俗",
+          "score": 0.0748164
+        },
+        {
+          "label": "severe_toxicity",
+          "title": "严重攻击性",
+          "score": 0.0162717
+        },
+        {
+          "label": "sexual_explicit",
+          "title": "露骨性内容",
+          "score": 0.0137745
+        },
+        {
+          "label": "threat",
+          "title": "威胁",
+          "score": 0.0119486
+        },
+        {
+          "label": "identity_attack",
+          "title": "身份攻击",
+          "score": 0.005805
+        }
+      ],
+      "elapsedMs": 46,
+      "inferenceMs": 46,
+      "loadMs": 0,
+      "loadedNow": false,
+      "inputCharacters": 52,
+      "inputTokens": 36,
+      "processedTokens": 36,
+      "maxInputTokens": 256,
+      "truncated": false,
+      "device": "cpu",
+      "dtype": "float32",
+      "toxicityScore": 0.6484206,
+      "cached": false
+    },
+    {
+      "sampleId": "sarcasm",
+      "scenario": "反讽",
+      "text": "不愧是懂王，所有人都错了，就你一个人聪明。建议你先把题目读完再来指点江山。",
+      "model": "horizon",
+      "repository": "Horizon-Labs/multilingual-toxicity-small",
+      "revision": "01adcc628a33848569816d4851a38544c321b92c",
+      "task": "toxicity-multilabel",
+      "scoreType": "independent-sigmoid",
+      "labels": [
+        {
+          "label": "toxicity",
+          "title": "攻击性",
+          "score": 0.0806412
+        },
+        {
+          "label": "insult",
+          "title": "侮辱",
+          "score": 0.0674183
+        },
+        {
+          "label": "obscene",
+          "title": "粗俗",
+          "score": 0.0096008
+        },
+        {
+          "label": "sexual_explicit",
+          "title": "露骨性内容",
+          "score": 0.0025865
+        },
+        {
+          "label": "severe_toxicity",
+          "title": "严重攻击性",
+          "score": 0.0023113
+        },
+        {
+          "label": "threat",
+          "title": "威胁",
+          "score": 0.0022027
+        },
+        {
+          "label": "identity_attack",
+          "title": "身份攻击",
+          "score": 0.0019778
+        }
+      ],
+      "elapsedMs": 25,
+      "inferenceMs": 25,
+      "loadMs": 0,
+      "loadedNow": false,
+      "inputCharacters": 37,
+      "inputTokens": 28,
+      "processedTokens": 28,
+      "maxInputTokens": 256,
+      "truncated": false,
+      "device": "cpu",
+      "dtype": "float32",
+      "toxicityScore": 0.0806412,
+      "cached": false
+    },
+    {
+      "sampleId": "sport",
+      "scenario": "体育话题",
+      "text": "周六晚上有人一起看篮球比赛吗？这场两队的防守策略变化很有意思，想找几个人赛后聊聊，也欢迎支持另一队的朋友。",
+      "model": "horizon",
+      "repository": "Horizon-Labs/multilingual-toxicity-small",
+      "revision": "01adcc628a33848569816d4851a38544c321b92c",
+      "task": "toxicity-multilabel",
+      "scoreType": "independent-sigmoid",
+      "labels": [
+        {
+          "label": "toxicity",
+          "title": "攻击性",
+          "score": 0.0079016
+        },
+        {
+          "label": "insult",
+          "title": "侮辱",
+          "score": 0.0026465
+        },
+        {
+          "label": "obscene",
+          "title": "粗俗",
+          "score": 0.0022524
+        },
+        {
+          "label": "sexual_explicit",
+          "title": "露骨性内容",
+          "score": 0.0021732
+        },
+        {
+          "label": "threat",
+          "title": "威胁",
+          "score": 0.002151
+        },
+        {
+          "label": "identity_attack",
+          "title": "身份攻击",
+          "score": 0.0010065
+        },
+        {
+          "label": "severe_toxicity",
+          "title": "严重攻击性",
+          "score": 0.0005914
+        }
+      ],
+      "elapsedMs": 25,
+      "inferenceMs": 25,
+      "loadMs": 0,
+      "loadedNow": false,
+      "inputCharacters": 53,
+      "inputTokens": 36,
+      "processedTokens": 36,
+      "maxInputTokens": 256,
+      "truncated": false,
+      "device": "cpu",
+      "dtype": "float32",
+      "toxicityScore": 0.0079016,
+      "cached": false
+    },
+    {
+      "sampleId": "sadness",
+      "scenario": "负面情绪",
+      "text": "今天考试没有考好，心里很难受，也有点担心接下来的安排。想先休息一下，明天再认真看看错在哪里。",
+      "model": "horizon",
+      "repository": "Horizon-Labs/multilingual-toxicity-small",
+      "revision": "01adcc628a33848569816d4851a38544c321b92c",
+      "task": "toxicity-multilabel",
+      "scoreType": "independent-sigmoid",
+      "labels": [
+        {
+          "label": "toxicity",
+          "title": "攻击性",
+          "score": 0.0358363
+        },
+        {
+          "label": "insult",
+          "title": "侮辱",
+          "score": 0.0210433
+        },
+        {
+          "label": "obscene",
+          "title": "粗俗",
+          "score": 0.0075457
+        },
+        {
+          "label": "sexual_explicit",
+          "title": "露骨性内容",
+          "score": 0.0024777
+        },
+        {
+          "label": "threat",
+          "title": "威胁",
+          "score": 0.0021449
+        },
+        {
+          "label": "identity_attack",
+          "title": "身份攻击",
+          "score": 0.002028
+        },
+        {
+          "label": "severe_toxicity",
+          "title": "严重攻击性",
+          "score": 0.0012931
+        }
+      ],
+      "elapsedMs": 19,
+      "inferenceMs": 19,
+      "loadMs": 0,
+      "loadedNow": false,
+      "inputCharacters": 46,
+      "inputTokens": 31,
+      "processedTokens": 31,
+      "maxInputTokens": 256,
+      "truncated": false,
+      "device": "cpu",
+      "dtype": "float32",
+      "toxicityScore": 0.0358363,
+      "cached": false
+    },
+    {
+      "sampleId": "normal",
+      "scenario": "正常讨论",
+      "text": "我觉得这项安排还有改进空间。工作日晚上有课的同学可能不方便参加，能否再提供一个周末时段？大家的需求不太一样，可以先收集一下意见。",
+      "model": "minilm",
+      "repository": "MoritzLaurer/multilingual-MiniLMv2-L6-mnli-xnli",
+      "revision": "0a71e92a985b6e1ad1828cf67ce9c459639c1dca",
+      "task": "zero-shot-topic",
+      "scoreType": "independent-nli-entailment",
+      "labels": [
+        {
+          "label": "人身攻击",
+          "title": "人身攻击",
+          "score": 0.83049
+        },
+        {
+          "label": "招聘推广",
+          "title": "招聘推广",
+          "score": 0.8278881
+        },
+        {
+          "label": "情感话题",
+          "title": "情感话题",
+          "score": 0.4453499
+        },
+        {
+          "label": "体育讨论",
+          "title": "体育讨论",
+          "score": 0.1771939
+        },
+        {
+          "label": "正常讨论",
+          "title": "正常讨论",
+          "score": 0.0815984
+        }
+      ],
+      "elapsedMs": 3619,
+      "inferenceMs": 49,
+      "loadMs": 3054,
+      "loadedNow": true,
+      "inputCharacters": 64,
+      "inputTokens": 50,
+      "processedTokens": 50,
+      "maxInputTokens": 512,
+      "truncated": false,
+      "device": "cpu",
+      "dtype": "float32",
+      "topicLabels": [
+        "人身攻击",
+        "正常讨论",
+        "情感话题",
+        "招聘推广",
+        "体育讨论"
+      ],
+      "hypothesisTemplate": "这段文字涉及{}。",
+      "multiLabel": true,
+      "cached": false
+    },
+    {
+      "sampleId": "attack",
+      "scenario": "直接攻击",
+      "text": "你连这么简单的话都看不懂，还到处装懂，真是个蠢货。闭嘴吧，没人想听你胡说八道。",
+      "model": "minilm",
+      "repository": "MoritzLaurer/multilingual-MiniLMv2-L6-mnli-xnli",
+      "revision": "0a71e92a985b6e1ad1828cf67ce9c459639c1dca",
+      "task": "zero-shot-topic",
+      "scoreType": "independent-nli-entailment",
+      "labels": [
+        {
+          "label": "人身攻击",
+          "title": "人身攻击",
+          "score": 0.9019796
+        },
+        {
+          "label": "情感话题",
+          "title": "情感话题",
+          "score": 0.6950504
+        },
+        {
+          "label": "正常讨论",
+          "title": "正常讨论",
+          "score": 0.3221135
+        },
+        {
+          "label": "招聘推广",
+          "title": "招聘推广",
+          "score": 0.2821461
+        },
+        {
+          "label": "体育讨论",
+          "title": "体育讨论",
+          "score": 0.239336
+        }
+      ],
+      "elapsedMs": 53,
+      "inferenceMs": 53,
+      "loadMs": 0,
+      "loadedNow": false,
+      "inputCharacters": 39,
+      "inputTokens": 44,
+      "processedTokens": 44,
+      "maxInputTokens": 512,
+      "truncated": false,
+      "device": "cpu",
+      "dtype": "float32",
+      "topicLabels": [
+        "人身攻击",
+        "正常讨论",
+        "情感话题",
+        "招聘推广",
+        "体育讨论"
+      ],
+      "hypothesisTemplate": "这段文字涉及{}。",
+      "multiLabel": true,
+      "cached": false
+    },
+    {
+      "sampleId": "quote",
+      "scenario": "引用并反对辱骂",
+      "text": "楼上说“你就是个蠢货，赶紧闭嘴”，我不赞同这样的表达。我们可以反对一个观点，但不应该对别人进行人身攻击。",
+      "model": "minilm",
+      "repository": "MoritzLaurer/multilingual-MiniLMv2-L6-mnli-xnli",
+      "revision": "0a71e92a985b6e1ad1828cf67ce9c459639c1dca",
+      "task": "zero-shot-topic",
+      "scoreType": "independent-nli-entailment",
+      "labels": [
+        {
+          "label": "人身攻击",
+          "title": "人身攻击",
+          "score": 0.9862205
+        },
+        {
+          "label": "情感话题",
+          "title": "情感话题",
+          "score": 0.7089961
+        },
+        {
+          "label": "招聘推广",
+          "title": "招聘推广",
+          "score": 0.4300739
+        },
+        {
+          "label": "正常讨论",
+          "title": "正常讨论",
+          "score": 0.3557162
+        },
+        {
+          "label": "体育讨论",
+          "title": "体育讨论",
+          "score": 0.2966008
+        }
+      ],
+      "elapsedMs": 42,
+      "inferenceMs": 42,
+      "loadMs": 0,
+      "loadedNow": false,
+      "inputCharacters": 52,
+      "inputTokens": 47,
+      "processedTokens": 47,
+      "maxInputTokens": 512,
+      "truncated": false,
+      "device": "cpu",
+      "dtype": "float32",
+      "topicLabels": [
+        "人身攻击",
+        "正常讨论",
+        "情感话题",
+        "招聘推广",
+        "体育讨论"
+      ],
+      "hypothesisTemplate": "这段文字涉及{}。",
+      "multiLabel": true,
+      "cached": false
+    },
+    {
+      "sampleId": "sarcasm",
+      "scenario": "反讽",
+      "text": "不愧是懂王，所有人都错了，就你一个人聪明。建议你先把题目读完再来指点江山。",
+      "model": "minilm",
+      "repository": "MoritzLaurer/multilingual-MiniLMv2-L6-mnli-xnli",
+      "revision": "0a71e92a985b6e1ad1828cf67ce9c459639c1dca",
+      "task": "zero-shot-topic",
+      "scoreType": "independent-nli-entailment",
+      "labels": [
+        {
+          "label": "人身攻击",
+          "title": "人身攻击",
+          "score": 0.7789156
+        },
+        {
+          "label": "情感话题",
+          "title": "情感话题",
+          "score": 0.7409088
+        },
+        {
+          "label": "招聘推广",
+          "title": "招聘推广",
+          "score": 0.2850341
+        },
+        {
+          "label": "正常讨论",
+          "title": "正常讨论",
+          "score": 0.229779
+        },
+        {
+          "label": "体育讨论",
+          "title": "体育讨论",
+          "score": 0.1903515
+        }
+      ],
+      "elapsedMs": 43,
+      "inferenceMs": 43,
+      "loadMs": 0,
+      "loadedNow": false,
+      "inputCharacters": 37,
+      "inputTokens": 41,
+      "processedTokens": 41,
+      "maxInputTokens": 512,
+      "truncated": false,
+      "device": "cpu",
+      "dtype": "float32",
+      "topicLabels": [
+        "人身攻击",
+        "正常讨论",
+        "情感话题",
+        "招聘推广",
+        "体育讨论"
+      ],
+      "hypothesisTemplate": "这段文字涉及{}。",
+      "multiLabel": true,
+      "cached": false
+    },
+    {
+      "sampleId": "sport",
+      "scenario": "体育话题",
+      "text": "周六晚上有人一起看篮球比赛吗？这场两队的防守策略变化很有意思，想找几个人赛后聊聊，也欢迎支持另一队的朋友。",
+      "model": "minilm",
+      "repository": "MoritzLaurer/multilingual-MiniLMv2-L6-mnli-xnli",
+      "revision": "0a71e92a985b6e1ad1828cf67ce9c459639c1dca",
+      "task": "zero-shot-topic",
+      "scoreType": "independent-nli-entailment",
+      "labels": [
+        {
+          "label": "体育讨论",
+          "title": "体育讨论",
+          "score": 0.9489807
+        },
+        {
+          "label": "情感话题",
+          "title": "情感话题",
+          "score": 0.7582735
+        },
+        {
+          "label": "人身攻击",
+          "title": "人身攻击",
+          "score": 0.7211743
+        },
+        {
+          "label": "招聘推广",
+          "title": "招聘推广",
+          "score": 0.1125975
+        },
+        {
+          "label": "正常讨论",
+          "title": "正常讨论",
+          "score": 0.0164396
+        }
+      ],
+      "elapsedMs": 58,
+      "inferenceMs": 58,
+      "loadMs": 0,
+      "loadedNow": false,
+      "inputCharacters": 53,
+      "inputTokens": 48,
+      "processedTokens": 48,
+      "maxInputTokens": 512,
+      "truncated": false,
+      "device": "cpu",
+      "dtype": "float32",
+      "topicLabels": [
+        "人身攻击",
+        "正常讨论",
+        "情感话题",
+        "招聘推广",
+        "体育讨论"
+      ],
+      "hypothesisTemplate": "这段文字涉及{}。",
+      "multiLabel": true,
+      "cached": false
+    },
+    {
+      "sampleId": "sadness",
+      "scenario": "负面情绪",
+      "text": "今天考试没有考好，心里很难受，也有点担心接下来的安排。想先休息一下，明天再认真看看错在哪里。",
+      "model": "minilm",
+      "repository": "MoritzLaurer/multilingual-MiniLMv2-L6-mnli-xnli",
+      "revision": "0a71e92a985b6e1ad1828cf67ce9c459639c1dca",
+      "task": "zero-shot-topic",
+      "scoreType": "independent-nli-entailment",
+      "labels": [
+        {
+          "label": "招聘推广",
+          "title": "招聘推广",
+          "score": 0.9555417
+        },
+        {
+          "label": "人身攻击",
+          "title": "人身攻击",
+          "score": 0.8830933
+        },
+        {
+          "label": "情感话题",
+          "title": "情感话题",
+          "score": 0.7808599
+        },
+        {
+          "label": "体育讨论",
+          "title": "体育讨论",
+          "score": 0.3221807
+        },
+        {
+          "label": "正常讨论",
+          "title": "正常讨论",
+          "score": 0.1479058
+        }
+      ],
+      "elapsedMs": 40,
+      "inferenceMs": 40,
+      "loadMs": 0,
+      "loadedNow": false,
+      "inputCharacters": 46,
+      "inputTokens": 41,
+      "processedTokens": 41,
+      "maxInputTokens": 512,
+      "truncated": false,
+      "device": "cpu",
+      "dtype": "float32",
+      "topicLabels": [
+        "人身攻击",
+        "正常讨论",
+        "情感话题",
+        "招聘推广",
+        "体育讨论"
+      ],
+      "hypothesisTemplate": "这段文字涉及{}。",
+      "multiLabel": true,
+      "cached": false
+    }
+  ]
+}

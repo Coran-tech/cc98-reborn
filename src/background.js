@@ -1876,7 +1876,14 @@ async function initializeTopicDrawerFrame(message, sender) {
   return { ok: true };
 }
 
+importScripts("semantic-client.js", "semantic-filter-core.js", "semantic-background.js");
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (typeof message?.type === "string" && message.type.startsWith("CC98_SEMANTIC_")) {
+    Promise.resolve(globalThis.CC98RebornSemanticBackground.handle(message, sender))
+      .then(sendResponse).catch(() => sendResponse({ ok: false, error: "LOCAL_SERVICE_ERROR" }));
+    return true;
+  }
   if (message?.type === "CC98_REBORN_INIT_TOPIC_DRAWER") {
     initializeTopicDrawerFrame(message, sender).then(sendResponse).catch(() => sendResponse({ ok: false }));
     return true;

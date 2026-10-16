@@ -18,7 +18,7 @@ CC98 Reborn rebuilds CC98 pages locally in the browser. The optional question re
 
 The extension does not upload post content, private messages, search terms, or user configuration to third-party services.
 
-User-triggered settings backups download a local JSON file containing interface/reading preferences, blacklist rules, user notes, pinned private-message contacts and pinned boards. The file can include account/user UIDs, saved notes and contact names. Login bindings, tokens, API keys, drafts and read-later data are excluded. Import validates the file and previews its scope before applying matching configuration keys; other stored data remains intact. Backups are not uploaded or automatically shared, and the embedded settings frame does not send their contents to its forum parent.
+User-triggered settings backups download a local JSON file containing interface/reading preferences, blocking rules, user notes, pinned private-message contacts and pinned boards. The file can include account/user UIDs, saved notes and contact names. Login bindings, tokens, API keys, drafts and read-later data are excluded. Import validates the file and previews its scope before applying matching configuration keys; other stored data remains intact. Backups are not uploaded or automatically shared, and the embedded settings frame does not send their contents to its forum parent.
 
 Network activity includes:
 
@@ -42,8 +42,16 @@ The full [question feature privacy notice](https://question.coranqwq.xyz/privacy
 
 When OpenID binding is enabled, the floating watermark is rendered locally from the stored `watermarkId` prefix. The extension does not use the webpage login session for this watermark path and does not upload page content for watermarking.
 
-The popup and the personal-center settings subpage include an explicit cleanup button that clears CC98 cookies and local site data through the browser `browsingData` API. This action is user-triggered only. The subpage reuses the extension's popup in an extension-origin frame and the same local settings; its messages to the forum parent contain only frame height or a request to open the blacklist view, not settings, credentials or account data.
+The popup and the personal-center settings subpage include an explicit cleanup button that clears CC98 cookies and local site data through the browser `browsingData` API. This action is user-triggered only. The subpage reuses the extension's popup in an extension-origin frame and the same local settings; its messages to the forum parent contain only frame height or a request to open the blocking-rules view, not settings, credentials or account data.
 
 ## Disabled / Pending Features
 
+Blocking rules can compare a post's loaded vote counts, vote ratio, vote total and net reputation changes from its complete rating records. These comparisons run locally using the same page data and caches; they do not request extra forum data. Missing/incomplete metrics remain unknown, including under NOT.
+
 AI search suggestion and advanced fuzzy search integrations are also disabled in this release.
+
+An optional standalone semantic lab is provided as source for explicit local testing. Users download and deploy it themselves; setup downloads pinned public model files over HTTPS. The loopback service then runs offline and does not persist or log input. Its bounded in-memory result cache keys contain text hashes, model revisions and label settings.
+
+Experimental semantic blocking defaults off. The user must start the service, manually paste its local authorization token and grant the optional `http://127.0.0.1/*` permission before enabling analysis. The extension background only contacts the fixed `http://127.0.0.1:8766` service; it does not accept remote service addresses or automatically obtain tokens. When enabled, it sends the current post's own text (excluding quotations and signatures), selected model and optional topic labels/template to that local service. It does not send CC98 credentials, authors or account identifiers. Manual tests send only the text typed into that test field. No input is sent to an external model API.
+
+The local service token is saved separately in browser-local extension storage and excluded from configuration backups. Model selection, thresholds and topic configuration are included in backups; restoring them does not deploy or authorize a local service. Disabling, disconnecting or revoking permission cancels pending analysis. Waiting, errors and truncated results leave content visible. A match retains an explicit reveal action. Models can misclassify quoted, sarcastic or context-dependent language; scores are not calibrated probabilities.

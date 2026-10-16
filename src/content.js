@@ -97,6 +97,7 @@ const REPLY_REBORN_TAIL_LEGACY_ALIGN_UBB = `[align=right]\u2014\u2014\u6765\u81e
 const DEFAULT_SETTINGS = {
   enabled: true,
   ...globalThis.CC98RebornThemeCore.DEFAULTS,
+  ...globalThis.CC98RebornSemanticFilterCore?.DEFAULTS,
   density: "comfortable",
   fontScale: 110,
   emojiScale: 200,
@@ -128,6 +129,7 @@ const DEFAULT_SETTINGS = {
   blockedBoards: "",
   blockedTitleKeywords: "",
   blockedUserIds: "",
+  blockedContentRules: "[]",
   placeholderText: "已根据你的屏蔽规则折叠一条内容"
 };
 
@@ -158,6 +160,8 @@ let pinnedBoardHrefsCache = null;
 let pinnedBoardStorageLoading = false;
 let themeWatcherCleanup = null;
 let observer = null;
+let topicViewCountObserver = null;
+let topicViewCountSource = null;
 let headObserver = null;
 let rebuiltAppPresenceWatchdog = null;
 let publicProfileTopbarRecoveryTimer = null;
@@ -297,9 +301,13 @@ let webVpnNakedRouteGuardBound = false;
 let openLinksInNewTabGuardBound = false;
 let rebornReplyTailSubmitGuardBound = false;
 let privateMessageEmojiDismissBound = false;
+let floatingEmojiPanelRepositionBound = false;
 const originalPosterIdentityPrefetches = new Map();
 const capturedTopicPostsById = new Map();
 const capturedTopicPostsByFloor = new Map();
+const hiddenBlacklistQuoteFragments = new WeakMap();
+const quoteBlacklistAuthorContexts = new WeakMap();
+let quoteBlacklistIdentityCache = null;
 const capturedTopicContentPages = new Set();
 const capturedTopicContentPageCounts = new Map();
 const handledTopicContentMonitorEvents = new Set();
@@ -394,6 +402,7 @@ function normalizeSettings(settings = {}) {
     ...DEFAULT_SETTINGS,
     ...settings,
     ...globalThis.CC98RebornThemeCore.normalize(settings),
+    ...globalThis.CC98RebornSemanticFilterCore?.normalize(settings),
     density: DEFAULT_SETTINGS.density,
     neutralizeNativeSkin: DEFAULT_SETTINGS.neutralizeNativeSkin,
     rebuildUi: DEFAULT_SETTINGS.rebuildUi,
@@ -429,6 +438,7 @@ function normalizeSettings(settings = {}) {
     blockedBoards: String(settings.blockedBoards ?? ""),
     blockedTitleKeywords: String(settings.blockedTitleKeywords ?? ""),
     blockedUserIds: String(settings.blockedUserIds ?? ""),
+    blockedContentRules: String(settings.blockedContentRules ?? "[]"),
     placeholderText: String(settings.placeholderText ?? DEFAULT_SETTINGS.placeholderText).trim() || DEFAULT_SETTINGS.placeholderText
   };
 }
@@ -465,6 +475,8 @@ function syncComfortTheme() {
   const tone = globalThis.CC98RebornThemeCore.apply(root, isRebornManagementRoute() ? { ...lastSettings, enabled: true } : lastSettings);
   globalThis.CC98RebornInterfaceStyle?.sync(lastSettings);
   globalThis.CC98RebornTopicDrawer?.sync(lastSettings);
+  globalThis.CC98RebornContentFilter?.sync(lastSettings);
+  globalThis.CC98RebornSemanticFilter?.sync(lastSettings);
   if (!lastSettings.enabled) return;
   if (previousTone && previousTone !== tone) {
     // Only replace tone-specific emoji resources: keep the post/editor DOM and selection intact.
@@ -493,6 +505,8 @@ function applySettings(settings) {
     : null;
   const messagePageScrollPosition = messageScrollState?.length ? captureImageViewerScrollPosition() : null;
   lastSettings = nextSettings;
+  if (!lastSettings.enabled || !lastSettings.rebuildUi) syncTopicViewCount();
+  syncBlacklistedQuotesInPage();
   document.documentElement.style.setProperty("--cc98-emoji-size", `${(1.75 * lastSettings.emojiScale / 100).toFixed(3)}em`);
   document.documentElement.style.setProperty("--cc98-editor-emoji-size", `${(2.2 * lastSettings.emojiScale / 100).toFixed(3)}em`);
   themeWatcherCleanup?.();
@@ -585,9 +599,12 @@ function normalizeUserIdentityText(value) {
 }
 
 function getBlacklistRules(settings = lastSettings) {
+  let contentRules = [];
+  try { const value = JSON.parse(settings?.blockedContentRules || "[]"); if (Array.isArray(value)) contentRules = value.filter(rule => typeof rule === "string"); } catch {}
   return {
+    contentRules,
     boards: parseList(settings?.blockedBoards),
-    titleKeywords: parseList(settings?.blockedTitleKeywords),
+    titleKeywords: globalThis.CC98RebornContentFilterCore?.splitTitleRules?.(settings?.blockedTitleKeywords) || parseList(settings?.blockedTitleKeywords),
     userIds: [...new Set(parseList(settings?.blockedUserIds).map(normalizeBlockedUserId).filter(Boolean))],
     placeholderText: String(settings?.placeholderText || DEFAULT_SETTINGS.placeholderText).trim() || DEFAULT_SETTINGS.placeholderText
   };
@@ -595,7 +612,7 @@ function getBlacklistRules(settings = lastSettings) {
 
 function hasBlacklistRules(settings = lastSettings) {
   const rules = getBlacklistRules(settings);
-  return rules.boards.length > 0 || rules.titleKeywords.length > 0 || rules.userIds.length > 0;
+  return rules.boards.length > 0 || rules.titleKeywords.length > 0 || rules.userIds.length > 0 || rules.contentRules.length > 0 || settings?.semanticFilterEnabled === true;
 }
 
 function userRuleMatchesIdentity(rule, identity = {}) {
@@ -640,12 +657,143 @@ function getBlockedUserReason(identity) {
   return getUserBlockReason(typeof identity === "object" ? identity : { id: identity, uid: identity });
 }
 
+function getQuoteBlacklistIdentities() {
+  if (quoteBlacklistIdentityCache) return quoteBlacklistIdentityCache;
+  const identities = new Map();
+  const add = (name, uid) => {
+    name = normalizeUserIdentityText(name);
+    if (!name || !/^\d+$/.test(String(uid || ""))) return;
+    if (!identities.has(name)) identities.set(name, new Set());
+    identities.get(name).add(String(uid));
+  };
+  capturedTopicPostsById.forEach(post => { if (!post.isAnonymous) add(post.userName, post.userId); });
+  document.querySelectorAll('.reply a[href*="/user/id/"], a.cc98-rebuild-post-user[href*="/user/id/"]').forEach(link => {
+    if (link.closest('.reply-content, .cc98-rebuild-post-body, blockquote')) return;
+    const post = link.closest('.reply');
+    if (post && getAnonymousPostCode(post)) return;
+    add(link.textContent, link.getAttribute('href')?.match(/\/user\/id\/(\d+)(?:\/|[?#]|$)/)?.[1]);
+  });
+  quoteBlacklistIdentityCache = identities;
+  queueMicrotask(() => { quoteBlacklistIdentityCache = null; });
+  return identities;
+}
+
+function restoreBlacklistedQuoteFragments(root) {
+  root.querySelectorAll('.cc98-rebuild-blocked-quote').forEach(placeholder => {
+    const fragment = hiddenBlacklistQuoteFragments.get(placeholder);
+    if (!fragment) return;
+    restoreBlacklistedQuoteFragments(fragment);
+    placeholder.replaceWith(fragment);
+    hiddenBlacklistQuoteFragments.delete(placeholder);
+  });
+}
+
+function cloneContentWithHiddenQuotes(root) {
+  const clone = root.cloneNode(true);
+  const original = [...root.querySelectorAll('.cc98-rebuild-blocked-quote')];
+  [...clone.querySelectorAll('.cc98-rebuild-blocked-quote')].forEach((placeholder, index) => {
+    const fragment = hiddenBlacklistQuoteFragments.get(original[index]);
+    if (fragment) placeholder.replaceWith(cloneContentWithHiddenQuotes(fragment));
+  });
+  return clone;
+}
+
+function filterBlacklistedQuotes(root, publicAuthors) {
+  if (!root?.querySelectorAll) return;
+  if (publicAuthors) quoteBlacklistAuthorContexts.set(root, publicAuthors);
+  publicAuthors = publicAuthors || quoteBlacklistAuthorContexts.get(root) || [];
+  restoreBlacklistedQuoteFragments(root);
+  const rules = getBlacklistRules(lastSettings).userIds;
+  if (!lastSettings?.enabled || !rules.length) return;
+  const selector = 'blockquote, .cc98-rebuild-legacy-quote, .cc98-rebuild-quote-box, div[style]';
+  const quotes = new Set([...(root.matches?.(selector) ? [root] : []), ...root.querySelectorAll(selector)]
+    .filter(node => !node.closest('pre, code, .ubb-code, .cc98-local-experimental-noubb')
+      && (node.matches('blockquote, .cc98-rebuild-legacy-quote, .cc98-rebuild-quote-box') || isLegacyQuoteStyle(node.getAttribute('style'), ''))));
+  let identities;
+  const uidForName = name => {
+    identities ||= new Map([...getQuoteBlacklistIdentities()].map(([key, values]) => [key, new Set(values)]));
+    for (const author of publicAuthors) {
+      if (!author.uid || /^(?:匿名|CC98 用户$)/.test(author.user || '')) continue;
+      const key = normalizeUserIdentityText(author.user);
+      if (!identities.has(key)) identities.set(key, new Set());
+      identities.get(key).add(String(author.uid));
+    }
+    const matches = identities.get(normalizeUserIdentityText(name));
+    return matches?.size === 1 ? [...matches][0] : '';
+  };
+  for (const quote of quotes) {
+    if (quote !== root && !root.contains(quote)) continue;
+    const walker = document.createTreeWalker(quote, NodeFilter.SHOW_TEXT);
+    const segments = [];
+    let node;
+    while ((node = walker.nextNode())) {
+      if (node.parentElement.closest('pre, code, .ubb-code, .cc98-local-experimental-noubb')) continue;
+      let owner = node.parentElement;
+      while (owner && !quotes.has(owner)) owner = owner.parentElement;
+      if (owner !== quote) continue;
+      if (/^\s*以下是引用\s*\d+\s*楼\s*[：:]/.test(node.textContent)) segments.push({ node, text: '', nodes: [] });
+      const segment = segments.at(-1);
+      if (segment) { segment.text += node.textContent; segment.nodes.push(node); }
+    }
+    // Native UBB can flatten several authors into a single quote container.
+    // Replace each matching header-to-next-header range independently.
+    for (const segment of segments) {
+      segment.start = segment.node;
+      for (let parent = segment.node.parentElement; parent && parent !== quote; parent = parent.parentElement) {
+        const first = document.createTreeWalker(parent, NodeFilter.SHOW_TEXT);
+        let text;
+        while ((text = first.nextNode()) && !text.textContent.trim()) {}
+        if (text !== segment.node || segments.some(other => other !== segment && parent.contains(other.node))) break;
+        segment.start = parent;
+      }
+    }
+    for (let index = segments.length - 1; index >= 0; index--) {
+      const segment = segments[index];
+      const match = segment.text.match(/^\s*以下是引用\s*\d+\s*楼\s*[：:]\s*用户([\s\S]+?)在\s*\d{4}[-/年]\d{1,2}[-/月]\d{1,2}[\s\S]*?的发言\s*[：:]/);
+      if (!match) continue;
+      const user = cleanupPostText(match[1]);
+      let uid = '', offset = 0;
+      for (const text of segment.nodes) {
+        if (offset >= match[0].length) break;
+        const link = text.parentElement.closest('a[href]');
+        if (link && cleanupPostText(link.textContent) === user) {
+          const href = makeAbsoluteCc98Url(link.getAttribute('href'));
+          const url = new URL(href, location.href);
+          if (url.origin === location.origin || isDirectCc98Host(url.hostname) || isWebVpnHost(url.hostname)) {
+            const route = getCc98RoutePathFromHref(href) || url.pathname;
+            uid = route.match(/\/user\/id\/(\d+)(?:\/|$)/)?.[1] || uid;
+          }
+        }
+        offset += text.textContent.length;
+      }
+      if (!uid && rules.some(rule => normalizeBlockedUid(rule))) uid = uidForName(user);
+      if (!rules.some(rule => userRuleMatchesIdentity(rule, { user, uid }))) continue;
+      const range = document.createRange();
+      range.setStartBefore(segment.start);
+      if (segments[index + 1]) range.setEndBefore(segments[index + 1].boundary || segments[index + 1].start);
+      else range.setEnd(quote, quote.childNodes.length);
+      const fragment = range.extractContents();
+      const placeholder = createElement('span', 'cc98-rebuild-blocked-quote cc98-rebuild-muted', '已隐藏被屏蔽用户的引用内容');
+      hiddenBlacklistQuoteFragments.set(placeholder, fragment);
+      range.insertNode(placeholder);
+      segment.boundary = placeholder;
+    }
+  }
+}
+
+function syncBlacklistedQuotesInPage() {
+  document.querySelectorAll('.cc98-rebuild-post-body, .cc98-rebuild-user-reply-ubb').forEach(root => filterBlacklistedQuotes(root));
+}
+
 function writeSettingsPatch(patch) {
   const next = normalizeSettings({
     ...(lastSettings || DEFAULT_SETTINGS),
     ...patch
   });
   lastSettings = next;
+  globalThis.CC98RebornContentFilter?.sync(lastSettings);
+  globalThis.CC98RebornSemanticFilter?.sync(lastSettings);
+  syncBlacklistedQuotesInPage();
   try {
     chrome.storage.local.set({ [STORAGE_KEY]: next });
   } catch {
@@ -660,6 +808,7 @@ function writeBlacklistRules(rules) {
     blockedBoards: (rules.boards || []).map((item) => String(item).trim()).filter(Boolean).join("\n"),
     blockedTitleKeywords: (rules.titleKeywords || []).map((item) => String(item).trim()).filter(Boolean).join("\n"),
     blockedUserIds: [...new Set((rules.userIds || []).map(normalizeBlockedUserId).filter(Boolean))].join("\n"),
+    blockedContentRules: JSON.stringify(rules.contentRules || []),
     placeholderText: String(rules.placeholderText || DEFAULT_SETTINGS.placeholderText).trim() || DEFAULT_SETTINGS.placeholderText
   });
 }
@@ -7024,7 +7173,7 @@ function getPageTitle() {
     error: getFirstText(document, ".errorText") || document.title.replace(" - CC98论坛", "") || "出错了",
     message: "消息",
     readLater: "\u7a0d\u540e\u518d\u770b",
-    blacklist: "黑名单",
+    blacklist: "屏蔽规则",
     topics: topicTitle,
     search: "搜索结果",
     boardSearch: "版面搜索结果",
@@ -11499,6 +11648,33 @@ function getTopicMetricCount(metricId, anchor = null) {
   return "";
 }
 
+function syncTopicViewCount() {
+  const app = document.querySelector("#cc98-comfort-app");
+  const active = lastSettings?.enabled && lastSettings.rebuildUi
+    && app?.dataset.pageKind === "post" && app.dataset.routeKey === getRoutePageKey()
+    && app.dataset.cc98ContentPending !== "true";
+  const source = active ? [...document.querySelectorAll("#viewtimes")].find(node => !node.closest("#cc98-comfort-app")) || null : null;
+  if (source !== topicViewCountSource) {
+    topicViewCountObserver?.disconnect();
+    topicViewCountObserver = null;
+    topicViewCountSource = source;
+    if (source) {
+      topicViewCountObserver = new MutationObserver(syncTopicViewCount);
+      topicViewCountObserver.observe(source, { childList: true, subtree: true, characterData: true });
+    }
+  }
+  if (!active) return;
+  const hero = app.querySelector(":scope > .cc98-rebuild-hero");
+  if (!hero) return;
+  const current = hero.querySelector(":scope > .cc98-rebuild-topic-views");
+  const views = getTopicMetricCount("viewtimes");
+  if (views === "") { current?.remove(); return; }
+  const text = `浏览 ${views}`;
+  if (current) {
+    if (current.textContent !== text) current.textContent = text;
+  } else hero.append(createElement("p", "cc98-rebuild-topic-views", text));
+}
+
 function getTopicFavoriteDisplayText(action) {
   if (action?.scope !== "topic" || !(action.control instanceof HTMLElement)) {
     return "";
@@ -11643,6 +11819,7 @@ function getPostItems() {
       type: "post",
       id,
       index: floorNumber,
+      metrics: globalThis.CC98RebornContentFilter?.metrics(post),
       user: anonymousCode ? "CC98 \u7528\u6237" : (user?.text || getFirstText(post, '[class*="userName"], [class*="UserName"], [class*="author"], [class*="Author"]') || "CC98 \u7528\u6237"),
       userHref: anonymousCode ? "" : userHref,
       uid: uidMatch?.[1] ?? "",
@@ -13428,20 +13605,25 @@ function renderTopbarUserEntry() {
   return fallback;
 }
 
+function getTitleBlockReason(title, settings = lastSettings) {
+  if (typeof title !== "string" || !title) return "";
+  if (globalThis.CC98RebornContentFilter?.titleReason) return globalThis.CC98RebornContentFilter.titleReason(title);
+  const keyword = getBlacklistRules(settings).titleKeywords.find(rule => !rule.startsWith("/") && title.toLowerCase().includes(rule.toLowerCase()));
+  return keyword ? `关键词：${keyword}` : "";
+}
+
 function shouldBlockRebuiltItem(item) {
   if (!lastSettings) {
     return "";
   }
 
-  const { boards: blockedBoards, titleKeywords: blockedKeywords, userIds: blockedUserIds } = getBlacklistRules(lastSettings);
+  const { boards: blockedBoards, userIds: blockedUserIds } = getBlacklistRules(lastSettings);
   const matchedBoard = blockedBoards.find((rule) => item.board && normalizeText(item.board).includes(normalizeText(rule)));
   if (matchedBoard) {
     return `版面：${matchedBoard}`;
   }
-  const matchedKeyword = blockedKeywords.find((keyword) => item.title?.toLowerCase().includes(keyword.toLowerCase()));
-  if (matchedKeyword) {
-    return `关键词：${matchedKeyword}`;
-  }
+  const titleReason = getTitleBlockReason(item.title);
+  if (titleReason) return titleReason;
   const matchedUserRule = blockedUserIds.find((rule) => userRuleMatchesIdentity(rule, {
     id: item.user,
     user: item.user,
@@ -13450,7 +13632,7 @@ function shouldBlockRebuiltItem(item) {
   if (matchedUserRule) {
     return normalizeBlockedUid(matchedUserRule) ? `UID：${matchedUserRule}` : `用户 ID：${matchedUserRule}`;
   }
-  return "";
+  return globalThis.CC98RebornContentFilter?.reason(item) || globalThis.CC98RebornSemanticFilter?.reason(item) || "";
 }
 
 function renderBlockedPlaceholder(reason, options = {}) {
@@ -13458,7 +13640,7 @@ function renderBlockedPlaceholder(reason, options = {}) {
   placeholder.append(createElement("div", "cc98-rebuild-card-title", `${lastSettings.placeholderText} · ${reason}`));
   if (typeof options.onReveal === "function") {
     const actions = createElement("div", "cc98-rebuild-blocked-actions");
-    actions.append(createButton("cc98-rebuild-mini-action", "显示", (event) => {
+    actions.append(createButton("cc98-rebuild-mini-action", reason.startsWith("语义规则") ? "展开原文" : "显示", (event) => {
       event.preventDefault();
       event.stopPropagation();
       options.onReveal();
@@ -13944,6 +14126,7 @@ function renderPostCard(item) {
       body.append(createElement("p", "", line));
     });
   }
+  filterBlacklistedQuotes(body);
   rewriteLegacyQuoteInlineStyles(body);
   stabilizePostQuoteBlocks(body);
   forceLegacyQuotesInRebuiltRoot(body);
@@ -13973,27 +14156,21 @@ function renderPostCard(item) {
     card.append(signatureWrap);
   }
 
-  const hasViewCount = item.viewCount !== undefined && item.viewCount !== null && item.viewCount !== "";
   const canViewConversation = !item.isHot && Number.isFinite(floor) && floor > 0
     && Boolean(globalThis.CC98RebornConversation && getTopicPageInfo());
-  if (item.publishedAt || item.editedAt || hasViewCount || item.actions?.length || canViewConversation) {
+  if (item.publishedAt || item.editedAt || item.actions?.length || canViewConversation) {
     const footer = createElement("div", "cc98-rebuild-post-footer");
-    if (item.publishedAt || item.editedAt || hasViewCount) {
+    if (item.publishedAt || item.editedAt) {
       const metaRow = createElement("div", "cc98-rebuild-post-meta-row");
-      if (item.publishedAt || item.editedAt) {
-        const meta = createElement("span", "cc98-rebuild-muted cc98-rebuild-post-meta");
-        if (item.publishedAt) {
-          meta.append(document.createTextNode(`发表于 ${item.publishedAt}`));
-        }
-        if (item.editedAt) {
-          const edited = createElement("span", `cc98-rebuild-post-edited${item.publishedAt ? " has-published-at" : ""}`, `${item.editedBy ? `最后由 ${item.editedBy} ` : ""}编辑于 ${item.editedAt}`);
-          meta.append(edited);
-        }
-        metaRow.append(meta);
+      const meta = createElement("span", "cc98-rebuild-muted cc98-rebuild-post-meta");
+      if (item.publishedAt) {
+        meta.append(document.createTextNode(`发表于 ${item.publishedAt}`));
       }
-      if (hasViewCount) {
-        metaRow.append(createElement("span", "cc98-rebuild-muted cc98-rebuild-post-views", `浏览 ${item.viewCount}`));
+      if (item.editedAt) {
+        const edited = createElement("span", `cc98-rebuild-post-edited${item.publishedAt ? " has-published-at" : ""}`, `${item.editedBy ? `最后由 ${item.editedBy} ` : ""}编辑于 ${item.editedAt}`);
+        meta.append(edited);
       }
+      metaRow.append(meta);
       footer.append(metaRow);
     }
     if (item.actions?.length || canViewConversation) {
@@ -20413,7 +20590,7 @@ function getPrivateMessageEmojiCategories() {
 }
 
 function ensurePrivateMessageEmojiPanel(editor, textarea, options = {}) {
-  if (!(editor instanceof HTMLElement) || !(textarea instanceof HTMLTextAreaElement)) {
+  if (!(editor instanceof HTMLElement) || (!(textarea instanceof HTMLTextAreaElement) && typeof options.onSelect !== "function")) {
     return null;
   }
   bindPrivateMessageEmojiBlankDismiss();
@@ -20421,6 +20598,7 @@ function ensurePrivateMessageEmojiPanel(editor, textarea, options = {}) {
   let panel = editor.querySelector(":scope > .cc98-rebuild-message-emoji-panel");
   if (panel instanceof HTMLElement) {
     panel.__cc98EmojiTextarea = textarea;
+    panel.__cc98EmojiOnSelect = options.onSelect;
     panel.classList.toggle("cc98-rebuild-editor-emoji-panel", isNativeEditorPanel);
     if (isNativeEditorPanel) {
       panel.dataset.cc98NativeEditorEmoji = "true";
@@ -20432,6 +20610,7 @@ function ensurePrivateMessageEmojiPanel(editor, textarea, options = {}) {
   const categories = getPrivateMessageEmojiCategories();
   panel = createElement("div", "cc98-rebuild-message-emoji-panel ubb-emoji");
   panel.__cc98EmojiTextarea = textarea;
+  panel.__cc98EmojiOnSelect = options.onSelect;
   if (isNativeEditorPanel) {
     panel.classList.add("cc98-rebuild-editor-emoji-panel");
     panel.dataset.cc98NativeEditorEmoji = "true";
@@ -20447,13 +20626,16 @@ function ensurePrivateMessageEmojiPanel(editor, textarea, options = {}) {
     category.items.forEach((item, index) => {
       const button = createButton("cc98-rebuild-message-emoji-option", "", (event) => {
         event?.preventDefault?.();
-        if (typeof editor.__cc98WysiwygInsertEmoji === "function") {
+        if (typeof panel.__cc98EmojiOnSelect === "function") {
+          panel.__cc98EmojiOnSelect(item);
+        } else if (typeof editor.__cc98WysiwygInsertEmoji === "function") {
           editor.__cc98WysiwygInsertEmoji(item);
         } else {
           const targetTextarea = panel.__cc98EmojiTextarea instanceof HTMLTextAreaElement ? panel.__cc98EmojiTextarea : textarea;
           insertPrivateMessageText(targetTextarea, item.insertText);
         }
         panel.hidden = true;
+        if (panel.__cc98EmojiAnchor?.hasAttribute("aria-expanded")) panel.__cc98EmojiAnchor.setAttribute("aria-expanded", "false");
         editor.classList.remove("cc98-rebuild-message-emoji-open", "cc98-rebuild-emoji-panel-open");
         if (panel.dataset.cc98NativeEditorEmoji === "true") {
           scheduleNativeEditorStabilize(editor);
@@ -20495,15 +20677,16 @@ function ensurePrivateMessageEmojiPanel(editor, textarea, options = {}) {
 }
 
 function bindFloatingEmojiPanelReposition(panel) {
-  if (!(panel instanceof HTMLElement) || panel.dataset.cc98FloatingEmojiBound === "true") {
+  if (!(panel instanceof HTMLElement) || floatingEmojiPanelRepositionBound) {
     return;
   }
-  panel.dataset.cc98FloatingEmojiBound = "true";
+  floatingEmojiPanelRepositionBound = true;
   const reposition = () => {
-    if (panel.hidden || !(panel.__cc98EmojiAnchor instanceof HTMLElement)) {
-      return;
+    for (const openPanel of document.getElementsByClassName("cc98-rebuild-message-emoji-panel-floating")) {
+      if (!openPanel.hidden && openPanel.__cc98EmojiAnchor?.isConnected) {
+        positionPrivateMessageEmojiPanel(openPanel.__cc98EmojiEditor, openPanel, openPanel.__cc98EmojiAnchor);
+      }
     }
-    positionPrivateMessageEmojiPanel(panel.__cc98EmojiEditor, panel, panel.__cc98EmojiAnchor);
   };
   window.addEventListener("resize", reposition, { passive: true });
   window.addEventListener("scroll", reposition, { passive: true, capture: true });
@@ -20519,6 +20702,7 @@ function closePrivateMessageEmojiPanels(exceptTarget = null) {
       return;
     }
     panel.hidden = true;
+    if (anchor?.hasAttribute("aria-expanded")) anchor.setAttribute("aria-expanded", "false");
     const editor = panel.__cc98EmojiEditor instanceof HTMLElement
       ? panel.__cc98EmojiEditor
       : panel.closest(".cc98-rebuild-message-editor, .cc98-rebuild-profile-signature-editor, .cc98-rebuild-native-editor");
@@ -21605,7 +21789,7 @@ function updateUserCenterHero(app = document.querySelector("#cc98-comfort-app"))
   if (title) {
     const nextTitle = app.querySelector(".cc98-rebuild-user-settings-panel:not([hidden])")
       ? "插件设置"
-      : app.querySelector(".cc98-rebuild-user-blacklist-panel:not([hidden])") ? "黑名单" : getUserCenterActiveTitle();
+      : app.querySelector(".cc98-rebuild-user-blacklist-panel:not([hidden])") ? "屏蔽规则" : getUserCenterActiveTitle();
     if (title.textContent !== nextTitle) {
       title.textContent = nextTitle;
     }
@@ -24253,6 +24437,7 @@ function stabilizeUserReplyUbbContents(router) {
     content.setAttribute("tabindex", "0");
     content.setAttribute("aria-label", link.getAttribute("aria-label") || "查看原帖");
     appendMultilineInlineUbb(content, rawText);
+    filterBlacklistedQuotes(content);
     strengthenInlineTextStyles(content);
     markInlineUbbStyleClasses(content);
     markInlineEmojiContainers(content);
@@ -25205,15 +25390,15 @@ function isCurrentBlockedPageRevealed(info) {
 function renderBlockedPageGate(app, info) {
   const section = createElement("section", "cc98-rebuild-blocked-page");
   section.append(createElement("p", "cc98-rebuild-kicker", "Blacklist"));
-  section.append(createElement("h1", "", `${info.role}在你的黑名单内`));
+  section.append(createElement("h1", "", `${info.role}已被屏蔽`));
   const detail = [info.reason, info.name, info.uid ? `UID ${info.uid}` : ""].filter(Boolean).join(" · ");
-  section.append(createElement("p", "cc98-rebuild-card-meta", detail || "已根据你的黑名单规则隐藏本页内容。"));
+  section.append(createElement("p", "cc98-rebuild-card-meta", detail || "已根据你的屏蔽规则隐藏本页内容。"));
   const actions = createElement("div", "cc98-rebuild-blocked-page-actions");
   actions.append(createButton("cc98-rebuild-action", "查看内容", () => {
     revealBlacklistScope(BLACKLIST_PAGE_REVEAL_PREFIX, info.uid || info.name || info.reason || "");
     scheduleRebuild();
   }));
-  actions.append(createLink("cc98-rebuild-action", "管理黑名单", getBlacklistPageHref()));
+  actions.append(createLink("cc98-rebuild-action", "管理屏蔽规则", getBlacklistPageHref()));
   section.append(actions);
   app.append(section);
 }
@@ -25336,7 +25521,7 @@ function showEmbeddedBlacklistPanel(router, panel, app, navSource) {
   });
   const title = app?.querySelector?.(".cc98-rebuild-user-hero h1");
   if (title) {
-    title.textContent = "黑名单";
+    title.textContent = "屏蔽规则";
   }
 }
 
@@ -25358,7 +25543,7 @@ function hideEmbeddedBlacklistPanel(router, panel, app) {
 function createBlacklistNavLink(router = null, panel = null, app = null, navSource = null) {
   const link = createElement("button", "fa fa-ban cc98-rebuild-blacklist-nav-entry");
   link.type = "button";
-  const label = createElement("span", "center-nav-item", "黑名单");
+  const label = createElement("span", "center-nav-item", "屏蔽规则");
   link.append(label);
   link.addEventListener("click", (event) => {
     event.preventDefault();
@@ -28031,18 +28216,25 @@ function getBlacklistGroups() {
   const rules = getBlacklistRules(lastSettings);
   return [
     {
+      key: "content",
+      title: "发言屏蔽条件",
+      description: "可组合正文文本、表情与数值条件。正文统计不含引用和签名；多条规则任一命中即折叠。文本不区分大小写，次数按不重叠匹配统计。",
+      values: rules.contentRules,
+      placeholder: '"[ac01]" > 3 AND NOT "正常讨论"'
+    },
+    {
       key: "users",
-      title: "用户 ID 黑名单",
-      description: "按用户 ID 文本严格匹配；历史纯数字规则会继续按 UID 兼容匹配。",
+      title: "屏蔽用户 ID",
+      description: "按用户 ID 文本严格匹配，同时隐藏引用中的对应发言；历史纯数字规则继续按 UID 兼容匹配。",
       values: rules.userIds,
       placeholder: "输入用户 ID，例如 Coran"
     },
     {
       key: "keywords",
-      title: "标题关键词",
-      description: "匹配主题标题中的关键词。",
+      title: "标题匹配",
+      description: "",
       values: rules.titleKeywords,
-      placeholder: "输入标题关键词"
+      placeholder: "关键词或 /正则/i"
     },
     {
       key: "boards",
@@ -28063,6 +28255,8 @@ function updateBlacklistGroup(key, values) {
     rules.titleKeywords = normalizedValues;
   } else if (key === "boards") {
     rules.boards = normalizedValues;
+  } else if (key === "content") {
+    rules.contentRules = normalizedValues;
   }
   writeBlacklistRules(rules);
 }
@@ -28076,12 +28270,24 @@ function addBlacklistValue(key, value, anchor) {
   }
   const group = getBlacklistGroups().find((item) => item.key === key);
   const values = group?.values || [];
+  if (key === "keywords") {
+    try {
+      const titleRule = globalThis.CC98RebornContentFilterCore.compileTitle(nextValue);
+      if (titleRule.hasRegex && values.filter(rule => rule.startsWith("/")).length >= 50) throw new Error("最多保存 50 条标题正则");
+    } catch (error) { showRebuiltTransientToast(anchor, error.message); return false; }
+  }
+  if (key === "content") {
+    try {
+      globalThis.CC98RebornContentFilterCore.compile(nextValue);
+      if (values.length >= 50) throw new Error("最多保存 50 条内容规则");
+    } catch (error) { showRebuiltTransientToast(anchor, error.message); return false; }
+  }
   if (values.includes(nextValue)) {
     showRebuiltTransientToast(anchor, "规则已存在");
     return false;
   }
   updateBlacklistGroup(key, [nextValue, ...values]);
-  showRebuiltTransientToast(anchor, "已加入黑名单");
+  showRebuiltTransientToast(anchor, "已加入屏蔽规则");
   return true;
 }
 
@@ -28101,7 +28307,8 @@ function renderBlacklistTabs(section) {
     ["all", "全部"],
     ["users", "UID"],
     ["keywords", "标题"],
-    ["boards", "版面"]
+    ["boards", "版面"],
+    ["content", "发言条件"]
   ].forEach(([key, label]) => {
     const button = createButton("cc98-rebuild-mini-action", label, () => {
       blacklistFilterType = key;
@@ -28114,30 +28321,173 @@ function renderBlacklistTabs(section) {
   section.append(tabs);
 }
 
+function createContentRulePatternControl(pattern) {
+  const wrapper = createElement("div", "cc98-content-rule-emotion");
+  const picker = createButton("cc98-rebuild-mini-action", "选择表情", () => {
+    const previous = wrapper.querySelector(":scope > .cc98-rebuild-message-emoji-panel");
+    const open = !previous || previous.hidden;
+    closePrivateMessageEmojiPanels();
+    if (!open) return;
+    const panel = ensurePrivateMessageEmojiPanel(wrapper, null, { onSelect(item) {
+      pattern.value = item.insertText;
+      pattern.dispatchEvent(new Event("input", { bubbles: true }));
+      pattern.focus({ preventScroll: true });
+    } });
+    panel.dataset.contentRuleEmoji = "true";
+    panel.setAttribute("role", "dialog"); panel.setAttribute("aria-label", "选择屏蔽表情");
+    if (!panel.__cc98RuleEscapeBound) {
+      panel.__cc98RuleEscapeBound = true;
+      panel.addEventListener("keydown", event => {
+        if (event.key !== "Escape") return;
+        event.preventDefault(); event.stopPropagation();
+        closePrivateMessageEmojiPanels(); picker.focus({ preventScroll: true });
+      });
+    }
+    panel.hidden = false; picker.setAttribute("aria-expanded", "true");
+    positionPrivateMessageEmojiPanel(wrapper, panel, picker);
+    panel.querySelector(".cc98-rebuild-message-emoji-tab.is-active")?.focus({ preventScroll: true });
+  });
+  picker.type = "button"; picker.title = "选择表情";
+  picker.dataset.cc98EmojiTrigger = "true";
+  picker.setAttribute("aria-label", "选择屏蔽表情"); picker.setAttribute("aria-haspopup", "dialog"); picker.setAttribute("aria-expanded", "false");
+  wrapper.append(pattern, picker);
+  return wrapper;
+}
+
 function renderBlacklistGroup(group) {
   const card = createElement("article", "cc98-rebuild-card cc98-rebuild-blacklist-group");
   const head = createElement("div", "cc98-rebuild-card-top cc98-rebuild-blacklist-group-head");
   head.append(createElement("strong", "cc98-rebuild-blacklist-group-title", group.title));
   head.append(createElement("span", "cc98-rebuild-muted", `${group.values.length} 条`));
   card.append(head);
-  card.append(createElement("p", "cc98-rebuild-card-meta", group.description));
+  if (group.description) card.append(createElement("p", "cc98-rebuild-card-meta", group.description));
+  if (group.key === "content") {
+    card.dataset.contentRules = "true";
+    const quick = createElement("form", "cc98-rebuild-blacklist-form cc98-content-rule-quick");
+    const pattern = createElement("input"); pattern.placeholder = "文本或表情，如 [ac01]"; pattern.required = true;
+    pattern.setAttribute("aria-label", "要统计的文本或表情"); pattern.maxLength = 256;
+    const comparison = createElement("select"); comparison.setAttribute("aria-label", "次数比较");
+    [[">", "超过"], [">=", "至少"], ["=", "恰好"], ["<", "少于"], ["<=", "至多"]].forEach(([value, text]) => {
+      const option = createElement("option", "", text); option.value = value.trim(); comparison.append(option);
+    });
+    const count = createElement("input"); count.type = "number"; count.min = "0"; count.max = "100000"; count.step = "1"; count.value = "3"; count.required = true;
+    count.setAttribute("aria-label", "匹配次数");
+    const add = createElement("button", "cc98-rebuild-search-submit", "添加规则"); add.type = "submit";
+    quick.append(createContentRulePatternControl(pattern), comparison, count, add);
+    quick.addEventListener("submit", event => {
+      event.preventDefault();
+      addBlacklistValue("content", JSON.stringify(pattern.value) + " " + comparison.value + " " + count.value, add);
+    });
+    card.append(quick);
+    card.append(createElement("strong", "cc98-rebuild-blacklist-group-title", "数值条件"));
+    const numeric = createElement("form", "cc98-rebuild-blacklist-form cc98-content-rule-quick");
+    const metric = createElement("select"); metric.setAttribute("aria-label", "屏蔽指标");
+    [["风评", "本楼风评"], ["踩", "踩数"], ["赞踩比", "赞踩比（赞 ÷ 踩）"], ["赞踩总数", "赞踩总数"], ["赞", "赞数"]].forEach(([value, label]) => {
+      const option = createElement("option", "", label); option.value = value; metric.append(option);
+    });
+    const compare = createElement("select"); compare.setAttribute("aria-label", "指标比较");
+    [["<", "低于"], [">", "高于"], [">=", "不低于"], ["<=", "不高于"], ["=", "等于"], ["!=", "不等于"]].forEach(([value, label]) => {
+      const option = createElement("option", "", label); option.value = value; compare.append(option);
+    });
+    const threshold = createElement("input"); threshold.type = "number"; threshold.step = "any"; threshold.min = "-1000000000"; threshold.max = "1000000000"; threshold.value = "-3"; threshold.required = true;
+    threshold.setAttribute("aria-label", "指标阈值");
+    const save = createElement("button", "cc98-rebuild-search-submit", "添加数值规则"); save.type = "submit";
+    numeric.append(metric, compare, threshold, save);
+    const guard = createElement("label", "cc98-metric-rule-guard"); guard.hidden = true;
+    const minimum = createElement("input"); minimum.type = "number"; minimum.min = "0"; minimum.max = "1000000000"; minimum.step = "1"; minimum.value = "20"; minimum.required = true;
+    minimum.setAttribute("aria-label", "赞踩总数下限");
+    guard.append(createElement("span", "", "同时要求赞踩总数不低于"), minimum);
+    const expression = () => metric.value + " " + compare.value + " " + threshold.value + (metric.value === "赞踩比" ? " AND 赞踩总数 >= " + minimum.value : "");
+    metric.addEventListener("change", () => {
+      guard.hidden = metric.value !== "赞踩比";
+      compare.value = metric.value === "踩" ? ">" : metric.value === "赞踩总数" ? ">=" : "<";
+      threshold.value = metric.value === "风评" ? "-3" : metric.value === "赞踩比" ? "0.5" : "20";
+    });
+    numeric.addEventListener("submit", event => {
+      event.preventDefault(); if (metric.value === "赞踩比" && !minimum.reportValidity()) return;
+      addBlacklistValue("content", expression(), save);
+    });
+    card.append(numeric, guard);
+    const combine = createElement("div", "cc98-content-rule-examples");
+    [["AND", "以「且」加入下方表达式"], ["OR", "以「或」加入下方表达式"]].forEach(([operator, label]) => {
+      combine.append(createButton("cc98-rebuild-mini-action", label, () => {
+        if (!numeric.reportValidity() || (metric.value === "赞踩比" && !minimum.reportValidity())) return;
+        input.value = input.value.trim() ? "(" + input.value.trim() + ") " + operator + " (" + expression() + ")" : expression(); validateRule(); input.focus();
+      }));
+    });
+    card.append(combine);
+    card.append(createElement("p", "cc98-rebuild-card-meta", "风评为本楼完整评分记录中的风评值净增减；赞踩比为赞数 ÷ 踩数。零赞零踩时比例不判定；有赞无踩视为无限大。数据缺失或评分记录未展开完整时不判定，不额外请求服务器。赞踩总数下限可减少小样本波动。"));
+    card.append(createElement("p", "cc98-rebuild-card-meta", "高级表达式：AND / OR / NOT（且 / 或 / 非），支持括号；/正则/i 按匹配次数判断。单独写文本或正则表示至少出现 1 次。"));
+  }
 
   const form = createElement("form", "cc98-rebuild-blacklist-form");
-  const input = createElement("input", "");
-  input.type = group.key === "users" ? "text" : "search";
+  if (["content", "keywords"].includes(group.key)) form.classList.add("cc98-content-rule-advanced");
+  const input = createElement(group.key === "content" ? "textarea" : "input", "");
+  if (group.key !== "content") input.type = ["users", "keywords"].includes(group.key) ? "text" : "search";
+  else { input.rows = 2; input.maxLength = 1024; input.spellcheck = false; input.setAttribute("aria-label", "内容规则表达式"); }
+  if (group.key === "keywords") { input.maxLength = 1024; input.spellcheck = false; input.setAttribute("aria-label", "标题匹配规则"); }
   input.inputMode = "text";
   input.placeholder = group.placeholder;
   input.autocomplete = "off";
   const submit = createElement("button", "cc98-rebuild-search-submit", "加入");
   submit.type = "submit";
   form.append(input, submit);
+  const error = createElement("p", "theme-error cc98-content-rule-error"); error.setAttribute("role", "status"); error.hidden = true;
+  let composing = false;
+  function validateRule() {
+    if (!["content", "keywords"].includes(group.key)) return true;
+    const value = input.value.trim();
+    if (!value || composing) {
+      error.hidden = true;
+      delete error.dataset.state;
+      error.classList.remove("is-valid");
+      input.removeAttribute("aria-invalid");
+      submit.disabled = true;
+      return false;
+    }
+    let message = "语法有效", valid = true;
+    try {
+      if (group.key === "keywords") globalThis.CC98RebornContentFilterCore.compileTitle(value);
+      else globalThis.CC98RebornContentFilterCore.compile(value);
+    }
+    catch (failure) { message = failure.message; valid = false; }
+    if (error.textContent !== message) error.textContent = message;
+    error.dataset.state = valid ? "valid" : "invalid";
+    error.classList.toggle("is-valid", valid);
+    error.setAttribute("role", valid ? "status" : "alert");
+    error.hidden = false;
+    input.setAttribute("aria-invalid", String(!valid));
+    submit.disabled = !valid;
+    return valid;
+  }
+  if (["content", "keywords"].includes(group.key)) {
+    input.addEventListener("input", event => { if (!event.isComposing) validateRule(); });
+    input.addEventListener("compositionstart", () => { composing = true; validateRule(); });
+    input.addEventListener("compositionend", () => { composing = false; validateRule(); });
+    validateRule();
+  }
   form.addEventListener("submit", (event) => {
     event.preventDefault();
+    if (!validateRule()) return;
     if (addBlacklistValue(group.key, input.value, submit)) {
       input.value = "";
+      validateRule();
     }
   });
   card.append(form);
+  if (group.key === "keywords") card.append(error);
+  if (group.key === "content") {
+    card.append(error);
+    const samples = createElement("div", "cc98-content-rule-examples");
+    [['表情超过 3 次', '"[ac01]" > 3'], ['逻辑组合', '("广告" OR "推广") AND NOT "讨论"'], ['正则次数', '/加[微薇]信/i >= 2'], ['风评或踩数', '风评 < -3 OR 踩 > 20'], ['低赞踩比＋总数下限', '赞踩比 < 0.5 AND 赞踩总数 >= 20']].forEach(([label, source]) => {
+      samples.append(createButton("cc98-rebuild-mini-action", label, () => { input.value = source; validateRule(); input.focus(); }));
+    });
+    card.append(samples);
+    const status = createElement("p", "cc98-rebuild-card-meta");
+    status.dataset.contentRuleStatus = "true"; status.setAttribute("role", "status");
+    status.textContent = globalThis.CC98RebornContentFilter?.errors().join("；") || "";
+    card.append(status);
+  }
 
   const list = createElement("div", "cc98-rebuild-blacklist-list");
   if (!group.values.length) {
@@ -28183,19 +28533,43 @@ function renderBlacklistPlaceholderEditor(section) {
 function renderBlacklistPage(app, options = {}) {
   const section = createElement("section", "cc98-rebuild-section cc98-rebuild-blacklist-page");
   const heading = createElement("div", "cc98-rebuild-section-heading cc98-rebuild-read-later-heading");
-  heading.append(createElement("h2", "", "黑名单列表"));
+  heading.append(createElement("h2", "", "屏蔽规则"));
   if (!options.embedded) {
     const actions = createElement("div", "cc98-rebuild-read-later-actions");
     actions.append(createLink("cc98-rebuild-action", "返回个人中心", buildCc98RouteHref("/usercenter")));
     heading.append(actions);
   }
   section.append(heading);
-  section.append(createElement("p", "cc98-rebuild-card-meta", "规则仅存储在本地。用户 ID 黑名单按文本精确匹配；纯数字旧规则会继续按 UID 兼容匹配。"));
+  section.append(createElement("p", "cc98-rebuild-card-meta", "规则仅存储在本地。支持用户、标题、版面及发言条件；原有屏蔽配置继续生效。用户 ID 按文本精确匹配，纯数字旧规则继续按 UID 兼容匹配。"));
   renderBlacklistTabs(section);
   renderBlacklistPlaceholderEditor(section);
   const list = createElement("div", "cc98-rebuild-blacklist-groups");
   getBlacklistVisibleGroups().forEach((group) => list.append(renderBlacklistGroup(group)));
   section.append(list);
+  const semanticCard = createElement("article", "cc98-rebuild-card cc98-rebuild-semantic-settings-card");
+  const semanticFrame = createElement("iframe", "cc98-rebuild-semantic-settings-frame");
+  semanticFrame.title = "实验性语义屏蔽规则";
+  semanticFrame.src = chrome.runtime.getURL("popup/semantic-settings.html");
+  semanticFrame.height = "1050";
+  semanticFrame.loading = "lazy";
+  const semanticOrigin = chrome.runtime.getURL("").replace(/\/$/, "");
+  const onSemanticSize = (event) => {
+    if (event.source !== semanticFrame.contentWindow || event.origin !== semanticOrigin) return;
+    if (event.data?.type !== "cc98-reborn:semantic-settings-size" || typeof event.data.height !== "number" || !Number.isFinite(event.data.height)) return;
+    semanticFrame.style.height = `${Math.max(200, Math.min(12000, Math.ceil(event.data.height)))}px`;
+  };
+  const semanticFrameObserver = new MutationObserver(() => {
+    if (semanticFrame.isConnected) return;
+    window.removeEventListener("message", onSemanticSize);
+    semanticFrameObserver.disconnect();
+  });
+  window.addEventListener("message", onSemanticSize);
+  semanticFrameObserver.observe(document.documentElement, { childList: true, subtree: true });
+  semanticFrame.addEventListener("load", () => {
+    semanticFrame.contentWindow?.postMessage({ type: "cc98-reborn:semantic-settings-request-size" }, semanticOrigin);
+  });
+  semanticCard.append(semanticFrame);
+  section.append(semanticCard);
   app.append(section);
 }
 
@@ -29037,6 +29411,10 @@ function renderRebuiltUi(options = {}) {
       const title = options.pending && kind === "post" ? getFirstText(document, ".topicInfo-info #essay1")
         : (options.pending ? "" : getPageTitle());
       hero.append(createElement("h1", options.pending && !title ? "cc98-rebuild-pending-title cc98-rebuild-pending-block" : "", title));
+      if (kind === "post" && !options.pending) {
+        const views = getTopicMetricCount("viewtimes");
+        if (views !== "") hero.append(createElement("p", "cc98-rebuild-topic-views", `浏览 ${views}`));
+      }
       app.append(hero);
     }
 
@@ -29159,6 +29537,7 @@ function renderRebuiltUi(options = {}) {
       });
     }
     armAutoLoader();
+    syncTopicViewCount();
     if (!options.pending) {
       rememberSeamlessNativeContentSignature();
       committedNativeRoute = stableKind ? { routeKey: getRoutePageKey(), kind, ...getNativeRouteRenderState(kind) } : null;
@@ -29185,7 +29564,7 @@ function renderRebuiltUi(options = {}) {
 }
 
 function getBlockReason(item, settings) {
-  const { boards: blockedBoards, titleKeywords: blockedKeywords, userIds: blockedUserIds } = getBlacklistRules(settings);
+  const { boards: blockedBoards, userIds: blockedUserIds } = getBlacklistRules(settings);
   const boardInfo = getBoardInfo(item);
   const title = getTitleText(item);
   const userIds = getUserIds(item);
@@ -29199,10 +29578,8 @@ function getBlockReason(item, settings) {
     return `版面：${matchedBoard}`;
   }
 
-  const matchedKeyword = blockedKeywords.find((keyword) => title.toLowerCase().includes(keyword.toLowerCase()));
-  if (matchedKeyword) {
-    return `关键词：${matchedKeyword}`;
-  }
+  const titleReason = getTitleBlockReason(title, settings);
+  if (titleReason) return titleReason;
 
   const matchedUserRule = blockedUserIds.find((rule) => userRuleMatchesIdentity(rule, {
     ids: userIdentityTexts,
@@ -29213,6 +29590,18 @@ function getBlockReason(item, settings) {
     return normalizeBlockedUid(matchedUserRule) ? `UID：${matchedUserRule}` : `用户 ID：${matchedUserRule}`;
   }
 
+  if (item.matches(".user-post") && (getBlacklistRules(settings).contentRules.length || settings?.semanticFilterEnabled === true)) {
+    const preview = item.querySelector(".user-post-content");
+    if (preview) {
+      let content = preview.querySelector(".cc98-rebuild-user-reply-ubb");
+      if (!content) {
+        content = createElement("div");
+        appendMultilineInlineUbb(content, preview.textContent);
+      }
+      const post = { type: "post", content, metrics: globalThis.CC98RebornContentFilter?.metrics(item) };
+      return globalThis.CC98RebornContentFilter?.reason(post) || globalThis.CC98RebornSemanticFilter?.reason(post) || "";
+    }
+  }
   return "";
 }
 
@@ -29843,6 +30232,11 @@ function ensureObserver() {
     }
     if (records.every((record) => isRebuiltInternalMutationTarget(record, app))) {
       return;
+    }
+    if (app?.dataset.pageKind === "post") {
+      const source = document.getElementById("viewtimes");
+      if (topicViewCountSource && !topicViewCountSource.isConnected
+        || !topicViewCountSource && source && !app.contains(source)) syncTopicViewCount();
     }
     const hasSourceMutation = records.some((record) => {
       const target = record.target;

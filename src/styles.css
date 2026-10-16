@@ -2394,6 +2394,15 @@
   font-weight: 820 !important;
 }
 
+:root.cc98-comfort .cc98-rebuild-topic-views {
+  margin: 10px 0 0;
+  color: var(--cc98-comfort-muted) !important;
+  font-size: 0.78rem !important;
+  line-height: 1.5 !important;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 :root.cc98-comfort .cc98-rebuild-section-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -5387,13 +5396,6 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-}
-
-:root.cc98-comfort .cc98-rebuild-post-views {
-  flex: 0 0 auto;
-  margin-left: auto;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
 }
 
 :root.cc98-comfort .cc98-rebuild-post-edited {
@@ -9634,6 +9636,24 @@
   width: 100%;
   min-width: 0;
   border: 0;
+}
+
+:root.cc98-comfort .cc98-rebuild-semantic-settings-card {
+  padding: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+:root.cc98-comfort .cc98-rebuild-semantic-settings-frame {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  color-scheme: normal;
+}
+
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-semantic-settings-card {
+  border-radius: 0 !important;
 }
 
 :root.cc98-comfort .cc98-rebuild-user-router-host {
@@ -15580,7 +15600,7 @@
   position: relative !important;
 }
 
-:root.cc98-comfort .cc98-rebuild-native-editor > .cc98-rebuild-editor-emoji-panel {
+:root.cc98-comfort :is(.cc98-rebuild-native-editor > .cc98-rebuild-editor-emoji-panel, .cc98-content-rule-emotion > .cc98-rebuild-message-emoji-panel) {
   position: fixed !important;
   top: var(--cc98-editor-emoji-panel-top, 72px) !important;
   left: var(--cc98-editor-emoji-panel-left, 28px) !important;
@@ -15598,11 +15618,11 @@
   box-shadow: 0 20px 44px color-mix(in srgb, var(--cc98-comfort-shadow) 76%, transparent) !important;
 }
 
-:root.cc98-comfort .cc98-rebuild-native-editor > .cc98-rebuild-editor-emoji-panel[hidden] {
+:root.cc98-comfort :is(.cc98-rebuild-native-editor > .cc98-rebuild-editor-emoji-panel, .cc98-content-rule-emotion > .cc98-rebuild-message-emoji-panel)[hidden] {
   display: none !important;
 }
 
-:root.cc98-comfort .cc98-rebuild-native-editor > .cc98-rebuild-editor-emoji-panel .cc98-rebuild-message-emoji-tabs {
+:root.cc98-comfort :is(.cc98-rebuild-native-editor > .cc98-rebuild-editor-emoji-panel, .cc98-content-rule-emotion > .cc98-rebuild-message-emoji-panel) .cc98-rebuild-message-emoji-tabs {
   position: sticky;
   top: 0;
   z-index: 2;
@@ -15614,7 +15634,7 @@
   background: color-mix(in srgb, var(--cc98-comfort-surface-2) 82%, var(--cc98-comfort-surface)) !important;
 }
 
-:root.cc98-comfort .cc98-rebuild-native-editor > .cc98-rebuild-editor-emoji-panel .cc98-rebuild-message-emoji-tab {
+:root.cc98-comfort :is(.cc98-rebuild-native-editor > .cc98-rebuild-editor-emoji-panel, .cc98-content-rule-emotion > .cc98-rebuild-message-emoji-panel) .cc98-rebuild-message-emoji-tab {
   min-width: 76px !important;
   min-height: 34px !important;
   display: inline-flex !important;
@@ -15630,20 +15650,20 @@
   cursor: pointer !important;
 }
 
-:root.cc98-comfort .cc98-rebuild-native-editor > .cc98-rebuild-editor-emoji-panel .cc98-rebuild-message-emoji-tab:hover,
-:root.cc98-comfort .cc98-rebuild-native-editor > .cc98-rebuild-editor-emoji-panel .cc98-rebuild-message-emoji-tab.is-active {
+:root.cc98-comfort :is(.cc98-rebuild-native-editor > .cc98-rebuild-editor-emoji-panel, .cc98-content-rule-emotion > .cc98-rebuild-message-emoji-panel) .cc98-rebuild-message-emoji-tab:hover,
+:root.cc98-comfort :is(.cc98-rebuild-native-editor > .cc98-rebuild-editor-emoji-panel, .cc98-content-rule-emotion > .cc98-rebuild-message-emoji-panel) .cc98-rebuild-message-emoji-tab.is-active {
   border-bottom-color: var(--cc98-comfort-accent) !important;
   color: var(--cc98-comfort-accent) !important;
 }
 
-:root.cc98-comfort .cc98-rebuild-native-editor > .cc98-rebuild-editor-emoji-panel .cc98-rebuild-message-emoji-content {
+:root.cc98-comfort :is(.cc98-rebuild-native-editor > .cc98-rebuild-editor-emoji-panel, .cc98-content-rule-emotion > .cc98-rebuild-message-emoji-panel) .cc98-rebuild-message-emoji-content {
   display: grid !important;
   grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
   gap: 6px;
   padding: 34px 10px 10px !important;
 }
 
-:root.cc98-comfort .cc98-rebuild-native-editor > .cc98-rebuild-editor-emoji-panel .cc98-rebuild-message-emoji-option {
+:root.cc98-comfort :is(.cc98-rebuild-native-editor > .cc98-rebuild-editor-emoji-panel, .cc98-content-rule-emotion > .cc98-rebuild-message-emoji-panel) .cc98-rebuild-message-emoji-option {
   width: 38px !important;
   height: 38px !important;
   display: inline-flex !important;
@@ -15656,12 +15676,12 @@
   cursor: pointer !important;
 }
 
-:root.cc98-comfort .cc98-rebuild-native-editor > .cc98-rebuild-editor-emoji-panel .cc98-rebuild-message-emoji-option:hover {
+:root.cc98-comfort :is(.cc98-rebuild-native-editor > .cc98-rebuild-editor-emoji-panel, .cc98-content-rule-emotion > .cc98-rebuild-message-emoji-panel) .cc98-rebuild-message-emoji-option:hover {
   border-color: var(--cc98-comfort-accent) !important;
   background: var(--cc98-comfort-accent-2) !important;
 }
 
-:root.cc98-comfort .cc98-rebuild-native-editor > .cc98-rebuild-editor-emoji-panel .cc98-rebuild-message-emoji-option img {
+:root.cc98-comfort :is(.cc98-rebuild-native-editor > .cc98-rebuild-editor-emoji-panel, .cc98-content-rule-emotion > .cc98-rebuild-message-emoji-panel) .cc98-rebuild-message-emoji-option img {
   width: var(--cc98-editor-emoji-size, 2.2em) !important;
   height: var(--cc98-editor-emoji-size, 2.2em) !important;
   max-width: var(--cc98-editor-emoji-size, 2.2em) !important;
@@ -15730,6 +15750,41 @@
   border-color: var(--cc98-comfort-secondary) !important;
   background: var(--cc98-comfort-secondary-soft) !important;
   color: var(--cc98-comfort-secondary) !important;
+}
+
+:root.cc98-comfort .cc98-content-rule-quick {
+  grid-template-columns: minmax(140px, 1fr) 88px 90px auto;
+  margin-bottom: 12px;
+}
+:root.cc98-comfort .cc98-content-rule-emotion { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; min-width: 0; }
+:root.cc98-comfort .cc98-content-rule-emotion > input { min-width: 0; }
+:root.cc98-comfort .cc98-content-rule-emotion > button { white-space: nowrap; }
+:root.cc98-comfort #cc98-comfort-app .cc98-content-rule-emotion .cc98-rebuild-message-emoji-option img { width: 100% !important; height: 100% !important; max-width: 100% !important; max-height: 100% !important; }
+:root.cc98-comfort .cc98-content-rule-quick select,
+:root.cc98-comfort .cc98-content-rule-advanced textarea {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid var(--cc98-comfort-border);
+  border-radius: var(--cc98-comfort-radius);
+  background: var(--cc98-comfort-surface);
+  color: var(--cc98-comfort-text);
+  font: inherit;
+  padding: 9px 12px;
+}
+:root.cc98-comfort .cc98-content-rule-advanced textarea { resize: vertical; font-family: var(--cc98-comfort-font-mono); }
+:root.cc98-comfort .cc98-content-rule-examples { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+:root.cc98-comfort .cc98-content-rule-error { color: var(--cc98-comfort-danger); overflow-wrap: anywhere; }
+:root.cc98-comfort .cc98-content-rule-error.is-valid { color: var(--cc98-comfort-accent); }
+:root.cc98-comfort .cc98-content-rule-advanced [aria-invalid="true"] { border-color: var(--cc98-comfort-danger); }
+:root.cc98-comfort [data-content-rules] .cc98-rebuild-blacklist-value { white-space: pre-wrap; overflow-wrap: anywhere; }
+:root.cc98-comfort .cc98-metric-rule-guard { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-block: 8px; }
+:root.cc98-comfort .cc98-metric-rule-guard[hidden] { display: none; }
+:root.cc98-comfort .cc98-metric-rule-guard input { width: 110px; min-width: 0; padding: 8px 12px; border: 1px solid var(--cc98-comfort-border); border-radius: var(--cc98-comfort-radius); background: var(--cc98-comfort-surface); color: var(--cc98-comfort-text); font: inherit; }
+@media (max-width: 700px) {
+  :root.cc98-comfort .cc98-content-rule-quick { grid-template-columns: minmax(0, 1fr) 90px; }
+  :root.cc98-comfort .cc98-content-rule-quick > :first-child { grid-column: 1 / -1; }
+  :root.cc98-comfort .cc98-content-rule-quick > button { grid-column: 1 / -1; }
+  :root.cc98-comfort .cc98-content-rule-advanced { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* Keep the hot list readable without forcing every viewport into one screen. */

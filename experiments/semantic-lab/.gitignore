@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.runtime/
+venv/
+models/
+*.partial
+service-token.txt

@@ -883,3 +883,69 @@
   :root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-card > :is(.cc98-rebuild-card-meta, .cc98-rebuild-hover-meta) { grid-column: 2 / -1; grid-row: 3; }
   :root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-card:has(> .cc98-rebuild-card-meta) > .cc98-rebuild-hover-meta { grid-row: 4; }
 }
+
+/* Blocking placeholders have a reason and controls, rather than topic columns.
+   Reserve the controls' intrinsic width while long reasons wrap beside them. */
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app .cc98-rebuild-blocked {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) max-content !important;
+  grid-template-rows: auto !important;
+  align-items: start;
+  min-width: 0;
+  min-height: 0 !important;
+  gap: 6px 12px !important;
+  padding: 8px 10px !important;
+}
+
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app .cc98-rebuild-blocked > .cc98-rebuild-card-title {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  min-width: 0;
+  margin: 0;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app .cc98-rebuild-blocked:not(:has(> .cc98-rebuild-blocked-actions)) > .cc98-rebuild-card-title {
+  grid-column: 1 / -1 !important;
+}
+
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app .cc98-rebuild-blocked > .cc98-rebuild-blocked-actions {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-self: end;
+  gap: 6px;
+  min-width: max-content;
+  margin: 0;
+}
+
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app .cc98-rebuild-blocked-actions > .cc98-rebuild-mini-action {
+  flex: 0 0 auto;
+  width: max-content !important;
+  min-width: max-content !important;
+  max-width: none !important;
+  min-height: 28px !important;
+  padding: 3px 4px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  color: var(--cc98-comfort-accent) !important;
+  font-size: 0.8rem !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+  overflow-wrap: normal;
+  word-break: normal;
+  writing-mode: horizontal-tb;
+}
+
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app .cc98-rebuild-blocked-actions > .cc98-rebuild-mini-action::before { content: "["; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app .cc98-rebuild-blocked-actions > .cc98-rebuild-mini-action::after { content: "]"; }
+
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app .cc98-rebuild-blocked-actions > .cc98-rebuild-mini-action:focus-visible {
+  outline: 1px dashed currentColor;
+  outline-offset: 2px;
+}

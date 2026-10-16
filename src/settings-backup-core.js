@@ -1,9 +1,11 @@
 (function (root, factory) {
   const pins = typeof module === "object" && module.exports ? require("./private-message-pins-core.js") : root.CC98RebornPrivateMessagePinsCore;
-  const api = factory(pins);
+  const contentRules = typeof module === "object" && module.exports ? require("./content-filter-core.js") : root.CC98RebornContentFilterCore;
+  const semanticRules = typeof module === "object" && module.exports ? require("./semantic-filter-core.js") : root.CC98RebornSemanticFilterCore;
+  const api = factory(pins, contentRules, semanticRules);
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.CC98RebornSettingsBackupCore = api;
-})(globalThis, function (pins) {
+})(globalThis, function (pins, contentRules, semanticRules) {
   "use strict";
   const FORMAT = "cc98-reborn-personal-settings";
   const MAX_BYTES = 2 * 1024 * 1024;
@@ -31,7 +33,7 @@
         if (strict) throw new Error(`备份包含不支持的设置：${key}`);
         continue;
       }
-      let valid = typeof value === typeof defaults[key] && (typeof value !== "number" || Number.isFinite(value)) && (typeof value !== "string" || value.length <= 100000);
+      let valid = typeof value === typeof defaults[key] && (typeof value !== "number" || Number.isFinite(value)) && (typeof value !== "string" || value.length <= (key === "blockedContentRules" ? 320000 : 100000));
       const ranges = { fontScale: [90, 120], emojiScale: [70, 200], imageLoadDuration: [800, 8000], cornerRadius: [0, 32] };
       if (ranges[key]) valid &&= value >= ranges[key][0] && value <= ranges[key][1];
       if (key === "themeMode") valid &&= ["light", "dark", "auto"].includes(value);
@@ -39,10 +41,22 @@
       if (key === "themePalette") valid &&= ["teal", "green", "blue", "violet", "rose", "amber", "custom"].includes(value);
       if (/^theme(?:Day|Night)Start$/.test(key)) valid &&= /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value);
       if (/^themeCustom(?:Primary|Secondary)$/.test(key)) valid &&= /^#[0-9a-f]{6}$/i.test(value);
+      if (key === "blockedContentRules") {
+        try { contentRules.parseRules(value); } catch { valid = false; }
+      }
+      if (key === "blockedTitleKeywords") {
+        try { contentRules.parseTitleRules(value, true); } catch { valid = false; }
+      }
       if (!valid && strict) throw new Error(`设置值无效：${key}`);
       result[key] = valid ? value : defaults[key];
     }
     if (result.themeDayStart && result.themeDayStart === result.themeNightStart) throw new Error("昼夜切换时间不能相同");
+    if (Object.keys(result).some(key => key.startsWith("semanticFilter"))) {
+      const normalized = semanticRules.normalize({ ...defaults, ...result }, { strict });
+      for (const key of Object.keys(semanticRules.DEFAULTS)) {
+        if (Object.hasOwn(result, key)) result[key] = normalized[key];
+      }
+    }
     return result;
   }
   function validateData(raw, defaults, strict = true) {

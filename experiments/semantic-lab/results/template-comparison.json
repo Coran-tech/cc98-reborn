@@ -1,0 +1,644 @@
+{
+  "createdAt": "2026-10-16T13:02:02.520778+00:00",
+  "syntheticSamplesOnly": true,
+  "notAnAccuracyBenchmark": true,
+  "purpose": "固定三个合成样例、三套预先选定设置，不据结果反复调参。",
+  "model": "minilm",
+  "multiLabel": true,
+  "settings": [
+    {
+      "id": "zh-labels-zh-template",
+      "labels": [
+        "人身攻击",
+        "正常讨论",
+        "情感话题",
+        "招聘推广",
+        "体育讨论"
+      ],
+      "template": "这段文字涉及{}。"
+    },
+    {
+      "id": "zh-labels-en-template",
+      "labels": [
+        "人身攻击",
+        "正常讨论",
+        "情感话题",
+        "招聘推广",
+        "体育讨论"
+      ],
+      "template": "This text is about {}."
+    },
+    {
+      "id": "en-labels-en-template",
+      "labels": [
+        "personal insults",
+        "normal discussion",
+        "romantic relationships",
+        "job recruitment or advertising",
+        "sports discussion"
+      ],
+      "template": "This text is about {}."
+    }
+  ],
+  "samples": [
+    {
+      "id": "normal",
+      "text": "感谢分享，这份教程很清楚，我已经解决了问题。",
+      "expectedTopLabel": "normal"
+    },
+    {
+      "id": "attack",
+      "text": "你就是个没脑子的蠢货，赶紧闭嘴，别来这里丢人现眼。",
+      "expectedTopLabel": "attack"
+    },
+    {
+      "id": "sport",
+      "text": "今晚篮球比赛最后一节太精彩了，双方防守都很出色。",
+      "expectedTopLabel": "sport"
+    }
+  ],
+  "results": [
+    {
+      "setting": "zh-labels-zh-template",
+      "sample": "normal",
+      "expectedTopLabel": "normal",
+      "actualTopLabel": "attack",
+      "topLabelMatchesManualExpectation": false,
+      "result": {
+        "model": "minilm",
+        "repository": "MoritzLaurer/multilingual-MiniLMv2-L6-mnli-xnli",
+        "revision": "0a71e92a985b6e1ad1828cf67ce9c459639c1dca",
+        "task": "zero-shot-topic",
+        "scoreType": "independent-nli-entailment",
+        "labels": [
+          {
+            "label": "人身攻击",
+            "title": "人身攻击",
+            "score": 0.7350459
+          },
+          {
+            "label": "情感话题",
+            "title": "情感话题",
+            "score": 0.3386461
+          },
+          {
+            "label": "招聘推广",
+            "title": "招聘推广",
+            "score": 0.3308568
+          },
+          {
+            "label": "体育讨论",
+            "title": "体育讨论",
+            "score": 0.3265411
+          },
+          {
+            "label": "正常讨论",
+            "title": "正常讨论",
+            "score": 0.25013
+          }
+        ],
+        "elapsedMs": 13,
+        "inferenceMs": 13,
+        "loadMs": 0,
+        "loadedNow": false,
+        "inputCharacters": 22,
+        "inputTokens": 26,
+        "processedTokens": 26,
+        "maxInputTokens": 512,
+        "truncated": false,
+        "device": "cpu",
+        "dtype": "float32",
+        "topicLabels": [
+          "人身攻击",
+          "正常讨论",
+          "情感话题",
+          "招聘推广",
+          "体育讨论"
+        ],
+        "hypothesisTemplate": "这段文字涉及{}。",
+        "multiLabel": true,
+        "cached": false
+      }
+    },
+    {
+      "setting": "zh-labels-zh-template",
+      "sample": "attack",
+      "expectedTopLabel": "attack",
+      "actualTopLabel": "attack",
+      "topLabelMatchesManualExpectation": true,
+      "result": {
+        "model": "minilm",
+        "repository": "MoritzLaurer/multilingual-MiniLMv2-L6-mnli-xnli",
+        "revision": "0a71e92a985b6e1ad1828cf67ce9c459639c1dca",
+        "task": "zero-shot-topic",
+        "scoreType": "independent-nli-entailment",
+        "labels": [
+          {
+            "label": "人身攻击",
+            "title": "人身攻击",
+            "score": 0.9634795
+          },
+          {
+            "label": "情感话题",
+            "title": "情感话题",
+            "score": 0.5868991
+          },
+          {
+            "label": "招聘推广",
+            "title": "招聘推广",
+            "score": 0.4496864
+          },
+          {
+            "label": "体育讨论",
+            "title": "体育讨论",
+            "score": 0.2746296
+          },
+          {
+            "label": "正常讨论",
+            "title": "正常讨论",
+            "score": 0.2286953
+          }
+        ],
+        "elapsedMs": 13,
+        "inferenceMs": 13,
+        "loadMs": 0,
+        "loadedNow": false,
+        "inputCharacters": 25,
+        "inputTokens": 33,
+        "processedTokens": 33,
+        "maxInputTokens": 512,
+        "truncated": false,
+        "device": "cpu",
+        "dtype": "float32",
+        "topicLabels": [
+          "人身攻击",
+          "正常讨论",
+          "情感话题",
+          "招聘推广",
+          "体育讨论"
+        ],
+        "hypothesisTemplate": "这段文字涉及{}。",
+        "multiLabel": true,
+        "cached": false
+      }
+    },
+    {
+      "setting": "zh-labels-zh-template",
+      "sample": "sport",
+      "expectedTopLabel": "sport",
+      "actualTopLabel": "sport",
+      "topLabelMatchesManualExpectation": true,
+      "result": {
+        "model": "minilm",
+        "repository": "MoritzLaurer/multilingual-MiniLMv2-L6-mnli-xnli",
+        "revision": "0a71e92a985b6e1ad1828cf67ce9c459639c1dca",
+        "task": "zero-shot-topic",
+        "scoreType": "independent-nli-entailment",
+        "labels": [
+          {
+            "label": "体育讨论",
+            "title": "体育讨论",
+            "score": 0.9561956
+          },
+          {
+            "label": "情感话题",
+            "title": "情感话题",
+            "score": 0.6354961
+          },
+          {
+            "label": "人身攻击",
+            "title": "人身攻击",
+            "score": 0.5804617
+          },
+          {
+            "label": "招聘推广",
+            "title": "招聘推广",
+            "score": 0.3671833
+          },
+          {
+            "label": "正常讨论",
+            "title": "正常讨论",
+            "score": 0.0176144
+          }
+        ],
+        "elapsedMs": 15,
+        "inferenceMs": 15,
+        "loadMs": 0,
+        "loadedNow": false,
+        "inputCharacters": 24,
+        "inputTokens": 27,
+        "processedTokens": 27,
+        "maxInputTokens": 512,
+        "truncated": false,
+        "device": "cpu",
+        "dtype": "float32",
+        "topicLabels": [
+          "人身攻击",
+          "正常讨论",
+          "情感话题",
+          "招聘推广",
+          "体育讨论"
+        ],
+        "hypothesisTemplate": "这段文字涉及{}。",
+        "multiLabel": true,
+        "cached": false
+      }
+    },
+    {
+      "setting": "zh-labels-en-template",
+      "sample": "normal",
+      "expectedTopLabel": "normal",
+      "actualTopLabel": "attack",
+      "topLabelMatchesManualExpectation": false,
+      "result": {
+        "model": "minilm",
+        "repository": "MoritzLaurer/multilingual-MiniLMv2-L6-mnli-xnli",
+        "revision": "0a71e92a985b6e1ad1828cf67ce9c459639c1dca",
+        "task": "zero-shot-topic",
+        "scoreType": "independent-nli-entailment",
+        "labels": [
+          {
+            "label": "人身攻击",
+            "title": "人身攻击",
+            "score": 0.3784694
+          },
+          {
+            "label": "正常讨论",
+            "title": "正常讨论",
+            "score": 0.318997
+          },
+          {
+            "label": "招聘推广",
+            "title": "招聘推广",
+            "score": 0.2441508
+          },
+          {
+            "label": "情感话题",
+            "title": "情感话题",
+            "score": 0.1990723
+          },
+          {
+            "label": "体育讨论",
+            "title": "体育讨论",
+            "score": 0.1616252
+          }
+        ],
+        "elapsedMs": 15,
+        "inferenceMs": 15,
+        "loadMs": 0,
+        "loadedNow": false,
+        "inputCharacters": 22,
+        "inputTokens": 27,
+        "processedTokens": 27,
+        "maxInputTokens": 512,
+        "truncated": false,
+        "device": "cpu",
+        "dtype": "float32",
+        "topicLabels": [
+          "人身攻击",
+          "正常讨论",
+          "情感话题",
+          "招聘推广",
+          "体育讨论"
+        ],
+        "hypothesisTemplate": "This text is about {}.",
+        "multiLabel": true,
+        "cached": false
+      }
+    },
+    {
+      "setting": "zh-labels-en-template",
+      "sample": "attack",
+      "expectedTopLabel": "attack",
+      "actualTopLabel": "attack",
+      "topLabelMatchesManualExpectation": true,
+      "result": {
+        "model": "minilm",
+        "repository": "MoritzLaurer/multilingual-MiniLMv2-L6-mnli-xnli",
+        "revision": "0a71e92a985b6e1ad1828cf67ce9c459639c1dca",
+        "task": "zero-shot-topic",
+        "scoreType": "independent-nli-entailment",
+        "labels": [
+          {
+            "label": "人身攻击",
+            "title": "人身攻击",
+            "score": 0.6399703
+          },
+          {
+            "label": "正常讨论",
+            "title": "正常讨论",
+            "score": 0.3187415
+          },
+          {
+            "label": "招聘推广",
+            "title": "招聘推广",
+            "score": 0.2803023
+          },
+          {
+            "label": "情感话题",
+            "title": "情感话题",
+            "score": 0.2772579
+          },
+          {
+            "label": "体育讨论",
+            "title": "体育讨论",
+            "score": 0.09347
+          }
+        ],
+        "elapsedMs": 16,
+        "inferenceMs": 16,
+        "loadMs": 0,
+        "loadedNow": false,
+        "inputCharacters": 25,
+        "inputTokens": 34,
+        "processedTokens": 34,
+        "maxInputTokens": 512,
+        "truncated": false,
+        "device": "cpu",
+        "dtype": "float32",
+        "topicLabels": [
+          "人身攻击",
+          "正常讨论",
+          "情感话题",
+          "招聘推广",
+          "体育讨论"
+        ],
+        "hypothesisTemplate": "This text is about {}.",
+        "multiLabel": true,
+        "cached": false
+      }
+    },
+    {
+      "setting": "zh-labels-en-template",
+      "sample": "sport",
+      "expectedTopLabel": "sport",
+      "actualTopLabel": "sport",
+      "topLabelMatchesManualExpectation": true,
+      "result": {
+        "model": "minilm",
+        "repository": "MoritzLaurer/multilingual-MiniLMv2-L6-mnli-xnli",
+        "revision": "0a71e92a985b6e1ad1828cf67ce9c459639c1dca",
+        "task": "zero-shot-topic",
+        "scoreType": "independent-nli-entailment",
+        "labels": [
+          {
+            "label": "体育讨论",
+            "title": "体育讨论",
+            "score": 0.6979315
+          },
+          {
+            "label": "情感话题",
+            "title": "情感话题",
+            "score": 0.1856518
+          },
+          {
+            "label": "人身攻击",
+            "title": "人身攻击",
+            "score": 0.1816061
+          },
+          {
+            "label": "招聘推广",
+            "title": "招聘推广",
+            "score": 0.0377271
+          },
+          {
+            "label": "正常讨论",
+            "title": "正常讨论",
+            "score": 0.0209597
+          }
+        ],
+        "elapsedMs": 16,
+        "inferenceMs": 16,
+        "loadMs": 0,
+        "loadedNow": false,
+        "inputCharacters": 24,
+        "inputTokens": 28,
+        "processedTokens": 28,
+        "maxInputTokens": 512,
+        "truncated": false,
+        "device": "cpu",
+        "dtype": "float32",
+        "topicLabels": [
+          "人身攻击",
+          "正常讨论",
+          "情感话题",
+          "招聘推广",
+          "体育讨论"
+        ],
+        "hypothesisTemplate": "This text is about {}.",
+        "multiLabel": true,
+        "cached": false
+      }
+    },
+    {
+      "setting": "en-labels-en-template",
+      "sample": "normal",
+      "expectedTopLabel": "normal",
+      "actualTopLabel": "recruitment",
+      "topLabelMatchesManualExpectation": false,
+      "result": {
+        "model": "minilm",
+        "repository": "MoritzLaurer/multilingual-MiniLMv2-L6-mnli-xnli",
+        "revision": "0a71e92a985b6e1ad1828cf67ce9c459639c1dca",
+        "task": "zero-shot-topic",
+        "scoreType": "independent-nli-entailment",
+        "labels": [
+          {
+            "label": "job recruitment or advertising",
+            "title": "job recruitment or advertising",
+            "score": 0.5386939
+          },
+          {
+            "label": "normal discussion",
+            "title": "normal discussion",
+            "score": 0.3418944
+          },
+          {
+            "label": "romantic relationships",
+            "title": "romantic relationships",
+            "score": 0.1336236
+          },
+          {
+            "label": "personal insults",
+            "title": "personal insults",
+            "score": 0.1317967
+          },
+          {
+            "label": "sports discussion",
+            "title": "sports discussion",
+            "score": 0.0571192
+          }
+        ],
+        "elapsedMs": 16,
+        "inferenceMs": 16,
+        "loadMs": 0,
+        "loadedNow": false,
+        "inputCharacters": 22,
+        "inputTokens": 28,
+        "processedTokens": 28,
+        "maxInputTokens": 512,
+        "truncated": false,
+        "device": "cpu",
+        "dtype": "float32",
+        "topicLabels": [
+          "personal insults",
+          "normal discussion",
+          "romantic relationships",
+          "job recruitment or advertising",
+          "sports discussion"
+        ],
+        "hypothesisTemplate": "This text is about {}.",
+        "multiLabel": true,
+        "cached": false
+      }
+    },
+    {
+      "setting": "en-labels-en-template",
+      "sample": "attack",
+      "expectedTopLabel": "attack",
+      "actualTopLabel": "attack",
+      "topLabelMatchesManualExpectation": true,
+      "result": {
+        "model": "minilm",
+        "repository": "MoritzLaurer/multilingual-MiniLMv2-L6-mnli-xnli",
+        "revision": "0a71e92a985b6e1ad1828cf67ce9c459639c1dca",
+        "task": "zero-shot-topic",
+        "scoreType": "independent-nli-entailment",
+        "labels": [
+          {
+            "label": "personal insults",
+            "title": "personal insults",
+            "score": 0.8099493
+          },
+          {
+            "label": "normal discussion",
+            "title": "normal discussion",
+            "score": 0.5436876
+          },
+          {
+            "label": "job recruitment or advertising",
+            "title": "job recruitment or advertising",
+            "score": 0.4499654
+          },
+          {
+            "label": "romantic relationships",
+            "title": "romantic relationships",
+            "score": 0.2341535
+          },
+          {
+            "label": "sports discussion",
+            "title": "sports discussion",
+            "score": 0.0777083
+          }
+        ],
+        "elapsedMs": 17,
+        "inferenceMs": 17,
+        "loadMs": 0,
+        "loadedNow": false,
+        "inputCharacters": 25,
+        "inputTokens": 35,
+        "processedTokens": 35,
+        "maxInputTokens": 512,
+        "truncated": false,
+        "device": "cpu",
+        "dtype": "float32",
+        "topicLabels": [
+          "personal insults",
+          "normal discussion",
+          "romantic relationships",
+          "job recruitment or advertising",
+          "sports discussion"
+        ],
+        "hypothesisTemplate": "This text is about {}.",
+        "multiLabel": true,
+        "cached": false
+      }
+    },
+    {
+      "setting": "en-labels-en-template",
+      "sample": "sport",
+      "expectedTopLabel": "sport",
+      "actualTopLabel": "sport",
+      "topLabelMatchesManualExpectation": true,
+      "result": {
+        "model": "minilm",
+        "repository": "MoritzLaurer/multilingual-MiniLMv2-L6-mnli-xnli",
+        "revision": "0a71e92a985b6e1ad1828cf67ce9c459639c1dca",
+        "task": "zero-shot-topic",
+        "scoreType": "independent-nli-entailment",
+        "labels": [
+          {
+            "label": "sports discussion",
+            "title": "sports discussion",
+            "score": 0.5552123
+          },
+          {
+            "label": "job recruitment or advertising",
+            "title": "job recruitment or advertising",
+            "score": 0.1580644
+          },
+          {
+            "label": "romantic relationships",
+            "title": "romantic relationships",
+            "score": 0.0445935
+          },
+          {
+            "label": "normal discussion",
+            "title": "normal discussion",
+            "score": 0.015975
+          },
+          {
+            "label": "personal insults",
+            "title": "personal insults",
+            "score": 0.0074432
+          }
+        ],
+        "elapsedMs": 16,
+        "inferenceMs": 16,
+        "loadMs": 0,
+        "loadedNow": false,
+        "inputCharacters": 24,
+        "inputTokens": 29,
+        "processedTokens": 29,
+        "maxInputTokens": 512,
+        "truncated": false,
+        "device": "cpu",
+        "dtype": "float32",
+        "topicLabels": [
+          "personal insults",
+          "normal discussion",
+          "romantic relationships",
+          "job recruitment or advertising",
+          "sports discussion"
+        ],
+        "hypothesisTemplate": "This text is about {}.",
+        "multiLabel": true,
+        "cached": false
+      }
+    }
+  ],
+  "summary": [
+    {
+      "setting": "zh-labels-zh-template",
+      "topLabelMatches": 2,
+      "sampleCount": 3
+    },
+    {
+      "setting": "zh-labels-en-template",
+      "topLabelMatches": 2,
+      "sampleCount": 3
+    },
+    {
+      "setting": "en-labels-en-template",
+      "topLabelMatches": 2,
+      "sampleCount": 3
+    }
+  ],
+  "recommendation": {
+    "recommendAutomaticBlockingDefault": false,
+    "note": "三个合成样例只能暴露明显失真，不能证明任一设置可作为自动屏蔽的默认语义分类器；原始全部分数供人工比较。",
+    "recommendDefaultSetting": null,
+    "reason": "三套设置都错误地将普通感谢教程的句子判为人身攻击或招聘推广；更换英文标签或模板没有消除该问题。"
+  },
+  "elapsedMs": 389
+}

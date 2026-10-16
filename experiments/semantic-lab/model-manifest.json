@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "verifiedAt": "2026-10-16",
+  "backend": "transformers-pytorch-cpu",
+  "models": [
+    {
+      "id": "cold",
+      "name": "COLD / COLDetector",
+      "repository": "thu-coai/roberta-base-cold",
+      "revision": "614c097a485910d28beb75f60d90c61e3082b518",
+      "sourceUrl": "https://huggingface.co/thu-coai/roberta-base-cold",
+      "architecture": "BertForSequenceClassification",
+      "task": "toxicity-binary",
+      "scoreType": "softmax",
+      "maxInputTokens": 512,
+      "labels": [
+        {"label": "non_offensive", "title": "未冒犯"},
+        {"label": "offensive", "title": "冒犯"}
+      ],
+      "license": {
+        "identifier": "not-specified",
+        "note": "固定版本模型卡没有声明模型权重许可证；本地评测与权重再分发的许可不能从关联数据集推定。"
+      },
+      "limitations": "中文冒犯二分类，不是争议话题分类器；引用、反讽及正常批评仍可能误判。",
+      "weightBytes": 409104428,
+      "weightSha256": "7a3dcc70ade1a65cf155f861e85ae9a9d4d61202265f12680662256142468866",
+      "downloadFiles": [
+        {"path": "README.md", "bytes": 1433},
+        {"path": "config.json", "bytes": 898},
+        {"path": "model.safetensors", "bytes": 409104428},
+        {"path": "special_tokens_map.json", "bytes": 125},
+        {"path": "tokenizer_config.json", "bytes": 372},
+        {"path": "vocab.txt", "bytes": 109540}
+      ]
+    },
+    {
+      "id": "horizon",
+      "name": "Horizon multilingual toxicity small",
+      "repository": "Horizon-Labs/multilingual-toxicity-small",
+      "revision": "01adcc628a33848569816d4851a38544c321b92c",
+      "sourceUrl": "https://huggingface.co/Horizon-Labs/multilingual-toxicity-small",
+      "architecture": "ModernBertForSequenceClassification",
+      "task": "toxicity-multilabel",
+      "scoreType": "independent-sigmoid",
+      "maxInputTokens": 256,
+      "architectureMaxTokens": 8192,
+      "inputLimitNote": "模型卡训练长度为 256 tokens；本实验使用相同上限，避免长文本推理开销和分布差异。",
+      "labels": [
+        {"label": "toxicity", "title": "攻击性"},
+        {"label": "severe_toxicity", "title": "严重攻击性"},
+        {"label": "obscene", "title": "粗俗"},
+        {"label": "threat", "title": "威胁"},
+        {"label": "insult", "title": "侮辱"},
+        {"label": "identity_attack", "title": "身份攻击"},
+        {"label": "sexual_explicit", "title": "露骨性内容"}
+      ],
+      "license": {"identifier": "apache-2.0", "note": "固定版本模型卡声明 Apache-2.0。"},
+      "limitations": "多语言翻译训练数据；模型卡中文 TextDetox AUC 为 0.771，不能直接当作 CC98 场景准确率。",
+      "weightBytes": 562591100,
+      "weightSha256": "14c3250b4784891919040a56e04b410da3aa2fa057148942e0b815997b5f45ec",
+      "alternativeOnnx": {"path": "onnx/model_quantized.onnx", "bytes": 268416934, "includedInDownload": false},
+      "downloadFiles": [
+        {"path": "README.md", "bytes": 9341},
+        {"path": "config.json", "bytes": 2317},
+        {"path": "model.safetensors", "bytes": 562591100},
+        {"path": "special_tokens_map.json", "bytes": 636},
+        {"path": "tokenizer.json", "bytes": 34363286},
+        {"path": "tokenizer_config.json", "bytes": 46440}
+      ]
+    },
+    {
+      "id": "minilm",
+      "name": "Multilingual MiniLMv2 L6 NLI",
+      "repository": "MoritzLaurer/multilingual-MiniLMv2-L6-mnli-xnli",
+      "revision": "0a71e92a985b6e1ad1828cf67ce9c459639c1dca",
+      "sourceUrl": "https://huggingface.co/MoritzLaurer/multilingual-MiniLMv2-L6-mnli-xnli",
+      "architecture": "XLMRobertaForSequenceClassification",
+      "task": "zero-shot-topic",
+      "scoreType": "independent-nli-entailment",
+      "maxInputTokens": 512,
+      "labels": [],
+      "nliLabelOrder": ["entailment", "neutral", "contradiction"],
+      "supportsTopicLabels": true,
+      "defaultTopicLabels": ["人身攻击", "友善讨论", "技术交流", "情感关系", "政治公共议题"],
+      "defaultHypothesisTemplate": "这段文字涉及{}。",
+      "license": {"identifier": "mit", "note": "固定版本模型卡声明 MIT。"},
+      "limitations": "用户给定标签的零样本相关性；不是攻击性概率，不应与前两个模型的分数直接比较。中文标签措辞和假设模板会影响结果。",
+      "weightBytes": 427997022,
+      "weightSha256": "91b323ccf247ec1e3b5925d566230bae7c52de8147e6062b42e250089a3fc80b",
+      "downloadFiles": [
+        {"path": "README.md", "bytes": 6741},
+        {"path": "config.json", "bytes": 1032},
+        {"path": "model.safetensors", "bytes": 427997022},
+        {"path": "sentencepiece.bpe.model", "bytes": 5069051},
+        {"path": "special_tokens_map.json", "bytes": 280},
+        {"path": "tokenizer.json", "bytes": 17082758},
+        {"path": "tokenizer_config.json", "bytes": 565}
+      ]
+    }
+  ]
+}

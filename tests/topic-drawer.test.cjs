@@ -96,6 +96,17 @@ async function main() {
     let child = await drawerFrame();
     console.log('real MV3 child ready', child.url());
     await child.locator('.cc98-rebuild-post').first().waitFor();
+    await worker.evaluate(async () => {
+      const { cc98ComfortSettings } = await chrome.storage.local.get('cc98ComfortSettings');
+      await chrome.storage.local.set({ cc98ComfortSettings: { ...cc98ComfortSettings, blockedContentRules: JSON.stringify(['/侧窗第 4 楼/']) } });
+    });
+    await child.locator('.cc98-rebuild-blocked .cc98-rebuild-card-title').filter({ hasText: '内容规则：/侧窗第 4 楼/' }).waitFor();
+    assert.equal(await child.locator('[data-post-floor="4"]').count(), 0, 'regex rules run inside the actual drawer document'); checks++;
+    await worker.evaluate(async () => {
+      const { cc98ComfortSettings } = await chrome.storage.local.get('cc98ComfortSettings');
+      await chrome.storage.local.set({ cc98ComfortSettings: { ...cc98ComfortSettings, blockedContentRules: "[]" } });
+    });
+    await child.locator('[data-post-floor="4"]').waitFor(); checks++;
     // Exercise real content-script messaging from the child. Only the external
     // question service is replaced; URL/account validation stays in the worker.
     await worker.evaluate(async () => {

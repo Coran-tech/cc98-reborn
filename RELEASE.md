@@ -1,12 +1,21 @@
 # Release Checklist
 
-Current release target: `0.3.9`.
+Current release target: `0.4.0`.
 
 1. Confirm `manifest.json` version.
 2. Run validation:
 
 ```powershell
 node --check .\src\content.js
+node --check .\src\content-filter-core.js
+node --check .\src\content-filter.js
+node --check .\src\content-filter-frame.js
+node --check .\src\content-filter-worker.js
+node --check .\src\semantic-client.js
+node --check .\src\semantic-filter-core.js
+node --check .\src\semantic-background.js
+node --check .\src\semantic-filter.js
+node --check .\popup\semantic-settings.js
 node --check .\src\theme-core.js
 node --check .\src\interface-style.js
 node --check .\src\extended-ubb-core.js
@@ -42,6 +51,12 @@ node .\tests\favorite-share-core.test.js
 node .\tests\favorite-share-service.test.js
 node .\tests\user-notes-core.test.js
 node .\tests\theme-core.test.js
+node .\tests\content-filter-core.test.js
+node .\tests\title-filter.test.js
+node .\tests\semantic-client.test.js
+node .\tests\semantic-filter-core.test.js
+node .\tests\semantic-background.test.js
+node .\tests\semantic-filter.test.js
 ```
 
 For dual UBB editor changes, start the local forum simulator:
@@ -250,6 +265,15 @@ third-party fixtures are intentionally excluded.
 
 ## Notes
 
+The standalone semantic lab lives in `experiments/semantic-lab`; run its Python
+unit tests and a real local-model comparison before delivery. Model weights,
+Python environments and the lab web server stay outside the extension package.
+The extension packages the local SDK and optional experimental filtering bridge.
+It defaults off and requires manual setup, a pasted local token and a user-granted
+optional loopback host permission. Test default-off zero requests, pending/error
+and truncation fail-open behavior, threshold/topic matching, reveal, cancellation,
+permission revocation and backup credential exclusion before packaging.
+
 For conversation changes, run `node tests/conversation.test.cjs` and
 `node tests/conversation-native.test.cjs` with Playwright available. These
 cover cross-page and cross-topic ancestors, native flattened quotes, Markdown,
@@ -260,6 +284,20 @@ reload, account isolation, manual
 refresh with stale foreground snapshots, and preservation
 of the foreground page. The native test uses its own temporary local database.
 Check the dialog in both tones and a narrow viewport before packaging.
+
+For quote blacklist changes, run `node tests/quote-blacklist.test.cjs`.
+It covers exact author matching, public UID mappings, nested and flattened
+quotes, literal-code safety, reversible hiding with retained media controls,
+personal replies, conversation cache originals and live setting changes.
+
+For content-rule changes, run `node tests/content-filter.test.cjs` with full
+Chromium and Playwright. It loads the real MV3 extension, the local matching
+iframe and its dedicated Worker, covering native emotion counts, quote/signature
+exclusion, logic, regular-expression counts and timeout responsiveness, live
+conversation folding, cancellation, rule editing and persisted settings.
+The worker frame is created only for unresolved regex conditions and removed
+when the feature is disabled or the document closes. Include all five
+`src/content-filter*` runtime files in the package.
 
 For in-topic full-text search, run `node tests/topic-search.test.cjs`. It covers
 the favorite-adjacent entry, confirmation before page reads, close-to-background

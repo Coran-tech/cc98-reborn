@@ -65,6 +65,11 @@ async function main() {
       return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
     });
     assert.ok(narrow.left >= 0 && narrow.right <= 360 && narrow.top >= 0 && narrow.bottom <= 640, JSON.stringify(narrow));
+    const panel = page.locator('#native-editor > .cc98-rebuild-editor-emoji-panel');
+    await panel.getByRole('button', { name: 'AC娘', exact: true }).click();
+    await panel.getByRole('button', { name: 'AC娘 1', exact: true }).click();
+    await page.waitForFunction(() => __ubbRegression.snapshot().sourceValue.includes('[ac01]'));
+    assert(await panel.isHidden(), 'the original editor still inserts and dismisses the shared panel');
     await page.evaluate(() => {
       document.querySelector("#native-editor").classList.remove("cc98-rebuild-emoji-panel-open");
       document.querySelector("#native-editor > .cc98-rebuild-editor-emoji-panel").hidden = true;

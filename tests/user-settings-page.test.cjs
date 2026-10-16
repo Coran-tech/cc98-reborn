@@ -151,7 +151,7 @@ async function main() {
     await page.waitForTimeout(1600);
     const ordering = await page.locator("#userCenterNavigation ul > li").allTextContents();
     assert.equal(ordering.at(-1).trim(), "插件设置", "settings entry must be last in the personal-center list");
-    assert(ordering.some((text) => text.trim() === "黑名单"), "existing blacklist entry must remain");
+    assert(ordering.some((text) => text.trim() === "屏蔽规则"), "blocking rules entry replaces the old blacklist label");
     await page.locator("#native-profile-draft").evaluate((node) => { node.value = "切换设置时保留个人主页草稿"; node.setSelectionRange(2, 8); window.__settingsDraft = node; });
     await settingsEntry().click();
     let frame = await assertSettingsPanel();

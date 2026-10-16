@@ -63,6 +63,7 @@ function initializeEmbeddedLayout() {
 const DEFAULT_SETTINGS = {
   enabled: true,
   ...ThemeCore.DEFAULTS,
+  ...globalThis.CC98RebornSemanticFilterCore?.DEFAULTS,
   density: "comfortable",
   fontScale: 110,
   emojiScale: 200,
@@ -94,6 +95,7 @@ const DEFAULT_SETTINGS = {
   blockedBoards: "",
   blockedTitleKeywords: "",
   blockedUserIds: "",
+  blockedContentRules: "[]",
   placeholderText: "已根据你的屏蔽规则折叠一条内容"
 };
 
@@ -332,9 +334,11 @@ function updateBlacklistSummary() {
     return;
   }
   const boardCount = parseList(settings.blockedBoards).length;
-  const keywordCount = parseList(settings.blockedTitleKeywords).length;
+  const keywordCount = (globalThis.CC98RebornContentFilterCore?.splitTitleRules?.(settings.blockedTitleKeywords) || parseList(settings.blockedTitleKeywords)).length;
   const userCount = parseList(settings.blockedUserIds).length;
-  fields.blacklistSummary.textContent = `当前 ${userCount} 个用户 ID、${keywordCount} 个标题关键词、${boardCount} 个版面规则。`;
+  let contentCount = 0;
+  try { contentCount = JSON.parse(settings.blockedContentRules || "[]").length || 0; } catch {}
+  fields.blacklistSummary.textContent = "当前 " + userCount + " 个用户 ID、" + keywordCount + " 条标题规则、" + boardCount + " 个版面规则、" + contentCount + " 条内容规则。语义屏蔽：" + (settings.semanticFilterEnabled === true ? "开启" : "关闭");
 }
 
 function openBlacklistPage() {

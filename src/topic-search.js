@@ -165,7 +165,7 @@
       link.target = "_blank"; link.rel = "noopener noreferrer";
       const snippet = node("p", "cc98-topic-search-snippet"); addSnippet(snippet, text, job.query, at);
       card.append(link, node("small", "cc98-topic-search-result-time", record.publishedAt || ""));
-      const reason = shouldBlockRebuiltItem({ type: "post", uid: record.uid, user: record.user });
+      const reason = shouldBlockRebuiltItem({ type: "post", uid: record.uid, user: record.user }) || globalThis.CC98RebornContentFilter?.reason(record, true) || globalThis.CC98RebornSemanticFilter?.reason(record, true) || "";
       if (reason && !job.revealed.has(record.floor)) {
         const reveal = node("button", "cc98-topic-search-reveal", `${reason} · 显示此楼`); reveal.type = "button";
         reveal.onclick = () => { job.revealed.add(record.floor); render(); };
@@ -284,5 +284,5 @@
     if (job) { job.epoch++; job.reader?.dispose(); }
     close(); job = null; restoreSaved();
   });
-  globalThis.CC98RebornTopicSearch = Object.freeze({ open, close });
+  globalThis.CC98RebornTopicSearch = Object.freeze({ open, close, refreshFilters() { if (view) render(); } });
 })();

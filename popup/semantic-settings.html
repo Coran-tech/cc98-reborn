@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN" class="cc98-reborn-popup">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>实验性语义屏蔽 · CC98 Reborn</title>
+  <link rel="stylesheet" href="../src/theme-tokens.css">
+  <link rel="stylesheet" href="semantic-settings.css">
+  <script src="../src/theme-core.js" defer></script>
+  <script src="../src/semantic-filter-core.js" defer></script>
+  <script src="semantic-settings.js" defer></script>
+</head>
+<body>
+  <main class="semantic-settings">
+    <header class="semantic-heading"><div><h2>语义识别规则</h2><span class="experimental">实验性</span></div><span id="semantic-status" class="connection-status" role="status">读取中</span></header>
+    <form id="semantic-form" novalidate>
+      <label class="enabled-control"><strong>启用语义屏蔽</strong><input id="semantic-enabled" type="checkbox" role="switch"></label>
+      <div class="form-grid"><label class="field"><span>识别模型</span><select id="semantic-model"><option value="cold">COLD · 中文冒犯识别</option><option value="horizon">Horizon · 多语言攻击性识别</option><option value="minilm">MiniLM · 自定义话题相关度</option></select></label><label class="field"><span>命中阈值 <output id="semantic-threshold-value">80%</output></span><input id="semantic-threshold" type="number" min="0" max="1" step="0.01" inputmode="decimal" value="0.8"></label></div>
+      <div id="semantic-topic-options" class="topic-options" hidden><label class="field"><span>候选标签 <small>2–12 个 · 每行一个 · 最多 60 字</small></span><textarea id="semantic-labels" rows="4"></textarea></label><label class="field"><span>屏蔽标签</span><textarea id="semantic-blocked-labels" rows="2" placeholder="从候选标签中选择，每行一个"></textarea></label><label class="field"><span>判断模板</span><input id="semantic-template" type="text" maxlength="200" placeholder="最多 200 字，包含一个 {}"></label><div class="template-shortcuts"><button type="button" class="quiet" data-semantic-template="zh">中文</button><button type="button" class="quiet" data-semantic-template="en">English</button></div></div>
+      <p id="semantic-error" class="error" role="alert" hidden></p>
+      <div class="actions"><button id="semantic-save" class="primary" type="submit">保存</button><span id="semantic-save-status" class="note" role="status"></span></div>
+    </form>
+    <section class="connection-panel" aria-label="连接"><div class="connection-tools"><button id="semantic-download" type="button">部署包</button><a id="semantic-workbench" href="http://127.0.0.1:8766" target="_blank" rel="noopener noreferrer">工作台</a></div><label class="field token-field"><span>令牌</span><input id="semantic-token" type="password" autocomplete="off" spellcheck="false" placeholder="service-token.txt"></label><div class="actions"><button id="semantic-connect" type="button">连接</button><button id="semantic-disconnect" type="button" class="quiet">断开</button><span id="semantic-connection-message" class="note" role="status"></span></div></section>
+    <details id="semantic-test-panel" class="test-panel"><summary>测试</summary><label class="field"><span>文本</span><textarea id="semantic-test-text" rows="3" maxlength="10000">谢谢你把步骤整理得这么清楚，照着做已经解决了问题。</textarea></label><div class="template-shortcuts"><button class="quiet" type="button" data-semantic-sample="normal">正常讨论</button><button class="quiet" type="button" data-semantic-sample="attack">攻击性样例</button></div><button id="semantic-test" type="button">测试</button><div id="semantic-test-result" class="test-result" aria-live="polite" hidden></div></details>
+  </main>
+</body>
+</html>

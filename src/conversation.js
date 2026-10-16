@@ -320,6 +320,7 @@
       const uid = author?.getAttribute("href")?.match(/\/user\/id\/(\d+)/)?.[1] || "";
       const avatar = getPostAvatar(post, author?.getAttribute("href") || "");
       records.push({ topicId: String(topicId), floor, references, user, uid, avatar,
+        metrics: globalThis.CC98RebornContentFilter?.metrics(post),
         contentHtml: content.outerHTML,
         publishedAt: post.textContent.match(/发表于\s+([0-9:-]+\s+[0-9:]+)/)?.[1] || "" });
     }
@@ -350,6 +351,10 @@
         await pause(100, session.controller.signal);
         if (top >= max) break;
       }
+      // The native button reveals already-loaded rows without another request.
+      doc.querySelectorAll('.awardInfo button').forEach(button => {
+        if (button.textContent.trim() === '显示全部') button.click();
+      });
     } finally {
       targets.forEach((target, index) => { target.scrollTop = saved[index]; });
     }
@@ -586,7 +591,7 @@
     if (links.children.length) card.append(links);
     if (entry.record) {
       const record = entry.record;
-      const reason = shouldBlockRebuiltItem({ type: "post", uid: record.uid, user: record.user });
+      const reason = shouldBlockRebuiltItem({ type: "post", uid: record.uid, user: record.user }) || globalThis.CC98RebornContentFilter?.reason(record, true) || globalThis.CC98RebornSemanticFilter?.reason(record, true) || "";
       if (reason && !session.revealed.has(entry.key)) {
         const reveal = element("button", "cc98-rebuild-conversation-link", `${reason} · 显示此楼`);
         reveal.type = "button";
@@ -599,6 +604,7 @@
         const content = sanitizePostContent(source);
         if (content) body.append(cleanContent(content, floorHref(record.topicId, record.floor)));
         else body.textContent = source.textContent;
+        filterBlacklistedQuotes(body, [...session.records.values()]);
         stabilizeEmojiRendering(body);
         for (const group of quoteGroups(body)) {
           const details = element("details", "cc98-rebuild-conversation-quote");
@@ -651,7 +657,8 @@
     const previous = new Map([...session.feed.querySelectorAll(".cc98-rebuild-conversation-post")].map((node) => [node.dataset.conversationKey, node]));
     const cards = new Map();
     for (const entry of entries) {
-      const token = JSON.stringify([entry.record, entry.relation, entry.level, [...graph.parents.get(entry.key) || []], session.revealed.has(entry.key), entry.record ? null : session.running]);
+      const contentRule = entry.record ? globalThis.CC98RebornContentFilter?.reason(entry.record, true) || globalThis.CC98RebornSemanticFilter?.reason(entry.record, true) || "" : "";
+      const token = JSON.stringify([entry.record, entry.relation, entry.level, [...graph.parents.get(entry.key) || []], session.revealed.has(entry.key), entry.record ? null : session.running, contentRule]);
       let card = previous.get(entry.key);
       if (!card || card.__conversationToken !== token) {
         const next = renderRecord(entry, graph, session);
@@ -790,11 +797,11 @@
     const current = result.records.find((record) => core.keyOf(record.topicId, record.floor) === seed);
     let enhanced;
     if (item.content) {
-      const content = item.content.cloneNode(true);
+      const content = cloneContentWithHiddenQuotes(item.content);
       const references = readReferences(content, info.topicId, location.href);
       cleanContent(content, location.href);
       enhanced = { ...(current || {}), topicId: info.topicId, floor: Number(item.index), user: item.anonymousCode ? `匿名 ${item.anonymousCode}` : item.user,
-        uid: item.uid, avatar: item.avatar, publishedAt: item.publishedAt, contentHtml: content.outerHTML, references };
+        uid: item.uid, avatar: item.avatar, metrics: item.metrics, publishedAt: item.publishedAt, contentHtml: content.outerHTML, references };
     }
     captureForeground(session, info.current, result, enhanced);
     restoreAvailablePages(session);
@@ -863,5 +870,5 @@
     scan(session);
   }
 
-  globalThis.CC98RebornConversation = { open, close, readReferences, extractPage, createReader };
+  globalThis.CC98RebornConversation = { open, close, readReferences, extractPage, createReader, refreshFilters() { if (active) render(active); } };
 })();

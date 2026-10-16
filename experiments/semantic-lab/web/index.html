@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>语义工作台 · CC98 Reborn</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div><a class="brand" href="/">CC98 Reborn</a><span class="experimental">实验性</span></div>
+    <div class="header-title"><h1>语义工作台</h1><span id="connection-status" class="status-chip">连接中</span></div>
+  </header>
+  <main class="workspace">
+    <section class="panel input-panel" aria-labelledby="input-title">
+      <div class="section-title"><h2 id="input-title">测试内容</h2><span id="text-count" class="muted">0 / 10000</span></div>
+      <label for="sample-text" class="sr-only">待分析文字</label>
+      <textarea id="sample-text" maxlength="10000" rows="7" placeholder="输入文字"></textarea>
+      <div class="sample-row" aria-label="合成样例"><span class="muted">样例</span><button type="button" data-sample="discussion" class="quiet">正常讨论</button><button type="button" data-sample="attack" class="quiet">人身攻击</button><button type="button" data-sample="quote" class="quiet">引用与反驳</button><button type="button" data-sample="topic" class="quiet">话题分类</button></div>
+      <fieldset class="model-picker"><legend>模型</legend>
+        <label><input type="checkbox" name="models" value="cold" checked><strong>COLD</strong></label>
+        <label><input type="checkbox" name="models" value="horizon" checked><strong>Horizon</strong></label>
+        <label><input type="checkbox" name="models" value="minilm" checked><strong>MiniLM</strong></label>
+      </fieldset>
+      <div id="topic-settings" class="field-group"><label for="topic-labels">MiniLM 标签 <span class="muted">2–12 · 每项 ≤60 字</span></label><textarea id="topic-labels" rows="3">人身攻击,正常讨论,情感话题,招聘推广,体育讨论</textarea><div class="template-field"><label for="hypothesis-template">模板 <span class="muted">≤200 字 · 含 {}</span></label><input id="hypothesis-template" class="template-input" type="text" maxlength="200" value="这段文字涉及{}。"><div class="template-shortcuts"><button type="button" class="quiet" data-template="zh">中文</button><button type="button" class="quiet" data-template="en">English</button></div></div></div>
+      <div class="field-group threshold-group"><label for="fold-threshold">折叠阈值 <output id="threshold-value" for="fold-threshold">80%</output></label><input id="fold-threshold" type="range" min="0.05" max="1" step="0.01" value="0.8"></div>
+      <p id="input-error" class="inline-error" role="alert" hidden></p>
+      <div class="run-actions"><button id="run-button" type="button" class="primary">开始比较</button><button id="cancel-button" type="button" hidden>取消</button><span id="run-status" class="muted" role="status" aria-live="polite">等待输入</span></div>
+    </section>
+    <section class="results-column" aria-labelledby="results-title">
+      <div class="section-title results-heading"><h2 id="results-title">结果</h2><button id="clear-button" type="button" class="quiet">清空</button></div>
+      <p id="results-empty" class="empty-state">暂无结果</p>
+      <div id="results" class="results-list" aria-live="polite" aria-relevant="additions text"></div>
+      <section class="panel model-panel" aria-labelledby="models-title"><div class="section-title"><h2 id="models-title">本地模型</h2><button id="refresh-button" type="button" class="quiet">刷新</button></div><div id="model-status-list" class="model-status-list"></div><p id="model-error" class="inline-error" role="alert" hidden></p></section>
+      <details class="panel api-panel"><summary>接口</summary><div class="code-heading"><button id="copy-api-button" type="button" class="quiet">复制</button></div><pre><code id="api-example"></code></pre><p id="copy-status" class="copy-status" role="status"></p></details>
+    </section>
+  </main>
+</body>
+</html>
