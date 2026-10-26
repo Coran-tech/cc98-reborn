@@ -22,7 +22,7 @@
   const surfaceSelector = [
     ".cc98-rebuild-post-author-card", ".cc98-rebuild-side-topbar-menu", ".cc98-rebuild-side-rail-menu",
     ".cc98-rebuild-search-type-menu", ".cc98-rebuild-search-suggestions", ".cc98-rebuild-search-history",
-    ".cc98-rebuild-color-popover", ".cc98-rebuild-font-size-popover",
+    ".cc98-rebuild-color-popover", ".cc98-rebuild-font-size-popover", ".cc98-image-link-menu",
     ".cc98-rebuild-message-emoji-panel", ".cc98-rebuild-editor-emoji-panel",
     ".cc98-rebuild-toast", ".cc98-rebuild-route-status", ".cc98-comfort-loading-panel",
     ".cc98-rebuild-openid-bind-dialog", ".cc98-rebuild-convert-dialog",

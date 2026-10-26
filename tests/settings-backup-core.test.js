@@ -16,14 +16,19 @@ const records = {
   "draft:secret": "skip"
 };
 records["cc98RebornSemanticConnection:v1"] = { token: "secret-semantic-token" };
+records["cc98RebornAccountVault:v1"] = { version: 1, accounts: [{ values: { accessToken: "synthetic-vault-secret" } }] };
 Object.assign(records[core.SETTINGS_KEY], { semanticFilterEnabled: true, semanticFilterModel: "minilm", semanticFilterThreshold: 0.73 });
 records[core.SETTINGS_KEY].blockedTitleKeywords = "普通关键词\n/招聘.{1,3}实习/i\n/[a,b]/";
+records[core.SETTINGS_KEY].topicsSidebarPosition = "left";
 const text = core.create(records, defaults, "0.3.6", new Date("2026-10-13T00:00:00Z"));
 assert.doesNotMatch(text, /secret-api-key|auth-token|futureUnknown|draft:secret|ReadLater/);
 assert.doesNotMatch(text, /secret-semantic-token|cc98RebornSemanticConnection/);
+assert.doesNotMatch(text, /synthetic-vault-secret|cc98RebornAccountVault/);
 const result = core.parse(text, defaults);
 assert.deepEqual(JSON.parse(result.data[core.SETTINGS_KEY].blockedContentRules), ['"[ac01]" > 3 AND NOT "hello"', '风评 < -3 OR (赞踩比 < 0.5 AND 赞踩总数 >= 20)']);
 assert.equal(result.data[core.SETTINGS_KEY].topicDrawerEnabled, false);
+assert(!Object.hasOwn(result.data[core.SETTINGS_KEY], "topicsSidebarPosition"));
+assert.doesNotMatch(text, /topicsSidebarPosition/);
 assert.equal(result.data[core.SETTINGS_KEY].themeMode, "auto");
 assert.equal(result.data[core.SETTINGS_KEY].themeStyle, "ascii");
 assert.equal(result.data[core.SETTINGS_KEY].semanticFilterEnabled, true);
@@ -32,6 +37,9 @@ assert.equal(result.data[core.SETTINGS_KEY].semanticFilterThreshold, 0.73);
 assert.equal(result.data[core.SETTINGS_KEY].blockedTitleKeywords, "普通关键词\n/招聘.{1,3}实习/i\n/[a,b]/");
 assert.deepEqual(result.data[core.BOARDS_KEY], ["/board/1", "/board/2"]);
 assert.deepEqual(core.summary(result.data), { settings: 21, notes: 2, contacts: 2, boards: 2, accounts: 2 });
+const oldBackup = JSON.parse(text);
+oldBackup.data[core.SETTINGS_KEY].topicsSidebarPosition = "left";
+assert(!Object.hasOwn(core.parse(JSON.stringify(oldBackup), defaults).data[core.SETTINGS_KEY], "topicsSidebarPosition"), "retired position keys in old backups are ignored");
 assert.deepEqual(core.parse("\uFEFF" + text, defaults).data, result.data);
 for (const change of [
   file => { file.version = 9; },
@@ -48,6 +56,7 @@ for (const change of [
   file => { file.data[core.SETTINGS_KEY].semanticFilterBlockedLabels = "not-a-candidate"; },
   file => { file.data[core.SETTINGS_KEY].semanticFilterHypothesisTemplate = "{} {}"; },
   file => { file.data["cc98RebornSemanticConnection:v1"] = { token: "secret" }; },
+  file => { file.data["cc98RebornAccountVault:v1"] = { version: 1, accounts: [] }; },
   file => { file.data[core.SETTINGS_KEY].themeNightStart = "07:00"; },
   file => { file.data[core.BOARDS_KEY] = ["javascript:alert(1)"]; },
   file => { file.data[core.BOARDS_KEY] = ["https://example.com/board/1"]; },

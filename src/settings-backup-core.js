@@ -29,6 +29,7 @@
     if (!object(raw)) throw new Error("插件设置格式无效");
     const result = {};
     for (const [key, value] of Object.entries(raw)) {
+      if (key === "topicsSidebarPosition") continue; // Retired; old backups remain importable.
       if (!Object.hasOwn(defaults, key) || excludedSettings.has(key)) {
         if (strict) throw new Error(`备份包含不支持的设置：${key}`);
         continue;

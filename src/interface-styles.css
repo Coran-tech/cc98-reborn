@@ -201,6 +201,11 @@
   transform: none !important;
 }
 
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-board-toolbar > :is(.cc98-rebuild-board-post-topic-action, .cc98-rebuild-board-post-vote-action) {
+  background: var(--cc98-comfort-accent) !important;
+  color: var(--cc98-comfort-on-accent) !important;
+}
+
 :root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(.cc98-rebuild-hero, .cc98-rebuild-board-hero) {
   width: 100% !important;
   margin: 18px 0 !important;

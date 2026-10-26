@@ -685,6 +685,7 @@ async function clearCc98SiteData(confirmed = false) {
 function hydrate(nextSettings) {
   isHydrating = true;
   settings = { ...DEFAULT_SETTINGS, ...nextSettings, ...ThemeCore.normalize(nextSettings) };
+  delete settings.topicsSidebarPosition;
 
   fields.enabled.checked = settings.enabled;
   fields.homeHotOnly.checked = settings.homeHotOnly;

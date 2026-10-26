@@ -98,7 +98,8 @@
     if (filterTimer) return;
     filterTimer = setTimeout(() => {
       filterTimer = 0;
-      if (typeof scheduleRebuild === "function") scheduleRebuild();
+      const handled = globalThis.CC98RebornNewTopicsVirtual?.refresh?.();
+      if (!handled && typeof scheduleRebuild === "function") scheduleRebuild();
       if (typeof scheduleFiltering === "function") scheduleFiltering();
       globalThis.CC98RebornConversation?.refreshFilters?.();
       globalThis.CC98RebornTopicSearch?.refreshFilters?.();

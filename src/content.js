@@ -261,6 +261,7 @@ let imageViewerScrollPositions = null;
 let imageViewerScrollRestoreTimers = [];
 let imageViewerPreviousScrollRestoration = "";
 let imageViewerSuppressHashScrollUntil = 0;
+let imageLinkMenuCleanup = null;
 let nativePostSubmitRefreshTimers = [];
 let editorSubmitOverlayReleaseTimer = null;
 let editorSubmitResultMonitorBound = false;
@@ -344,13 +345,15 @@ let securityWatermarkDirectionTimer = 0;
 let securityWatermarkEnsureTimer = 0;
 let securityWatermarkRevalidateTimer = 0;
 let securityWatermarkObserver = null;
-let securityWatermarkCode = "";
-let securityWatermarkCachedCode = "";
+let securityWatermarkUserId = "";
+let securityWatermarkCachedUserId = "";
 let securityWatermarkCachedAt = 0;
 let securityWatermarkOffsetX = 0;
 let securityWatermarkOffsetY = 0;
-let securityWatermarkLastFrameAt = 0;
-let securityWatermarkDirection = { x: 0.42, y: -0.28 };
+let securityWatermarkClockTimer = 0;
+let securityWatermarkRequestId = 0;
+let securityWatermarkTileCanvas = null;
+let securityWatermarkTileKey = "";
 
 const AI_SEARCH_PROVIDER_DEFAULTS = {
   openai: {
@@ -477,6 +480,7 @@ function syncComfortTheme() {
   globalThis.CC98RebornTopicDrawer?.sync(lastSettings);
   globalThis.CC98RebornContentFilter?.sync(lastSettings);
   globalThis.CC98RebornSemanticFilter?.sync(lastSettings);
+  globalThis.CC98RebornNewTopicsVirtual?.sync(lastSettings);
   if (!lastSettings.enabled) return;
   if (previousTone && previousTone !== tone) {
     // Only replace tone-specific emoji resources: keep the post/editor DOM and selection intact.
@@ -545,6 +549,7 @@ function applySettings(settings) {
   root.style.setProperty("--cc98-comfort-radius", `${lastSettings.cornerRadius}px`);
   globalThis.CC98RebornUserNotes?.sync();
   if (!lastSettings.enabled || !lastSettings.rebuildUi) {
+    closeImageLinkMenu();
     releaseRebuildTransitionVeil({ immediate: true });
   }
 
@@ -793,6 +798,7 @@ function writeSettingsPatch(patch) {
   lastSettings = next;
   globalThis.CC98RebornContentFilter?.sync(lastSettings);
   globalThis.CC98RebornSemanticFilter?.sync(lastSettings);
+  globalThis.CC98RebornNewTopicsVirtual?.sync(lastSettings);
   syncBlacklistedQuotesInPage();
   try {
     chrome.storage.local.set({ [STORAGE_KEY]: next });
@@ -1028,6 +1034,7 @@ function bindOpenLinksInNewTabGuard() {
     if (!(link instanceof HTMLAnchorElement) || link.target === "_blank") {
       return;
     }
+    if (getLinkedImageAction(getImageViewerEventImage(event))) return;
     const href = getLinkNewTabHref(link);
     if (!shouldForceLinkNewTab(link, href)) {
       return;
@@ -1371,6 +1378,7 @@ function bindRebuiltFloorLinks(app) {
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
       return;
     }
+    if (getLinkedImageAction(getImageViewerEventImage(event))) return;
     const link = event.target?.closest?.("a[href]");
     const quoteTarget = getOriginalPostQuoteTargetFromLink(link);
     if (quoteTarget) {
@@ -1554,7 +1562,109 @@ function isImageViewerCandidate(image) {
   return Boolean(getViewerImageSrc(image));
 }
 
+function getImageViewerEventImage(event) {
+  const image = event.target?.closest?.("img");
+  if (image) return image;
+  // Enter on an image-only link activates the anchor rather than the image.
+  const link = event.detail === 0 ? event.target?.closest?.("a[href]") : null;
+  const images = link?.querySelectorAll("img");
+  if (images?.length !== 1) return null;
+  const text = document.createTreeWalker(link, NodeFilter.SHOW_TEXT);
+  let node;
+  while ((node = text.nextNode())) {
+    if (node.textContent.trim() && !node.parentElement?.closest(".cc98-rebuild-image-status, .cc98-ascii-decoration")) return null;
+  }
+  return images[0];
+}
+
+function getLinkedImageAction(image) {
+  if (!isImageViewerCandidate(image)) return null;
+  const link = image.closest("a[href]");
+  if (!link) return null;
+  const href = getLinkNewTabHref(link);
+  let target;
+  try {
+    target = new URL(href);
+    if (!/^https?:$/.test(target.protocol)) return null;
+  } catch { return null; }
+  if (isProbablyPostImageUrl(target.origin + target.pathname) || /\.(?:svg|ico)$/i.test(target.pathname)
+    || href === getViewerImageSrc(image)) return null;
+  return { image, link, href };
+}
+
+function closeImageLinkMenu(restoreFocus = false) {
+  const cleanup = imageLinkMenuCleanup;
+  imageLinkMenuCleanup = null;
+  cleanup?.(restoreFocus);
+}
+
+function showImageLinkMenu(action, event) {
+  closeImageLinkMenu();
+  // A new image click supersedes a just-closed viewer's delayed scroll restore.
+  clearImageViewerScrollRestoreTimers();
+  imageViewerScrollPositions = null;
+  restoreImageViewerScrollRestoration();
+  const { image, link, href } = action;
+  const menu = createElement("div", "cc98-image-link-menu");
+  menu.id = "cc98-image-link-menu";
+  menu.setAttribute("role", "dialog");
+  menu.setAttribute("aria-label", "图片操作");
+  const controller = new AbortController();
+  const options = { signal: controller.signal };
+  const view = createButton("cc98-image-link-action is-primary", "查看大图", (click) => {
+    click.preventDefault(); click.stopImmediatePropagation();
+    closeImageLinkMenu();
+    openImageViewer(image);
+  });
+  const go = createLink("cc98-image-link-action", "前往链接", href);
+  if (!lastSettings?.openLinksInNewTab && ["_blank", "_self", "_top", "_parent"].includes(link.target)) go.target = link.target;
+  if (go.target === "_blank") go.rel = "noopener noreferrer";
+  go.addEventListener("click", () => {
+    // Preserve native link activation, including Ctrl/Command and middle click.
+    setTimeout(() => { if (menu.isConnected) closeImageLinkMenu(); }, 0);
+  });
+  menu.append(view, go);
+  menu.style.visibility = "hidden";
+  document.body.append(menu);
+  const anchor = image.getBoundingClientRect();
+  const offsetX = event.clientX ? event.clientX - anchor.left : 0;
+  const offsetY = event.clientY ? event.clientY - anchor.top : Math.min(anchor.height, 40);
+  imageLinkMenuCleanup = (restore) => {
+    controller.abort(); menu.remove();
+    if (restore && link.isConnected) link.focus({ preventScroll: true });
+  };
+  const position = () => {
+    const rect = image.getBoundingClientRect(), box = menu.getBoundingClientRect();
+    if (!image.isConnected || rect.bottom <= 0 || rect.top >= innerHeight) {
+      closeImageLinkMenu(); return;
+    }
+    menu.style.left = `${Math.max(12, Math.min(innerWidth - box.width - 12, rect.left + offsetX))}px`;
+    menu.style.top = `${Math.max(12, Math.min(innerHeight - box.height - 12, rect.top + offsetY + 10))}px`;
+  };
+  position();
+  if (!menu.isConnected) return;
+  menu.style.visibility = "";
+  document.addEventListener("pointerdown", (click) => {
+    if (!menu.contains(click.target)) closeImageLinkMenu();
+  }, { ...options, capture: true });
+  document.addEventListener("keydown", (key) => {
+    if (key.key === "Escape") {
+      key.preventDefault(); key.stopImmediatePropagation(); closeImageLinkMenu(true);
+    } else if (key.key === "Tab") {
+      key.preventDefault(); key.stopImmediatePropagation();
+      (document.activeElement === view ? go : view).focus({ preventScroll: true });
+    }
+  }, { ...options, capture: true });
+  for (const type of ["scroll", "resize"]) window.addEventListener(type, position, { ...options, capture: true, passive: true });
+  for (const type of ["popstate", "hashchange", "pagehide"]) {
+    window.addEventListener(type, () => closeImageLinkMenu(), { ...options, capture: true });
+  }
+  view.focus({ preventScroll: true });
+}
+
 function getImageViewerItems(activeImage) {
+  const virtualGallery = globalThis.CC98RebornNewTopicsVirtual?.gallery(activeImage);
+  if (virtualGallery) return virtualGallery;
   const root = activeImage?.closest?.(".cc98-rebuild-conversation-dialog")
     || document.querySelector("#cc98-comfort-app") || document;
   const images = [...root.querySelectorAll("img.cc98-rebuild-content-image, img.cc98-rebuild-board-image")]
@@ -1761,6 +1871,7 @@ function openImageViewer(image) {
   if (!src) {
     return;
   }
+  closeImageLinkMenu();
   const viewerData = getImageViewerItems(image);
 
   removeImageViewer({ restoreScroll: false });
@@ -1900,13 +2011,16 @@ function openImageViewer(image) {
 
 function bindImageViewer(app) {
   app.addEventListener("click", (event) => {
-    const image = event.target?.closest?.("img");
+    const image = getImageViewerEventImage(event);
     if (!isImageViewerCandidate(image)) {
       return;
     }
+    const action = getLinkedImageAction(image);
+    if (action && (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey)) return;
     event.preventDefault();
     event.stopImmediatePropagation();
-    openImageViewer(image);
+    if (action) showImageLinkMenu(action, event);
+    else openImageViewer(image);
   }, true);
 }
 
@@ -5484,98 +5598,54 @@ function applyImportantStyle(element, styles) {
   });
 }
 
-function normalizeSecurityWatermarkCode(value) {
-  const code = String(value ?? "").trim().slice(0, 8);
-  return /^[a-z0-9]{8}$/i.test(code) ? code : "";
+function normalizeSecurityWatermarkUserId(value) {
+  const id = String(value ?? "").trim();
+  if (!/^\d+$/.test(id) || /^0+$/.test(id)) return "";
+  return id.replace(/^0+(?=\d)/, "").padStart(6, "0");
 }
 
-function extractSecurityWatermarkCodeFromValue(value, depth = 0) {
-  if (depth > 4 || value == null) {
-    return "";
-  }
-  if (typeof value === "string") {
-    const direct = normalizeSecurityWatermarkCode(value);
-    if (direct && value.length >= 16) {
-      return direct;
-    }
-    const trimmed = value.trim();
-    if (!/^[{[]/.test(trimmed)) {
-      return "";
-    }
-    try {
-      return extractSecurityWatermarkCodeFromValue(JSON.parse(trimmed), depth + 1);
-    } catch {
-      return "";
-    }
-  }
-  if (Array.isArray(value)) {
-    for (const item of value) {
-      const code = extractSecurityWatermarkCodeFromValue(item, depth + 1);
-      if (code) {
-        return code;
-      }
-    }
-    return "";
-  }
-  if (typeof value !== "object") {
-    return "";
-  }
-  for (const key of ["watermarkId", "watermark", "watermark_id"]) {
-    if (!Object.prototype.hasOwnProperty.call(value, key)) {
-      continue;
-    }
-    const code = normalizeSecurityWatermarkCode(value[key]);
-    if (code) {
-      return code;
-    }
-  }
-  for (const [key, child] of Object.entries(value)) {
-    if (!/(watermark|user|me|profile|current)/i.test(key)) {
-      continue;
-    }
-    const code = extractSecurityWatermarkCodeFromValue(child, depth + 1);
-    if (code) {
-      return code;
-    }
-  }
-  return "";
+function getSecurityWatermarkTopicId() {
+  const href = globalThis.CC98RebornTopicDrawer?.getTopicHref?.() || location.href;
+  return getCc98RoutePathFromHref(href).split(/[?#]/, 1)[0].match(/\/topic\/(\d+)(?:\/|$)/i)?.[1] || "0";
 }
 
-function injectSecurityWatermarkPageBridge() {
-  // OpenID binding is read from extension storage. Do not accept page-side
-  // bridge messages as a watermark source.
+function buildSecurityWatermarkLines(userId, topicId, now = Date.now()) {
+  const uid = normalizeSecurityWatermarkUserId(userId);
+  if (!uid) return [];
+  const id = /^\d+$/.test(String(topicId)) ? String(topicId).replace(/^0+(?=\d)/, "") : "0";
+  return [`${uid} ${id.padStart(8, "0")}`, String(Math.floor(now / 1000)).padStart(15, "0")];
 }
 
-function readCachedSecurityWatermarkCode() {
-  if (!securityWatermarkCachedCode || Date.now() - securityWatermarkCachedAt > WATERMARK_CACHE_TTL) {
+function readCachedSecurityWatermarkUserId() {
+  if (!securityWatermarkCachedUserId || Date.now() - securityWatermarkCachedAt > WATERMARK_CACHE_TTL) {
     return "";
   }
-  return normalizeSecurityWatermarkCode(securityWatermarkCachedCode);
+  return normalizeSecurityWatermarkUserId(securityWatermarkCachedUserId);
 }
 
-function writeCachedSecurityWatermarkCode(code) {
-  const normalized = normalizeSecurityWatermarkCode(code);
+function writeCachedSecurityWatermarkUserId(code) {
+  const normalized = normalizeSecurityWatermarkUserId(code);
   if (!normalized) {
     return;
   }
-  securityWatermarkCachedCode = normalized;
+  securityWatermarkCachedUserId = normalized;
   securityWatermarkCachedAt = Date.now();
 }
 
-function clearCachedSecurityWatermarkCode() {
-  securityWatermarkCachedCode = "";
+function clearCachedSecurityWatermarkUserId() {
+  securityWatermarkCachedUserId = "";
   securityWatermarkCachedAt = 0;
 }
 
-function rememberSecurityWatermarkCode(code) {
-  const normalized = normalizeSecurityWatermarkCode(code);
+function rememberSecurityWatermarkUserId(code) {
+  const normalized = normalizeSecurityWatermarkUserId(code);
   if (normalized) {
-    writeCachedSecurityWatermarkCode(normalized);
+    writeCachedSecurityWatermarkUserId(normalized);
   }
   return normalized;
 }
 
-function readOpenIdBindingSecurityWatermarkCode() {
+function readOpenIdBindingSecurityWatermarkUserId() {
   return new Promise((resolve) => {
     try {
       if (!globalThis.chrome?.storage?.local?.get) {
@@ -5588,7 +5658,7 @@ function readOpenIdBindingSecurityWatermarkCode() {
           return;
         }
         const binding = result?.[OPENID_BINDING_STORAGE_KEY];
-        const code = normalizeSecurityWatermarkCode(binding?.watermarkIdPrefix || "");
+        const code = normalizeSecurityWatermarkUserId(binding?.userId);
         resolve(binding?.bound && code ? code : "");
       });
     } catch {
@@ -5597,18 +5667,18 @@ function readOpenIdBindingSecurityWatermarkCode() {
   });
 }
 
-async function getSecurityWatermarkCode(options = {}) {
+async function getSecurityWatermarkUserId(options = {}) {
   if (!options.force) {
-    const cached = readCachedSecurityWatermarkCode();
+    const cached = readCachedSecurityWatermarkUserId();
     if (cached) {
       return cached;
     }
   }
-  const openIdCode = await readOpenIdBindingSecurityWatermarkCode();
+  const openIdCode = await readOpenIdBindingSecurityWatermarkUserId();
   if (openIdCode) {
-    return rememberSecurityWatermarkCode(openIdCode);
+    return openIdCode;
   }
-  clearCachedSecurityWatermarkCode();
+  clearCachedSecurityWatermarkUserId();
   return "";
 }
 
@@ -5725,7 +5795,7 @@ function chooseSecurityWatermarkDirection() {
 }
 
 function requestSecurityWatermarkRedraw() {
-  if (securityWatermarkAnimationFrame) {
+  if (window.top !== window || document.visibilityState === "hidden" || securityWatermarkAnimationFrame) {
     return;
   }
   securityWatermarkAnimationFrame = requestAnimationFrame(() => {
@@ -5736,8 +5806,8 @@ function requestSecurityWatermarkRedraw() {
 
 function drawSecurityWatermarkFrame() {
   const canvas = securityWatermarkCanvas;
-  const code = normalizeSecurityWatermarkCode(securityWatermarkCode);
-  if (!(canvas instanceof HTMLCanvasElement) || !code || !canvas.isConnected) {
+  const code = normalizeSecurityWatermarkUserId(securityWatermarkUserId);
+  if (window.top !== window || !(canvas instanceof HTMLCanvasElement) || !code || !canvas.isConnected) {
     securityWatermarkAnimationFrame = 0;
     return;
   }
@@ -5754,6 +5824,27 @@ function drawSecurityWatermarkFrame() {
   const offsetX = ((securityWatermarkOffsetX % tileX) + tileX) % tileX;
   const offsetY = ((securityWatermarkOffsetY % tileY) + tileY) % tileY;
   const margin = Math.max(width, height);
+  const lines = buildSecurityWatermarkLines(code, getSecurityWatermarkTopicId());
+  const tileKey = `${ratio}\n${lines.join("\n")}`;
+  if (!securityWatermarkTileCanvas) securityWatermarkTileCanvas = document.createElement("canvas");
+  const tile = securityWatermarkTileCanvas;
+  // Render the two lines once per second, then repeat that bitmap. Avoid
+  // laying out hundreds of copies of the same text on every clock update.
+  if (tileKey !== securityWatermarkTileKey) {
+    tile.width = Math.ceil(tileX * ratio); tile.height = Math.ceil(tileY * ratio);
+    const text = tile.getContext("2d", { alpha: true });
+    if (!text) return;
+    text.setTransform(ratio, 0, 0, ratio, 0, 0);
+    text.font = "600 14px Consolas, monospace";
+    text.textAlign = "center"; text.textBaseline = "middle";
+    text.fillStyle = "rgba(128, 128, 128, 0.05)";
+    text.fillText(lines[0], tileX / 2, tileY / 2 - 9);
+    text.fillText(lines[1], tileX / 2, tileY / 2 + 9);
+    securityWatermarkTileKey = tileKey;
+  }
+  const pattern = ctx.createPattern(tile, "repeat");
+  if (!pattern) return;
+  pattern.setTransform(new DOMMatrix().scale(1 / ratio));
 
   ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
   ctx.clearRect(0, 0, width, height);
@@ -5761,17 +5852,9 @@ function drawSecurityWatermarkFrame() {
   ctx.translate(width / 2, height / 2);
   ctx.rotate(-Math.PI / 7);
   ctx.translate(-width / 2, -height / 2);
-  ctx.font = "650 14px Arial, Helvetica, sans-serif";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.shadowColor = "transparent";
-  ctx.shadowBlur = 0;
-  ctx.fillStyle = "rgba(128, 128, 128, 0.05)";
-  for (let y = -margin + offsetY; y < height + margin; y += tileY) {
-    for (let x = -margin + offsetX; x < width + margin; x += tileX) {
-      ctx.fillText(code, x, y);
-    }
-  }
+  ctx.translate(offsetX, offsetY);
+  ctx.fillStyle = pattern;
+  ctx.fillRect(-margin - offsetX, -margin - offsetY, width + 2 * margin, height + 2 * margin);
   ctx.restore();
 }
 
@@ -5781,10 +5864,14 @@ function startSecurityWatermarkAnimation() {
     chooseSecurityWatermarkDirection();
     securityWatermarkDirectionTimer = window.setInterval(chooseSecurityWatermarkDirection, WATERMARK_DIRECTION_INTERVAL);
   }
+  if (!securityWatermarkClockTimer) {
+    securityWatermarkClockTimer = window.setInterval(requestSecurityWatermarkRedraw, 1000);
+  }
 }
 
 function stopSecurityWatermark() {
-  securityWatermarkCode = "";
+  securityWatermarkRequestId += 1;
+  securityWatermarkUserId = "";
   if (securityWatermarkAnimationFrame) {
     cancelAnimationFrame(securityWatermarkAnimationFrame);
     securityWatermarkAnimationFrame = 0;
@@ -5793,10 +5880,17 @@ function stopSecurityWatermark() {
     window.clearInterval(securityWatermarkDirectionTimer);
     securityWatermarkDirectionTimer = 0;
   }
+  for (const timer of [securityWatermarkClockTimer, securityWatermarkEnsureTimer, securityWatermarkRevalidateTimer]) window.clearInterval(timer);
+  securityWatermarkClockTimer = securityWatermarkEnsureTimer = securityWatermarkRevalidateTimer = 0;
+  securityWatermarkObserver?.disconnect(); securityWatermarkObserver = null;
+  window.removeEventListener("resize", resizeSecurityWatermarkCanvas);
+  document.removeEventListener("visibilitychange", requestSecurityWatermarkRedraw);
   securityWatermarkHost?.remove();
   securityWatermarkHost = null;
   securityWatermarkRoot = null;
   securityWatermarkCanvas = null;
+  securityWatermarkTileCanvas = null;
+  securityWatermarkTileKey = "";
 }
 
 function observeSecurityWatermarkHost() {
@@ -5804,7 +5898,7 @@ function observeSecurityWatermarkHost() {
     return;
   }
   securityWatermarkObserver = new MutationObserver(() => {
-    if (securityWatermarkCode && !securityWatermarkHost?.isConnected) {
+    if (securityWatermarkUserId && !securityWatermarkHost?.isConnected) {
       ensureSecurityWatermarkHost();
       startSecurityWatermarkAnimation();
     }
@@ -5813,12 +5907,12 @@ function observeSecurityWatermarkHost() {
 }
 
 function startSecurityWatermark(code) {
-  const normalized = normalizeSecurityWatermarkCode(code);
-  if (!normalized) {
+  const normalized = normalizeSecurityWatermarkUserId(code);
+  if (window.top !== window || !normalized) {
     stopSecurityWatermark();
     return;
   }
-  securityWatermarkCode = normalized;
+  securityWatermarkUserId = normalized;
   if (!ensureSecurityWatermarkHost()) {
     return;
   }
@@ -5826,9 +5920,10 @@ function startSecurityWatermark(code) {
   startSecurityWatermarkAnimation();
   observeSecurityWatermarkHost();
   window.addEventListener("resize", resizeSecurityWatermarkCanvas, { passive: true });
+  document.addEventListener("visibilitychange", requestSecurityWatermarkRedraw);
   if (!securityWatermarkEnsureTimer) {
     securityWatermarkEnsureTimer = window.setInterval(() => {
-      if (!securityWatermarkCode || document.visibilityState === "hidden") {
+      if (!securityWatermarkUserId || document.visibilityState === "hidden") {
         return;
       }
       ensureSecurityWatermarkHost();
@@ -5839,12 +5934,17 @@ function startSecurityWatermark(code) {
 }
 
 function ensureSecurityWatermark(options = {}) {
-  if (!WATERMARK_FEATURE_ENABLED) {
+  const requestId = ++securityWatermarkRequestId;
+  // The top canvas already covers same-origin drawer frames. Child readers
+  // must not create a second overlay, identity lookup or clock/repair timers.
+  if (!WATERMARK_FEATURE_ENABLED || window.top !== window) {
     stopSecurityWatermark();
     return;
   }
-  getSecurityWatermarkCode(options).then((code) => {
+  getSecurityWatermarkUserId(options).then((code) => {
+    if (requestId !== securityWatermarkRequestId) return;
     if (code) {
+      rememberSecurityWatermarkUserId(code);
       startSecurityWatermark(code);
     } else {
       stopSecurityWatermark();
@@ -5956,6 +6056,7 @@ function bindRebuildTransitionVeilNavigationGuard() {
     if (!href || shouldForceLinkNewTab(link, href) || !isRebuildTransitionVeilTarget(href)) {
       return;
     }
+    if (getLinkedImageAction(getImageViewerEventImage(event))) return;
     try {
       if (new URL(href, location.href).href === location.href) {
         return;
@@ -6098,7 +6199,8 @@ function isUserCenterNativeShellReady() {
 }
 
 function isUserCenterPendingNativeLoad() {
-  return (isUserCenterRoutePath() || isPublicUserProfilePage()) && !isUserCenterNativeShellReady();
+  return !isUserSettingsRoute()
+    && (isUserCenterRoutePath() || isPublicUserProfilePage()) && !isUserCenterNativeShellReady();
 }
 
 function scheduleUserCenterPendingRebuild() {
@@ -13099,7 +13201,7 @@ async function syncOpenIdBindingWithWebAccount() {
 }
 
 async function clearOpenIdBindingForCc98Logout() {
-  clearCachedSecurityWatermarkCode();
+  clearCachedSecurityWatermarkUserId();
   stopSecurityWatermark();
   try {
     const result = await sendExtensionMessage({ type: "CC98_REBORN_OPENID_LOGOUT", reason: "cc98-web-logout" });
@@ -13671,14 +13773,16 @@ function createReadLaterCardButton(item) {
   const button = createButton(`cc98-rebuild-read-later-button${saved ? " is-saved" : ""}`, "\ud83d\udd57", (event) => {
     event.preventDefault();
     event.stopPropagation();
-    if (isReadLaterSaved(readLaterItem.href)) {
-      removeReadLaterItem(readLaterItem.key);
+    const currentItem = getReadLaterItemFromTopicItem(button.cc98TopicItem) || readLaterItem;
+    if (isReadLaterSaved(currentItem.href)) {
+      removeReadLaterItem(currentItem.key);
       showRebuiltTransientToast(button, "\u5df2\u79fb\u51fa\u7a0d\u540e\u518d\u770b");
     } else {
-      upsertReadLaterItem(readLaterItem);
+      upsertReadLaterItem(currentItem);
       showRebuiltTransientToast(button, "\u5df2\u52a0\u5165\u7a0d\u540e\u518d\u770b");
     }
   });
+  button.cc98TopicItem = item;
   button.type = "button";
   button.dataset.readLaterKey = readLaterItem.key;
   button.dataset.readLaterTitle = readLaterItem.title;
@@ -15591,6 +15695,24 @@ function getNativeEditorDraftKind(editor) {
 }
 
 function getNativeEditorDraftKey(editor) {
+  const pageKey = getNativeEditorDraftPageKey(editor);
+  if (!pageKey) return "";
+  // Keep drafts already saved by the retired test build readable under their
+  // original UID. Untouched installations retain the original page keys.
+  try {
+    const raw = localStorage.getItem("cc98RebornDraftScope:v1");
+    if (raw === null) return pageKey;
+    const scope = JSON.parse(raw);
+    const validUid = value => /^[1-9]\d*$/.test(String(value)) && Number.isSafeInteger(Number(value));
+    if (scope?.version !== 1 || !validUid(scope.legacyOwner)) return "";
+    const userInfo = localStorage.getItem("userInfo") || "";
+    const user = userInfo.startsWith("obj-") ? JSON.parse(userInfo.slice(4)) : null;
+    return user && !Array.isArray(user) && validUid(user.id)
+      ? `${EDITOR_DRAFT_STORAGE_PREFIX}uid:${user.id}:${pageKey.slice(EDITOR_DRAFT_STORAGE_PREFIX.length)}` : "";
+  } catch { return ""; }
+}
+
+function getNativeEditorDraftPageKey(editor) {
   if (!(editor instanceof HTMLElement)) {
     return "";
   }
@@ -25194,6 +25316,13 @@ function createNewTopicModeControls() {
   });
 
   panel.append(heading, modes);
+  const virtualToggle = createButton("cc98-rebuild-new-topic-mode", globalThis.CC98RebornNewTopicsVirtual?.isFull() ? "恢复按需显示" : "显示全部", (event) => {
+    event.preventDefault();
+    globalThis.CC98RebornNewTopicsVirtual?.toggleAll();
+  });
+  virtualToggle.dataset.newTopicsVirtualToggle = "true";
+  virtualToggle.setAttribute("aria-pressed", String(Boolean(globalThis.CC98RebornNewTopicsVirtual?.isFull())));
+  panel.append(virtualToggle);
   syncNewTopicModePanel(panel);
   return panel;
 }
@@ -25261,7 +25390,8 @@ function renderTopics(app) {
     feed.dataset.feedKind = "search-fuzzy";
     app.append(createAdvancedFuzzySearchPanel(searchKeyword, fallbackFuzzyTerms, feed, sortedTopics));
   }
-  if (!useAdvancedFuzzy) {
+  const useNewTopicsVirtual = !useAdvancedFuzzy && isNewTopicsPage() && globalThis.CC98RebornNewTopicsVirtual?.mount(feed, sortedTopics);
+  if (!useAdvancedFuzzy && !useNewTopicsVirtual) {
     sortedTopics.forEach((item) => {
       const card = renderTopicCard(item);
       card.dataset.itemKey = `topic:${item.href}`;
@@ -25272,7 +25402,10 @@ function renderTopics(app) {
     const layout = createElement("div", "cc98-rebuild-topics-read-later-layout");
     feed.classList.add("cc98-rebuild-topics-read-later-feed");
     const readLaterSidebar = createReadLaterSidebar();
-    const sideColumn = createElement("div", "cc98-rebuild-topics-side-column");
+    const sideColumn = createElement("details", "cc98-rebuild-topics-side-column");
+    sideColumn.open = !document.documentElement.classList.contains("cc98-topic-drawer-split");
+    if (!sideColumn.open) sideColumn.dataset.cc98DrawerCompact = "true";
+    sideColumn.append(createElement("summary", "cc98-rebuild-topics-tools-toggle", "浏览工具"));
     if (isSearchPage && !useAdvancedFuzzy) {
       sideColumn.append(createSearchSortControls(sortedTopics.length, searchKeyword));
       layout.classList.add("has-search-sort-controls");
@@ -25607,7 +25740,11 @@ function hideEmbeddedUserSettingsPanel(router, panel, app) {
     entry.classList.remove("is-active");
     entry.removeAttribute("aria-current");
   });
+  app?.querySelector('.cc98-rebuild-nav [data-cc98-settings-link]')?.removeAttribute("aria-current");
   updateUserCenterHero(app);
+  if (app?.isConnected && app.dataset.routeKey === getRoutePageKey()) {
+    releaseRebuildTransitionVeil({ immediate: true });
+  }
 }
 
 function showEmbeddedUserSettingsPanel(router, panel, app, navSource) {
@@ -25624,6 +25761,7 @@ function showEmbeddedUserSettingsPanel(router, panel, app, navSource) {
     entry.classList.add("is-active");
     entry.setAttribute("aria-current", "page");
   });
+  app.querySelector('.cc98-rebuild-nav [data-cc98-settings-link]')?.setAttribute("aria-current", "page");
   if (!panel.querySelector("iframe")) {
     const frame = createElement("iframe", "cc98-rebuild-user-settings-frame");
     frame.title = "CC98 Reborn 插件设置";
@@ -25652,6 +25790,11 @@ function showEmbeddedUserSettingsPanel(router, panel, app, navSource) {
     panel.append(frame);
   }
   updateUserCenterHero(app);
+  if (app.isConnected) {
+    cancelUserCenterPendingRebuild();
+    hideLoadingOverlay({ force: true, releaseNativeLazyScroll: true });
+    releaseRebuildTransitionVeil({ immediate: true });
+  }
 }
 
 function createEmbeddedUserSettingsPanel() {
@@ -25691,6 +25834,35 @@ function getUserSettingsShellParts(app) {
     router: app?.querySelector(".cc98-rebuild-user-router-host > .user-center-router, .cc98-rebuild-user-router-host > .cc98-rebuild-section"),
     nav: app?.querySelector(".cc98-rebuild-native-user-nav, .cc98-rebuild-user-nav")
   };
+}
+
+function adoptReadyUserSettingsNativeShell(app) {
+  if (!isUserSettingsRoute() || !app?.isConnected || !isUserCenterNativeShellReady()) return;
+  const { navSource, router } = getUserCenterNativeShell();
+  const mounted = getUserSettingsShellParts(app);
+  const settingsPanel = app.querySelector(".cc98-rebuild-user-settings-panel");
+  const blacklistPanel = app.querySelector(".cc98-rebuild-user-blacklist-panel");
+  if (!navSource || !router || !mounted.nav?.classList.contains("cc98-rebuild-user-nav") || !mounted.router || !settingsPanel
+    || app.contains(navSource) || app.contains(router)) return;
+  // Adopt the late native siblings in place; moving the settings iframe itself
+  // would destroy its browsing context and any edits in its form.
+  rememberReparentedNativeNode(navSource);
+  rememberReparentedNativeNode(router);
+  navSource.classList.add("cc98-rebuild-native-user-nav");
+  router.classList.add("cc98-rebuild-native-user-router");
+  mounted.nav.replaceWith(navSource);
+  mounted.router.replaceWith(router);
+  injectBlacklistUserNavEntry(navSource, router, blacklistPanel, app);
+  injectUserSettingsNavEntry(navSource);
+  bindNativeUserCenterStabilizer(router);
+  navSource.addEventListener("click", (event) => {
+    if (event.target?.closest?.(".cc98-rebuild-settings-nav-entry")) return;
+    leaveUserSettingsRoute(router, settingsPanel, app);
+    if (event.target?.closest?.(".cc98-rebuild-blacklist-nav-entry")) return;
+    hideEmbeddedBlacklistPanel(router, blacklistPanel, app);
+    window.setTimeout(() => updateUserCenterHero(app), 120);
+    window.setTimeout(() => updateUserCenterHero(app), 600);
+  });
 }
 
 function syncUserSettingsRoute() {
@@ -25782,6 +25954,9 @@ function renderUserCenter(app) {
     const layout = createElement("div", "cc98-rebuild-user-layout");
     const nav = createElement("nav", "cc98-rebuild-user-nav");
     data.navItems.forEach((item) => nav.append(createLink("", item.title, item.href)));
+    if (isUserSettingsRoute() && !data.navItems.length) {
+      nav.append(createLink("", "个人主页", normalizeHref("/userCenter")));
+    }
     const main = createElement("section", "cc98-rebuild-section");
     main.append(createElement("h2", "", data.heading));
     data.summary.forEach((line) => main.append(createElement("p", "cc98-rebuild-card-meta", line)));
@@ -28987,6 +29162,20 @@ function setRebuiltRefreshButtonBusy(button, busy, idleLabel = "同步") {
   button.textContent = idleLabel || "同步";
 }
 
+function syncMountedNewTopicsFeed() {
+  if (!isNewTopicsPage() || nativeRouteRebuildPending
+    || !lastSettings?.enabled || !lastSettings.rebuildUi
+    || !globalThis.CC98RebornNewTopicsVirtual?.status().active) return false;
+  const app = document.querySelector("#cc98-comfort-app");
+  const feed = app?.querySelector('[data-feed-kind="topics"][data-cc98-virtual="true"]');
+  if (!feed || app.dataset.routeKey !== getRoutePageKey()) return false;
+  globalThis.CC98RebornNewTopicsVirtual.update(feed, getTopicItems(), { refresh: true });
+  syncNewTopicModePanel(app.querySelector(".cc98-rebuild-new-topic-controls"));
+  rememberSeamlessNativeContentSignature();
+  committedNativeRoute = { routeKey: getRoutePageKey(), kind: "topics", ...getNativeRouteRenderState("topics") };
+  return true;
+}
+
 function refreshRebuiltFromLoadedNativeContent(button, options = {}) {
   const automatic = Boolean(options.automatic);
   if (isRebuilding) {
@@ -29006,6 +29195,9 @@ function refreshRebuiltFromLoadedNativeContent(button, options = {}) {
     scheduleRebuild({ automatic: true });
     return;
   }
+  // Native infinite-loading updates the existing virtual feed. Recreating its
+  // shell would expose an empty spacer-only tree until the next animation frame.
+  if (automatic && syncMountedNewTopicsFeed()) return;
 
   const routeKey = getRoutePageKey();
   const interactionRevision = seamlessScrollInteractionRevision;
@@ -29224,7 +29416,8 @@ function renderPendingPageContent(app, kind) {
 }
 
 function renderRebuiltUi(options = {}) {
-  if (globalThis.CC98RebornTopicDrawer?.holdsPage()) return;
+  globalThis.CC98RebornTopicDrawer?.sync(lastSettings);
+  if (!isNewTopicsPage() || !lastSettings?.enabled || !lastSettings.rebuildUi) globalThis.CC98RebornNewTopicsVirtual?.destroy();
   if (isRebuilding) {
     return;
   }
@@ -29244,6 +29437,8 @@ function renderRebuiltUi(options = {}) {
     markSeamlessNativeContentDirty();
     return;
   }
+  if (options.automatic && sameRoute && !options.pending && syncMountedNewTopicsFeed()) return;
+  closeImageLinkMenu();
   const preservedPageScroll = sameRoute && stableKind ? captureSeamlessRebuildScrollState() : null;
   const scrollRevision = seamlessScrollInteractionRevision;
   const keepMounted = Boolean(existing && stableKind && lastSettings?.enabled && lastSettings.rebuildUi);
@@ -29252,6 +29447,7 @@ function renderRebuiltUi(options = {}) {
   isRebuilding = true;
   clearTopbarStabilizeTimers();
   document.documentElement.classList.toggle("cc98-comfort", Boolean(lastSettings?.enabled || isRebornManagementRoute()));
+  adoptReadyUserSettingsNativeShell(existing);
   const settingsShell = getUserSettingsShellParts(existing);
   if (isUserSettingsRoute() && existing?.dataset.routeKey === getRoutePageKey()
     && settingsShell.router && settingsShell.nav && existing.querySelector(".cc98-rebuild-user-settings-frame")) {
@@ -29372,9 +29568,11 @@ function renderRebuiltUi(options = {}) {
         ["新帖", "https://www.cc98.org/newTopics", /^\/newTopics(?:\/|$)/i.test(navPath)],
         ["关注", "https://www.cc98.org/focus", /^\/focus(?:\/|$)/i.test(navPath)],
         ["精选", "https://www.cc98.org/recommendedTopics", /^\/recommendedTopics(?:\/|$)/i.test(navPath)],
-        ["\u7a0d\u540e\u518d\u770b", getReadLaterPageHref(), kind === "readLater"]
+        ["\u7a0d\u540e\u518d\u770b", getReadLaterPageHref(), kind === "readLater"],
+        ["插件设置", getUserSettingsPageHref(), isUserSettingsRoute()]
       ].forEach(([label, href, current]) => {
         const link = createLink("", label, href);
+        if (isUserSettingsRoute(href)) link.dataset.cc98SettingsLink = "true";
         if (current) link.setAttribute("aria-current", "page");
         navLinks.append(link);
       });
@@ -29526,9 +29724,12 @@ function renderRebuiltUi(options = {}) {
     if (preservedPageScroll) restoreSeamlessRebuildScrollState(preservedPageScroll, scrollRevision);
     if (stableKind && !options.pending) restoreReloadReadingPosition();
     document.documentElement.dataset.cc98ComfortLoadingShell = String(Boolean(options.pending));
-    if (options.pending) releaseRebuildTransitionVeil({ immediate: true });
+    if (options.pending || isUserSettingsRoute()) releaseRebuildTransitionVeil({ immediate: true });
     else releaseRebuildTransitionVeilWhenReady();
-    if (mountedApp.dataset.cc98UserCenterPending === "true") {
+    if (isUserSettingsRoute()) {
+      cancelUserCenterPendingRebuild();
+      hideLoadingOverlay({ force: true, releaseNativeLazyScroll: true });
+    } else if (mountedApp.dataset.cc98UserCenterPending === "true") {
       showLoadingOverlay("正在加载个人中心...", { allowUserCenter: true });
       scheduleUserCenterPendingRebuild();
     } else {
@@ -29815,7 +30016,6 @@ function ensureRebuiltAppPresenceWatchdog() {
 }
 
 function scheduleRebuild(options = {}) {
-  if (globalThis.CC98RebornTopicDrawer?.holdsPage()) return;
   if (!lastSettings || !document.body) {
     return;
   }
@@ -29952,7 +30152,6 @@ function reconcileCardFeed(feed, entries) {
 }
 
 function syncRebuiltContent() {
-  if (globalThis.CC98RebornTopicDrawer?.holdsPage()) return;
   globalThis.CC98RebornUserNotes?.sync();
   if (isRebuilding || !lastSettings?.enabled || !lastSettings.rebuildUi) {
     return;
@@ -30006,6 +30205,10 @@ function syncRebuiltContent() {
   }
 
   if (feed.dataset.feedKind === "topics") {
+    if (isNewTopicsPage() && globalThis.CC98RebornNewTopicsVirtual) {
+      globalThis.CC98RebornNewTopicsVirtual.update(feed, getTopicItems(), { refresh: true });
+      return;
+    }
     getTopicItems().forEach((item) => {
       upsertCard(feed, `topic:${item.href}`, renderTopicCard(item));
     });
@@ -30167,7 +30370,7 @@ function armAutoLoader() {
 function isRebuiltInternalMutationTarget(record, app) {
   const changed = [...record.addedNodes, ...record.removedNodes];
   if (changed.length && changed.every((node) => node instanceof Element
-    && (node.matches(".cc98-topic-drawer-layer, .cc98-rebuild-conversation-layer, .cc98-topic-search-layer, .cc98-topic-search-worker, .cc98-favorite-share-layer, .cc98-user-note-layer, .cc98-user-note-ui") || node.closest(".cc98-topic-drawer-layer, .cc98-rebuild-conversation-layer, .cc98-topic-search-layer, .cc98-topic-search-worker, .cc98-favorite-share-layer, .cc98-user-note-layer, .cc98-user-note-ui")))) {
+    && (node.matches(".cc98-topic-drawer-layer, .cc98-rebuild-conversation-layer, .cc98-topic-search-layer, .cc98-topic-search-worker, .cc98-favorite-share-layer, .cc98-user-note-layer, .cc98-user-note-ui, .cc98-image-link-menu") || node.closest(".cc98-topic-drawer-layer, .cc98-rebuild-conversation-layer, .cc98-topic-search-layer, .cc98-topic-search-worker, .cc98-favorite-share-layer, .cc98-user-note-layer, .cc98-user-note-ui, .cc98-image-link-menu")))) {
     return true;
   }
   const target = record.target instanceof Element ? record.target : record.target?.parentElement;
@@ -30180,6 +30383,7 @@ function isRebuiltInternalMutationTarget(record, app) {
   return Boolean(target.closest([
     "#cc98-comfort-loading",
     "#cc98-comfort-image-viewer",
+    ".cc98-image-link-menu",
     ".cc98-rebuild-conversation-layer",
     ".cc98-topic-search-layer",
     ".cc98-topic-search-worker",
@@ -30448,7 +30652,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   }
 
   if (changes[OPENID_BINDING_STORAGE_KEY]) {
-    clearCachedSecurityWatermarkCode();
+    clearCachedSecurityWatermarkUserId();
     ensureSecurityWatermark({ force: true });
     syncOpenIdBindingWithWebAccount();
     scheduleOpenIdBindPromptAfterLogin();
@@ -30528,7 +30732,6 @@ function initializeNormalPageDom() {
   normalPageDomBooted = true;
   window.addEventListener("pagehide", rememberReadingPositionBeforeReload);
   clearPublicUserProfileLoadingOverlay();
-  injectSecurityWatermarkPageBridge();
   ensureSecurityWatermark();
   enforceRecentLogoutRedirectIntent();
   bindGlobalTopbarAuthRedirects();
@@ -30586,7 +30789,6 @@ function bootNormalPage() {
   bindPageEditorSubmitResultMonitor();
   ensureRebornReplyTailSubmitGuard();
   restoreEditorSubmitOverlayAfterReload();
-  injectSecurityWatermarkPageBridge();
   ensureSecurityWatermark();
   enforceRecentLogoutRedirectIntent();
   bindGlobalTopbarAuthRedirects();

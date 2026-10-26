@@ -146,6 +146,41 @@ async function main() {
       await page.screenshot({ path: path.join(output, name), animations: "disabled" });
     }
 
+    async function captureSections() {
+      let frame;
+      for (const style of ["modern", "ascii"]) {
+        await page.setViewportSize({ width: 1440, height: 1000 });
+        frame = await settingsFrame();
+        await selectRadio(frame, `input[name='themeStyle'][value='${style}']`);
+        await selectRadio(frame, mode(style === "ascii" ? "dark" : "light"));
+        await popup.waitForFunction(expected => document.documentElement.dataset.cc98ComfortStyle === expected, style);
+        await assertLayout(`${style}-sections-wide`);
+        for (const surface of [frame, popup]) {
+          assert(await surface.locator(".setting-check").evaluateAll(nodes => nodes.every(node => {
+            const box = node.getBoundingClientRect();
+            return box.width > 0 && node.scrollWidth <= node.clientWidth + 1;
+          })), `${style}: checkbox labels must not overflow`);
+        }
+        await popup.bringToFront();
+        await popup.evaluate(() => scrollTo(0, 0));
+        await popup.screenshot({ path: path.join(output, `popup-${style}-top.png`), animations: "disabled" });
+        await popup.locator(".reading-settings").evaluate(node => scrollTo(0, node.offsetTop - 14));
+        await popup.screenshot({ path: path.join(output, `popup-${style}-sections.png`), animations: "disabled" });
+        await page.bringToFront();
+        const readingTop = await frame.locator(".reading-settings").evaluate(node => node.getBoundingClientRect().top);
+        await page.locator(frameSelector).evaluate((node, top) => window.scrollTo(0, node.getBoundingClientRect().top + scrollY + top - 160), readingTop);
+        await page.waitForTimeout(200);
+        await page.screenshot({ path: path.join(output, `settings-${style}-sections.png`), animations: "disabled" });
+        if (style === "ascii") {
+          await page.setViewportSize({ width: 390, height: 1000 });
+          await assertLayout("ascii-sections-narrow");
+          await screenshotSettings("settings-ascii-narrow.png");
+          assert.equal(await frame.locator(".interaction-settings").evaluate(node => getComputedStyle(node).borderTopLeftRadius), "0px");
+        }
+        checks++;
+      }
+    }
+
     await page.goto(`${origin}/usercenter`);
     await settingsEntry().waitFor();
     await page.waitForTimeout(1600);
@@ -176,6 +211,73 @@ async function main() {
     assert.equal(await frame.locator("input[name='themeMode']").count(), 3);
     assert.equal(await frame.locator("input[name='themePalette']").count(), 7);
     checks += 1;
+
+    const optionSections = {
+      homeHotOnly: ".theme-settings [aria-labelledby='layout-label']",
+      expandTopicCardsByDefault: ".theme-settings [aria-labelledby='layout-label']",
+      sideTopbar: ".theme-settings [aria-labelledby='layout-label']",
+      topicDrawerEnabled: ".reading-settings",
+      openLinksInNewTab: ".reading-settings",
+      previsitFirstPageForTopicImages: ".reading-settings",
+      prewarmPostImages: ".reading-size-settings .settings-subsection",
+      replyRebornTail: ".interaction-settings",
+      questionMarkEnabled: ".interaction-settings .question-setting"
+    };
+    for (const surface of [popup, frame]) {
+      for (const [id, section] of Object.entries(optionSections)) {
+        assert.equal(await surface.locator(`#${id}`).count(), 1, `${id} must not be duplicated`);
+        assert.equal(await surface.locator(`${section} .setting-check #${id}`).count(), 1, `${id} must live in its contextual section`);
+        assert(await surface.locator(`#${id}`).evaluate(node => node.labels?.length === 1), `${id} must retain its label`);
+      }
+      for (const id of ["layout-label", "reading-label", "display-label", "interaction-label"]) {
+        assert(await surface.locator(`#${id}`).isVisible(), `${id} must also identify its group in the toolbar popup`);
+      }
+      assert.equal(await surface.locator(".question-setting a").getAttribute("href"), "https://question.coranqwq.xyz/privacy");
+      assert(await surface.locator("#imageLoadDuration").isDisabled(), "disabled prewarm must disable its adjacent duration control");
+    }
+    checks++;
+
+    for (const surface of [popup, frame]) assert.equal(await surface.locator("#topicsSidebarPosition").count(), 0, "the retired left/right control must be absent");
+
+    if (process.argv.includes("--sections-preview")) {
+      await fs.mkdir(output, { recursive: true });
+      await captureSections();
+      assert.deepEqual(errors, []);
+      await fs.writeFile(path.join(output, "sections-preview.json"), JSON.stringify({ passed: true, displayVersion, optionSections, measurements }, null, 2));
+      console.log("user-settings-page: final modern/ASCII popup and embedded section previews passed");
+      return;
+    }
+
+    // Every relocated option still uses the original shared storage contract.
+    // Toggle in the popup, then restore from the iframe using native events.
+    const settingsDocument = await frame.locator(".popup").elementHandle();
+    for (const id of Object.keys(optionSections)) {
+      const initial = await popup.locator(`#${id}`).isChecked();
+      await popup.bringToFront();
+      await popup.locator(`#${id}`).focus();
+      await popup.locator(`#${id}`).press("Space");
+      await frame.waitForFunction(({ id, checked }) => document.getElementById(id).checked === checked, { id, checked: !initial });
+      assert.equal((await getSettings())[id], !initial, `${id}: popup must save the changed value`);
+      if (id === "prewarmPostImages") {
+        assert(await frame.locator("#imageLoadDuration").isEnabled());
+        await frame.locator("#imageLoadDuration").focus();
+        await frame.locator("#imageLoadDuration").press("ArrowRight");
+        await popup.waitForFunction(() => document.querySelector("#imageLoadDuration").value === "2200");
+        assert.equal((await getSettings()).imageLoadDuration, 2200);
+      }
+      await page.bringToFront();
+      await frame.locator(`#${id}`).focus();
+      await frame.locator(`#${id}`).press("Space");
+      await popup.waitForFunction(({ id, checked }) => document.getElementById(id).checked === checked, { id, checked: initial });
+      assert.equal((await getSettings())[id], initial, `${id}: embedded settings must save the restored value`);
+      assert(await settingsDocument.evaluate(node => node.isConnected), "moving options must not recreate the settings document during a save");
+      if (id === "prewarmPostImages") {
+        assert(await frame.locator("#imageLoadDuration").isDisabled());
+        assert(await popup.locator("#imageLoadDuration").isDisabled());
+        assert.equal(await popup.locator("#imageLoadDuration").inputValue(), "2200", "disabling prewarm must retain its duration");
+      }
+      checks++;
+    }
 
     if (process.argv.includes("--capture-only")) {
       await fs.mkdir(output, { recursive: true });
@@ -406,9 +508,10 @@ async function main() {
         checks += 1;
       }
     }
+    await captureSections();
     assert.deepEqual(errors, []);
     assert(!externalRequests.some((request) => request.method !== "GET"), "test attempted an external account mutation");
-    await fs.writeFile(path.join(output, "measurements.json"), JSON.stringify({ extensionId, measurements, mockedActions: await worker.evaluate(() => __settingsMockCalls), externalRequests }, null, 2));
+    await fs.writeFile(path.join(output, "measurements.json"), JSON.stringify({ passed: true, checks, optionSections, extensionId, measurements, mockedActions: await worker.evaluate(() => __settingsMockCalls), externalRequests }, null, 2));
     console.log(`user-settings-page: ${checks} real MV3 iframe/storage/routing/layout/action checks passed`);
   } catch (error) {
     await fs.mkdir(output, { recursive: true });

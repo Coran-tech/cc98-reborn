@@ -182,7 +182,6 @@ p,
 }
 
 .group,
-.checks,
 footer {
   background: var(--panel);
   border: 1px solid var(--border);
@@ -719,18 +718,42 @@ button:focus-visible {
   cursor: not-allowed;
 }
 
-.checks {
+.settings-options {
   display: grid;
   gap: 10px;
 }
 
-.checks label {
+.reading-options-grid {
+  display: contents;
+}
+
+.settings-subsection {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.theme-settings .settings-subsection {
+  margin-bottom: 14px;
+}
+
+.setting-check {
   display: flex;
   gap: 8px;
-  align-items: center;
+  align-items: flex-start;
   min-height: 24px;
   color: var(--text);
   font-size: 13px;
+  line-height: 1.6;
+}
+
+.setting-check input {
+  flex: 0 0 auto;
+  margin-top: 4px;
+}
+
+.setting-check span {
+  min-width: 0;
 }
 
 .question-setting {
@@ -752,7 +775,7 @@ button:focus-visible {
   text-decoration: underline;
 }
 
-.checks .experimental-note,
+.setting-check .experimental-note,
 .interface-styles .experimental-note {
   color: var(--cc98-comfort-warning);
   font-size: 10px;
@@ -762,7 +785,7 @@ button:focus-visible {
   white-space: nowrap;
 }
 
-:root[data-cc98-comfort-tone="dark"] :is(.checks, .interface-styles) .experimental-note {
+:root[data-cc98-comfort-tone="dark"] :is(.setting-check, .interface-styles) .experimental-note {
   color: var(--cc98-comfort-warning);
 }
 
@@ -775,7 +798,7 @@ button:focus-visible {
   font-size: 13px;
 }
 
-.checks input,
+.setting-check input,
 .checkline input {
   accent-color: var(--accent);
 }
@@ -871,7 +894,6 @@ button:hover {
   color: var(--accent);
 }
 
-.embedded-section-label,
 .site-data-confirm[hidden] {
   display: none;
 }
@@ -935,29 +957,13 @@ button:hover {
 }
 
 .cc98-reborn-embedded .group,
-.cc98-reborn-embedded .checks,
 .cc98-reborn-embedded footer {
   padding: 16px;
-}
-
-.cc98-reborn-embedded .embedded-section-label {
-  display: block;
-  margin-bottom: 4px;
 }
 
 .cc98-reborn-embedded .theme-settings > .theme-schedule-note {
   margin: 12px 0 0;
   line-height: 1.6;
-}
-
-.cc98-reborn-embedded .checks label {
-  align-items: flex-start;
-  line-height: 1.6;
-}
-
-.cc98-reborn-embedded .checks input {
-  flex: 0 0 auto;
-  margin-top: 4px;
 }
 
 .cc98-reborn-embedded .about-popover {
@@ -972,6 +978,7 @@ button:hover {
   .cc98-reborn-embedded .header,
   .cc98-reborn-embedded .update-top-notice,
   .cc98-reborn-embedded .theme-settings,
+  .cc98-reborn-embedded .reading-options-grid,
   .cc98-reborn-embedded footer {
     grid-column: 1 / -1;
   }
@@ -981,13 +988,33 @@ button:hover {
     max-width: 580px;
   }
 
-  .cc98-reborn-embedded .checks,
-  .cc98-reborn-embedded .reading-size-settings {
-    align-self: stretch;
+  .cc98-reborn-embedded .layout-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+
+  .cc98-reborn-embedded .reading-options-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas: "reading display" "interaction display";
+    gap: 14px;
+  }
+
+  .cc98-reborn-embedded .reading-options-grid > .group {
+    min-width: 0;
+    margin: 0;
+  }
+
+  .cc98-reborn-embedded .reading-settings { grid-area: reading; }
+  .cc98-reborn-embedded .reading-size-settings { grid-area: display; }
+  .cc98-reborn-embedded .interaction-settings { grid-area: interaction; }
 }
 
 @media (min-width: 800px) {
+  .cc98-reborn-embedded .layout-options {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
+  }
+
   .cc98-reborn-embedded .theme-palettes {
     grid-template-columns: repeat(7, minmax(0, 1fr));
   }
@@ -999,7 +1026,6 @@ button:hover {
 
 @media (max-width: 360px) {
   .cc98-reborn-embedded .group,
-  .cc98-reborn-embedded .checks,
   .cc98-reborn-embedded footer,
   .cc98-reborn-embedded .header {
     padding: 10px;
@@ -1047,7 +1073,7 @@ button:hover {
   transition: none !important;
 }
 
-:root[data-cc98-comfort-style="ascii"] :is(.group, .checks, footer, .about-popover) {
+:root[data-cc98-comfort-style="ascii"] :is(.group, footer, .about-popover) {
   border-top-color: var(--accent);
 }
 

@@ -91,6 +91,14 @@ const post = (text = "synthetic body") => ({ type: "post", text });
     f.api.reason(post()); f.respond(0, { modelResult: { toxicityScore: 0.1 } }); await flush(); await f.advance(1000);
     assert.equal(f.api.reason(post()), ""); assert.equal(f.counts.rebuild, 0); assert.equal(f.analyzed().length, 1);
   });
+  await check("a handled virtual-list filter refresh keeps the containing page mounted", async () => {
+    const f = fixture(); let refreshes = 0;
+    f.context.CC98RebornNewTopicsVirtual = { refresh() { refreshes++; return true; } };
+    f.sync({ semanticFilterEnabled: true }); f.api.reason(post()); f.respond(0);
+    await flush(); await f.advance(250);
+    assert.equal(refreshes, 1); assert.equal(f.counts.rebuild, 0); assert.equal(f.counts.filtering, 1);
+    assert.match(f.api.reason(post()), /语义规则/);
+  });
   await check("overlong body is skipped without silently clipping it", async () => {
     const f = fixture(); f.sync({ semanticFilterEnabled: true });
     assert.equal(f.api.reason(post("x".repeat(10001))), ""); assert.equal(f.analyzed().length, 0);

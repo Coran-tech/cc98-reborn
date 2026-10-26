@@ -852,7 +852,7 @@
       }
     }, true);
     session.onKeydown = (event) => {
-      if (document.querySelector("#cc98-comfort-image-viewer")) return;
+      if (document.querySelector("#cc98-comfort-image-viewer, #cc98-image-link-menu")) return;
       if (event.key === "Escape") { event.preventDefault(); event.stopImmediatePropagation(); close(); }
       if (event.key !== "Tab") return;
       const buttons = [...panel.querySelectorAll("button, a[href], summary")].filter((node) => node.getClientRects().length && !node.disabled);

@@ -91,6 +91,7 @@ if ($TestBuild) {
   "semantic-filter-core.js",
   "semantic-background.js",
   "semantic-filter.js",
+  "new-topics-virtual.js",
   "extended-ubb-core.js",
   "extended-ubb.js",
   "markup-converter.js",

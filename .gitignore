@@ -22,5 +22,8 @@ node_modules/
 .codex/
 reference/
 tmp/
+# Generated diagnostics, delivery backups and experiment package previews
+outputs/
+experiments/post-context-draft/package-preview/
 # Separate Sites source checkout
 question-mark-sites-demo/

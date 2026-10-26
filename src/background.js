@@ -1822,6 +1822,26 @@ async function setupOpenIdProfileRefresh() {
   return refreshOpenIdBindingProfile({ force: true });
 }
 
+async function removeRetiredAccountRecords() {
+  // Remove only the retired switcher's extra copies, not the active forum
+  // login, OpenID binding, question session, settings or page-local drafts.
+  if (chrome.storage.session) {
+    await new Promise((resolve, reject) => {
+      chrome.storage.session.remove([
+        "cc98RebornAccountVault:v1", "cc98RebornAccountEpoch:v1", "cc98RebornAccountsRevision:v1"
+      ], () => chrome.runtime.lastError ? reject(new Error("retired-account-cleanup-failed")) : resolve());
+    });
+  }
+  if (typeof indexedDB === "undefined") return;
+  await new Promise((resolve, reject) => {
+    const request = indexedDB.deleteDatabase("cc98RebornAccountVault");
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(new Error("retired-account-cleanup-failed"));
+  });
+}
+
+removeRetiredAccountRecords().catch(() => console.warn("Retired account records could not be removed; cleanup will retry on the next worker start."));
+
 chrome.runtime.onInstalled.addListener(setupUpdateChecker);
 chrome.runtime.onStartup.addListener(setupUpdateChecker);
 chrome.runtime.onInstalled.addListener(() => {

@@ -21,6 +21,7 @@ jobs:
           node --check src/content.js
           node --check src/content-filter-core.js
           node --check src/content-filter.js
+          node --check src/new-topics-virtual.js
           node --check src/content-filter-frame.js
           node --check src/content-filter-worker.js
           node --check src/semantic-client.js
@@ -63,6 +64,9 @@ jobs:
 
       - name: Test OpenID local binding
         run: node tests/openid-refresh.test.js
+
+      - name: Test local watermark formatting and ownership
+        run: node --test tests/security-watermark.test.js
 
       - name: Test extended UBB core
         run: node tests/extended-ubb-core.test.js

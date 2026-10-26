@@ -40,13 +40,21 @@
         <span id="updateTopText">&#21457;&#29616;&#26032;&#29256;&#26412;</span>
       </button>
 
-      <section class="group theme-settings" aria-labelledby="theme-label">
+      <section class="group theme-settings" aria-label="界面与主题">
         <div id="style-label" class="label">界面风格</div>
         <div class="interface-styles" role="radiogroup" aria-labelledby="style-label">
           <label><input type="radio" name="themeStyle" value="modern"><span><strong>Reborn</strong><small>当前的卡片与胶囊界面</small></span></label>
           <label><input type="radio" name="themeStyle" value="ascii"><span><strong>ASCII / BBS <span class="experimental-note">（实验性）</span></strong><small>复古ASCII风格</small></span></label>
         </div>
         <p class="interface-style-note">改变论坛页面的整体排版，与明暗和配色独立。</p>
+        <div class="settings-subsection" role="group" aria-labelledby="layout-label">
+          <div id="layout-label" class="label">页面布局</div>
+          <div class="settings-options layout-options">
+            <label class="setting-check"><input id="homeHotOnly" type="checkbox" checked><span>&#39318;&#39029;&#21482;&#20445;&#30041;&#21313;&#22823;</span></label>
+            <label class="setting-check"><input id="expandTopicCardsByDefault" type="checkbox"><span>&#24086;&#23376;&#21345;&#29255;&#40664;&#35748;&#23637;&#24320;&#65288;&#20851;&#38381;&#24748;&#28014;&#21160;&#30011;&#65289;</span></label>
+            <label class="setting-check"><input id="sideTopbar" type="checkbox"><span>&#24038;&#20391;&#25928;&#29575;&#26639;</span></label>
+          </div>
+        </div>
         <div class="theme-heading">
           <div id="theme-label" class="label">明暗</div>
           <span id="themeCurrentTone" class="theme-current" aria-live="polite"></span>
@@ -92,40 +100,49 @@
         <p class="theme-schedule-note">主色用于导航和主要按钮；副色用于标签、引用和辅助操作。</p>
       </section>
 
-      <section class="checks" aria-label="浏览与阅读">
-        <div class="label embedded-section-label">浏览与阅读</div>
-        <label><input id="homeHotOnly" type="checkbox" checked><span>&#39318;&#39029;&#21482;&#20445;&#30041;&#21313;&#22823;</span></label>
-        <label title="开启后，十大和新帖中的帖子在右侧打开；关闭后沿用普通链接打开方式。"><input id="topicDrawerEnabled" type="checkbox" checked><span>帖子侧拉窗（十大／新帖）</span></label>
-        <label><input id="expandTopicCardsByDefault" type="checkbox"><span>&#24086;&#23376;&#21345;&#29255;&#40664;&#35748;&#23637;&#24320;&#65288;&#20851;&#38381;&#24748;&#28014;&#21160;&#30011;&#65289;</span></label>
-        <label><input id="prewarmPostImages" type="checkbox"><span>&#39044;&#28909;&#24086;&#23376;&#22270;&#29255;&#65288;&#21487;&#33021;&#24310;&#36831;&#36827;&#20837;&#24086;&#23376;&#65289;</span></label>
-        <label><input id="previsitFirstPageForTopicImages" type="checkbox" checked><span>后台预热第一页（识别楼主与热评）</span></label>
-        <label><input id="openLinksInNewTab" type="checkbox"><span>&#38142;&#25509;&#22312;&#26032;&#39029;&#38754;&#25171;&#24320;</span></label>
-        <label><input id="sideTopbar" type="checkbox"><span>&#24038;&#20391;&#25928;&#29575;&#26639;</span></label>
-        <label><input id="replyRebornTail" type="checkbox" checked><span>&#22238;&#22797;&#26102;&#28155;&#21152;&#23567;&#23614;&#24052;</span></label>
-        <div class="question-setting">
-          <label><input id="questionMarkEnabled" type="checkbox"><span>&#38382;&#21495;&#38190; <small class="experimental-note">&#65288;&#23454;&#39564;&#24615;&#65289;</small></span></label>
-          <a href="https://question.coranqwq.xyz/privacy" target="_blank" rel="noopener noreferrer" title="&#28857;&#20987;&#26597;&#30475;&#38382;&#21495;&#23454;&#39564;&#38544;&#31169;&#35828;&#26126;">&#38544;&#31169;&#35828;&#26126;</a>
-        </div>
-      </section>
+      <div class="reading-options-grid">
+        <section class="group reading-settings" aria-labelledby="reading-label">
+          <div id="reading-label" class="label">浏览与阅读</div>
+          <div class="settings-options">
+            <label class="setting-check" title="开启后，所有瀑布流帖子列表中的帖子标题均在右侧打开；关闭后沿用普通链接打开方式。"><input id="topicDrawerEnabled" type="checkbox" checked><span>帖子侧拉窗（所有帖子列表）</span></label>
+            <label class="setting-check"><input id="openLinksInNewTab" type="checkbox"><span>&#38142;&#25509;&#22312;&#26032;&#39029;&#38754;&#25171;&#24320;</span></label>
+            <label class="setting-check"><input id="previsitFirstPageForTopicImages" type="checkbox" checked><span>后台预热第一页（识别楼主与热评）</span></label>
+          </div>
+        </section>
 
-      <section class="group reading-size-settings" aria-label="显示与图片">
-        <div class="label embedded-section-label">显示与图片</div>
-        <label class="range">
-          <span>字号</span>
-          <output id="fontScaleOutput">110%</output>
-          <input id="fontScale" type="range" min="90" max="120" step="1" value="110">
-        </label>
-        <label class="range">
-          <span>表情大小</span>
-          <output id="emojiScaleOutput">200%</output>
-          <input id="emojiScale" type="range" min="70" max="200" step="5" value="200">
-        </label>
-        <label class="range">
-          <span>&#24086;&#23376;&#22270;&#29255;&#39044;&#28909;&#26102;&#38271;</span>
-          <output id="imageLoadDurationOutput">2.1s</output>
-          <input id="imageLoadDuration" type="range" min="800" max="8000" step="100">
-        </label>
-      </section>
+        <section class="group reading-size-settings" aria-labelledby="display-label">
+          <div id="display-label" class="label">显示与图片</div>
+          <label class="range">
+            <span>字号</span>
+            <output id="fontScaleOutput">110%</output>
+            <input id="fontScale" type="range" min="90" max="120" step="1" value="110">
+          </label>
+          <label class="range">
+            <span>表情大小</span>
+            <output id="emojiScaleOutput">200%</output>
+            <input id="emojiScale" type="range" min="70" max="200" step="5" value="200">
+          </label>
+          <div class="settings-subsection settings-options">
+            <label class="setting-check"><input id="prewarmPostImages" type="checkbox"><span>&#39044;&#28909;&#24086;&#23376;&#22270;&#29255;&#65288;&#21487;&#33021;&#24310;&#36831;&#36827;&#20837;&#24086;&#23376;&#65289;</span></label>
+            <label class="range">
+              <span>&#24086;&#23376;&#22270;&#29255;&#39044;&#28909;&#26102;&#38271;</span>
+              <output id="imageLoadDurationOutput">2.1s</output>
+              <input id="imageLoadDuration" type="range" min="800" max="8000" step="100">
+            </label>
+          </div>
+        </section>
+
+        <section class="group interaction-settings" aria-labelledby="interaction-label">
+          <div id="interaction-label" class="label">回复与互动</div>
+          <div class="settings-options">
+            <label class="setting-check"><input id="replyRebornTail" type="checkbox" checked><span>&#22238;&#22797;&#26102;&#28155;&#21152;&#23567;&#23614;&#24052;</span></label>
+            <div class="question-setting">
+              <label class="setting-check"><input id="questionMarkEnabled" type="checkbox"><span>&#38382;&#21495;&#38190; <small class="experimental-note">&#65288;&#23454;&#39564;&#24615;&#65289;</small></span></label>
+              <a href="https://question.coranqwq.xyz/privacy" target="_blank" rel="noopener noreferrer" title="&#28857;&#20987;&#26597;&#30475;&#38382;&#21495;&#23454;&#39564;&#38544;&#31169;&#35828;&#26126;">&#38544;&#31169;&#35828;&#26126;</a>
+            </div>
+          </div>
+        </section>
+      </div>
 
       <section class="group blacklist-card" aria-labelledby="blacklist-label">
         <div id="blacklist-label" class="label">屏蔽规则</div>

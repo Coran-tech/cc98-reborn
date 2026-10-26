@@ -1,6 +1,6 @@
 # Release Checklist
 
-Current release target: `0.4.0`.
+Current release target: `0.4.2`.
 
 1. Confirm `manifest.json` version.
 2. Run validation:
@@ -9,6 +9,7 @@ Current release target: `0.4.0`.
 node --check .\src\content.js
 node --check .\src\content-filter-core.js
 node --check .\src\content-filter.js
+node --check .\src\new-topics-virtual.js
 node --check .\src\content-filter-frame.js
 node --check .\src\content-filter-worker.js
 node --check .\src\semantic-client.js
@@ -41,6 +42,10 @@ node --check .\experiments\question-mark\admin.js
 node --check .\tests\local-static-server.cjs
 node -e "JSON.parse(require('fs').readFileSync('manifest.json','utf8')); console.log('manifest ok')"
 node .\tests\page-submit-monitor.test.js
+node .\tests\account-switch-removed.test.js
+node .\tests\account-switch-removed-browser.test.cjs
+node .\tests\settings-navigation.test.cjs
+node .\tests\linked-image-actions.test.cjs
 node .\tests\openid-refresh.test.js
 node .\tests\extended-ubb-core.test.js
 node .\tests\markup-converter-core.test.js
@@ -92,6 +97,11 @@ validation, switching back to presets, and cleanup when the extension is disable
 For topbar layout changes, run `node .\tests\topbar-layout.test.cjs` to check
 centered horizontal navigation on wide message/home pages, narrow viewports,
 and the fixed left efficiency bar.
+
+For experimental new-topic virtualization, run `node .\tests\new-topics-virtual.test.cjs`.
+Check bounded plugin card/image nodes, scroll anchors after image loading and resizing,
+return-to-top restoration, incremental append, full-list fallback, existing actions
+and cleanup. The native React list must remain intact.
 
 For interface-style changes, run `node .\tests\ascii-style.test.cjs` with
 Playwright and Edge. It checks real popup/content scripts, style/tone/palette
