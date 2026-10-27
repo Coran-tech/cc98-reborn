@@ -15,7 +15,7 @@ const watermarkOnly = process.argv.includes('--watermark-only');
 const fitOnly = process.argv.includes('--fit-only');
 const parallelOnly = process.argv.includes('--parallel-only') || fitOnly;
 const focusOnly = process.argv.includes('--focus-only') || process.argv.includes('--feeds-only') || feedContentOnly;
-const output = path.join(root, watermarkOnly ? 'outputs/watermark-cleanup/browser' : compactTopbarOnly ? 'outputs/drawer-compact-topbar/browser' : collapseOnly ? 'outputs/drawer-collapse/browser' : fitOnly ? 'outputs/drawer-fit-left/browser' : parallelOnly ? 'outputs/drawer-parallel-browsing/browser' : focusOnly ? 'outputs/feed-drawer-sidebar/browser' : 'outputs/drawer-link-navigation');
+const output = path.join(root, watermarkOnly ? 'outputs/watermark-format-0.4.2/browser' : compactTopbarOnly ? 'outputs/drawer-compact-topbar/browser' : collapseOnly ? 'outputs/drawer-collapse/browser' : fitOnly ? 'outputs/drawer-fit-left/browser' : parallelOnly ? 'outputs/drawer-parallel-browsing/browser' : focusOnly ? 'outputs/feed-drawer-sidebar/browser' : 'outputs/drawer-link-navigation');
 async function executable() {
   if (process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH) return process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
   const cache = path.join(process.env.LOCALAPPDATA, 'ms-playwright');
@@ -512,13 +512,18 @@ async function testCompactTopbar({ page, worker, errors }) {
 
 async function testWatermark({ page, worker, errors }) {
   let checks = 0;
+  let watermarkPrefix = 'TEST0001';
   const samples = [];
+  await worker.evaluate(() => {
+    getOpenIdBinding = async () => ({ ok: true, binding: (await chrome.storage.local.get('cc98RebornOpenIdBinding:v1'))['cc98RebornOpenIdBinding:v1'] || null });
+  });
   async function state() {
     return worker.evaluate(async () => {
       const tab = (await chrome.tabs.query({ url: 'https://www.cc98.org/*' }))[0];
       return (await chrome.scripting.executeScript({ target: { tabId: tab.id, allFrames: true }, func: () => ({
         top: window.top === window, href: location.href, hosts: document.querySelectorAll('cc98-reborn-watermark').length,
-        uid: typeof securityWatermarkUserId === 'string' ? securityWatermarkUserId : null,
+        uid: typeof securityWatermarkIdentity !== 'undefined' ? securityWatermarkIdentity?.userId || '' : null,
+        watermarkPrefix: typeof securityWatermarkIdentity !== 'undefined' ? securityWatermarkIdentity?.watermarkIdPrefix || '' : null,
         lines: typeof securityWatermarkTileKey === 'string' ? securityWatermarkTileKey.split('\n').slice(1) : [],
         font: typeof securityWatermarkTileCanvas !== 'undefined' ? securityWatermarkTileCanvas?.getContext('2d').font : null,
         timers: typeof securityWatermarkClockTimer !== 'undefined' ? [securityWatermarkClockTimer, securityWatermarkDirectionTimer, securityWatermarkEnsureTimer, securityWatermarkRevalidateTimer] : [],
@@ -530,13 +535,15 @@ async function testWatermark({ page, worker, errors }) {
   }
   async function check(expectedTopic, childExpected) {
     const frames = await state(), top = frames.find(frame => frame.top);
-    assert.equal(top.hosts, 1); assert.equal(top.uid, '795406'); checks += 2;
-    assert.equal(top.lines.length, 2); assert.equal(top.lines[0], `795406 ${String(expectedTopic).padStart(8, '0')}`); checks += 2;
-    assert(/^\d{15}$/.test(top.lines[1])); assert(Math.abs(Number(top.lines[1]) - top.seconds) <= 1); checks += 2;
+    assert.equal(top.hosts, 1); assert.equal(top.uid, '00795406'); assert.equal(top.watermarkPrefix, watermarkPrefix); checks += 3;
+    assert.equal(top.lines.length, 2); assert.equal(top.lines[0], `00795406  ${String(expectedTopic).padStart(8, '0')}`); checks += 2;
+    assert.equal(top.lines[0].slice(8, 10), '  '); assert.equal(top.lines[0].length, 18); checks += 2;
+    assert.equal(top.lines[1].slice(0, 8), watermarkPrefix); assert(/^\d{10}$/.test(top.lines[1].slice(8)));
+    assert.equal(top.lines[1].length, 18); assert(Math.abs(Number(top.lines[1].slice(8)) - top.seconds) <= 1); checks += 4;
     assert.match(top.font, /Consolas/); assert.equal(top.ratio, '2'); assert.equal(top.passThrough, 'none'); checks += 3;
     if (childExpected) {
       const child = frames.find(frame => !frame.top && /\/topic\//.test(frame.href));
-      assert(child); assert.equal(child.hosts, 0); assert.equal(child.uid, ''); assert(child.timers.every(timer => timer === 0)); checks += 4;
+      assert(child); assert.equal(child.hosts, 0); assert.equal(child.uid, ''); assert.equal(child.watermarkPrefix, ''); assert(child.timers.every(timer => timer === 0)); checks += 5;
     }
     assert.equal(frames.reduce((n, frame) => n + frame.hosts, 0), 1); checks++;
     samples.push(frames); return top;
@@ -551,7 +558,7 @@ async function testWatermark({ page, worker, errors }) {
   const first = await check(6500000, true);
   await page.screenshot({ path: path.join(output, 'single-owner-two-line-watermark.png') });
   await page.waitForTimeout(1200); const next = await check(6500000, true);
-  assert(Number(next.lines[1]) > Number(first.lines[1])); checks++;
+  assert(Number(next.lines[1].slice(8)) > Number(first.lines[1].slice(8))); checks++;
   await child.locator('.cc98-rebuild-pager a[href*="/topic/6500000/2"]').first().click();
   await child.waitForURL('**/topic/6500000/2'); await child.locator('[data-post-floor="11"]').waitFor(); await page.waitForTimeout(250);
   await check(6500000, true);
@@ -566,17 +573,26 @@ async function testWatermark({ page, worker, errors }) {
     await chrome.storage.local.set({ cc98ComfortSettings: { ...cc98ComfortSettings, themeStyle: 'ascii', themeMode: 'dark' } });
   });
   await page.locator('html[data-cc98-comfort-style="ascii"]').waitFor(); await page.waitForTimeout(300);
-  await check(otherId, true); await page.screenshot({ path: path.join(output, 'ascii-single-watermark.png') });
+  await check(otherId, true);
+  await page.mouse.move(1, 1); await page.waitForTimeout(450);
+  await page.screenshot({ path: path.join(output, 'ascii-single-watermark.png') });
+  watermarkPrefix = 'AbCd1234';
+  await worker.evaluate(async watermarkIdPrefix => {
+    const key = 'cc98RebornOpenIdBinding:v1'; const result = await chrome.storage.local.get(key);
+    await chrome.storage.local.set({ [key]: { ...result[key], watermarkIdPrefix } });
+  }, watermarkPrefix);
+  await page.waitForTimeout(200); await check(otherId, true);
   await page.locator('.cc98-topic-drawer-collapse').click();
   await page.goto(origin + '/topic/6500000/2#11'); await page.locator('[data-post-floor="11"]').waitFor(); await page.waitForTimeout(200);
   await check(6500000, false);
   await worker.evaluate(() => chrome.storage.local.remove('cc98RebornOpenIdBinding:v1'));
   await page.locator('cc98-reborn-watermark').waitFor({ state: 'detached' });
   const stopped = (await state()).find(frame => frame.top);
-  assert(stopped.timers.every(timer => timer === 0)); assert.equal(stopped.uid, ''); checks += 2;
+  assert(stopped.timers.every(timer => timer === 0)); assert.equal(stopped.uid, ''); assert.equal(stopped.watermarkPrefix, ''); checks += 3;
   assert.deepEqual(errors, []);
   const result = { passed: true, checks, onlyTopDocumentRenders: true, childHasNoWatermarkTimers: true,
-    uidTopicAndUnixSeconds: true, consolas: true, liveTimestamp: true, dpr2Pattern: true,
+    uidEightDigitsAndDoubleSpace: true, watermarkEightAndUnixTenJoined: true, bindingPrefixChangeReflected: true,
+    consolas: true, liveTimestamp: true, dpr2Pattern: true,
     drawerOpenPaginationReplacementClose: true, nativeTopicWithHash: true, unbindingCleanup: true, samples, errors };
   await fs.writeFile(path.join(output, 'validation.json'), JSON.stringify(result, null, 2)); console.log({ ...result, samples: samples.length });
 }
@@ -636,7 +652,7 @@ async function main() {
     await worker.evaluate(async () => {
       await chrome.storage.local.set({ cc98ComfortSettings: { enabled: true, rebuildUi: true, themeStyle: 'modern', themeMode: 'light', homeHotOnly: true,
         prewarmPostImages: false, previsitFirstPageForTopicImages: false, replyRebornTail: false, openLinksInNewTab: true },
-        'cc98RebornOpenIdBinding:v1': { bound: true, userId: 795406, userName: 'LocalTester', boundAt: Date.now() } });
+        'cc98RebornOpenIdBinding:v1': { bound: true, userId: 795406, userName: 'LocalTester', boundAt: Date.now(), watermarkIdPrefix: 'TEST0001' } });
       consumeStartupUpdateNotice = async () => ({ ok: true, show: false });
       getOpenIdBinding = async () => ({ ok: true, binding: { bound: true, userId: 795406, userName: 'LocalTester' } });
     });

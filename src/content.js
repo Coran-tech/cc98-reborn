@@ -345,8 +345,8 @@ let securityWatermarkDirectionTimer = 0;
 let securityWatermarkEnsureTimer = 0;
 let securityWatermarkRevalidateTimer = 0;
 let securityWatermarkObserver = null;
-let securityWatermarkUserId = "";
-let securityWatermarkCachedUserId = "";
+let securityWatermarkIdentity = null;
+let securityWatermarkCachedIdentity = null;
 let securityWatermarkCachedAt = 0;
 let securityWatermarkOffsetX = 0;
 let securityWatermarkOffsetY = 0;
@@ -5601,7 +5601,13 @@ function applyImportantStyle(element, styles) {
 function normalizeSecurityWatermarkUserId(value) {
   const id = String(value ?? "").trim();
   if (!/^\d+$/.test(id) || /^0+$/.test(id)) return "";
-  return id.replace(/^0+(?=\d)/, "").padStart(6, "0");
+  return id.replace(/^0+(?=\d)/, "").padStart(8, "0");
+}
+
+function normalizeSecurityWatermarkIdentity(value) {
+  const userId = normalizeSecurityWatermarkUserId(value?.userId);
+  const watermarkIdPrefix = String(value?.watermarkIdPrefix ?? "").trim();
+  return userId && /^[a-z0-9]{8}$/i.test(watermarkIdPrefix) ? { userId, watermarkIdPrefix } : null;
 }
 
 function getSecurityWatermarkTopicId() {
@@ -5609,77 +5615,63 @@ function getSecurityWatermarkTopicId() {
   return getCc98RoutePathFromHref(href).split(/[?#]/, 1)[0].match(/\/topic\/(\d+)(?:\/|$)/i)?.[1] || "0";
 }
 
-function buildSecurityWatermarkLines(userId, topicId, now = Date.now()) {
-  const uid = normalizeSecurityWatermarkUserId(userId);
-  if (!uid) return [];
+function buildSecurityWatermarkLines(value, topicId, now = Date.now()) {
+  const identity = normalizeSecurityWatermarkIdentity(value);
+  if (!identity) return [];
   const id = /^\d+$/.test(String(topicId)) ? String(topicId).replace(/^0+(?=\d)/, "") : "0";
-  return [`${uid} ${id.padStart(8, "0")}`, String(Math.floor(now / 1000)).padStart(15, "0")];
+  return [`${identity.userId}  ${id.padStart(8, "0")}`, `${identity.watermarkIdPrefix}${String(Math.floor(now / 1000)).padStart(10, "0")}`];
 }
 
-function readCachedSecurityWatermarkUserId() {
-  if (!securityWatermarkCachedUserId || Date.now() - securityWatermarkCachedAt > WATERMARK_CACHE_TTL) {
-    return "";
-  }
-  return normalizeSecurityWatermarkUserId(securityWatermarkCachedUserId);
+function readCachedSecurityWatermarkIdentity() {
+  if (!securityWatermarkCachedIdentity || Date.now() - securityWatermarkCachedAt > WATERMARK_CACHE_TTL) return null;
+  return normalizeSecurityWatermarkIdentity(securityWatermarkCachedIdentity);
 }
 
-function writeCachedSecurityWatermarkUserId(code) {
-  const normalized = normalizeSecurityWatermarkUserId(code);
-  if (!normalized) {
-    return;
-  }
-  securityWatermarkCachedUserId = normalized;
+function writeCachedSecurityWatermarkIdentity(value) {
+  const identity = normalizeSecurityWatermarkIdentity(value);
+  if (!identity) return;
+  securityWatermarkCachedIdentity = identity;
   securityWatermarkCachedAt = Date.now();
 }
 
-function clearCachedSecurityWatermarkUserId() {
-  securityWatermarkCachedUserId = "";
+function clearCachedSecurityWatermarkIdentity() {
+  securityWatermarkCachedIdentity = null;
   securityWatermarkCachedAt = 0;
 }
 
-function rememberSecurityWatermarkUserId(code) {
-  const normalized = normalizeSecurityWatermarkUserId(code);
-  if (normalized) {
-    writeCachedSecurityWatermarkUserId(normalized);
-  }
-  return normalized;
+function rememberSecurityWatermarkIdentity(value) {
+  const identity = normalizeSecurityWatermarkIdentity(value);
+  if (identity) writeCachedSecurityWatermarkIdentity(identity);
+  return identity;
 }
 
-function readOpenIdBindingSecurityWatermarkUserId() {
+function readOpenIdBindingSecurityWatermarkIdentity() {
   return new Promise((resolve) => {
     try {
       if (!globalThis.chrome?.storage?.local?.get) {
-        resolve("");
+        resolve(null);
         return;
       }
       globalThis.chrome.storage.local.get(OPENID_BINDING_STORAGE_KEY, (result) => {
         if (globalThis.chrome.runtime?.lastError) {
-          resolve("");
+          resolve(null);
           return;
         }
         const binding = result?.[OPENID_BINDING_STORAGE_KEY];
-        const code = normalizeSecurityWatermarkUserId(binding?.userId);
-        resolve(binding?.bound && code ? code : "");
+        resolve(binding?.bound ? normalizeSecurityWatermarkIdentity(binding) : null);
       });
     } catch {
-      resolve("");
+      resolve(null);
     }
   });
 }
 
-async function getSecurityWatermarkUserId(options = {}) {
+async function getSecurityWatermarkIdentity(options = {}) {
   if (!options.force) {
-    const cached = readCachedSecurityWatermarkUserId();
-    if (cached) {
-      return cached;
-    }
+    const cached = readCachedSecurityWatermarkIdentity();
+    if (cached) return cached;
   }
-  const openIdCode = await readOpenIdBindingSecurityWatermarkUserId();
-  if (openIdCode) {
-    return openIdCode;
-  }
-  clearCachedSecurityWatermarkUserId();
-  return "";
+  return readOpenIdBindingSecurityWatermarkIdentity();
 }
 
 function getSecurityWatermarkParent() {
@@ -5806,8 +5798,8 @@ function requestSecurityWatermarkRedraw() {
 
 function drawSecurityWatermarkFrame() {
   const canvas = securityWatermarkCanvas;
-  const code = normalizeSecurityWatermarkUserId(securityWatermarkUserId);
-  if (window.top !== window || !(canvas instanceof HTMLCanvasElement) || !code || !canvas.isConnected) {
+  const identity = normalizeSecurityWatermarkIdentity(securityWatermarkIdentity);
+  if (window.top !== window || !(canvas instanceof HTMLCanvasElement) || !identity || !canvas.isConnected) {
     securityWatermarkAnimationFrame = 0;
     return;
   }
@@ -5824,7 +5816,7 @@ function drawSecurityWatermarkFrame() {
   const offsetX = ((securityWatermarkOffsetX % tileX) + tileX) % tileX;
   const offsetY = ((securityWatermarkOffsetY % tileY) + tileY) % tileY;
   const margin = Math.max(width, height);
-  const lines = buildSecurityWatermarkLines(code, getSecurityWatermarkTopicId());
+  const lines = buildSecurityWatermarkLines(identity, getSecurityWatermarkTopicId());
   const tileKey = `${ratio}\n${lines.join("\n")}`;
   if (!securityWatermarkTileCanvas) securityWatermarkTileCanvas = document.createElement("canvas");
   const tile = securityWatermarkTileCanvas;
@@ -5871,7 +5863,7 @@ function startSecurityWatermarkAnimation() {
 
 function stopSecurityWatermark() {
   securityWatermarkRequestId += 1;
-  securityWatermarkUserId = "";
+  securityWatermarkIdentity = null;
   if (securityWatermarkAnimationFrame) {
     cancelAnimationFrame(securityWatermarkAnimationFrame);
     securityWatermarkAnimationFrame = 0;
@@ -5898,7 +5890,7 @@ function observeSecurityWatermarkHost() {
     return;
   }
   securityWatermarkObserver = new MutationObserver(() => {
-    if (securityWatermarkUserId && !securityWatermarkHost?.isConnected) {
+    if (securityWatermarkIdentity && !securityWatermarkHost?.isConnected) {
       ensureSecurityWatermarkHost();
       startSecurityWatermarkAnimation();
     }
@@ -5906,13 +5898,13 @@ function observeSecurityWatermarkHost() {
   securityWatermarkObserver.observe(document.documentElement, { childList: true });
 }
 
-function startSecurityWatermark(code) {
-  const normalized = normalizeSecurityWatermarkUserId(code);
+function startSecurityWatermark(value) {
+  const normalized = normalizeSecurityWatermarkIdentity(value);
   if (window.top !== window || !normalized) {
     stopSecurityWatermark();
     return;
   }
-  securityWatermarkUserId = normalized;
+  securityWatermarkIdentity = normalized;
   if (!ensureSecurityWatermarkHost()) {
     return;
   }
@@ -5923,7 +5915,7 @@ function startSecurityWatermark(code) {
   document.addEventListener("visibilitychange", requestSecurityWatermarkRedraw);
   if (!securityWatermarkEnsureTimer) {
     securityWatermarkEnsureTimer = window.setInterval(() => {
-      if (!securityWatermarkUserId || document.visibilityState === "hidden") {
+      if (!securityWatermarkIdentity || document.visibilityState === "hidden") {
         return;
       }
       ensureSecurityWatermarkHost();
@@ -5941,12 +5933,13 @@ function ensureSecurityWatermark(options = {}) {
     stopSecurityWatermark();
     return;
   }
-  getSecurityWatermarkUserId(options).then((code) => {
+  getSecurityWatermarkIdentity(options).then((identity) => {
     if (requestId !== securityWatermarkRequestId) return;
-    if (code) {
-      rememberSecurityWatermarkUserId(code);
-      startSecurityWatermark(code);
+    if (identity) {
+      rememberSecurityWatermarkIdentity(identity);
+      startSecurityWatermark(identity);
     } else {
+      clearCachedSecurityWatermarkIdentity();
       stopSecurityWatermark();
     }
   });
@@ -13201,7 +13194,7 @@ async function syncOpenIdBindingWithWebAccount() {
 }
 
 async function clearOpenIdBindingForCc98Logout() {
-  clearCachedSecurityWatermarkUserId();
+  clearCachedSecurityWatermarkIdentity();
   stopSecurityWatermark();
   try {
     const result = await sendExtensionMessage({ type: "CC98_REBORN_OPENID_LOGOUT", reason: "cc98-web-logout" });
@@ -30652,7 +30645,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   }
 
   if (changes[OPENID_BINDING_STORAGE_KEY]) {
-    clearCachedSecurityWatermarkUserId();
+    clearCachedSecurityWatermarkIdentity();
     ensureSecurityWatermark({ force: true });
     syncOpenIdBindingWithWebAccount();
     scheduleOpenIdBindPromptAfterLogin();
