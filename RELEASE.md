@@ -1,6 +1,6 @@
 # Release Checklist
 
-Current release target: `0.4.2`.
+Current release target: `0.4.3`.
 
 1. Confirm `manifest.json` version.
 2. Run validation:
@@ -254,6 +254,10 @@ third-party fixtures are intentionally excluded.
 - `src/conversation.js`
 - `src/topic-search.js`
 - `src/topic-search.css`
+- `src/topic-archive.js`
+- `src/topic-archive.css`
+- `src/topic-archive-store.js`
+- `popup/archive.html`, `popup/archive.js`, `popup/archive.css`
 - `src/favorite-share-core.js`
 - `src/favorite-share-service.js`
 - `src/favorite-share.js`

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN" class="cc98-reborn-popup">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; media-src data: blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>本地帖子存档 · CC98 Reborn</title>
+  <link rel="stylesheet" href="../src/theme-tokens.css">
+  <link rel="stylesheet" href="archive.css">
+  <script src="../src/theme-core.js" defer></script>
+  <script src="../src/vendor/katex/katex.min.js" defer></script>
+  <script src="archive.js" defer></script>
+</head>
+<body>
+  <main class="archive-shell">
+    <header class="archive-heading">
+      <div><p class="archive-brand">CC98 Reborn</p><h1>本地帖子存档</h1></div>
+      <button id="archive-refresh" type="button">刷新</button>
+    </header>
+    <p id="archive-status" class="archive-status" role="status" aria-live="polite"></p>
+    <p id="archive-error" class="archive-error" role="alert" hidden></p>
+    <section id="archive-library" aria-label="存档列表">
+      <div class="archive-library-tools"><label class="archive-search"><span class="sr-only">搜索存档</span><input id="archive-search" type="search" placeholder="搜索标题或帖号" autocomplete="off"></label><span id="archive-count" class="archive-muted"></span></div>
+      <div id="archive-list" class="archive-list"></div>
+    </section>
+    <section id="archive-detail" aria-label="帖子快照" hidden>
+      <nav class="archive-actions" aria-label="存档操作"><button id="archive-back" type="button">全部存档</button><span class="archive-spacer"></span><a id="archive-source" target="_blank" rel="noopener noreferrer">原帖</a><button id="archive-export" type="button">导出 HTML</button><button id="archive-delete" type="button" class="archive-danger">删除</button></nav>
+      <header class="archive-topic-heading"><h2 id="archive-title"></h2><p id="archive-meta" class="archive-muted"></p></header>
+      <details id="archive-failures" class="archive-failures" hidden><summary id="archive-failure-summary"></summary><ul id="archive-failure-list"></ul></details>
+      <nav id="archive-pagination" class="archive-pagination" aria-label="顶部存档分页" hidden></nav>
+      <div id="archive-posts" class="archive-posts"></div>
+      <nav id="archive-pagination-bottom" class="archive-pagination" aria-label="底部存档分页" hidden></nav>
+    </section>
+  </main>
+  <dialog id="archive-image-dialog" class="archive-image-dialog"><div class="archive-actions"><a id="archive-image-link" target="_blank" rel="noopener noreferrer" hidden>前往链接</a><button id="archive-image-close" type="button" aria-label="关闭大图">关闭</button></div><img id="archive-large-image" alt=""></dialog>
+</body>
+</html>

@@ -55,15 +55,15 @@
 :root.cc98-comfort .cc98-topic-search-empty { margin: 20px 0; text-align: center; color: var(--cc98-comfort-muted); }
 :root.cc98-comfort .cc98-topic-search-hint { color: var(--cc98-comfort-muted); font-size: .75rem; }
 .cc98-topic-search-worker { position: fixed !important; top: 0 !important; left: -10000px !important; width: 1px !important; height: 1px !important; overflow: hidden !important; pointer-events: none !important; }
-:root.cc98-comfort #cc98-comfort-app .cc98-rebuild-pager .cc98-topic-search-entry {
+:root.cc98-comfort #cc98-comfort-app .cc98-rebuild-pager :is(.cc98-topic-search-entry, .cc98-topic-archive-entry) {
   border-color: var(--cc98-comfort-secondary) !important;
   background: var(--cc98-comfort-secondary-soft) !important;
   color: var(--cc98-comfort-secondary) !important;
 }
-:root.cc98-comfort #cc98-comfort-app .cc98-rebuild-pager .cc98-topic-search-entry:is(:hover, :focus-visible) {
+:root.cc98-comfort #cc98-comfort-app .cc98-rebuild-pager :is(.cc98-topic-search-entry, .cc98-topic-archive-entry):is(:hover, :focus-visible) {
   background: color-mix(in srgb, var(--cc98-comfort-secondary) 16%, var(--cc98-comfort-surface)) !important;
 }
-:root.cc98-comfort #cc98-comfort-app .cc98-rebuild-pager .cc98-topic-search-entry:focus-visible {
+:root.cc98-comfort #cc98-comfort-app .cc98-rebuild-pager :is(.cc98-topic-search-entry, .cc98-topic-archive-entry):focus-visible {
   outline: 2px solid var(--cc98-comfort-secondary) !important;
   outline-offset: 2px;
 }

@@ -297,7 +297,7 @@
     return root;
   }
 
-  function extractPage(doc, topicId, page, href) {
+  function extractPage(doc, topicId, page, href, options = {}) {
     const records = [];
     const seen = new Set();
     const replies = [...doc.querySelectorAll(".reply")].filter((node) => !node.closest("#cc98-comfort-app, .cc98-rebuild-conversation-layer"));
@@ -309,9 +309,11 @@
       const key = core.keyOf(topicId, floor);
       if (!key || seen.has(key)) continue;
       const body = findPostContentNode(post);
-      if (!body) continue;
+      if (!body && !options.archive) continue;
       seen.add(key);
-      const content = body.cloneNode(true);
+      const content = options.archive
+        ? (body && sanitizePostContent(cloneContentWithHiddenQuotes(body))) || document.createElement("div")
+        : body.cloneNode(true);
       const references = readReferences(content, topicId, href);
       cleanContent(content, href);
       const author = post.querySelector('a[href*="/user/id/"], a[href*="/user/name/"]');
@@ -319,20 +321,114 @@
       const user = anonymousCode ? `匿名 ${anonymousCode}` : (author?.textContent.trim() || "CC98 用户");
       const uid = author?.getAttribute("href")?.match(/\/user\/id\/(\d+)/)?.[1] || "";
       const avatar = getPostAvatar(post, author?.getAttribute("href") || "");
-      records.push({ topicId: String(topicId), floor, references, user, uid, avatar,
+      const record = { topicId: String(topicId), floor, references, user, uid: options.archive && anonymousCode ? "" : uid, avatar,
         metrics: globalThis.CC98RebornContentFilter?.metrics(post),
         contentHtml: content.outerHTML,
-        publishedAt: post.textContent.match(/发表于\s+([0-9:-]+\s+[0-9:]+)/)?.[1] || "" });
+        publishedAt: post.textContent.match(/发表于\s+([0-9:-]+\s+[0-9:]+)/)?.[1] || "" };
+      if (options.archive) {
+        const signature = getPostSignatureContent(post);
+        record.signatureHtml = signature ? cleanContent(signature, href).outerHTML : "";
+        const extra = document.createElement("div");
+        for (const node of new Set([findPostVoteContentNode(post), findPostLotteryContentNode(post), post.querySelector(".awardInfo")].filter(Boolean))) {
+          const clone = node.cloneNode(true);
+          // Preserve static choices/results rather than live voting controls.
+          clone.querySelectorAll("form").forEach(form => form.replaceWith(...form.childNodes));
+          clone.querySelectorAll("button").forEach(button => button.replaceWith(document.createTextNode(button.textContent || "")));
+          extra.append(clone);
+        }
+        record.extraHtml = cleanContent(extra, href).innerHTML;
+      }
+      records.push(record);
     }
     let maxPage = page;
     doc.querySelectorAll(".pagination .page-nav a[href], .cc98-rebuild-pager a[href], .ant-pagination a[href]").forEach((link) => {
       const number = getTopicPageNumberFromHref(link.getAttribute("href"), topicId);
       if (number) maxPage = Math.max(maxPage, number);
     });
-    return { records, maxPage };
+    return options.archive ? { records, maxPage,
+      title: doc.querySelector("#essay1, .topicInfo-title h1, .topic-title")?.textContent.trim() || doc.title.replace(/\s*-\s*CC98论坛\s*$/, ""),
+      incompleteMedia: archivePendingMedia(doc).length,
+      incompleteQuotes: archiveExpansionControls(doc).filter(node => node.textContent.trim() === "展开剩余引用").length } : { records, maxPage };
+  }
+
+  function archiveExpansionControls(doc) {
+    return [...doc.querySelectorAll(".reply .hiddenImage")]
+      .filter(node => /^(?:点击查看图片|展开剩余引用)$/.test(node.textContent.trim()));
+  }
+
+  function archivePendingMedia(doc) {
+    return [...doc.querySelectorAll(".reply .lazyload-placeholder, .reply .hiddenImage")]
+      .filter(node => node.classList.contains("lazyload-placeholder") || node.textContent.trim() === "点击查看图片");
+  }
+
+  async function hydrateArchiveFrameMedia(frame, session) {
+    const doc = frame.contentDocument, win = frame.contentWindow;
+    const saved = new Map(), attempts = new Map(), clicked = new WeakSet();
+    // The forum replaces hidden-image controls with new LazyLoad components.
+    // Re-discover those components after every expansion instead of scanning
+    // once and clicking controls only after scrolling past their positions.
+    const deadline = Date.now() + 10000;
+    const remember = node => { if (!saved.has(node)) saved.set(node, [node.scrollTop, node.scrollLeft]); };
+    const signalScroll = node => node.dispatchEvent(new win.Event("scroll", { bubbles: false }));
+    const reveal = node => {
+      // scrollIntoView would also scroll the foreground containing the iframe.
+      // Only move scroll containers inside the isolated reader document.
+      for (let parent = node.parentElement; parent; parent = parent.parentElement) {
+        if (parent === doc.scrollingElement) continue;
+        const style = win.getComputedStyle(parent);
+        if (parent.clientHeight && parent.scrollHeight > parent.clientHeight + 1 && /auto|scroll|overlay/.test(style.overflowY)) {
+          remember(parent);
+          const target = node.getBoundingClientRect(), box = parent.getBoundingClientRect();
+          parent.scrollTop += target.top - box.top - Math.max(0, (parent.clientHeight - Math.min(target.height, parent.clientHeight)) / 2);
+          signalScroll(parent);
+        }
+      }
+      const scrolling = doc.scrollingElement;
+      if (scrolling) {
+        remember(scrolling);
+        const box = node.getBoundingClientRect();
+        scrolling.scrollTop += box.top - Math.max(0, (win.innerHeight - Math.min(box.height, win.innerHeight)) / 2);
+        signalScroll(scrolling);
+      }
+      signalScroll(win);
+      doc.querySelectorAll("audio,video").forEach(media => media.pause());
+    };
+    try {
+      for (let step = 0; step < 240 && Date.now() < deadline; step++) {
+        check(session);
+        const controls = archiveExpansionControls(doc);
+        // The native ratings expander only reveals already-loaded rows. It can
+        // mount more image placeholders, so handle it before the media pass.
+        const award = [...doc.querySelectorAll('.awardInfo button')]
+          .find(node => node.textContent.trim() === '显示全部' && !clicked.has(node));
+        const control = controls.find(node => !clicked.has(node)) || award;
+        if (control) {
+          clicked.add(control); reveal(control); control.click();
+          await pause(80, session.controller.signal);
+          continue;
+        }
+        const pending = archivePendingMedia(doc).filter(node => node.classList.contains("lazyload-placeholder"));
+        if (!pending.length && !controls.length) break;
+        const target = pending.find(node => (attempts.get(node) || 0) < 3);
+        if (!target) {
+          // Allow queued React updates to settle; permanently unresolved nodes
+          // remain in the extraction result and are reported as partial media.
+          await pause(200, session.controller.signal);
+          if (archivePendingMedia(doc).every(node => controls.includes(node) || (attempts.get(node) || 0) >= 3)) break;
+          continue;
+        }
+        attempts.set(target, (attempts.get(target) || 0) + 1);
+        reveal(target);
+        await pause(120, session.controller.signal);
+      }
+      check(session);
+    } finally {
+      saved.forEach(([top, left], node) => { node.scrollTop = top; node.scrollLeft = left; });
+    }
   }
 
   async function hydrateFrameMedia(frame, session) {
+    if (session.archive) return hydrateArchiveFrameMedia(frame, session);
     const doc = frame.contentDocument;
     const viewport = Math.max(400, frame.contentWindow.innerHeight);
     const root = doc.querySelector("#root");
@@ -403,13 +499,13 @@
           hydrating = true;
           hydrateFrameMedia(frame, session).then(() => {
             check(session);
-            const result = extractPage(doc, topicId, page, href);
+            const result = extractPage(doc, topicId, page, href, session);
             if (result.records.length) finish(result);
             else hydrating = false;
           }).catch((error) => finish(null, error));
         } catch (error) { finish(null, error); }
       }, 200);
-      const timeout = setTimeout(() => finish(null, new Error("页面未能加载，可能已删除、无权限或连接超时")), 15000);
+      const timeout = setTimeout(() => finish(null, new Error("页面未能加载，可能已删除、无权限或连接超时")), session.archive ? 25000 : 15000);
       signal.addEventListener("abort", cancel, { once: true });
       frame.src = href;
       session.layer.append(frame);
@@ -433,7 +529,7 @@
         throw error;
       }
       const doc = new DOMParser().parseFromString(await response.text(), "text/html");
-      result = extractPage(doc, topicId, page, href);
+      result = extractPage(doc, topicId, page, href, session);
     } catch (error) {
       check(session);
       if (error.name !== "AbortError") throw error;
@@ -442,7 +538,7 @@
       signal.removeEventListener("abort", cancel);
     }
     check(session);
-    if (!result?.records.length) result = await loadRenderedPage(topicId, page, session);
+    if (!result?.records.length || session.archive && (result.incompleteMedia || result.incompleteQuotes)) result = await loadRenderedPage(topicId, page, session);
     check(session);
     return result;
   }
@@ -467,7 +563,7 @@
       check(session);
       // Recheck after entering the queue: another reader may have finished
       // this page while we waited. Only one uncached page is read at a time.
-      const cached = cachedTopic(topicId, session.scope)?.get(page);
+      const cached = !session.archive && cachedTopic(topicId, session.scope)?.get(page);
       if (cached) return cached;
       const wait = Math.max(0, 1000 - (Date.now() - lastReadAt));
       if (wait) await pause(wait, session.controller.signal);
@@ -475,7 +571,9 @@
       lastReadAt = Date.now();
       const result = await loadPage(topicId, page, session);
       check(session);
-      integrate(session, topicId, page, result);
+      // Archives must observe fresh pages without evicting or changing the
+      // conversation/search cache another reader may currently be using.
+      if (!session.archive) integrate(session, topicId, page, result);
       return result;
     });
     readQueue = task.catch(() => {});
@@ -489,7 +587,13 @@
     layer.setAttribute("aria-hidden", "true");
     document.body.append(layer);
     const session = { background: true, layer, topicId: String(info.topicId), scope: accountScope(),
-      controller: new AbortController(), records: new Map(), loaded: new Set(), maxPage: info.maxKnown || 1 };
+      controller: new AbortController(), records: new Map(), loaded: new Set(), maxPage: info.maxKnown || 1, archive: options.archive === true };
+    if (session.archive) return Object.freeze({
+      scope: session.scope,
+      cachedPages() { check(session); return new Map(); },
+      read(page) { return readSharedPage(session.topicId, page, session); },
+      dispose() { session.controller.abort(); layer.remove(); }
+    });
     preferredTopic = session.topicId;
     cachedTopic(session.topicId, session.scope, true);
     if (options.refresh) {

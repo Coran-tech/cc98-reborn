@@ -903,6 +903,18 @@ function bind() {
     openBlacklistPage();
   });
 
+  document.querySelector("#openTopicArchives")?.addEventListener("click", async () => {
+    const status = document.querySelector("#topicArchiveStatus");
+    status.hidden = true;
+    try {
+      const result = await chrome.runtime.sendMessage({ type: "CC98_ARCHIVE_OPEN" });
+      if (!result?.ok) throw new Error(result?.error || "本地存档未能打开");
+    } catch (error) {
+      status.textContent = error.message;
+      status.hidden = false;
+    }
+  });
+
   document.addEventListener("click", (event) => {
     if (fields.aboutPopover && !fields.aboutPopover.hidden) {
       if (!fields.aboutPopover.contains(event.target) && !fields.aboutToggle?.contains(event.target)) {

@@ -1897,8 +1897,14 @@ async function initializeTopicDrawerFrame(message, sender) {
 }
 
 importScripts("semantic-client.js", "semantic-filter-core.js", "semantic-background.js");
+importScripts("topic-archive-store.js");
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (typeof message?.type === "string" && message.type.startsWith("CC98_ARCHIVE_")) {
+    Promise.resolve(globalThis.CC98RebornTopicArchiveStore.handle(message, sender))
+      .then(sendResponse).catch(error => sendResponse({ ok: false, error: error?.message || "本地存档失败" }));
+    return true;
+  }
   if (typeof message?.type === "string" && message.type.startsWith("CC98_SEMANTIC_")) {
     Promise.resolve(globalThis.CC98RebornSemanticBackground.handle(message, sender))
       .then(sendResponse).catch(() => sendResponse({ ok: false, error: "LOCAL_SERVICE_ERROR" }));

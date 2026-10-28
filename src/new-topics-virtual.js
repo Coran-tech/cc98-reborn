@@ -80,10 +80,11 @@
   }
   function setPinned(node, top, pinned) {
     if (pinned) {
-      node.dataset.cc98VirtualPinned = "true";
-      node.dataset.cc98VirtualOffset = String(top);
-      node.style.position = "absolute"; node.style.top = top + "px";
-      node.style.left = "0"; node.style.width = "100%";
+      if (!node.dataset.cc98VirtualPinned) node.dataset.cc98VirtualPinned = "true";
+      if (node.dataset.cc98VirtualOffset !== String(top)) node.dataset.cc98VirtualOffset = String(top);
+      for (const [key, value] of [["position", "absolute"], ["top", top + "px"], ["left", "0px"], ["width", "100%"]]) {
+        if (node.style[key] !== value) node.style[key] = value;
+      }
     } else if (node.dataset.cc98VirtualPinned) {
       delete node.dataset.cc98VirtualPinned;
       for (const key of ["position", "top", "left", "width"]) node.style.removeProperty(key);
@@ -234,8 +235,10 @@
     schedule(v);
   }
   function spacers(v) {
-    v.top.style.height = (full ? 0 : v.sums[v.start] || 0) + "px";
-    v.bottom.style.height = (full ? 0 : Math.max(0, v.sums[v.records.length] - (v.sums[v.end] || 0))) + "px";
+    const top = (full ? 0 : v.sums[v.start] || 0) + "px";
+    const bottom = (full ? 0 : Math.max(0, v.sums[v.records.length] - (v.sums[v.end] || 0))) + "px";
+    if (v.top.style.height !== top) v.top.style.height = top;
+    if (v.bottom.style.height !== bottom) v.bottom.style.height = bottom;
     for (const [key, node] of v.mounted) if (node.dataset.cc98VirtualPinned) {
       const record = v.byKey.get(key);
       setPinned(node, record ? v.sums[record.index] : Number(node.dataset.cc98VirtualOffset) || 0, true);
@@ -250,6 +253,9 @@
     v.deferred = false; force ||= v.force; v.force = false;
     const saved = v.restoreOnRender || v.resizeAnchor || anchor(v);
     v.resizeAnchor = null;
+    // Scroll events only schedule work. Capture the current reading anchor once
+    // in this frame, even if several scroll events arrived before it.
+    if (v.scrolled) { v.visualAnchor = saved; v.scrolled = false; }
     const rect = v.feed.getBoundingClientRect();
     const reestimated = v.widthDirty || Math.abs(rect.width - v.width) > 1;
     if (reestimated) {
@@ -277,7 +283,11 @@
     for (const [key, node] of v.mounted) {
       const record = v.byKey.get(key), inWindow = record && record.index >= start && record.index < end;
       if (!inWindow && !protections.has(key)) remove(v, key, node);
-      else if (record) { node.dataset.cc98VirtualOffset = String(v.sums[record.index]); setPinned(node, v.sums[record.index], !inWindow); }
+      else if (record) {
+        const offset = String(v.sums[record.index]);
+        if (node.dataset.cc98VirtualOffset !== offset) node.dataset.cc98VirtualOffset = offset;
+        setPinned(node, v.sums[record.index], !inWindow);
+      }
       else setPinned(node, Number(node.dataset.cc98VirtualOffset) || 0, true);
     }
     let before = v.bottom;
@@ -304,7 +314,8 @@
         record.dirty = false;
       }
       setPinned(node, 0, false);
-      node.style.marginBottom = (i === v.records.length - 1 ? 0 : GAP) + "px";
+      const margin = (i === v.records.length - 1 ? 0 : GAP) + "px";
+      if (node.style.marginBottom !== margin) node.style.marginBottom = margin;
       if (node.nextSibling !== before) v.feed.insertBefore(node, before);
       before = node;
     }
@@ -319,6 +330,11 @@
     v.force ||= force;
     if (v.frame) return;
     v.frame = requestAnimationFrame(() => { v.frame = 0; render(v, v.force); });
+  }
+  function rememberResizeAnchor(v) {
+    // A pending scroll makes visualAnchor stale. The next render captures the
+    // new position; a load/resize in the same frame must not restore the old one.
+    if (!v.scrolled) v.resizeAnchor ||= v.visualAnchor;
   }
   function assign(v, items, previous) {
     const records = [], byKey = new Map();
@@ -350,8 +366,9 @@
   }
   function syncButtons() {
     document.querySelectorAll("[data-new-topics-virtual-toggle]").forEach(button => {
-      button.textContent = full ? "恢复按需显示" : "显示全部";
-      button.setAttribute("aria-pressed", String(full));
+      const label = full ? "恢复按需显示" : "显示全部";
+      if (button.textContent !== label) button.textContent = label;
+      if (button.getAttribute("aria-pressed") !== String(full)) button.setAttribute("aria-pressed", String(full));
     });
   }
   function nativeSources(v) {
@@ -413,15 +430,15 @@
     assign(v, items, carry);
     v.bottom.style.height = (v.sums[v.records.length] || 0) + "px";
     const options = { signal: v.controller.signal };
-    window.addEventListener("scroll", () => { v.visualAnchor = anchor(v); v.resizeAnchor = null; schedule(v); }, { ...options, passive: true });
-    window.addEventListener("resize", () => { v.resizeAnchor ||= v.visualAnchor; v.widthDirty = true; schedule(v, true); }, { ...options, passive: true });
+    window.addEventListener("scroll", () => { v.scrolled = true; v.resizeAnchor = null; schedule(v); }, { ...options, passive: true });
+    window.addEventListener("resize", () => { rememberResizeAnchor(v); v.widthDirty = true; schedule(v, true); }, { ...options, passive: true });
     document.addEventListener("selectionchange", () => schedule(v), options);
     document.addEventListener("focusout", () => schedule(v), options);
     document.addEventListener("visibilitychange", () => { if (!document.hidden) schedule(v, true); }, options);
-    feed.addEventListener("load", () => { v.resizeAnchor ||= v.visualAnchor; v.needsMeasure = true; schedule(v); }, { ...options, capture: true });
+    feed.addEventListener("load", () => { rememberResizeAnchor(v); v.needsMeasure = true; schedule(v); }, { ...options, capture: true });
     if (typeof ResizeObserver === "function") v.resize = new ResizeObserver(entries => {
       if (entries.some(entry => entry.target === feed && Math.abs(entry.contentRect.width - v.width) > 1)) v.widthDirty = true;
-      v.resizeAnchor ||= v.visualAnchor; v.needsMeasure = true; schedule(v);
+      rememberResizeAnchor(v); v.needsMeasure = true; schedule(v);
     });
     v.resize?.observe(feed);
     v.life = new MutationObserver(records => {

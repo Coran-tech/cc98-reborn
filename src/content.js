@@ -7495,12 +7495,64 @@ function collectNewTopicCardMedia(topic) {
   return media.slice(0, 6);
 }
 
+let nativeTopicItemCache = null;
+
+function clearNativeTopicItemCache() {
+  nativeTopicItemCache?.observer.disconnect();
+  nativeTopicItemCache = null;
+}
+
+function getNativeTopicItemCache(mode) {
+  // WebVPN resource prefixes can be discovered from late media elsewhere in
+  // the page. Its extraction must continue to resolve those URLs live.
+  if (!mode || isWebVpnHost() || !lastSettings?.enabled || !lastSettings.rebuildUi) {
+    clearNativeTopicItemCache();
+    return null;
+  }
+  const sources = [...document.querySelectorAll(".focus-topic-topicArea, .card-topic-area-middle")]
+    .filter(node => !node.closest("#cc98-comfort-app"));
+  if (!sources.length) {
+    clearNativeTopicItemCache();
+    return null;
+  }
+  const key = `${getRoutePageKey()}|${document.baseURI}|${mode}`;
+  if (nativeTopicItemCache?.key !== key
+    || sources.length !== nativeTopicItemCache.sources.length
+    || sources.some((node, index) => node !== nativeTopicItemCache.sources[index])) {
+    clearNativeTopicItemCache();
+    const cache = { key, sources, items: new WeakMap(), observer: null };
+    cache.invalidate = records => {
+      for (const record of records) {
+        const target = record.target instanceof Element ? record.target : record.target.parentElement;
+        const topic = target?.closest(".focus-topic, .card-topic");
+        if (topic) cache.items.delete(topic);
+        // Detached/reinserted rows may have changed while outside observation.
+        // Invalidating only their subtrees leaves all untouched rows reusable.
+        for (const node of record.addedNodes) {
+          if (!(node instanceof Element)) continue;
+          if (node.matches(".focus-topic, .card-topic")) cache.items.delete(node);
+          node.querySelectorAll(".focus-topic, .card-topic").forEach(row => cache.items.delete(row));
+        }
+      }
+    };
+    cache.observer = new MutationObserver(cache.invalidate);
+    for (const source of sources) cache.observer.observe(source, { subtree: true, childList: true, characterData: true, attributes: true });
+    nativeTopicItemCache = cache;
+  }
+  // A native update and a synchronous refresh can share a task, before the
+  // observer callback runs. Drain it here so a cache hit never hides the edit.
+  nativeTopicItemCache.invalidate(nativeTopicItemCache.observer.takeRecords());
+  return nativeTopicItemCache;
+}
+
 function getTopicItems(root = document) {
   const items = [];
   const seen = new Set();
   const currentNewTopicMode = root === document && isNewTopicsPage()
     ? getNativeNewTopicViewMode()
     : "";
+  // Parsed background documents retain the uncached extraction contract.
+  const cache = root === document ? getNativeTopicItemCache(currentNewTopicMode) : null;
   const preferredSelector = currentNewTopicMode && currentNewTopicMode !== "classic"
     ? ".card-topic"
     : (currentNewTopicMode === "classic" ? ".focus-topic" : ".focus-topic, .card-topic");
@@ -7511,6 +7563,15 @@ function getTopicItems(root = document) {
       .filter((topic) => !topic.closest("#cc98-comfort-app"));
   }
   topicNodes.forEach((topic) => {
+    const canCache = cache?.sources.some(source => source.contains(topic));
+    const cached = canCache && cache.items.get(topic);
+    if (cached) {
+      if (!seen.has(cached.href)) {
+        seen.add(cached.href);
+        items.push({ ...cached, media: cached.media.map(media => ({ ...media })) });
+      }
+      return;
+    }
     const titleLink = getFirstLink(topic, ".focus-topic-title, .card-topic-title");
     if (!titleLink?.href || seen.has(titleLink.href)) {
       return;
@@ -7522,7 +7583,7 @@ function getTopicItems(root = document) {
     const avatar = topic.querySelector("img")?.src ?? "";
     const parsedMeta = parseStructuredTopicMeta(topic) ?? parseTopicMetaText(getTopicInfoText(topic));
     const uidMatch = user?.href?.match(/\/user\/id\/(\d+)/);
-    items.push({
+    const item = {
       type: "topic",
       title: titleLink.text,
       href: titleLink.href,
@@ -7537,7 +7598,9 @@ function getTopicItems(root = document) {
       viewCount: parsedMeta.viewCount || "",
       viewMode: currentNewTopicMode,
       media: collectNewTopicCardMedia(topic)
-    });
+    };
+    if (canCache) cache.items.set(topic, item);
+    items.push({ ...item, media: item.media.map(media => ({ ...media })) });
   });
   return items;
 }
@@ -14392,6 +14455,17 @@ function renderPostPager() {
     });
     search.dataset.topicId = pageInfo.topicId;
     pager.append(search);
+  }
+  if (globalThis.CC98RebornTopicArchive) {
+    const archive = createButton("cc98-rebuild-pager-action cc98-topic-archive-entry", "存档本帖", event => {
+      event.preventDefault();
+      const info = getTopicPageInfo();
+      if (info?.topicId !== archive.dataset.topicId) return;
+      globalThis.CC98RebornTopicArchive.open(info, archive);
+    });
+    archive.dataset.topicId = pageInfo.topicId;
+    archive.title = "存档本帖快照到本地";
+    pager.append(archive);
   }
   if (favoriteAction) {
     const favoriteButton = renderProxyControl(favoriteAction);
@@ -29410,7 +29484,10 @@ function renderPendingPageContent(app, kind) {
 
 function renderRebuiltUi(options = {}) {
   globalThis.CC98RebornTopicDrawer?.sync(lastSettings);
-  if (!isNewTopicsPage() || !lastSettings?.enabled || !lastSettings.rebuildUi) globalThis.CC98RebornNewTopicsVirtual?.destroy();
+  if (!isNewTopicsPage() || !lastSettings?.enabled || !lastSettings.rebuildUi) {
+    globalThis.CC98RebornNewTopicsVirtual?.destroy();
+    clearNativeTopicItemCache();
+  }
   if (isRebuilding) {
     return;
   }
@@ -30363,7 +30440,7 @@ function armAutoLoader() {
 function isRebuiltInternalMutationTarget(record, app) {
   const changed = [...record.addedNodes, ...record.removedNodes];
   if (changed.length && changed.every((node) => node instanceof Element
-    && (node.matches(".cc98-topic-drawer-layer, .cc98-rebuild-conversation-layer, .cc98-topic-search-layer, .cc98-topic-search-worker, .cc98-favorite-share-layer, .cc98-user-note-layer, .cc98-user-note-ui, .cc98-image-link-menu") || node.closest(".cc98-topic-drawer-layer, .cc98-rebuild-conversation-layer, .cc98-topic-search-layer, .cc98-topic-search-worker, .cc98-favorite-share-layer, .cc98-user-note-layer, .cc98-user-note-ui, .cc98-image-link-menu")))) {
+    && (node.matches(".cc98-topic-drawer-layer, .cc98-rebuild-conversation-layer, .cc98-topic-search-layer, .cc98-topic-archive-layer, .cc98-topic-search-worker, .cc98-favorite-share-layer, .cc98-user-note-layer, .cc98-user-note-ui, .cc98-image-link-menu") || node.closest(".cc98-topic-drawer-layer, .cc98-rebuild-conversation-layer, .cc98-topic-search-layer, .cc98-topic-archive-layer, .cc98-topic-search-worker, .cc98-favorite-share-layer, .cc98-user-note-layer, .cc98-user-note-ui, .cc98-image-link-menu")))) {
     return true;
   }
   const target = record.target instanceof Element ? record.target : record.target?.parentElement;
@@ -30379,6 +30456,7 @@ function isRebuiltInternalMutationTarget(record, app) {
     ".cc98-image-link-menu",
     ".cc98-rebuild-conversation-layer",
     ".cc98-topic-search-layer",
+    ".cc98-topic-archive-layer",
     ".cc98-topic-search-worker",
     ".cc98-topic-drawer-layer",
     ".cc98-favorite-share-layer",
@@ -30439,8 +30517,8 @@ function ensureObserver() {
       const target = record.target;
       const changedNodes = [...record.addedNodes, ...record.removedNodes];
       const onlyRebuildNodes = changedNodes.length > 0 && changedNodes.every((node) => {
-        return node instanceof Element && (node.id === "cc98-comfort-app" || node.matches(".cc98-topic-drawer-layer, .cc98-rebuild-conversation-layer, .cc98-topic-search-layer, .cc98-topic-search-worker, .cc98-favorite-share-layer, .cc98-user-note-layer, .cc98-user-note-ui")
-          || Boolean(node.closest?.("#cc98-comfort-app, .cc98-topic-drawer-layer, .cc98-rebuild-conversation-layer, .cc98-topic-search-layer, .cc98-topic-search-worker, .cc98-favorite-share-layer, .cc98-user-note-layer, .cc98-user-note-ui")));
+        return node instanceof Element && (node.id === "cc98-comfort-app" || node.matches(".cc98-topic-drawer-layer, .cc98-rebuild-conversation-layer, .cc98-topic-search-layer, .cc98-topic-archive-layer, .cc98-topic-search-worker, .cc98-favorite-share-layer, .cc98-user-note-layer, .cc98-user-note-ui")
+          || Boolean(node.closest?.("#cc98-comfort-app, .cc98-topic-drawer-layer, .cc98-rebuild-conversation-layer, .cc98-topic-search-layer, .cc98-topic-archive-layer, .cc98-topic-search-worker, .cc98-favorite-share-layer, .cc98-user-note-layer, .cc98-user-note-ui")));
       });
       if (onlyRebuildNodes) {
         return false;
