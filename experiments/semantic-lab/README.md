@@ -1,6 +1,6 @@
 # CC98 中文语义试验台
 
-独立的本地比较工具，供手工粘贴文本、比较三个模型的实际效果。插件已有的屏蔽规则继续独立工作；本实验没有接入帖子渲染，也不会自动读取论坛内容。
+独立的本地比较工具，供手工粘贴文本、比较三个模型的实际效果。也可手动接入插件的实验性语义屏蔽，默认关闭；自行部署、授权并启用后，插件才会将待检测正文发送到本机服务。工作台本身不抓取论坛页面，已有用户／文本／数值规则继续独立工作。
 
 ## 开始测试
 
@@ -21,11 +21,11 @@ Windows 安装 Python 3.10–3.13 后：
 
 ## 三个模型怎样使用
 
-| 模型 | 本地实现 | 输出及边界 |
-| --- | --- | --- |
-| [COLD / COLDetector](https://huggingface.co/thu-coai/roberta-base-cold) | Transformers 内置 BERT，CPU float32，512 tokens | 中文冒犯二分类；softmax 的 offensive 为折叠参考分数。模型卡未单独声明权重许可证，不能据数据集许可推定权重再分发许可。 |
-| [Horizon multilingual-toxicity-small](https://huggingface.co/Horizon-Labs/multilingual-toxicity-small) | 内置 ModernBERT，CPU float32，按训练长度限制为 256 tokens | 7 项独立 sigmoid 分数，toxicity 为折叠参考；模型 Apache-2.0。中文训练/评测含翻译数据，不能等同于 CC98 原生语言效果。 |
-| [多语言 MiniLM NLI](https://huggingface.co/MoritzLaurer/multilingual-MiniLMv2-L6-mnli-xnli) | 内置 XLM-RoBERTa，CPU float32，512 tokens | 2–12 个自定义标签，分别比较 entailment/contradiction，默认多标签模式；MIT。是话题相关度，不生成攻击性分数。 |
+| 模型                                                                                                   | 本地实现                                                  | 输出及边界                                                                                                            |
+| ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| [COLD / COLDetector](https://huggingface.co/thu-coai/roberta-base-cold)                                | Transformers 内置 BERT，CPU float32，512 tokens           | 中文冒犯二分类；softmax 的 offensive 为折叠参考分数。模型卡未单独声明权重许可证，不能据数据集许可推定权重再分发许可。 |
+| [Horizon multilingual-toxicity-small](https://huggingface.co/Horizon-Labs/multilingual-toxicity-small) | 内置 ModernBERT，CPU float32，按训练长度限制为 256 tokens | 7 项独立 sigmoid 分数，toxicity 为折叠参考；模型 Apache-2.0。中文训练/评测含翻译数据，不能等同于 CC98 原生语言效果。  |
+| [多语言 MiniLM NLI](https://huggingface.co/MoritzLaurer/multilingual-MiniLMv2-L6-mnli-xnli)            | 内置 XLM-RoBERTa，CPU float32，512 tokens                 | 2–12 个自定义标签，分别比较 entailment/contradiction，默认多标签模式；MIT。是话题相关度，不生成攻击性分数。           |
 
 确切 revision、文件大小、权重 SHA256、原始标签与来源见 `model-manifest.json`。全部固定版本、本地 safetensors，`trust_remote_code=False`。默认模型上限之外的文本会截断，结果显示 `truncated/inputTokens/processedTokens`，不能将结果理解成已经覆盖未处理的尾部。
 
@@ -48,17 +48,20 @@ Windows 安装 Python 3.10–3.13 后：
 源文件 `src/semantic-client.js` 提供 UMD 客户端。导入、创建实例、清缓存均不会请求网络；实验性桥接由后台显式调用，可选权限和令牌由用户手动授权。
 
 ```js
-// 未来从扩展 background 显式加载后使用，不在 content script 直接 fetch。
+// 由扩展 background 显式调用，不在 content script 直接 fetch。
 const client = CC98RebornSemanticClient.createClient({ token, timeoutMs: 20000 });
 const abortController = new AbortController();
 await client.health();
-const result = await client.analyze({
-  text: "可以反对观点，但请尊重发言的人。",
-  model: "minilm",
-  topicLabels: ["人身攻击", "正常讨论", "体育讨论"],
-  hypothesisTemplate: "这段文字涉及{}。",
-  multiLabel: true
-}, { signal: abortController.signal });
+const result = await client.analyze(
+  {
+    text: "可以反对观点，但请尊重发言的人。",
+    model: "minilm",
+    topicLabels: ["人身攻击", "正常讨论", "体育讨论"],
+    hypothesisTemplate: "这段文字涉及{}。",
+    multiLabel: true
+  },
+  { signal: abortController.signal }
+);
 client.clearCache();
 ```
 

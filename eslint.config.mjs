@@ -15,7 +15,7 @@ export default [
       ".agents/**",
       "src/vendor/**",
       "question-mark-sites-demo/**",
-      "question-mark-sites-source/**",
+      "archive/question-mark-sites/**",
       "experiments/post-context-draft/package-preview/**",
       "experiments/semantic-lab/.runtime/**",
       "experiments/semantic-lab/models/**",
@@ -72,7 +72,7 @@ export default [
   },
   ...sharedScriptGlobals(),
   {
-    files: ["release/0.3.7/intro/render.cjs"],
+    files: ["docs/releases/0.3.7/intro/render.cjs"],
     // The screenshot builder evaluates this binding in the browser page.
     languageOptions: { globals: { document: "readonly" } }
   },

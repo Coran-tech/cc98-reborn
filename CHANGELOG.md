@@ -4,6 +4,8 @@ All notable changes to CC98 Reborn are documented here.
 
 ## Unreleased
 
+- 目录整理：功能说明与发布检查表集中到 `docs/`，历史发布资料移入 `docs/releases/`，退役的 Sites 问号后端归档到 `archive/`；同步修正生成脚本、文档链接和检查配置，不改变插件运行入口。
+
 - 仓库维护：本机配置、发布生成物和无引用的旧源码快照不再进入 Git，保留本地文件与生成源。新增锁定的格式／lint 工具、统一检查命令和 CI，补充贡献指南；运行时代码和 JavaScript 技术栈保持不变。
 
 ## 0.4.4 - 2026-11-09

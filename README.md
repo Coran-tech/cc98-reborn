@@ -9,7 +9,8 @@
 [下载发布包](https://github.com/Coran-tech/cc98-reborn/releases) ·
 [提交 Bug](https://github.com/Coran-tech/cc98-reborn/issues) ·
 [查看更新日志](./CHANGELOG.md) ·
-[隐私说明](./PRIVACY.md)
+[隐私说明](./PRIVACY.md) ·
+[文档目录](./docs/README.md)
 
 > 本项目仍含有很高浓度的 Vibe Coding 成分。CC98 本身是持续变化的动态网页，扩展可能仍有遗漏或兼容性问题，欢迎通过 Issues 反馈。
 
@@ -172,7 +173,7 @@ npm ci
 npm run check
 ```
 
-统一入口包含格式检查、ESLint、语法检查、Manifest 引用检查和无账号单元测试。格式规范渐进接入，不批量重排历史运行时代码。目录约定、格式门禁和浏览器测试环境见 [贡献指南](./CONTRIBUTING.md)；各功能的发布前检查见 [RELEASE.md](./RELEASE.md)。
+统一入口包含格式检查、ESLint、语法检查、Manifest 引用检查和无账号单元测试。格式规范渐进接入，不批量重排历史运行时代码。目录约定、格式门禁和浏览器测试环境见 [贡献指南](./CONTRIBUTING.md)；各功能的发布前检查见 [发布检查表](./docs/development/releasing.md)。
 
 打包：
 

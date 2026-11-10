@@ -34,16 +34,22 @@ question-mark-sites-demo/
 /tests/.baseline-032-styles.css
 
 # Rebuildable release material. Keep notes, features.json and generator source.
-/release/*/交付清单.json
-/release/*/intro/assets/
-/release/*/intro/images/
-/release/*/intro/concepts.html
-/release/*/intro/contact-sheet.html
-/release/*/intro/render-report.json
-/release/*/intro/介绍帖正文.md
-/release/*/intro/介绍帖正文_UBB.txt
-/release/*/intro/建议标题.txt
-/release/*/intro/配图顺序.txt
-/release/*/intro/预览.html
-/release/*/intro/总览.png
-/release/*/intro/预览首屏.png
+/docs/releases/*/交付清单.json
+/docs/releases/*/intro/assets/
+/docs/releases/*/intro/images/
+/docs/releases/*/intro/concepts.html
+/docs/releases/*/intro/contact-sheet.html
+/docs/releases/*/intro/render-report.json
+/docs/releases/*/intro/介绍帖正文.md
+/docs/releases/*/intro/介绍帖正文_UBB.txt
+/docs/releases/*/intro/建议标题.txt
+/docs/releases/*/intro/配图顺序.txt
+/docs/releases/*/intro/预览.html
+/docs/releases/*/intro/总览.png
+/docs/releases/*/intro/预览首屏.png
+
+# Required vendored source for the archived Sites build, not generated output.
+!/archive/question-mark-sites/build/
+/archive/question-mark-sites/build/*
+!/archive/question-mark-sites/build/sites-vite-plugin.ts
+!/archive/question-mark-sites/build/sites-vite-plugin.LICENSE

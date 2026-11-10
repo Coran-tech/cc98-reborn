@@ -1,6 +1,6 @@
 # Release Checklist
 
-Current release target: `0.4.4`.
+Current release target: `0.4.4`. Run all commands below from the repository root.
 
 1. Confirm `manifest.json` version.
 2. Install the locked development dependencies with Node.js 22 and run the shared checks:
@@ -12,7 +12,7 @@ npm run check
 
 This runs the same format, lint, JavaScript syntax, manifest-reference and offline
 unit-test checks as CI. Formatting is introduced incrementally; see
-[CONTRIBUTING.md](CONTRIBUTING.md) for the first-adoption and changed-file policy.
+[CONTRIBUTING.md](../../CONTRIBUTING.md) for the first-adoption and changed-file policy.
 Run the relevant browser checks below when their features change.
 
 For dual UBB editor changes, start the local forum simulator:

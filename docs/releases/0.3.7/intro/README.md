@@ -1,4 +1,6 @@
-# CC98 Reborn 0.3.7 介绍帖素材
+# 0.3.7 介绍帖资料（归档）
+
+这里保存介绍帖和 24 张概念图的生成源，不是旧版插件安装目录。下文记录 0.3.7 当时的功能与发布状态。
 
 - 原帖：https://www.cc98.org/topic/6521472
 - 参考：用户提供的 0.3.5 介绍帖 MHTML；保留 lz／uu、Vibe Coding 提醒和食用方法的语气。
@@ -20,3 +22,12 @@
 ## 渲染源
 
 features.json 保存配图清单与对应正文，build.cjs 保存 HTML/CSS/SVG 模板。运行 build.cjs 生成 concepts.html、文案和预览，运行 render.cjs 用本地 Edge / Playwright 导出 PNG，全程不访问论坛。生成文件不进入 Git，发布说明、清单源和生成脚本保留。
+
+从仓库根目录运行：
+
+```sh
+node docs/releases/0.3.7/intro/build.cjs
+node docs/releases/0.3.7/intro/render.cjs
+```
+
+第一步只需要 Node.js；第二步需要已安装的 Playwright 和 Microsoft Edge。结果生成在本目录，文案、HTML、PNG 和渲染报告均不进入 Git。

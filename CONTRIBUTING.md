@@ -43,14 +43,14 @@ ESLint 覆盖自有 JavaScript，按浏览器脚本、后台和 Node 环境配�
 | `scripts/`                          | 开发检查、打包和平台工具             |
 | `experiments/`                      | 问号、语义模型等独立功能的源码       |
 | `question-service/`                 | 独立问号服务                         |
-| `ios/`                              | iOS 项目，使用独立工作流             |
-| `release/`                          | 历史发布说明及介绍素材的生成源       |
+| `docs/`                             | 功能说明、发布检查表与历史发布资料   |
+| `archive/`                          | 已退役的项目源码，保留供历史查询     |
 
 `dist/`、`outputs/`、本机 `.codex/` 和 `.agents/` 不进入 Git。介绍素材生成的 PNG、HTML、文案和交付清单也不进入 Git；不要删除仍被插件引用的 `images/`、`assets/` 或测试 fixture。
 
 ## 验证受影响的功能
 
-`npm run check` 面向可在干净仓库运行的开发检查与无账号测试。浏览器交互、视觉效果和原站适配还需要对应的浏览器测试，具体入口见 [RELEASE.md](RELEASE.md)。
+`npm run check` 面向可在干净仓库运行的开发检查与无账号测试。浏览器交互、视觉效果和原站适配还需要对应的浏览器测试，具体入口见 [发布检查表](docs/development/releasing.md)。
 
 部分浏览器测试依赖单独的 `cc98-local-forum` 项目，可通过 `CC98_LOCAL_FORUM_ROOT` 指定其目录。模拟器、测试账号和数据库不要提交到扩展仓库；不要让 CI 使用个人浏览器配置或真实论坛登录数据。
 
@@ -67,8 +67,8 @@ ESLint 覆盖自有 JavaScript，按浏览器脚本、后台和 Node 环境配�
 ## 重新生成历史介绍素材
 
 ```sh
-node release/0.3.7/intro/build.cjs
-node release/0.3.7/intro/render.cjs
+node docs/releases/0.3.7/intro/build.cjs
+node docs/releases/0.3.7/intro/render.cjs
 ```
 
 第一步生成文案和 HTML；第二步需要 Playwright 和本机 Edge，生成 PNG。两步均不访问论坛。修改说明时同步修改 `build.cjs` 中的 README 模板，以免重新生成时覆盖说明。
