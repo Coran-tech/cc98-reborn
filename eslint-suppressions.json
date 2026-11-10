@@ -1,0 +1,160 @@
+{
+  "experiments/semantic-lab/web/app.js": {
+    "preserve-caught-error": {
+      "count": 1
+    }
+  },
+  "ios/runtime/ios-adapter.js": {
+    "no-control-regex": {
+      "count": 1
+    }
+  },
+  "popup/archive-zip.js": {
+    "no-control-regex": {
+      "count": 1
+    },
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "popup/archive.js": {
+    "no-control-regex": {
+      "count": 2
+    }
+  },
+  "scripts/package-ios-resources.cjs": {
+    "no-control-regex": {
+      "count": 2
+    }
+  },
+  "src/background.js": {
+    "no-useless-assignment": {
+      "count": 3
+    },
+    "preserve-caught-error": {
+      "count": 3
+    }
+  },
+  "src/content.js": {
+    "no-empty": {
+      "count": 1
+    },
+    "no-self-assign": {
+      "count": 1
+    },
+    "no-undef": {
+      "count": 3
+    },
+    "no-unreachable": {
+      "count": 9
+    },
+    "no-unused-vars": {
+      "count": 14
+    },
+    "no-useless-assignment": {
+      "count": 19
+    },
+    "no-useless-escape": {
+      "count": 1
+    }
+  },
+  "src/extended-ubb-core.js": {
+    "no-useless-escape": {
+      "count": 1
+    }
+  },
+  "src/extended-ubb.js": {
+    "no-unused-vars": {
+      "count": 1
+    },
+    "no-useless-escape": {
+      "count": 1
+    }
+  },
+  "src/image-favorites-core.js": {
+    "no-control-regex": {
+      "count": 2
+    }
+  },
+  "src/markup-converter.js": {
+    "no-unreachable": {
+      "count": 1
+    },
+    "no-useless-escape": {
+      "count": 1
+    }
+  },
+  "src/page-submit-monitor.js": {
+    "no-useless-assignment": {
+      "count": 2
+    }
+  },
+  "src/private-message-pins-core.js": {
+    "no-control-regex": {
+      "count": 1
+    }
+  },
+  "src/semantic-background.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "src/semantic-client.js": {
+    "no-control-regex": {
+      "count": 1
+    }
+  },
+  "src/semantic-filter-core.js": {
+    "no-control-regex": {
+      "count": 2
+    }
+  },
+  "src/settings-backup-core.js": {
+    "no-control-regex": {
+      "count": 1
+    }
+  },
+  "src/topic-archive-store.js": {
+    "no-control-regex": {
+      "count": 1
+    },
+    "no-unused-vars": {
+      "count": 6
+    }
+  },
+  "src/user-notes-core.js": {
+    "no-control-regex": {
+      "count": 1
+    }
+  },
+  "tests/conversation.test.cjs": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "tests/first-page-prewarm.test.cjs": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "tests/ios-build-contract.test.cjs": {
+    "no-regex-spaces": {
+      "count": 4
+    }
+  },
+  "tests/topic-archive-zip.test.cjs": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "tests/topic-drawer.test.cjs": {
+    "no-useless-assignment": {
+      "count": 2
+    }
+  },
+  "tests/topic-live-socket-browser.test.cjs": {
+    "no-control-regex": {
+      "count": 1
+    }
+  }
+}

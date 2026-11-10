@@ -87,7 +87,7 @@
   .ubb-button-color, .sp-preview, .react-mde, .mde-header,
   .cc98-rebuild-dual-ubb-visual-pane, .cc98-rebuild-dual-ubb-source-pane,
   .cc98-local-syntax-experimental-badge, .cc98-rebuild-color-popover,
-  .cc98-rebuild-font-size-popover, .tagBoxSub
+  .cc98-rebuild-font-size-popover, .tagBoxSub, .tagBoxSub1
 ) {
   border-radius: 0 !important;
   box-shadow: none !important;

@@ -14,4 +14,4 @@
 :root.cc98-comfort .cc98-topic-archive-dialog progress { width:100%; height:6px; accent-color:var(--cc98-comfort-accent); }
 :root.cc98-comfort .cc98-topic-archive-error { border-left:3px solid var(--cc98-comfort-secondary); padding-left:12px; overflow-wrap:anywhere; }
 :root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-topic-archive-dialog,
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-topic-archive-dialog button { border-radius:0; font-family:Consolas,"Microsoft YaHei",monospace; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-topic-archive-dialog :is(button,input,progress) { border-radius:0!important; font-family:Consolas,"Microsoft YaHei",monospace; }

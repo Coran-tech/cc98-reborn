@@ -162,6 +162,8 @@ let themeWatcherCleanup = null;
 let observer = null;
 let topicViewCountObserver = null;
 let topicViewCountSource = null;
+let topicBreadcrumbSource = null;
+let topicLockScope = null;
 let headObserver = null;
 let rebuiltAppPresenceWatchdog = null;
 let publicProfileTopbarRecoveryTimer = null;
@@ -252,6 +254,8 @@ let nativeAntUiObserver = null;
 let nativeAntUiStabilizeTimer = null;
 let legacyQuoteGuardObserver = null;
 let imageViewerScale = 1;
+let imageViewerRotation = 0;
+let imageViewerCleanup = null;
 let imageViewerOffsetX = 0;
 let imageViewerOffsetY = 0;
 let imageViewerPushedState = false;
@@ -331,6 +335,7 @@ let searchHistoryCache = null;
 let searchHistoryStorageHydratedKey = "";
 let searchHistoryStorageHydratingKey = "";
 const homeHotRankingStates = new Map();
+const topicCardRenderStates = new WeakMap();
 const postAwardDeltaCache = new Map();
 const blacklistRevealScopes = new Set();
 let searchSuggestionLastFetchAt = 0;
@@ -477,6 +482,7 @@ function syncComfortTheme() {
   const previousTone = root.dataset.cc98ComfortTone;
   const tone = globalThis.CC98RebornThemeCore.apply(root, isRebornManagementRoute() ? { ...lastSettings, enabled: true } : lastSettings);
   globalThis.CC98RebornInterfaceStyle?.sync(lastSettings);
+  globalThis.CC98RebornNativeMessages?.sync(lastSettings);
   globalThis.CC98RebornTopicDrawer?.sync(lastSettings);
   globalThis.CC98RebornContentFilter?.sync(lastSettings);
   globalThis.CC98RebornSemanticFilter?.sync(lastSettings);
@@ -1665,10 +1671,11 @@ function showImageLinkMenu(action, event) {
 function getImageViewerItems(activeImage) {
   const virtualGallery = globalThis.CC98RebornNewTopicsVirtual?.gallery(activeImage);
   if (virtualGallery) return virtualGallery;
-  const root = activeImage?.closest?.(".cc98-rebuild-conversation-dialog")
+  const favoritesRoot = activeImage?.closest?.(".cc98-image-favorites-region");
+  const root = favoritesRoot || activeImage?.closest?.(".cc98-rebuild-conversation-dialog")
     || document.querySelector("#cc98-comfort-app") || document;
-  const images = [...root.querySelectorAll("img.cc98-rebuild-content-image, img.cc98-rebuild-board-image")]
-    .filter(isImageViewerCandidate);
+  const images = favoritesRoot ? [...favoritesRoot.querySelectorAll("img[data-cc98-favorite-image]")]
+    : [...root.querySelectorAll("img.cc98-rebuild-content-image, img.cc98-rebuild-board-image")].filter(isImageViewerCandidate);
   const items = images.map((node) => ({
     node,
     src: getViewerImageSrc(node),
@@ -1692,14 +1699,27 @@ function getImageViewerItems(activeImage) {
 function updateImageViewerTransform() {
   const image = document.querySelector("#cc98-comfort-image-viewer img");
   if (image) {
-    image.style.transform = `translate(${imageViewerOffsetX}px, ${imageViewerOffsetY}px) scale(${imageViewerScale})`;
+    const stage = image.closest(".cc98-image-viewer-stage");
+    const sideways = Math.abs(imageViewerRotation / 90) % 2 === 1;
+    const width = sideways ? image.clientHeight : image.clientWidth;
+    const height = sideways ? image.clientWidth : image.clientHeight;
+    // Fit the rotated rectangle, not its original layout box. Zoom remains
+    // relative to that fitted size; translating is always in screen pixels.
+    const fit = width && height ? Math.min(1, stage.clientWidth / width, stage.clientHeight / height) : 1;
+    image.style.transform = `translate(${imageViewerOffsetX}px, ${imageViewerOffsetY}px) scale(${imageViewerScale * fit}) rotate(${imageViewerRotation}deg)`;
   }
 }
 
 function resetImageViewerTransform() {
   imageViewerScale = 1;
+  imageViewerRotation = 0;
   imageViewerOffsetX = 0;
   imageViewerOffsetY = 0;
+  updateImageViewerTransform();
+}
+
+function rotateImageViewer(delta) {
+  imageViewerRotation += delta;
   updateImageViewerTransform();
 }
 
@@ -1710,7 +1730,7 @@ function zoomImageViewerAt(viewerImage, clientX, clientY, nextScale) {
   const stage = viewerImage.closest(".cc98-image-viewer-stage");
   const stageRect = stage?.getBoundingClientRect?.();
   const currentScale = imageViewerScale || 1;
-  const clampedScale = Math.min(6, Math.max(0.35, nextScale));
+  const clampedScale = Math.min(20, Math.max(0.35, nextScale));
   if (!stageRect || Math.abs(clampedScale - currentScale) < 0.001) {
     imageViewerScale = clampedScale;
     updateImageViewerTransform();
@@ -1745,6 +1765,7 @@ function updateImageViewerSource(resetTransform = true) {
   if (saveButton) {
     saveButton.dataset.href = item.src;
   }
+  globalThis.CC98RebornImageFavoriteControls?.setViewerItem(viewer.querySelector(".cc98-image-viewer-favorite"), item);
   if (resetTransform) {
     resetImageViewerTransform();
   }
@@ -1835,11 +1856,14 @@ function restoreImageViewerScrollPosition(position) {
 }
 
 function removeImageViewer(options = {}) {
+  imageViewerCleanup?.();
+  imageViewerCleanup = null;
   document.querySelector("#cc98-comfort-image-viewer")?.remove();
   imageViewerPushedState = false;
   imageViewerItems = [];
   imageViewerIndex = -1;
   imageViewerScale = 1;
+  imageViewerRotation = 0;
   imageViewerOffsetX = 0;
   imageViewerOffsetY = 0;
   if (options.restoreScroll !== false) {
@@ -1903,7 +1927,23 @@ function openImageViewer(image) {
     requestBrowserDownload(href, href);
   });
   const toolbar = createElement("div", "cc98-image-viewer-toolbar");
-  toolbar.append(counter, saveButton);
+  const rotateButtons = [-1, 1].map(direction => {
+    const side = direction < 0 ? "left" : "right";
+    const label = direction < 0 ? "向左旋转 90°" : "向右旋转 90°";
+    const button = createButton(`cc98-image-viewer-rotate cc98-image-viewer-rotate-${side}`, "", event => {
+      event.preventDefault();
+      event.stopPropagation();
+      rotateImageViewer(direction * 90);
+    });
+    button.setAttribute("aria-label", label);
+    button.title = `${label}（Shift + ${direction < 0 ? "←" : "→"}）`;
+    button.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path ${direction > 0 ? 'transform="translate(24 0) scale(-1 1)"' : ""} d="M4 9a8 8 0 1 1 1 9M4 4v5h5"/></svg>`;
+    return button;
+  });
+  toolbar.append(counter, ...rotateButtons);
+  const favoriteButton = globalThis.CC98RebornImageFavoriteControls?.viewerButton();
+  if (favoriteButton) toolbar.append(favoriteButton);
+  toolbar.append(saveButton);
   const prevButton = createButton("cc98-image-viewer-nav cc98-image-viewer-prev", "<", (event) => {
     event.preventDefault();
     event.stopPropagation();
@@ -1922,6 +1962,8 @@ function openImageViewer(image) {
     viewer.append(nextButton);
   }
   document.body.append(viewer);
+  viewerImage.addEventListener("load", updateImageViewerTransform);
+  window.addEventListener("resize", updateImageViewerTransform);
   updateImageViewerSource(true);
 
   history.pushState({ cc98ComfortImageViewer: true }, "", location.href);
@@ -1994,11 +2036,13 @@ function openImageViewer(image) {
     }
     if (event.key === "ArrowLeft") {
       event.preventDefault();
-      switchImageViewer(-1);
+      if (event.shiftKey) rotateImageViewer(-90);
+      else switchImageViewer(-1);
     }
     if (event.key === "ArrowRight") {
       event.preventDefault();
-      switchImageViewer(1);
+      if (event.shiftKey) rotateImageViewer(90);
+      else switchImageViewer(1);
     }
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
       event.preventDefault();
@@ -2007,9 +2051,15 @@ function openImageViewer(image) {
     }
   };
   document.addEventListener("keydown", onKeydown, true);
+  imageViewerCleanup = () => {
+    document.removeEventListener("keydown", onKeydown, true);
+    window.removeEventListener("resize", updateImageViewerTransform);
+    viewerImage.removeEventListener("load", updateImageViewerTransform);
+  };
 }
 
 function bindImageViewer(app) {
+  globalThis.CC98RebornImageFavoriteControls?.bind();
   app.addEventListener("click", (event) => {
     const image = getImageViewerEventImage(event);
     if (!isImageViewerCandidate(image)) {
@@ -10532,14 +10582,6 @@ function isMeaningfulPostContent(root) {
     || cleanupPostText(root?.textContent).length > 0;
 }
 
-function hasRenderedPostContent(root) {
-  if (!(root instanceof Element)) {
-    return false;
-  }
-  return cleanupPostText(root.innerText || root.textContent).length > 0
-    || Boolean(root.querySelector("img, video, audio, source, iframe, .aplayer, .cc98-rebuild-audio-player, .cc98-rebuild-content-video, .cc98-rebuild-restored-media, a[href], blockquote, pre, code"));
-}
-
 function sanitizeClonedPostContent(contentNode, options = {}) {
   const clone = contentNode.cloneNode(true);
   materializeCapturedLazySlots(clone);
@@ -10728,6 +10770,13 @@ function findPostLotteryContentNode(post) {
     .find((node) => !node.closest("#cc98-comfort-app")
       && !node.closest(".substance, .signature")
       && cleanupPostText(node.querySelector(":scope > p")?.textContent) === "该主题帖启用了抽奖功能") || null;
+}
+
+function hasPostContentContainer(post) {
+  // A rendered floor may have an empty UBB/Markdown body. Its author, floor
+  // anchor, signature and native actions still belong in the reading view.
+  return Boolean(findPostContentNode(post)
+    || findPostVoteContentNode(post) || findPostLotteryContentNode(post));
 }
 
 function getPostFloorNumber(post, index) {
@@ -11417,27 +11466,50 @@ function isCurrentWebUserPostItem(item) {
   return uid === getCc98AccountId(getStoredCc98UserInfo());
 }
 
-function hasTopicLockedNotice() {
-  const root = document.querySelector("#root") || document.body;
-  if (!root) {
-    return false;
+const nativeLockRow = ".center > .column > .row";
+const lockContentExclusions = "#cc98-comfort-app, .reply, .reply-content, .substance, .signature, article, blockquote, form, [contenteditable]";
+const nativeRedTip = ':is(div,p,span):is([style*="color: red" i],[style*="color:red" i])';
+
+// null = no notice; an empty string is the original, reasonless lock notice.
+function readTopicLockReason(node) {
+  const text = node.textContent.trim();
+  const prefix = /^(?:该|本)[帖贴]已被锁定/.exec(text);
+  if (!prefix) return null;
+  let tail = text.slice(prefix[0].length).trim();
+  if (!tail) return "";
+  if ((tail.startsWith("（") && tail.endsWith("）")) || (tail.startsWith("(") && tail.endsWith(")"))) {
+    tail = tail.slice(1, -1).trim();
   }
-  return [...root.querySelectorAll("div, p, span")]
-    .some((node) => {
-      if (!(node instanceof HTMLElement) || node.closest("#cc98-comfort-app")) {
-        return false;
-      }
-      const text = cleanupPostText(node.textContent);
-      return text === "\u8be5\u5e16\u5df2\u88ab\u9501\u5b9a" || text.includes("\u8be5\u5e16\u5df2\u88ab\u9501\u5b9a");
-    });
+  const reason = /^[，,。；;：:\s]*锁定原因\s*[:：]\s*([\s\S]*)$/.exec(tail);
+  return reason ? reason[1].trim() : null;
 }
 
-function hasRenderablePostContent(contentNode) {
-  if (!contentNode) {
-    return false;
+function findTopicLockScope(breadcrumb) {
+  const root = document.querySelector("#root") || document.body;
+  // The native Topic component places its optional tip immediately after the
+  // category/pager row. Observe that small column even before the tip arrives.
+  const column = breadcrumb?.closest(".center > .column")
+    || [...root.querySelectorAll(nativeLockRow)].find(row => !row.closest(lockContentExclusions))?.parentElement;
+  if (column) return column;
+  return [...root.querySelectorAll(nativeRedTip)].find(node => !node.closest(lockContentExclusions) && readTopicLockReason(node) !== null) || null;
+}
+
+function syncTopicLockCard(app, scope) {
+  const feed = app.querySelector(':scope > [data-feed-kind="post"]');
+  if (!feed) return;
+  const source = scope?.matches(".column") ? scope.querySelector(":scope > .row + :is(div,p,span)") : scope;
+  const reason = source && !source.matches(".reply, .topicInfo-info") ? readTopicLockReason(source) : null;
+  let card = app.querySelector(":scope > .cc98-rebuild-topic-locked-card");
+  if (reason == null) { card?.remove(); return; }
+  if (!card) {
+    card = createElement("section", "cc98-rebuild-topic-locked-card", "🔒 本帖已被锁定");
+    feed.before(card);
   }
-  const text = cleanupPostText(contentNode.innerText || contentNode.textContent);
-  return text.length > 0 || Boolean(contentNode.querySelector("img, video, audio, source, .aplayer, a[href], [style*='url('], [data-src], [data-original], [data-url], [data-img], [data-image], .lazyload-placeholder, .hiddenImage"));
+  const detail = card.querySelector(".cc98-rebuild-topic-lock-reason");
+  if (!reason) { detail?.remove(); return; }
+  const label = `锁定原因：${reason}`;
+  if (!detail) card.append(createElement("div", "cc98-rebuild-topic-lock-reason", label));
+  else if (detail.textContent !== label) detail.textContent = label;
 }
 
 function isRenderableSignatureCandidate(node) {
@@ -11806,31 +11878,95 @@ function getTopicMetricCount(metricId, anchor = null) {
   return "";
 }
 
+function getTopicBreadcrumbItems(source) {
+  const topicId = getTopicRouteInfo()?.topicId;
+  if (!topicId || !(source instanceof Element)) return [];
+  const items = [...source.querySelectorAll(":scope > a[href]")].map(link => ({
+    text: cleanupPostText(link.textContent),
+    href: link.getAttribute("href"),
+    path: getCc98RoutePathFromHref(link.getAttribute("href")).split(/[?#]/)[0]
+  }));
+  if (items.length !== 4 || items.some(item => !item.text)
+    || items[0].path !== "/" || !/^\/boardlist\/?$/i.test(items[1].path)
+    || !/^\/board\/\d+\/?$/i.test(items[2].path)
+    || !new RegExp(`^/topic/${topicId}(?:/\\d+)?/?$`, "i").test(items[3].path)) return [];
+  return items;
+}
+
+function getTopicBreadcrumbSource() {
+  for (const link of document.querySelectorAll('a[href*="/boardlist" i]')) {
+    if (link.closest("#cc98-comfort-app, .reply, .post, article, .substance, .mde-preview-content, .signature")) continue;
+    const row = link.closest(".row");
+    if (getTopicBreadcrumbItems(row).length) return row;
+  }
+  return null;
+}
+
+function syncTopicContextRow(hero, source = getTopicBreadcrumbSource()) {
+  const items = getTopicBreadcrumbItems(source);
+  const views = getTopicMetricCount("viewtimes");
+  let row = hero.querySelector(":scope > .cc98-rebuild-topic-context");
+  if (!items.length && views === "") { row?.remove(); return; }
+  if (!row) {
+    row = createElement("div", "cc98-rebuild-topic-context");
+    hero.append(row);
+  }
+  let nav = row.querySelector(".cc98-rebuild-topic-breadcrumb");
+  const signature = JSON.stringify(items);
+  if (!items.length) nav?.remove();
+  else if (nav?.dataset.sourceSignature !== signature) {
+    const next = createElement("nav", "cc98-rebuild-topic-breadcrumb");
+    next.setAttribute("aria-label", "帖子路径");
+    next.dataset.sourceSignature = signature;
+    items.forEach((item, index) => {
+      if (index) {
+        const separator = createElement("span", "cc98-rebuild-topic-path-separator", ">");
+        separator.setAttribute("aria-hidden", "true");
+        next.append(separator);
+      }
+      const link = createLink("cc98-rebuild-topic-path-link", item.text, item.href);
+      link.title = item.text;
+      if (index === items.length - 1) link.setAttribute("aria-current", "page");
+      next.append(link);
+    });
+    if (nav) nav.replaceWith(next);
+    else row.prepend(next);
+  }
+  const current = row.querySelector(".cc98-rebuild-topic-views");
+  if (views === "") current?.remove();
+  else {
+    const text = `浏览 ${views}`;
+    if (current) { if (current.textContent !== text) current.textContent = text; }
+    else row.append(createElement("p", "cc98-rebuild-topic-views", text));
+  }
+}
+
 function syncTopicViewCount() {
   const app = document.querySelector("#cc98-comfort-app");
   const active = lastSettings?.enabled && lastSettings.rebuildUi
     && app?.dataset.pageKind === "post" && app.dataset.routeKey === getRoutePageKey()
     && app.dataset.cc98ContentPending !== "true";
   const source = active ? [...document.querySelectorAll("#viewtimes")].find(node => !node.closest("#cc98-comfort-app")) || null : null;
-  if (source !== topicViewCountSource) {
+  const breadcrumb = active ? getTopicBreadcrumbSource() : null;
+  const lockScope = active ? findTopicLockScope(breadcrumb) : null;
+  if (source !== topicViewCountSource || breadcrumb !== topicBreadcrumbSource || lockScope !== topicLockScope) {
     topicViewCountObserver?.disconnect();
     topicViewCountObserver = null;
     topicViewCountSource = source;
-    if (source) {
+    topicBreadcrumbSource = breadcrumb;
+    topicLockScope = lockScope;
+    if (source || breadcrumb || lockScope) {
       topicViewCountObserver = new MutationObserver(syncTopicViewCount);
-      topicViewCountObserver.observe(source, { childList: true, subtree: true, characterData: true });
+      for (const node of [source, breadcrumb, lockScope].filter(Boolean)) {
+        topicViewCountObserver.observe(node, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["href"] });
+      }
     }
   }
   if (!active) return;
   const hero = app.querySelector(":scope > .cc98-rebuild-hero");
   if (!hero) return;
-  const current = hero.querySelector(":scope > .cc98-rebuild-topic-views");
-  const views = getTopicMetricCount("viewtimes");
-  if (views === "") { current?.remove(); return; }
-  const text = `浏览 ${views}`;
-  if (current) {
-    if (current.textContent !== text) current.textContent = text;
-  } else hero.append(createElement("p", "cc98-rebuild-topic-views", text));
+  syncTopicContextRow(hero, breadcrumb);
+  syncTopicLockCard(app, lockScope);
 }
 
 function getTopicFavoriteDisplayText(action) {
@@ -11896,8 +12032,7 @@ function findCapturedTopicPostSnapshot(post, floor) {
 function getPostItems() {
   const directReplies = [...document.querySelectorAll(".reply")]
     .filter((node) => !node.closest("#cc98-comfort-app"))
-    .filter((node) => hasRenderablePostContent(findPostContentNode(node))
-      || Boolean(findPostVoteContentNode(node) || findPostLotteryContentNode(node)));
+    .filter(hasPostContentContainer);
 
   const selectors = [
     '[class*="floor"]',
@@ -11911,8 +12046,7 @@ function getPostItems() {
     ? directReplies
     : [...document.querySelectorAll(selectors)]
       .filter((node) => !node.closest("#cc98-comfort-app"))
-      .filter((node) => hasRenderablePostContent(findPostContentNode(node))
-        || Boolean(findPostVoteContentNode(node) || findPostLotteryContentNode(node)));
+      .filter(hasPostContentContainer);
 
   const compact = [];
   candidates.forEach((candidate) => {
@@ -12003,7 +12137,7 @@ function getPostItems() {
       isCurrentUser: Boolean(uidMatch?.[1] && uidMatch[1] === currentAccountId),
       isHot
     };
-  }).filter((item) => item && (hasRenderedPostContent(item.content) || item.voteContent || item.lotteryContent));
+  }).filter(Boolean);
   const viewCount = getTopicMetricCount("viewtimes");
   const firstRegularItem = items.find((item) => !item.isHot) || items[0];
   if (firstRegularItem && viewCount !== "") {
@@ -13870,15 +14004,33 @@ function renderTopicCardMedia(item) {
   return gallery;
 }
 
+function getTopicCardRenderState(item, reason, saved) {
+  // WebVPN URL resolution can change independently of the source item.
+  if (isWebVpnHost()) return "";
+  return JSON.stringify([
+    item.title, item.href, item.board, item.boardHref, item.user, item.uid,
+    item.meta, item.hoverMeta, item.replyCount, item.viewMode,
+    (Array.isArray(item.media) ? item.media : []).filter((media) => media?.src).slice(0, 6).map((media) => [media.src, media.alt]),
+    item.rank, item.rankMovement, item.rankDelta, item.rankMovementAnimated,
+    reason, isBlacklistItemRevealed(item), saved,
+    lastSettings?.placeholderText, Boolean(lastSettings?.openLinksInNewTab)
+  ]);
+}
+
 function renderTopicCard(item) {
   const reason = shouldBlockRebuiltItem(item);
+  let saved = false;
+  const remember = (card) => {
+    topicCardRenderStates.set(card, getTopicCardRenderState(item, reason, saved));
+    return card;
+  };
   if (reason && !isBlacklistItemRevealed(item)) {
-    return renderBlockedPlaceholder(reason, {
+    return remember(renderBlockedPlaceholder(reason, {
       onReveal: () => {
         revealBlacklistItem(item);
         scheduleRebuild();
       }
-    });
+    }));
   }
 
   const card = createElement("article", "cc98-rebuild-card");
@@ -13890,6 +14042,7 @@ function renderTopicCard(item) {
   }
   const readLaterButton = createReadLaterCardButton(item);
   if (readLaterButton) {
+    saved = readLaterButton.classList.contains("is-saved");
     card.classList.add("has-read-later");
     card.append(readLaterButton);
   }
@@ -13947,7 +14100,7 @@ function renderTopicCard(item) {
       card.append(motion);
     }
   }
-  return card;
+  return remember(card);
 }
 
 function escapeRegExp(value) {
@@ -14186,6 +14339,38 @@ function renderPostAuthorCard(item) {
   return card;
 }
 
+function renderPostBody(item) {
+  const body = createElement("div", "cc98-rebuild-post-body");
+  const voteContent = renderPostVoteContent(item.voteContent);
+  if (voteContent) {
+    body.append(voteContent);
+  }
+  const lotteryContent = renderPostLotteryContent(item.lotteryContent);
+  if (lotteryContent) {
+    body.append(lotteryContent);
+  }
+  if (item.content) {
+    body.append(item.content);
+  } else {
+    item.text.split("\n").filter(Boolean).forEach((line) => {
+      body.append(createElement("p", "", line));
+    });
+  }
+  filterBlacklistedQuotes(body);
+  rewriteLegacyQuoteInlineStyles(body);
+  stabilizePostQuoteBlocks(body);
+  forceLegacyQuotesInRebuiltRoot(body);
+  stabilizeEmojiRendering(body);
+  requestAnimationFrame(() => {
+    rewriteLegacyQuoteInlineStyles(body);
+    stabilizePostQuoteBlocks(body);
+    forceLegacyQuotesInRebuiltRoot(body);
+    stabilizeEmojiRendering(body);
+  });
+  if (!isMeaningfulPostContent(body)) body.dataset.cc98EmptyPostBody = "true";
+  return body;
+}
+
 function renderPostCard(item) {
   const blockReason = shouldBlockRebuiltItem(item);
   if (blockReason && !isBlacklistItemRevealed(item)) {
@@ -14270,34 +14455,7 @@ function renderPostCard(item) {
   header.append(byline);
   card.append(header);
 
-  const body = createElement("div", "cc98-rebuild-post-body");
-  const voteContent = renderPostVoteContent(item.voteContent);
-  if (voteContent) {
-    body.append(voteContent);
-  }
-  const lotteryContent = renderPostLotteryContent(item.lotteryContent);
-  if (lotteryContent) {
-    body.append(lotteryContent);
-  }
-  if (item.content) {
-    body.append(item.content);
-  } else {
-    item.text.split("\n").filter(Boolean).forEach((line) => {
-      body.append(createElement("p", "", line));
-    });
-  }
-  filterBlacklistedQuotes(body);
-  rewriteLegacyQuoteInlineStyles(body);
-  stabilizePostQuoteBlocks(body);
-  forceLegacyQuotesInRebuiltRoot(body);
-  stabilizeEmojiRendering(body);
-  requestAnimationFrame(() => {
-    rewriteLegacyQuoteInlineStyles(body);
-    stabilizePostQuoteBlocks(body);
-    forceLegacyQuotesInRebuiltRoot(body);
-    stabilizeEmojiRendering(body);
-  });
-  card.append(body);
+  card.append(renderPostBody(item));
 
   const awardTable = renderPostAwardTable(item.awards, {
     sourcePost: item.awardSourcePost,
@@ -14316,7 +14474,7 @@ function renderPostCard(item) {
     card.append(signatureWrap);
   }
 
-  const canViewConversation = !item.isHot && Number.isFinite(floor) && floor > 0
+  const canViewConversation = !item.liveSnapshot && !item.isHot && Number.isFinite(floor) && floor > 0
     && Boolean(globalThis.CC98RebornConversation && getTopicPageInfo());
   if (item.publishedAt || item.editedAt || item.actions?.length || canViewConversation) {
     const footer = createElement("div", "cc98-rebuild-post-footer");
@@ -14441,6 +14599,17 @@ function renderPostPager() {
     const shareButton = renderProxyControl(shareAction);
     shareButton.classList.add("cc98-rebuild-pager-action");
     pager.append(shareButton);
+  }
+  if (globalThis.CC98RebornTopicLive?.available()) {
+    const live = createButton("cc98-rebuild-pager-action cc98-topic-live-entry", "跟帖", event => {
+      event.preventDefault();
+      const info = getTopicPageInfo();
+      if (info?.topicId === live.dataset.topicId) globalThis.CC98RebornTopicLive.toggle(info);
+    });
+    live.dataset.topicId = pageInfo.topicId;
+    live.title = "跟帖（实验性）：后台检查并展开新回复";
+    live.setAttribute("aria-pressed", "false");
+    pager.append(live);
   }
   const favoriteAction = topicActions.favorite;
   if (globalThis.CC98RebornTopicSearch) {
@@ -14735,6 +14904,13 @@ function restoreNativeNode(node) {
     );
     delete node.dataset.followSymbol;
     delete node.dataset.followLabel;
+  }
+  if (node.classList?.contains("cc98-dm-reading")) {
+    node.classList.remove("cc98-dm-reading");
+    node.querySelectorAll(".cc98-dm-contacts-button, .cc98-dm-chat-button").forEach(button => button.remove());
+    node.querySelectorAll("[data-cc98-dm-contact]").forEach(row => {
+      row.removeAttribute("tabindex"); row.removeAttribute("role"); row.removeAttribute("data-cc98-dm-contact");
+    });
   }
   if (node.classList?.contains("cc98-rebuild-native-user-nav")) {
     delete node.dataset.cc98SettingsOpen;
@@ -18763,80 +18939,71 @@ function stabilizeEditorPreviewFormatting(editor) {
 
 function closeEditorTagDropdowns(editor, except = null) {
   editor?.querySelectorAll?.(".cc98-rebuild-tag-dropdown").forEach((row) => {
-    if (!(row instanceof HTMLElement) || row === except) {
-      return;
-    }
-    row.classList.remove("is-open");
-    const list = row.querySelector(".tagBoxSub");
-    if (list instanceof HTMLElement) {
-      list.style.display = "none";
-    }
+    if (row !== except) setEditorTagDropdownOpen(row, false);
   });
 }
 
 function setEditorTagDropdownOpen(row, open) {
-  if (!(row instanceof HTMLElement)) {
-    return;
-  }
-  const list = row.querySelector(".tagBoxSub");
-  if (!(list instanceof HTMLElement)) {
-    return;
-  }
+  if (!(row instanceof HTMLElement)) return;
+  const list = row.querySelector(":scope > .tagBoxSub, :scope > .tagBoxSub1");
+  const select = row.querySelector(":scope > .tagBoxSelect, :scope > .tagBoxSelect1");
+  if (!(list instanceof HTMLElement)) return;
   row.classList.toggle("is-open", Boolean(open));
-  list.style.display = open ? "block" : "none";
-}
-
-function syncEditorTagValue(row, item) {
-  const select = row?.querySelector?.(".tagBoxSelect");
-  if (!(row instanceof HTMLElement) || !(item instanceof HTMLElement) || !(select instanceof HTMLElement)) {
-    return;
-  }
-  const value = cleanupPostText(item.textContent);
-  if (!value) {
-    return;
-  }
-  select.textContent = value;
-  row.dataset.cc98SelectedTag = value;
-  row.querySelectorAll(".tagBoxSub li").forEach((option) => {
-    option.classList.toggle("is-active", option === item);
-  });
-  ["input", "change"].forEach((type) => {
-    select.dispatchEvent(new Event(type, { bubbles: true }));
-    row.dispatchEvent(new Event(type, { bubbles: true }));
-  });
+  const display = open ? "block" : "none";
+  if (list.style.display !== display) list.style.display = display;
+  if (select?.getAttribute("aria-expanded") !== String(Boolean(open))) select?.setAttribute("aria-expanded", String(Boolean(open)));
 }
 
 function stabilizeEditorTagDropdown(editor) {
-  if (!(editor instanceof HTMLElement)) {
-    return;
+  if (!(editor instanceof HTMLElement)) return;
+  editor.querySelectorAll(".createTopicTitle").forEach(title => {
+    title.classList.toggle("cc98-rebuild-tagged-title", Boolean(title.querySelector(".tagBoxSelect, .tagBoxSelect1")));
+  });
+  if (!stabilizeEditorTagDropdown.dismissBound) {
+    stabilizeEditorTagDropdown.dismissBound = true;
+    document.addEventListener("click", event => {
+      if (!event.target?.closest?.(".cc98-rebuild-tag-dropdown")) closeEditorTagDropdowns(document);
+    }, true);
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape") closeEditorTagDropdowns(document);
+    });
   }
-  editor.querySelectorAll(".createTopicTitle > .row").forEach((row) => {
-    if (!(row instanceof HTMLElement) || !row.querySelector(".tagBoxSelect") || !row.querySelector(".tagBoxSub")) {
-      return;
-    }
+  editor.querySelectorAll(".createTopicTitle .tagBoxSelect, .createTopicTitle .tagBoxSelect1").forEach((select) => {
+    const row = select.parentElement;
+    const list = row?.querySelector(":scope > .tagBoxSub, :scope > .tagBoxSub1");
+    if (!(row instanceof HTMLElement) || !(list instanceof HTMLElement)) return;
+    const title = row.closest(".createTopicTitle");
+    if (row.parentElement !== title) row.parentElement.classList.add("cc98-rebuild-tag-group");
     row.classList.add("cc98-rebuild-tag-dropdown");
-    const list = row.querySelector(".tagBoxSub");
-    if (row.dataset.cc98TagDropdownBound === "true") {
-      return;
-    }
+    const attributes = { role: "button", tabindex: "0", "aria-haspopup": "listbox", "aria-label": select.classList.contains("tagBoxSelect1") ? "主题子标签" : "主题标签" };
+    for (const [name, value] of Object.entries(attributes)) if (select.getAttribute(name) !== value) select.setAttribute(name, value);
+    if (list.getAttribute("role") !== "listbox") list.setAttribute("role", "listbox");
+    const value = cleanupPostText(select.textContent);
+    list.querySelectorAll("li").forEach(option => {
+      const selected = Boolean(value) && cleanupPostText(option.textContent) === value;
+      option.classList.toggle("is-active", selected);
+      if (option.getAttribute("role") !== "option") option.setAttribute("role", "option");
+      if (option.getAttribute("tabindex") !== "-1") option.tabIndex = -1;
+      if (option.getAttribute("aria-selected") !== String(selected)) option.setAttribute("aria-selected", String(selected));
+    });
+    setEditorTagDropdownOpen(row, row.classList.contains("is-open"));
+    if (row.dataset.cc98TagDropdownBound === "true") return;
     row.dataset.cc98TagDropdownBound = "true";
-    if (list instanceof HTMLElement) {
-      list.style.display = "none";
-    }
     row.addEventListener("click", (event) => {
       const target = event.target;
-      if (!(target instanceof Element)) {
-        return;
-      }
-      const item = target.closest(".tagBoxSub li");
+      if (!(target instanceof Element)) return;
+      const item = target.closest(".tagBoxSub li, .tagBoxSub1 li");
       if (item instanceof HTMLElement && row.contains(item)) {
-        event.preventDefault();
-        event.stopPropagation();
-        syncEditorTagValue(row, item);
-        setEditorTagDropdownOpen(row, false);
+        // Native React updates tag1/tag2 and rebuilds dependent sub-tags here.
+        // Let that click reach React; changing only the displayed text loses
+        // the submitted values. Close after the native event has completed.
+        queueMicrotask(() => {
+          closeEditorTagDropdowns(editor);
+          if (editor.isConnected) stabilizeEditorTagDropdown(editor);
+        });
         return;
       }
-      if (target.closest(".tagBoxSelect, .downArrow")) {
+      if (target.closest(".tagBoxSelect, .tagBoxSelect1, .downArrow, .downArrow1")) {
         event.preventDefault();
         event.stopPropagation();
         const shouldOpen = !row.classList.contains("is-open");
@@ -18844,6 +19011,26 @@ function stabilizeEditorTagDropdown(editor) {
         setEditorTagDropdownOpen(row, shouldOpen);
       }
     }, true);
+    row.addEventListener("keydown", event => {
+      const options = [...row.querySelectorAll(":scope > .tagBoxSub > li, :scope > .tagBoxSub1 > li")];
+      const index = options.indexOf(event.target);
+      if (event.key === "Escape") {
+        event.preventDefault(); event.stopPropagation();
+        setEditorTagDropdownOpen(row, false); select.focus({ preventScroll: true });
+      } else if (["ArrowDown", "ArrowUp"].includes(event.key)) {
+        event.preventDefault(); event.stopPropagation();
+        closeEditorTagDropdowns(editor, row); setEditorTagDropdownOpen(row, true);
+        const next = index < 0 ? (event.key === "ArrowDown" ? 0 : options.length - 1) : (index + (event.key === "ArrowDown" ? 1 : -1) + options.length) % options.length;
+        options[next]?.focus({ preventScroll: true });
+      } else if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault(); event.stopPropagation();
+        (index >= 0 ? options[index] : select).click();
+        if (index >= 0) select.focus({ preventScroll: true });
+      }
+    });
+    row.addEventListener("focusout", event => {
+      if (event.relatedTarget && !row.contains(event.relatedTarget)) setEditorTagDropdownOpen(row, false);
+    });
   });
 }
 
@@ -19716,6 +19903,17 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
     if (isNativeDualUbbSourceActive(state)) {
       return insertSourceText(item?.insertText || "");
     }
+    if (item?.favoriteImage && item.src) {
+      const encodedSource = String(item.insertText || "").match(/^\[img\](.+)\[\/img\]$/i)?.[1];
+      if (!encodedSource) return false;
+      const image = createContentImageFromUrl(item.src, "");
+      image.dataset.cc98UbbTag = "img";
+      image.dataset.cc98UbbValue = encodedSource;
+      image.contentEditable = "false";
+      image.draggable = false;
+      state.activeSurface = "visual";
+      return insertProfileSignatureWysiwygNode(editor, visual, image);
+    }
     const emotionTag = String(item?.insertText || "").replace(/^\[/, "").replace(/\]$/, "");
     if (!emotionTag || !item?.src) {
       return false;
@@ -20444,14 +20642,35 @@ function getMessagePageTitle(root = document) {
     || "\u6d88\u606f";
 }
 
-function syncMessageReadAllProxy(source, heroTop) {
+function syncMessageCenterHeader(source, heroTop) {
   if (!(source instanceof HTMLElement) || !(heroTop instanceof HTMLElement)) {
     return;
+  }
+  const nav = source.querySelector(".message-content > .message-nav");
+  if (nav) {
+    if (nav.tagName !== "NAV" && !nav.hasAttribute("role")) nav.setAttribute("role", "navigation");
+    if (!nav.hasAttribute("aria-label")) nav.setAttribute("aria-label", "消息中心");
+    // /message is the native alias for the first tab; pagination, recipient
+    // query strings and hashes don't change which section is selected.
+    const section = getCurrentCc98RoutePath().split(/[?#]/)[0].split("/")[2] || "response";
+    for (const link of nav.querySelectorAll(":scope > a[href]")) {
+      const path = getCc98RoutePathFromHref(link.getAttribute("href")).split(/[?#]/)[0].replace(/\/$/, "");
+      if (path === `/message/${section}`) {
+        if (link.getAttribute("aria-current") !== "page") link.setAttribute("aria-current", "page");
+      } else if (link.hasAttribute("aria-current")) link.removeAttribute("aria-current");
+    }
   }
   const originalWrap = source.querySelector(".readAllMessage");
   const originalControl = originalWrap?.querySelector?.("button, a, [role='button']") || originalWrap;
   let proxy = heroTop.querySelector(".cc98-rebuild-message-read-all-proxy");
   if (!(originalControl instanceof HTMLElement)) {
+    proxy?.remove();
+    return;
+  }
+  if (nav) {
+    // All five sections use the original control next to the same tab strip.
+    originalWrap.classList.remove("cc98-rebuild-message-read-all-source");
+    if (!originalControl.title) originalControl.title = originalControl.textContent.trim();
     proxy?.remove();
     return;
   }
@@ -20509,6 +20728,7 @@ function stabilizeNativeMessageSurfaces(source) {
   if (!(source instanceof HTMLElement)) {
     return;
   }
+  syncPrivateMessageReading(source);
   const scrollState = captureMessageWindowScrollState(source);
   let movedComposer = false;
   source.querySelectorAll(".message-message-window").forEach((windowNode) => {
@@ -20563,6 +20783,46 @@ function stabilizeNativeMessageSurfaces(source) {
   });
   stabilizeNativeMessageEmojis(source);
   globalThis.CC98RebornPrivateMessagePins?.mount(source);
+}
+
+// Switch presentation only: keep both React panes mounted, including their
+// scroll positions, unread state, native click handlers and editor draft.
+function syncPrivateMessageReading(source) {
+  const chat = source.querySelector(".message-message");
+  const header = chat?.querySelector(".message-message-wHeader");
+  const listHeader = chat?.querySelector(".message-message-pTitle");
+  source.classList.toggle("cc98-dm-reading", !!header && !!listHeader);
+  if (!header || !listHeader) return;
+  const title = getFirstText(header, ".message-message-wTitle");
+  const selected = !!title && !title.includes("无当前聊天对象");
+  chat.toggleAttribute("data-dm-selected", selected);
+  chat.querySelectorAll('.message-message-pList > div[id^="contact_"]:not([tabindex]):not([role])').forEach(row => {
+    row.tabIndex = 0;
+    row.setAttribute("role", "link");
+    row.setAttribute("data-cc98-dm-contact", "");
+  });
+  const switchPane = (pane) => {
+    chat.dataset.dmPane = pane;
+    const focusTarget = pane === "list" ? ".cc98-dm-chat-button" : ".cc98-dm-contacts-button";
+    chat.querySelector(focusTarget)?.focus({ preventScroll: true });
+  };
+  if (!header.querySelector(".cc98-dm-contacts-button")) {
+    const back = createButton("cc98-dm-contacts-button", "近期私信", () => switchPane("list"));
+    back.type = "button";
+    header.prepend(back);
+  }
+  if (!listHeader.querySelector(".cc98-dm-chat-button")) {
+    const resume = createButton("cc98-dm-chat-button", "返回对话", () => switchPane("chat"));
+    resume.type = "button";
+    listHeader.append(resume);
+  }
+}
+
+function handlePrivateMessageContactKey(event) {
+  if (event.key === "Enter" && event.target instanceof Element && event.target.hasAttribute("data-cc98-dm-contact")) {
+    event.preventDefault();
+    event.target.querySelector(".message-message-person")?.click();
+  }
 }
 
 function isNativeMessageContentNode(node) {
@@ -20784,10 +21044,25 @@ function ensurePrivateMessageEmojiPanel(editor, textarea, options = {}) {
   }
   bindPrivateMessageEmojiBlankDismiss();
   const isNativeEditorPanel = Boolean(options.nativeEditor);
+  const allowFavorites = typeof options.onSelect !== "function";
+  const favorites = globalThis.CC98RebornImageFavorites;
+  if (favorites?.subscribe && !ensurePrivateMessageEmojiPanel.__cc98FavoritesBound) {
+    ensurePrivateMessageEmojiPanel.__cc98FavoritesBound = true;
+    // Keep a single subscription, not a closure for every SPA/editor instance.
+    favorites.subscribe(() => {
+      document.querySelectorAll(".cc98-rebuild-message-emoji-panel").forEach((openPanel) => {
+        if (!openPanel.hidden) openPanel.__cc98EmojiRefreshFavorites?.(true);
+      });
+    });
+  }
   let panel = editor.querySelector(":scope > .cc98-rebuild-message-emoji-panel");
   if (panel instanceof HTMLElement) {
     panel.__cc98EmojiTextarea = textarea;
     panel.__cc98EmojiOnSelect = options.onSelect;
+    panel.__cc98EmojiAllowFavorites = allowFavorites;
+    const favoriteTab = panel.querySelector('[data-emoji-key="image-favorites"]');
+    if (favoriteTab) favoriteTab.hidden = !allowFavorites;
+    panel.__cc98EmojiRefreshFavorites?.();
     panel.classList.toggle("cc98-rebuild-editor-emoji-panel", isNativeEditorPanel);
     if (isNativeEditorPanel) {
       panel.dataset.cc98NativeEditorEmoji = "true";
@@ -20797,22 +21072,23 @@ function ensurePrivateMessageEmojiPanel(editor, textarea, options = {}) {
     return panel;
   }
   const categories = getPrivateMessageEmojiCategories();
+  if (allowFavorites) categories.push({ key: "image-favorites", label: "图片收藏", items: [] });
   panel = createElement("div", "cc98-rebuild-message-emoji-panel ubb-emoji");
   panel.__cc98EmojiTextarea = textarea;
   panel.__cc98EmojiOnSelect = options.onSelect;
+  panel.__cc98EmojiAllowFavorites = allowFavorites;
   if (isNativeEditorPanel) {
     panel.classList.add("cc98-rebuild-editor-emoji-panel");
     panel.dataset.cc98NativeEditorEmoji = "true";
   }
   const tabs = createElement("div", "cc98-rebuild-message-emoji-tabs ubb-emoji-buttons");
   const content = createElement("div", "cc98-rebuild-message-emoji-content ubb-emoji-content");
-  const renderCategory = (activeKey) => {
-    const category = categories.find((item) => item.key === activeKey) || categories[0];
-    tabs.querySelectorAll(".cc98-rebuild-message-emoji-tab").forEach((tab) => {
-      tab.classList.toggle("is-active", tab.dataset.emojiKey === category.key);
-    });
+  let activeCategory = categories[0];
+  let renderRevision = 0;
+  const renderItems = (category, items) => {
     content.replaceChildren();
-    category.items.forEach((item, index) => {
+    content.removeAttribute("aria-busy");
+    items.forEach((item, index) => {
       const button = createButton("cc98-rebuild-message-emoji-option", "", (event) => {
         event?.preventDefault?.();
         if (typeof panel.__cc98EmojiOnSelect === "function") {
@@ -20831,18 +21107,74 @@ function ensurePrivateMessageEmojiPanel(editor, textarea, options = {}) {
         }
       });
       button.type = "button";
-      button.title = `${category.label} ${index + 1}`;
+      button.title = item.note || `${category.label} ${index + 1}`;
+      button.setAttribute("aria-label", button.title);
+      button.addEventListener("mousedown", (event) => event.preventDefault());
+      if (item.favoriteImage) {
+        button.classList.add("cc98-rebuild-image-favorite-option");
+        button.dataset.imageFavoriteUrl = item.src;
+      }
       const image = document.createElement("img");
       image.src = item.src;
       image.alt = "";
       image.loading = "lazy";
       image.addEventListener("error", () => {
-        button.hidden = true;
+        if (item.favoriteImage) {
+          image.hidden = true;
+          button.classList.add("is-unavailable");
+          button.append(createElement("span", "", item.note || "图片"));
+        } else {
+          button.hidden = true;
+        }
       }, { once: true });
-      markRebuiltEmojiImage(image, item.src);
+      if (!item.favoriteImage) markRebuiltEmojiImage(image, item.src);
       button.append(image);
       content.append(button);
     });
+  };
+  const renderStatus = (message) => {
+    content.replaceChildren(createElement("div", "cc98-rebuild-image-favorites-picker-status", message));
+  };
+  const showFavorites = (items) => {
+    const usable = (Array.isArray(items) ? items : []).filter((item) => item?.url && item?.code);
+    renderItems(activeCategory, usable.map((item) => ({ src: item.url, insertText: item.code, note: item.note, favoriteImage: true })));
+    if (!usable.length) renderStatus("暂无图片收藏");
+  };
+  const renderCategory = (activeKey) => {
+    const key = activeKey === "image-favorites" && !panel.__cc98EmojiAllowFavorites ? categories[0].key : activeKey;
+    activeCategory = categories.find((item) => item.key === key) || categories[0];
+    const revision = ++renderRevision;
+    tabs.querySelectorAll(".cc98-rebuild-message-emoji-tab").forEach((tab) => {
+      tab.classList.toggle("is-active", tab.dataset.emojiKey === activeCategory.key);
+    });
+    content.classList.toggle("cc98-rebuild-image-favorites-picker", activeCategory.key === "image-favorites");
+    if (activeCategory.key !== "image-favorites") {
+      renderItems(activeCategory, activeCategory.items);
+      return;
+    }
+    content.setAttribute("aria-busy", "true");
+    renderStatus("加载中…");
+    if (!favorites?.list) {
+      content.removeAttribute("aria-busy");
+      renderStatus("图片收藏暂不可用");
+      return;
+    }
+    Promise.resolve().then(() => favorites.list()).then((items) => {
+      if (revision === renderRevision) showFavorites(items);
+    }).catch((error) => {
+      if (revision !== renderRevision) return;
+      content.removeAttribute("aria-busy");
+      renderStatus(error?.message || "图片收藏加载失败");
+    });
+  };
+  panel.__cc98EmojiRefreshFavorites = (fromStore = false) => {
+    if (activeCategory.key !== "image-favorites") return;
+    if (fromStore && panel.__cc98EmojiAllowFavorites && favorites?.isReady?.()) {
+      ++renderRevision;
+      showFavorites(favorites.getItems());
+    } else {
+      renderCategory(activeCategory.key);
+    }
   };
   categories.forEach((category) => {
     const tab = createButton("cc98-rebuild-message-emoji-tab ubb-emoji-button", category.label, (event) => {
@@ -20851,6 +21183,8 @@ function ensurePrivateMessageEmojiPanel(editor, textarea, options = {}) {
     });
     tab.type = "button";
     tab.dataset.emojiKey = category.key;
+    tab.hidden = category.key === "image-favorites" && !allowFavorites;
+    tab.addEventListener("mousedown", (event) => event.preventDefault());
     tabs.append(tab);
   });
   panel.append(tabs, content);
@@ -21189,11 +21523,13 @@ function stabilizePrivateMessageComposer(source, nativeInput) {
 
   const originalButton = findPrivateMessageNativeControl(source, container, "send");
   const originalUploadButton = findPrivateMessageNativeControl(source, container, "uploadImage");
+  const compact = Boolean(container.closest(".message-message"));
   const editor = createElement("div", "cc98-rebuild-message-editor");
   const toolbar = createElement("div", "cc98-rebuild-message-editor-toolbar");
   const textarea = document.createElement("textarea");
   textarea.className = "cc98-rebuild-message-editor-textarea";
-  textarea.placeholder = nativeInput.getAttribute("placeholder") || "";
+  textarea.placeholder = nativeInput.getAttribute("placeholder") || (compact ? "输入私信…" : "");
+  if (compact) textarea.setAttribute("aria-label", "私信内容");
   textarea.value = nativeInput.value || "";
   const preview = createElement("div", "cc98-rebuild-message-editor-preview");
   preview.hidden = true;
@@ -21242,7 +21578,7 @@ function stabilizePrivateMessageComposer(source, nativeInput) {
   addButton("中", "居中", "[align=center]", "[/align]");
   addButton("右", "右对齐", "[align=right]", "[/align]");
   addActionButton("链", "插入链接", () => insertPrivateMessageLink(textarea));
-  addActionButton("图", "上传图片", () => {
+  const imageButton = addActionButton("图", "上传图片", () => {
     syncToNative();
     if (triggerPrivateMessageUploadImage(source, container)) {
       scheduleSyncFromNative();
@@ -21258,6 +21594,7 @@ function stabilizePrivateMessageComposer(source, nativeInput) {
     if (panel instanceof HTMLElement) {
       const willOpen = panel.hidden;
       panel.hidden = !willOpen;
+      if (compact) emojiButton.setAttribute("aria-expanded", String(willOpen));
       editor.classList.toggle("cc98-rebuild-message-emoji-open", willOpen);
       if (willOpen) {
         positionPrivateMessageEmojiPanel(editor, panel, event?.currentTarget);
@@ -21314,6 +21651,39 @@ function stabilizePrivateMessageComposer(source, nativeInput) {
     }
   });
   send.type = "button";
+  if (compact) {
+    editor.classList.add("cc98-dm-composer");
+    toolbar.hidden = true;
+    toolbar.setAttribute("role", "group");
+    toolbar.setAttribute("aria-label", "文字格式与更多工具");
+    const format = createButton("cc98-rebuild-message-editor-button", "格式", () => {
+      toolbar.hidden = !toolbar.hidden;
+      format.setAttribute("aria-expanded", String(!toolbar.hidden));
+      if (toolbar.hidden) {
+        preview.hidden = true;
+        editor.classList.remove("cc98-rebuild-message-preview-open");
+      }
+    });
+    format.type = "button";
+    format.setAttribute("aria-expanded", "false");
+    emojiButton.setAttribute("aria-expanded", "false");
+    for (const [button, shape] of [
+      [emojiButton, "M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM8 14c1.8 3.5 6.2 3.5 8 0M8.5 9.5h.1m6.8 0h.1"],
+      [imageButton, "M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2ZM3 16l5-5 4 4 3-3 6 6M15 8h.1"]
+    ]) {
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("viewBox", "0 0 24 24");
+      svg.setAttribute("aria-hidden", "true");
+      const path = document.createElementNS(svg.namespaceURI, "path");
+      path.setAttribute("d", shape);
+      svg.append(path);
+      button.setAttribute("aria-label", button.title);
+      button.replaceChildren(svg);
+    }
+    // Move the original actions: one upload handler and one emoji picker.
+    footer.append(emojiButton, imageButton, format);
+    send.title = "发送（Ctrl / ⌘ + Enter）";
+  }
   footer.append(send);
   editor.append(toolbar, textarea, preview, footer);
 
@@ -21362,6 +21732,7 @@ function clearMessageTitleSync() {
   messageTitleObserver = null;
   if (messageTitleSource && messageTitleClickHandler) {
     messageTitleSource.removeEventListener("click", messageTitleClickHandler, true);
+    messageTitleSource.removeEventListener("keydown", handlePrivateMessageContactKey);
   }
   messageTitleSource = null;
   messageTitleClickHandler = null;
@@ -21390,8 +21761,8 @@ function bindMessageTitleSync(source, heroTitle, heroTop) {
     messageTitleSyncTimer = window.setTimeout(() => {
       messageTitleSyncTimer = null;
       syncTitle();
-      syncMessageReadAllProxy(source, heroTop);
       stabilizeNativeMessageSurfaces(source);
+      syncMessageCenterHeader(source, heroTop);
       stabilizePrivateMessageEditor(source);
     }, delay);
   };
@@ -21401,6 +21772,11 @@ function bindMessageTitleSync(source, heroTitle, heroTop) {
     const person = event.target?.closest?.(".message-message-person");
     if (!person || !source.contains(person)) {
       return;
+    }
+    const chat = person.closest(".message-message");
+    if (chat && matchMedia("(max-width: 700px)").matches) {
+      chat.dataset.dmPane = "chat";
+      requestAnimationFrame(() => chat.querySelector(".cc98-dm-contacts-button")?.focus({ preventScroll: true }));
     }
     const name = getFirstText(person, ".message-message-pName");
     if (name) {
@@ -21414,6 +21790,7 @@ function bindMessageTitleSync(source, heroTitle, heroTop) {
     }, 650);
   };
   source.addEventListener("click", messageTitleClickHandler, true);
+  source.addEventListener("keydown", handlePrivateMessageContactKey);
 
   messageTitleObserver = new MutationObserver((records) => {
     // Mark newly inserted/retargeted media before the next paint. Do not merge
@@ -21434,8 +21811,8 @@ function bindMessageTitleSync(source, heroTitle, heroTop) {
     attributeFilter: ["src", "srcset", "data-src", "data-srcset", "data-original", "data-cc98-lazy-src", "data-lazy-src", "data-original-src"]
   });
   syncTitle();
-  syncMessageReadAllProxy(source, heroTop);
   stabilizeNativeMessageSurfaces(source);
+  syncMessageCenterHeader(source, heroTop);
   stabilizePrivateMessageEditor(source);
 }
 
@@ -24775,6 +25152,7 @@ function stabilizeNativeUserCenter(router) {
   });
   stabilizeUserCenterFavoriteActions(router);
   globalThis.CC98RebornFavoriteShare?.mount(router);
+  globalThis.CC98RebornImageFavorites?.mount(router);
   stabilizeUserCenterSearchButtons(router);
   stabilizeProfileSignatureToolbar(router);
   stabilizeUserProfileStats(router);
@@ -25615,10 +25993,6 @@ function renderPost(app) {
   if (topPager) {
     app.append(topPager);
   }
-  if (hasTopicLockedNotice()) {
-    const lockedCard = createElement("section", "cc98-rebuild-topic-locked-card", "\ud83d\udd12 \u672c\u5e16\u5df2\u88ab\u9501\u5b9a");
-    app.append(lockedCard);
-  }
   const feed = createElement("section", "cc98-rebuild-feed cc98-rebuild-post-feed");
   feed.dataset.feedKind = "post";
   postItems.forEach((item, index) => {
@@ -25636,6 +26010,7 @@ function renderPost(app) {
     app.append(bottomPager);
   }
   renderPostReplyEditor(app);
+  globalThis.CC98RebornTopicLive?.sync();
 }
 
 function renderBoardCard(board, pinned = false) {
@@ -29376,8 +29751,7 @@ function getNativeRouteRenderState(kind) {
     ready = replies.some((node, index) => {
       const floor = getPostFloorNumber(node, index);
       return getTopicPageFromFloor(floor) === topic?.current
-        && (hasRenderablePostContent(findPostContentNode(node))
-          || findPostVoteContentNode(node) || findPostLotteryContentNode(node));
+        && hasPostContentContainer(node);
     });
   }
   const empty = document.querySelector("#noResultBoard, .noResultText, .no-topic");
@@ -29680,8 +30054,7 @@ function renderRebuiltUi(options = {}) {
         : (options.pending ? "" : getPageTitle());
       hero.append(createElement("h1", options.pending && !title ? "cc98-rebuild-pending-title cc98-rebuild-pending-block" : "", title));
       if (kind === "post" && !options.pending) {
-        const views = getTopicMetricCount("viewtimes");
-        if (views !== "") hero.append(createElement("p", "cc98-rebuild-topic-views", `浏览 ${views}`));
+        syncTopicContextRow(hero);
       }
       app.append(hero);
     }
@@ -30222,6 +30595,7 @@ function reconcileCardFeed(feed, entries) {
 }
 
 function syncRebuiltContent() {
+  globalThis.CC98RebornTopicLive?.sync();
   globalThis.CC98RebornUserNotes?.sync();
   if (isRebuilding || !lastSettings?.enabled || !lastSettings.rebuildUi) {
     return;
@@ -30279,8 +30653,25 @@ function syncRebuiltContent() {
       globalThis.CC98RebornNewTopicsVirtual.update(feed, getTopicItems(), { refresh: true });
       return;
     }
+    const mounted = new Map([...feed.children].map((card) => [card.dataset.itemKey, card]));
+    // Resolve the current account and its saved topics once for this sync, not
+    // once per card. This snapshot never survives the synchronous batch.
+    const savedKeys = new Set(readReadLaterItems().map((item) => item.key));
     getTopicItems().forEach((item) => {
-      upsertCard(feed, `topic:${item.href}`, renderTopicCard(item));
+      const key = `topic:${item.href}`;
+      const existing = mounted.get(key);
+      const reason = existing ? shouldBlockRebuiltItem(item) : "";
+      const blocked = reason && !isBlacklistItemRevealed(item);
+      const state = existing && getTopicCardRenderState(item, reason, !blocked && savedKeys.has(getReadLaterKeyFromHref(item.href)));
+      // Native infinite feeds append frequently. Keep unchanged mounted cards,
+      // including their loaded images, ASCII decorations and focused controls.
+      if (state && topicCardRenderStates.get(existing) === state) return;
+      const next = renderTopicCard(item);
+      if (!upsertCard(feed, key, next) && existing) {
+        // A changed input can produce identical visible DOM (for example a
+        // revealed filter result). Remember it even when upsert keeps the node.
+        topicCardRenderStates.set(existing, topicCardRenderStates.get(next));
+      }
     });
     return;
   }
@@ -30321,8 +30712,22 @@ function syncRebuiltContent() {
   }
 
   if (feed.dataset.feedKind === "post") {
+    const emptyBodies = new Map([...feed.querySelectorAll(":scope > .cc98-rebuild-post > .cc98-rebuild-post-body[data-cc98-empty-post-body]")]
+      .map((body) => [body.parentElement.dataset.itemKey, body]));
     getPostItems().forEach((item) => {
-      appendUniqueCard(feed, `post:${item.id}`, () => renderPostCard(item));
+      const key = `post:${item.id}`;
+      const emptyBody = emptyBodies.get(key);
+      if (emptyBody && (isMeaningfulPostContent(item.content) || item.text || item.voteContent || item.lotteryContent)) {
+        if (shouldBlockRebuiltItem(item) && !isBlacklistItemRevealed(item)) {
+          upsertCard(feed, key, renderPostCard(item));
+        } else {
+          // Markdown and lazy media can arrive after the native body container.
+          // Fill just that body, retaining the card, author and action controls.
+          emptyBody.replaceWith(renderPostBody(item));
+        }
+      } else {
+        appendUniqueCard(feed, key, () => renderPostCard(item));
+      }
     });
     setupRebuiltImagePlaceholders(app);
     // The target floor may only have appeared in the native tree during this
@@ -30511,7 +30916,17 @@ function ensureObserver() {
     if (app?.dataset.pageKind === "post") {
       const source = document.getElementById("viewtimes");
       if (topicViewCountSource && !topicViewCountSource.isConnected
-        || !topicViewCountSource && source && !app.contains(source)) syncTopicViewCount();
+        || topicLockScope && !topicLockScope.isConnected
+        || !topicLockScope && records.some(record => [...record.addedNodes].some(node => node instanceof Element
+          && !node.closest(lockContentExclusions) && (node.matches(nativeLockRow + ", .center > .column, " + nativeRedTip) || node.querySelector(nativeLockRow))))
+        || !topicViewCountSource && source && !app.contains(source)
+        || topicBreadcrumbSource && !topicBreadcrumbSource.isConnected
+        || !topicBreadcrumbSource && records.some(record => {
+          const target = record.target instanceof Element ? record.target : record.target.parentElement;
+          return target?.closest(".row")?.querySelector('a[href*="/boardlist" i]')
+            || [...record.addedNodes].some(node => node instanceof Element
+              && (node.matches('a[href*="/boardlist" i]') || node.querySelector('a[href*="/boardlist" i]')));
+        })) syncTopicViewCount();
     }
     const hasSourceMutation = records.some((record) => {
       const target = record.target;

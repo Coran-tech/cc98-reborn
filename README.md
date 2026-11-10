@@ -4,7 +4,7 @@
 
 主要目标：让 CC98 的页面更统一、更清爽，也顺手补上一些日常浏览真正用得上的便利功能。扩展会在浏览器本地读取原页面已经加载的内容，构建新的阅读界面；发帖、回复、上传、收藏、评分、关注、私信等关键操作则尽量继续调用原站逻辑。
 
-当前版本：`0.4.3`
+当前版本：`0.4.4`
 
 [下载发布包](https://github.com/Coran-tech/cc98-reborn/releases) ·
 [提交 Bug](https://github.com/Coran-tech/cc98-reborn/issues) ·
@@ -32,6 +32,8 @@
 
 ### 更舒服的帖子阅读
 
+- 实验性“跟帖”暂时隐藏工具栏入口，保留的实现为：开启后先用 API 建立当前楼层游标，再每20～60秒按游标请求新增回复，不加载后台网页或重扫旧楼；无新回复时只发一次增量查询，新作者信息按批读取并缓存在当前文档。空闲时减慢、失败时退避，遇到限流遵守服务器等待时间；跨页不跳走，浏览上文只提示新增数量，已在底部时自动跟随。隐藏标签页暂停，停止后保留已接收内容；切页、切帖、账号变化或关闭侧窗停止并释放任务。仅在当前文档保留最多200条新回复，不写入设置或旧对话缓存；点赞、评分、引用等原站操作可从卡片的原楼入口进行。
+
 - 所有重构的帖子卡片列表共用帖子侧窗，包括十大、新帖、关注、精选、版面、搜索结果和稍后再看。直接点击帖子标题，会在网页右侧打开独立帖子侧窗，打开时保留主列表内容与阅读位置，在左侧按剩余宽度重新排版。popup 和个人中心“插件设置”的“浏览与阅读”中可切换“帖子侧拉窗”，默认开启；关闭后沿用普通链接打开方式，并释放已打开的侧窗。侧窗沿用插件界面，省略重复的论坛顶栏，可翻页、回复，拖动左侧边缘调整宽度；分割线中央的收起按钮可关闭侧窗，恢复左侧布局并释放资源。同帖翻页、引用楼层和回复编辑留在侧窗，其他链接遵循“链接在新页面打开”：开启时另开标签页，关闭时跳转主页面。作者、版面链接及 Ctrl／Command、Shift 和中键继续按原方式打开。
 - 侧窗为非模态：右侧显示帖子时，左侧列表仍可滚动、继续加载、按需渲染和点击；点击其他帖子直接替换右侧并释放旧页面。两侧分别滚动，左侧普通链接沿用链接打开偏好，键盘焦点可自由离开侧窗。关闭时保留左侧新的阅读位置；主页面实际跳转时关闭侧窗，图片查看器等同地址历史状态不影响右侧。
 - 侧窗打开后，左侧卡片单列铺满可用区域，保留边距，拖动侧窗宽度时同步重排；关闭后恢复正常布局并保留正在阅读的帖子。窄顶栏将品牌与账号并排，导航、搜索分行；左侧右下角的圆形火箭按钮可独立回到顶部，不影响右侧阅读位置。浏览模式、稍后再看等控件收进“浏览工具”，展开即可使用。取消左右位置选择，旧备份中的该偏好会被忽略。
@@ -50,7 +52,8 @@
 - 楼层操作区的“查看对话”可在单个弹窗中递归追溯上游引用、查找本帖的下游回复，并切换追溯中心。引用按父子关系逐级缩进，分支紧跟父楼层；多父引用提供定位入口。弹窗复用当前主题、表情大小和图片查看器。按需静默读取其他页，支持停止、继续和失败重试；已读页面按帖子暂存，同帖翻页、刷新标签页、切换楼层或重开弹窗时复用，只补读未完成的页面，可点击“刷新对话”获取新回复及编辑。原页面、滚动位置和草稿保持不变。跨帖引用可追溯上游，下游仅检索当前帖；未读取或已删除楼层会明确提示。
 - 收藏左侧的“全文搜索”在独立窗口中搜索本帖所有楼层，支持正文关键词、楼层作者的用户名／UID，以及 `[ac01]`、`[cc9801]`、`[tb01]` 等表情编号；显示进度、命中高亮和原楼层链接，可选择是否包含引用，匿名用户仅匹配公开身份。开始或刷新内容前显示等待提醒并确认，逐页串行读取，未缓存页面的读取至少间隔一秒；与查看对话共用已读页和队列，切换关键词复用已有页面与文本索引。关闭弹窗后在当前标签页继续搜索，同帖整页翻页或刷新可恢复进度，支持暂停、继续和失败重试；离开本帖时暂停，重新打开该帖后可继续。关键词和进度按账号保存在标签页会话中，不进入个人设置备份。
 - 帖子操作栏的“存档本帖”会重新逐页读取当前账号可见内容，保存正文、引用、表情、图片和签名档；可选保存音视频及附件，默认关闭。支持 Markdown 附件，离线下载保留原文件名和内容，不执行或渲染其中的代码。与追溯对话共用限速队列，但不读取或改写旧缓存。关闭进度窗口可在本标签页继续；离开帖子、关闭侧窗或取消后停止并保留已存内容。快照记录读取开始／结束时间，不是服务器的原子快照；无权限、缺图和下载失败会标为部分保存。
-- 插件设置的“本地帖子存档”打开独立查看页，可离线分页阅读、搜索存档标题、删除或导出自包含 HTML。阅读页还原评分记录三列表格、紧凑头像、引用和签名排版，支持现代／ASCII 主题；上下均有页码、前后翻页与输入跳转，长帖只显示附近页码。后台读取会展开隐藏图片和剩余引用，并扫描引用内部的滚动区域；之前缺图的快照需重新存档补齐。存档保存在本机浏览器扩展数据库，不进入个人设置备份；卸载插件或清除扩展数据会删除存档。需要长期保管时先导出。第三方播放器仅保留链接，未授权来源、临时媒体地址或不支持的格式会列入失败详情；单张图片上限 25 MiB、单个音视频／附件 100 MiB、单份存档 500 MiB，单文件 HTML 导出上限 128 MiB。
+- 已有存档可点击“更新备份”，在保存它的账号下打开原帖并确认更新。默认只补读末页、新页、缺页及原失败页，已保存媒体直接复用；勾选“复查已存页面”可重新读取历史正文。沿用原存档的音视频／附件选项，保留原帖已移除的楼层。读取期间原备份仍可查看，结束后将成功读到的内容原子合并回原 ID，未修复的缺失仍标为部分保存；取消、中断或存储额度失败不改动原备份。已导出的 ZIP／HTML 是独立文件，不会自动修改；更新后重新导出即可。
+- 插件设置的“本地帖子存档”打开独立查看页，可离线分页阅读、搜索存档标题、删除或导出。建议使用“导出 ZIP”：每个已存媒体只保存一份，包含分页网页、全部页码目录、原始页面数据、资源索引和既有失败记录；解压后打开 index.html。导出只读已存内容，不重新抓帖或修改数据库。小存档也可导出自包含 HTML；超过 32 MiB 或 30 页时使用 ZIP，重复媒体内嵌超过 128 MiB 时停止 HTML 导出。阅读页还原评分记录三列表格、紧凑头像、引用和签名排版，支持现代／ASCII 主题；上下均有页码、前后翻页与输入跳转，长帖只显示附近页码。后台读取会展开隐藏图片和剩余引用，并扫描引用内部的滚动区域；之前缺图的快照需重新存档补齐。存档保存在本机浏览器扩展数据库，不进入个人设置备份；卸载插件或清除扩展数据会删除存档。需要长期保管时先导出。第三方播放器、嵌入网页和普通 HTML 页面仅保留链接，图片超链接不额外下载目标网页。真实媒体和附件的未授权来源、临时地址或不支持的格式会列入失败详情；单张图片上限 25 MiB、单个音视频／附件 100 MiB、单份存档 500 MiB。
 - 帖子作者头像可展开资料卡，并继续使用原站的关注和私信功能。
 
 ### 发帖与编辑
@@ -162,57 +165,14 @@
 
 ## 开发与校验
 
-主要运行文件：
+开发检查使用 Node.js 22，扩展保持 JavaScript，不增加运行时构建步骤。
 
-```text
-manifest.json
-src/
-  background.js
-  content.js
-  extended-ubb-core.js
-  extended-ubb.js
-  markup-converter.js
-  conversation-core.js
-  conversation.js
-  topic-search.js
-  topic-search.css
-  extended-ubb.css
-  openid-webvpn-bridge.js
-  page-submit-monitor.js
-  styles.css
-  vendor/
-popup/
-experiments/question-mark/  # 问号实验的运行文件
-assets/
-images/
+```sh
+npm ci
+npm run check
 ```
 
-发布前检查：
-
-```powershell
-node --check .\src\content.js
-node --check .\src\extended-ubb-core.js
-node --check .\src\extended-ubb.js
-node --check .\src\markup-converter.js
-node --check .\src\conversation-core.js
-node --check .\src\conversation.js
-node --check .\src\background.js
-node --check .\src\openid-webvpn-bridge.js
-node --check .\src\page-submit-monitor.js
-node --check .\popup\popup.js
-node --check .\experiments\question-mark\background.js
-node --check .\experiments\question-mark\content.js
-node --check .\experiments\question-mark\admin-key-store.js
-node --check .\experiments\question-mark\admin.js
-node -e "JSON.parse(require('fs').readFileSync('manifest.json','utf8')); console.log('manifest ok')"
-node .\tests\page-submit-monitor.test.js
-node .\tests\openid-refresh.test.js
-node .\tests\extended-ubb-core.test.js
-node .\tests\markup-converter-core.test.js
-node .\tests\question-mark-integration.test.js
-node .\tests\conversation-core.test.js
-node .\tests\media-resource-url.test.js
-```
+统一入口包含格式检查、ESLint、语法检查、Manifest 引用检查和无账号单元测试。格式规范渐进接入，不批量重排历史运行时代码。目录约定、格式门禁和浏览器测试环境见 [贡献指南](./CONTRIBUTING.md)；各功能的发布前检查见 [RELEASE.md](./RELEASE.md)。
 
 打包：
 
@@ -220,15 +180,15 @@ node .\tests\media-resource-url.test.js
 .\scripts\package-extension.ps1
 ```
 
-测试构建使用 `./scripts/package-extension.ps1 -TestBuild`，显示为 `beta 0.4.3 (build 年月日.时分秒)`；可用 `-Build xxx` 指定编号。固定覆盖 `dist/cc98-reborn-beta/` 和 `dist/cc98-reborn-beta.zip`，浏览器只需加载一次该目录，以后更新后点击重新加载。直接加载源码测试前运行 `./scripts/set-test-build.ps1` 更新编号。页面、popup 和插件设置页均优先显示 beta / build 版本；默认正式打包自动移除后缀，更新比较始终使用纯数字版本号。
+测试构建使用 `./scripts/package-extension.ps1 -TestBuild`，显示为 `beta 0.4.4 (build 年月日.时分秒)`；可用 `-Build xxx` 指定编号。固定覆盖 `dist/cc98-reborn-beta/` 和 `dist/cc98-reborn-beta.zip`，浏览器只需加载一次该目录，以后更新后点击重新加载。直接加载源码测试前运行 `./scripts/set-test-build.ps1` 更新编号。页面、popup 和插件设置页均优先显示 beta / build 版本；默认正式打包自动移除后缀，更新比较始终使用纯数字版本号。
 
 本地模拟论坛已独立到相邻项目 `cc98-local-forum`，包含前端、服务器和 `.runtime` 数据；在该目录运行 `node server.js` 或打开 `open-control-panel.cmd`。插件集成测试通过 `tests/local-forum-path.cjs` 引用它，可设置 `CC98_LOCAL_FORUM_ROOT` 指定目录，测试时自动注入当前插件源码路径。
 
 生成文件：
 
 ```text
-dist/cc98-reborn-0.4.3.zip
-dist/cc98-reborn-0.4.3/
+dist/cc98-reborn-0.4.4.zip
+dist/cc98-reborn-0.4.4/
 ```
 
 发布包不包含 `reference/`、`tests/`、`.git/` 或其他开发期文件。

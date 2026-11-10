@@ -485,7 +485,8 @@
       for (const [slot, media] of record.item.media.entries()) {
         const active = record.key === key && slot === activeSlot;
         if (active) index = items.length;
-        items.push({ src: active ? activeSrc : media.src, alt: active ? image.alt : media.alt });
+        items.push({ src: active ? activeSrc : media.src, alt: active ? image.alt : media.alt,
+          sourceHref: record.item.href, sourceTitle: record.item.title });
       }
     }
     return index >= 0 ? { items, index } : null;

@@ -16,10 +16,11 @@ build/
 *.zip
 *.crx
 
-# Dependencies, if local tooling is added later
+# Development dependencies
 node_modules/
 # Local Codex state and reference material
 .codex/
+.agents/
 reference/
 tmp/
 # Generated diagnostics, delivery backups and experiment package previews
@@ -27,3 +28,22 @@ outputs/
 experiments/post-context-draft/package-preview/
 # Separate Sites source checkout
 question-mark-sites-demo/
+
+# Retired comparison snapshots; current fixtures remain versioned.
+/tests/.baseline-032-content.js
+/tests/.baseline-032-styles.css
+
+# Rebuildable release material. Keep notes, features.json and generator source.
+/release/*/交付清单.json
+/release/*/intro/assets/
+/release/*/intro/images/
+/release/*/intro/concepts.html
+/release/*/intro/contact-sheet.html
+/release/*/intro/render-report.json
+/release/*/intro/介绍帖正文.md
+/release/*/intro/介绍帖正文_UBB.txt
+/release/*/intro/建议标题.txt
+/release/*/intro/配图顺序.txt
+/release/*/intro/预览.html
+/release/*/intro/总览.png
+/release/*/intro/预览首屏.png

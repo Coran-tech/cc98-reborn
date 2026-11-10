@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "CC98 Reborn",
   "description": "A refreshed reading and browsing interface for CC98.",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsx4AY7VBQLt9+vyQu66ygsM332JqZkzTbXoGodjciunuxrkJ5PmN7qmlyhJQz3hd6rqxIQq7DRwEimcH3SaEYB6ypOh0fSSSWEWhjIbENVOJuVd0j+9ad8Ww9QE+AA/rfGEci0hHx02IvLarBCUBlROqVJjvofOFNg/8rhozdu/3lpcYqPqq+CKzYZWH7J26TC5Tcau0sXodmM27sI/4q5avmL0cFSruuCuqep69delrU/qSBLkJZar53AIpKPwwz48Jj75XQD5PFEpJ/8mTxiSRQ6cgQH2xypLwIiUbbtDMUmkLzVGEo364hUN1/GavubO6h78T5K8ealXNWUqgHQIDAQAB",
   "permissions": [
     "storage",
@@ -111,6 +111,7 @@
       "js": [
         "src/theme-core.js",
         "src/interface-style.js",
+        "src/native-messages.js",
         "src/vendor/showdown/showdown.min.js",
         "src/vendor/katex/katex.min.js",
         "src/extended-ubb-core.js",
@@ -120,9 +121,14 @@
         "src/conversation.js",
         "src/topic-search.js",
         "src/topic-archive.js",
+        "src/topic-live-api.js",
+        "src/topic-live.js",
         "src/favorite-share-core.js",
         "src/favorite-share-service.js",
         "src/favorite-share.js",
+        "src/image-favorites-core.js",
+        "src/image-favorites.js",
+        "src/image-favorite-controls.js",
         "src/user-notes-core.js",
         "src/user-notes.js",
         "src/private-message-pins-core.js",
@@ -139,13 +145,18 @@
         "src/theme-tokens.css",
         "src/vendor/katex/katex.min.css",
         "src/styles.css",
+        "src/image-favorites.css",
+        "src/image-favorite-controls.css",
+        "src/image-favorites-picker.css",
         "src/user-notes.css",
         "src/topic-search.css",
         "src/topic-archive.css",
+        "src/topic-live.css",
         "src/topic-drawer.css",
         "src/extended-ubb.css",
         "experiments/question-mark/content.css",
-        "src/interface-styles.css"
+        "src/interface-styles.css",
+        "src/native-messages.css"
       ],
       "run_at": "document_start"
     }

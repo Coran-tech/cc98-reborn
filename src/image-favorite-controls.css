@@ -1,0 +1,27 @@
+:root.cc98-comfort button.cc98-image-favorite-button {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  padding: 6px;
+  border: 1px solid var(--cc98-comfort-border) !important;
+  border-radius: 9px !important;
+  background: var(--cc98-comfort-surface) !important;
+  color: var(--cc98-comfort-secondary) !important;
+  cursor: pointer;
+}
+.cc98-image-favorite-button svg { display: block; width: 20px; height: 20px; pointer-events: none; }
+:root.cc98-comfort button.cc98-image-favorite-button[aria-pressed="true"] { color: var(--cc98-comfort-secondary) !important; background: var(--cc98-comfort-secondary-soft) !important; border-color: currentColor !important; }
+.cc98-image-favorite-button[aria-pressed="true"] path { fill: currentColor; }
+.cc98-image-favorite-button:hover { border-color: currentColor; }
+.cc98-image-favorite-button:focus-visible { outline: 2px solid var(--cc98-comfort-accent); outline-offset: 3px; }
+.cc98-image-favorite-button:disabled { cursor: wait; opacity: .6; }
+.cc98-image-favorite-hover { position: fixed; z-index: 2147483645; box-shadow: var(--cc98-comfort-shadow); }
+.cc98-image-favorite-hover[hidden] { display: none !important; }
+#cc98-comfort-image-viewer .cc98-image-viewer-favorite { width: 36px; height: 36px; flex-basis: 36px; border-radius: 999px !important; border-color: rgba(255,255,255,.26) !important; color: #fff !important; background: rgba(255,255,255,.12) !important; }
+#cc98-comfort-image-viewer .cc98-image-viewer-favorite[aria-pressed="true"] { color: #ffe29a !important; border-color: currentColor !important; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] button.cc98-image-favorite-button { border-radius: 0 !important; box-shadow: none; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-image-viewer .cc98-image-viewer-favorite[aria-pressed="true"] { color: var(--cc98-comfort-secondary) !important; border-color: currentColor !important; background: var(--cc98-comfort-secondary-soft) !important; }

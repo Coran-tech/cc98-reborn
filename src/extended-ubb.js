@@ -259,7 +259,7 @@
     });
     const template = document.createElement("template");
     template.innerHTML = converter.makeHtml(markdown);
-    template.content.querySelectorAll("script, style, iframe, object, embed, form, input, textarea, select, button, link, meta, base").forEach((node) => node.remove());
+    template.content.querySelectorAll("script, style, iframe, object, embed, form, input, textarea, select, button, link, meta, base, foreignObject, animate, animateMotion, animateTransform, set").forEach((node) => node.remove());
     template.content.querySelectorAll("*").forEach((node) => {
       [...node.attributes].forEach((attribute) => {
         const name = attribute.name.toLowerCase();
@@ -267,7 +267,7 @@
           node.removeAttribute(attribute.name);
         }
       });
-      ["href", "src"].forEach((name) => {
+      ["href", "src", "xlink:href", "poster"].forEach((name) => {
         if (!node.hasAttribute(name)) {
           return;
         }
@@ -2043,6 +2043,7 @@
       return extendedTagPattern.test(String(source || ""));
     },
     render,
+    renderMarkdown: sanitizeMarkdown,
     normalizeEditableCodeBlocks: normalizeEscapedEditableCodeBlocks,
     serializeEditableMarkdown
   });

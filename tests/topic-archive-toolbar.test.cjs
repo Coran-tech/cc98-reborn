@@ -5,12 +5,12 @@ const { chromium } = require('playwright');
 const { executable } = require('./new-topics-virtual.test.cjs');
 const { native, shell, png } = require('./topic-archive.test.cjs');
 const root = path.resolve(__dirname, '..'), origin = 'https://www.cc98.org';
-const output = path.join(root, 'outputs/archive-toolbar-20261028/qa');
+const output = path.join(root, 'outputs/hide-live-entry-20261029/qa');
 
 function fixture() {
   const shim = `<script>window.__messages=[];window.__favoriteClicks=0;
-    window.chrome={runtime:{getURL:p=>location.origin+'/'+p,getManifest:()=>({version:'0.4.2'}),onMessage:{addListener(){}},sendMessage:(m,c)=>{__messages.push(m);c?.({ok:false});return Promise.resolve({ok:false})}},storage:{local:{get:(k,c)=>{c?.({});return Promise.resolve({})},set:(v,c)=>{c?.();return Promise.resolve()}},onChanged:{addListener(){}}}};</script>`;
-  const scripts = ['theme-core.js','interface-style.js','conversation-core.js','conversation.js','topic-search.js','topic-archive.js','content.js'].map(file=>`<script src="/src/${file}"></script>`).join('');
+    window.chrome={runtime:{getURL:p=>location.origin+'/'+p,getManifest:()=>({version:'0.4.3',version_name:'beta 0.4.3 (build fixture)'}),onMessage:{addListener(){}},sendMessage:(m,c)=>{__messages.push(m);c?.({ok:false});return Promise.resolve({ok:false})}},storage:{local:{get:(k,c)=>{c?.({});return Promise.resolve({})},set:(v,c)=>{c?.();return Promise.resolve()}},onChanged:{addListener(){}}}};</script>`;
+  const scripts = ['theme-core.js','interface-style.js','conversation-core.js','conversation.js','topic-search.js','topic-archive.js','topic-live.js','content.js'].map(file=>`<script src="/src/${file}"></script>`).join('');
   const source = native(2).replace(/<video\b[^>]*>[\s\S]*?<\/video>/g,'');
   return shell(`<div class="native topicInfo-info">${source}</div><main id="cc98-comfort-app"></main>`, shim + scripts + `<script>
     lastSettings={...DEFAULT_SETTINGS,previsitFirstPageForTopicImages:false,prewarmPostImages:false};
@@ -18,7 +18,7 @@ function fixture() {
     document.querySelector('.native .followTopic').onclick=()=>__favoriteClicks++;
     document.querySelector('#cc98-comfort-app').append(renderPostPager());
     CC98RebornThemeCore.apply(document.documentElement,lastSettings);
-  </script>`).replace('<meta charset="utf-8">','<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">');
+  </script>`).replace('<meta charset="utf-8">','<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/src/topic-live.css">');
 }
 
 async function appearance(locator) {
@@ -51,7 +51,9 @@ async function main() {
     await page.goto(origin+'/topic/100/2');
     const search=page.locator('.cc98-topic-search-entry'), archive=page.locator('.cc98-topic-archive-entry');
     await archive.waitFor();
-    const order=await page.locator('.cc98-rebuild-pager-action').allTextContents();
+    assert.equal(await page.locator('.cc98-topic-live-entry').count(),1,'beta runtime entry is retained');
+    assert.equal(await page.locator('.cc98-topic-live-entry').isVisible(),false,'entry occupies no toolbar space');
+    const order=await page.locator('.cc98-rebuild-pager-action:visible').allTextContents();
     assert.deepEqual(order,['全文搜索','存档本帖','收藏']);
     assert(await archive.evaluate(button=>button.nextElementSibling.classList.contains('cc98-rebuild-topic-favorite-action')));
     checks.push('Production renderPostPager orders full-text search, archive, favorite');
@@ -59,6 +61,7 @@ async function main() {
       await page.evaluate(settings=>{Object.assign(lastSettings,settings);CC98RebornThemeCore.apply(document.documentElement,lastSettings);CC98RebornInterfaceStyle.sync(lastSettings)}, {themeStyle,themeMode});
       await page.mouse.move(0,0);await page.evaluate(()=>document.activeElement?.blur());await page.waitForTimeout(250);
       const normal=await appearance(search);assert.deepEqual(await appearance(archive),normal,`${themeStyle}/${themeMode} default styles`);
+      assert.equal(await page.locator('.cc98-topic-live-entry').isVisible(),false,`${themeStyle}/${themeMode}: live entry remains hidden`);
       if(themeStyle==='ascii')assert.equal(normal.borderRadius,'0px');
       await search.hover();await page.waitForTimeout(250);const hover=await appearance(search);
       await archive.hover();await page.waitForTimeout(250);assert.deepEqual(await appearance(archive),hover,`${themeStyle}/${themeMode} hover styles`);
@@ -74,10 +77,10 @@ async function main() {
     await page.setViewportSize({width:390,height:850});
     for(const themeStyle of ['modern','ascii']) {
       await page.evaluate(settings=>{Object.assign(lastSettings,settings);CC98RebornThemeCore.apply(document.documentElement,lastSettings);CC98RebornInterfaceStyle.sync(lastSettings)}, {themeStyle,themeMode:'light'});
-      const geometry=await page.locator('.cc98-rebuild-pager-action').evaluateAll(buttons=>buttons.map(button=>{const rect=button.getBoundingClientRect();return {left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom}}));
+      const geometry=await page.locator('.cc98-rebuild-pager-action:visible').evaluateAll(buttons=>buttons.map(button=>{const rect=button.getBoundingClientRect();return {left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom}}));
       assert(geometry.every((rect,index)=>index===0 || rect.left>geometry[index-1].left && Math.abs(rect.top-geometry[index-1].top)<1),JSON.stringify(geometry));
       // Preserve the existing single-row horizontally scrolling pager.
-      for(const button of await page.locator('.cc98-rebuild-pager-action').all()) {
+      for(const button of await page.locator('.cc98-rebuild-pager-action:visible').all()) {
         await button.scrollIntoViewIfNeeded();
         assert(await button.evaluate(button=>{const item=button.getBoundingClientRect(),bar=button.parentElement.getBoundingClientRect();return item.left>=bar.left-1 && item.right<=bar.right+1}));
       }
@@ -92,6 +95,13 @@ async function main() {
     await page.waitForFunction(()=>__favoriteClicks===1);
     assert(!(await page.evaluate(()=>__messages)).some(message=>/^CC98_ARCHIVE_(?:BEGIN|RESOURCE|PAGE)/.test(message.type)));
     checks.push('Each button opens its own dialog; favorite proxies the original click; no capture starts');
+    await page.evaluate(()=>{
+      document.querySelector('#cc98-comfort-app').append(renderPostPager());
+      const live=document.querySelector('.cc98-topic-live-entry');live.focus();
+    });
+    assert.equal(await page.locator('.cc98-topic-live-entry').count(),2);
+    assert(await page.locator('.cc98-topic-live-entry').evaluateAll(nodes=>nodes.every(node=>getComputedStyle(node).display==='none' && !node.getClientRects().length && document.activeElement!==node)));
+    checks.push('Beta follow entry remains hidden in both pagers and cannot receive focus; retained runtime never starts');
     assert.deepEqual(errors,[]);assert.deepEqual(unexpectedRequests,[]);
     await fs.writeFile(path.join(output,'validation.json'),JSON.stringify({passed:true,checks,samples,errors,unexpectedRequests},null,2));
     console.log(JSON.stringify({passed:true,checks}));

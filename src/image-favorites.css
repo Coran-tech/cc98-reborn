@@ -1,0 +1,57 @@
+:root.cc98-comfort .cc98-image-favorites-region {
+  display: block !important;
+  width: 100% !important;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 0 0 16px;
+  margin: 0 0 18px;
+  border-bottom: 1px solid var(--cc98-comfort-border);
+  color: var(--cc98-comfort-text);
+  font: 14px/1.5 var(--cc98-comfort-font-body, sans-serif);
+}
+:root.cc98-comfort .cc98-image-favorites-header { display: flex; align-items: center; gap: 10px; min-height: 36px; margin: 0; cursor: pointer; list-style: none; }
+:root.cc98-comfort .cc98-image-favorites-header::-webkit-details-marker { display: none; }
+:root.cc98-comfort .cc98-image-favorites-header::before { content: ">"; flex: 0 0 1em; color: var(--cc98-comfort-accent); font: 700 17px/1 Consolas, monospace; text-align: center; }
+:root.cc98-comfort .cc98-image-favorites-region[open] > .cc98-image-favorites-header::before { transform: rotate(90deg); }
+:root.cc98-comfort .cc98-image-favorites-header:focus-visible { outline: 2px solid var(--cc98-comfort-accent); outline-offset: 3px; }
+:root.cc98-comfort .cc98-image-favorites-body { margin-top: 14px; }
+:root.cc98-comfort .cc98-image-favorites-header h2 { margin: 0 !important; padding: 0 !important; font-size: 19px !important; line-height: 1.4 !important; color: var(--cc98-comfort-text) !important; }
+:root.cc98-comfort .cc98-image-favorites-count { color: var(--cc98-comfort-muted); font-variant-numeric: tabular-nums; }
+:root.cc98-comfort .cc98-image-favorites-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(190px, 100%), 1fr)); gap: 14px; min-width: 0; }
+:root.cc98-comfort .cc98-image-favorites-card { min-width: 0; padding: 10px; border: 1px solid var(--cc98-comfort-border); border-radius: var(--cc98-comfort-radius, 10px); background: var(--cc98-comfort-surface); }
+:root.cc98-comfort .cc98-image-favorites-button {
+  display: inline-flex !important; align-items: center !important; justify-content: center !important;
+  width: auto !important; min-width: 0 !important; height: auto !important; min-height: 32px;
+  box-sizing: border-box; padding: 4px 9px !important; margin: 0 !important;
+  border: 1px solid var(--cc98-comfort-border) !important; border-radius: var(--cc98-comfort-radius, 7px) !important;
+  color: var(--cc98-comfort-accent) !important; background: var(--cc98-comfort-surface-2) !important;
+  font: inherit !important; line-height: 1.4 !important; text-decoration: none !important; white-space: nowrap; cursor: pointer;
+}
+:root.cc98-comfort .cc98-image-favorites-button:hover { background: var(--cc98-comfort-accent-2) !important; }
+:root.cc98-comfort .cc98-image-favorites-button:focus-visible,
+:root.cc98-comfort .cc98-image-favorites-note-input:focus-visible { outline: 2px solid var(--cc98-comfort-accent); outline-offset: 2px; }
+:root.cc98-comfort .cc98-image-favorites-button:disabled { opacity: .5; cursor: default; }
+:root.cc98-comfort #cc98-comfort-app .cc98-rebuild-native-user-router .cc98-image-favorites-view { display: grid !important; width: 100% !important; height: 142px !important; padding: 8px !important; border: 0 !important; border-radius: min(6px, var(--cc98-comfort-radius, 6px)) !important; background: var(--cc98-comfort-surface-2) !important; overflow: hidden; }
+:root.cc98-comfort .cc98-image-favorites-thumbnail { display: block !important; width: 100% !important; height: 126px !important; max-width: 100% !important; max-height: 126px !important; margin: 0 !important; object-fit: contain !important; border: 0 !important; border-radius: 0 !important; }
+:root.cc98-comfort .cc98-image-favorites-note { margin: 10px 0 !important; padding: 0 !important; color: var(--cc98-comfort-text) !important; min-height: 1.5em; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font: inherit !important; }
+:root.cc98-comfort .cc98-image-favorites-note.is-empty { color: var(--cc98-comfort-muted) !important; }
+:root.cc98-comfort .cc98-image-favorites-actions { display: flex; flex-wrap: wrap; gap: 5px; }
+:root.cc98-comfort .cc98-image-favorites-delete { color: var(--cc98-comfort-danger) !important; margin-left: auto !important; }
+:root.cc98-comfort .cc98-image-favorites-note-form { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+:root.cc98-comfort .cc98-image-favorites-note-input { display: block !important; width: 100% !important; min-width: 0 !important; height: 36px !important; box-sizing: border-box; padding: 6px 8px !important; margin: 0 !important; border: 1px solid var(--cc98-comfort-border) !important; border-radius: var(--cc98-comfort-radius, 7px) !important; color: var(--cc98-comfort-text) !important; background: var(--cc98-comfort-surface-2) !important; font: inherit !important; }
+:root.cc98-comfort .cc98-image-favorites-pages { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 16px; }
+:root.cc98-comfort .cc98-image-favorites-empty,
+:root.cc98-comfort .cc98-image-favorites-status { margin: 12px 0 0 !important; font: inherit !important; color: var(--cc98-comfort-muted) !important; }
+:root.cc98-comfort .cc98-image-favorites-status.is-error { color: var(--cc98-comfort-danger) !important; }
+:root.cc98-comfort .cc98-image-favorites-region [hidden] { display: none !important; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-image-favorites-card { border-style: dashed; border-radius: 0; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-image-favorites-header::before { content: "[+]"; flex-basis: 2em; font-size: 14px; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-image-favorites-region[open] > .cc98-image-favorites-header::before { content: "[-]"; transform: none; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app .cc98-rebuild-native-user-router .cc98-image-favorites-view { border-radius: 0 !important; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-image-favorites-region :is(button, input, a) { border-radius: 0 !important; }
+@media (max-width: 480px) {
+  :root.cc98-comfort .cc98-image-favorites-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  :root.cc98-comfort .cc98-image-favorites-card { padding: 7px; }
+  :root.cc98-comfort .cc98-image-favorites-actions { gap: 4px; }
+  :root.cc98-comfort .cc98-image-favorites-button { padding: 5px 7px !important; }
+}

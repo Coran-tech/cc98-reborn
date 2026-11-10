@@ -32,13 +32,14 @@
     ".cc98-question-privacy-dialog", ".cc98-question-notice", "#cc98-comfort-image-viewer",
     ".ant-modal-content", ".ant-select-dropdown", ".ant-dropdown-menu", ".ant-menu-submenu-popup",
     ".ant-popover-inner", ".ant-tooltip-inner", ".ant-message-notice-content", ".ant-notification-notice",
-    ".react-mde-dropdown", ".tagBoxSub"
+    ".react-mde-dropdown", ".tagBoxSub", ".tagBoxSub1"
   ].join(",");
   const floatingGlyphs = [
     [".cc98-topic-drawer-close", "[X]"],
     [".cc98-topic-search-close", "[X]"],
     [".cc98-rebuild-conversation-close, .cc98-rebuild-convert-close, .cc98-rebuild-toast-close, .cc98-local-syntax-tour-close, .ant-modal-close, .ant-notification-notice-close, .cc98-favorite-share-button[data-favorite-share='close'], .cc98-user-note-button[data-user-note='close'], .cc98-image-viewer-close", "[X]"],
-    [".cc98-image-viewer-prev", "[<]"], [".cc98-image-viewer-next", "[>]"], [".cc98-image-viewer-save", "[SAVE]"]
+    [".cc98-image-viewer-prev", "[<]"], [".cc98-image-viewer-next", "[>]"], [".cc98-image-viewer-save", "[SAVE]"],
+    [".cc98-image-viewer-rotate-left", "[L]"], [".cc98-image-viewer-rotate-right", "[R]"]
   ];
   const glyphSelector = [
     ".cc98-rebuild-icon-action", ".cc98-rebuild-vote-action",

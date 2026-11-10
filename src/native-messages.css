@@ -1,0 +1,133 @@
+/* Native React retains ownership and its three-second fadeOut lifecycle. */
+:root.cc98-comfort.cc98-native-messages-active :is(.noticeSuccess, .send-topic-notice-success) {
+  clip-path: inset(50%) !important;
+  pointer-events: none !important;
+}
+
+:root.cc98-comfort :is(.cc98-native-message-layer, .ant-message) {
+  box-sizing: border-box;
+  position: fixed;
+  z-index: 2147483647;
+  top: max(16px, env(safe-area-inset-top));
+  left: 0;
+  width: 100%;
+  padding: 0 12px;
+  margin: 0;
+  pointer-events: none;
+  font: 400 .9rem/1.55 var(--cc98-comfort-font-body);
+  color: var(--cc98-comfort-text);
+}
+
+:root.cc98-comfort .cc98-native-message-layer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+:root.cc98-comfort .ant-message {
+  top: calc(max(16px, env(safe-area-inset-top)) + var(--cc98-native-message-stack-height, 0px));
+}
+
+:root.cc98-comfort .ant-message-notice {
+  padding: 0 0 8px;
+  margin: 0;
+}
+
+:root.cc98-comfort .ant-message-notice:first-child { margin-top: 0; }
+
+:root.cc98-comfort :is(.cc98-native-message, .ant-message-notice-content) {
+  box-sizing: border-box !important;
+  width: fit-content;
+  min-width: 0;
+  max-width: min(640px, 100%);
+  padding: 10px 16px !important;
+  border: 1px solid color-mix(in srgb, var(--cc98-comfort-accent) 30%, var(--cc98-comfort-border)) !important;
+  border-radius: 22px !important;
+  background: var(--cc98-comfort-surface) !important;
+  color: var(--cc98-comfort-text) !important;
+  box-shadow: var(--cc98-comfort-shadow) !important;
+  font: inherit;
+  text-align: start;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+:root.cc98-comfort .cc98-native-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  pointer-events: none;
+  animation: cc98-native-message-fade 3s ease forwards;
+}
+
+:root.cc98-comfort .cc98-native-message-text { min-width: 0; }
+
+:root.cc98-comfort .cc98-native-message-icon {
+  flex: 0 0 18px;
+  height: 18px;
+  margin-top: .15em;
+  color: var(--cc98-comfort-accent);
+}
+
+:root.cc98-comfort .cc98-native-message-icon svg { display: block; width: 18px; height: 18px; }
+:root.cc98-comfort .cc98-native-message[data-message-kind="error"] .cc98-native-message-icon { color: var(--cc98-comfort-danger); }
+
+:root.cc98-comfort .ant-message-notice-content { pointer-events: auto; }
+:root.cc98-comfort .ant-message .ant-message-custom-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  background: transparent !important;
+  color: inherit !important;
+}
+:root.cc98-comfort .ant-message-custom-content > span { min-width: 0; }
+:root.cc98-comfort .ant-message .anticon {
+  flex: 0 0 auto;
+  top: 0;
+  margin: .16em 0 0;
+  font-size: 18px;
+}
+:root.cc98-comfort .ant-message-success .anticon { color: var(--cc98-award-positive); }
+:root.cc98-comfort .ant-message-error .anticon { color: var(--cc98-comfort-danger); }
+:root.cc98-comfort .ant-message-warning .anticon { color: var(--cc98-comfort-warning); }
+:root.cc98-comfort :is(.ant-message-info, .ant-message-loading) .anticon { color: var(--cc98-comfort-secondary); }
+:root.cc98-comfort .ant-message a { color: var(--cc98-comfort-link); text-decoration: underline; }
+
+:root.cc98-comfort[data-cc98-comfort-round="false"] :is(.cc98-native-message, .ant-message-notice-content) {
+  border-radius: 0 !important;
+}
+
+/* Include the specificity of the shared ASCII portal surface rule. */
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(body, #cc98-comfort-app) :is(.cc98-native-message, .ant-message-notice-content) {
+  border: 1px solid var(--cc98-comfort-border) !important;
+  border-inline-start: 3px solid var(--cc98-comfort-accent) !important;
+  border-radius: 0 !important;
+  background: var(--cc98-comfort-surface) !important;
+  color: var(--cc98-comfort-text) !important;
+  box-shadow: none !important;
+  font-family: var(--cc98-comfort-font-body) !important;
+}
+
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(.cc98-native-message-icon svg, .ant-message .anticon svg) { display: none; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(.cc98-native-message-icon, .ant-message .anticon) {
+  flex-basis: auto;
+  height: auto;
+  margin: 0;
+  font: 700 .9rem/1.55 Consolas, "Courier New", monospace;
+  animation: none;
+}
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .ant-message .anticon::before { display: inline-block; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]:not([data-cc98-comfort-tone="dark"]) .ant-message-success .anticon { color: #287341; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-native-message-icon::before,
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .ant-message-info .anticon::before { content: "[i]"; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-native-message[data-message-kind="error"] .cc98-native-message-icon::before,
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .ant-message-error .anticon::before { content: "[X]"; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .ant-message-success .anticon::before { content: "[OK]"; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .ant-message-warning .anticon::before { content: "[!]"; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .ant-message-loading .anticon::before { content: "[...]"; }
+
+@keyframes cc98-native-message-fade {
+  0%, 80% { opacity: 1; visibility: visible; }
+  100% { opacity: 0; visibility: hidden; }
+}

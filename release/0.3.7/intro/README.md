@@ -19,4 +19,4 @@
 
 ## 渲染源
 
-features.json 保存配图清单与对应正文，concepts.html 是 HTML/CSS/SVG 概念图源。build.cjs 构建文本和预览，render.cjs 用本地 Edge / Playwright 导出 PNG，全程不访问论坛。
+features.json 保存配图清单与对应正文，build.cjs 保存 HTML/CSS/SVG 模板。运行 build.cjs 生成 concepts.html、文案和预览，运行 render.cjs 用本地 Edge / Playwright 导出 PNG，全程不访问论坛。生成文件不进入 Git，发布说明、清单源和生成脚本保留。

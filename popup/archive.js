@@ -1,7 +1,7 @@
 (() => {
   "use strict";
   const $ = selector => document.querySelector(selector);
-  const state = { items: [], current: null, pageNumbers: [], page: 0, epoch: 0, pool: null, settings: {}, stopTheme: null, exporting: false };
+  const state = { items: [], current: null, pageNumbers: [], page: 0, epoch: 0, pool: null, settings: {}, stopTheme: null, exporting: false, closed: false };
   const STATUS = { complete: "完整", partial: "部分保存", capturing: "存档中", cancelled: "已取消", error: "读取中断", interrupted: "读取中断" };
   const ALLOWED = new Set("p div span b strong i em u s del strike sub sup br hr h1 h2 h3 h4 h5 h6 blockquote pre code ul ol li table thead tbody tfoot tr td th caption figure figcaption details summary font a img video audio source".split(" "));
   const DROP = new Set("SCRIPT STYLE IFRAME OBJECT EMBED SVG MATH TEMPLATE LINK META BASE NOSCRIPT INPUT TEXTAREA SELECT BUTTON".split(" "));
@@ -274,7 +274,7 @@
         const slot = node("span", "archive-image-slot"); slot.append(missing("图片读取中", ""));
         jobs.push(pool.get(url).then(asset => {
           if (!IMAGE_MIME.test(asset.mime)) throw new Error("不是图片");
-          image.src = asset.local; slot.replaceChildren(image);
+          if (!exporting) image.src = asset.local; slot.replaceChildren(image);
           if (exporting) image.dataset.archiveExportUrl = url;
         }).catch(() => slot.replaceChildren(missing("图片未保存", url))));
         return slot;
@@ -286,12 +286,12 @@
         const slot = node("div"); slot.append(missing("媒体读取中", ""));
         jobs.push(pool.get(url).then(asset => {
           if (!MEDIA_MIME.test(asset.mime)) throw new Error("不是音视频");
-          media.src = asset.local; slot.replaceChildren(media);
+          if (!exporting) media.src = asset.local; slot.replaceChildren(media);
           if (exporting) media.dataset.archiveExportUrl = url;
         }).catch(() => slot.replaceChildren(missing("媒体未保存", url))));
         const poster = source.getAttribute("data-cc98-archive-poster");
         if (poster && tag === "video") jobs.push(pool.get(poster).then(asset => {
-          if (IMAGE_MIME.test(asset.mime)) { media.poster = asset.local; if (exporting) media.dataset.archiveExportPoster = poster; }
+          if (IMAGE_MIME.test(asset.mime)) { if (!exporting) media.poster = asset.local; if (exporting) media.dataset.archiveExportPoster = poster; }
         }).catch(() => {}));
         return slot;
       }
@@ -302,7 +302,7 @@
         const holder = node("span");
         const load = async () => {
           const asset = await pool.get(resource);
-          const link = node("a", "archive-file", name); link.href = asset.local; link.download = filename;
+          const link = node("a", "archive-file", name); if (!exporting) link.href = asset.local; link.download = filename;
           if (exporting) link.dataset.archiveExportUrl = resource;
           holder.replaceChildren(link); return link;
         };
@@ -343,7 +343,7 @@
       const avatar = node("img", "archive-avatar"); avatar.alt = "";
       jobs.push(pool.get(record.avatar).then(asset => {
         if (!IMAGE_MIME.test(asset.mime)) return;
-        avatar.src = asset.local; header.prepend(avatar);
+        if (!exporting) avatar.src = asset.local; header.prepend(avatar);
         if (exporting) avatar.dataset.archiveExportUrl = record.avatar;
       }).catch(() => {}));
     }
@@ -358,7 +358,7 @@
   }
   function snapshotMeta(item) {
     const range = formatTime(item.startedAt) + (item.completedAt && item.completedAt !== item.startedAt ? " — " + formatTime(item.completedAt) : "");
-    return `${STATUS[item.status] || "部分保存"} · ${range} · ${Number(item.recordCount) || 0} 楼 · ${formatBytes(item.bytes)}`;
+    return `${STATUS[item.status] || "部分保存"} · ${range}${item.updatedAt ? ` · 更新于 ${formatTime(item.updatedAt)}` : ""} · ${Number(item.recordCount) || 0} 楼 · ${formatBytes(item.bytes)}`;
   }
   function renderList() {
     const query = $("#archive-search").value.trim().toLocaleLowerCase();
@@ -369,9 +369,11 @@
       const row = node("article", "archive-row"), main = node("div", "archive-row-main"), actions = node("div", "archive-row-actions");
       const title = node("a", "archive-row-title", item.title || `帖子 ${item.topicId}`); title.href = "#" + encodeURIComponent(item.id);
       const meta = node("div", "archive-row-meta archive-muted"), badge = node("span", "archive-badge", STATUS[item.status] || "部分保存"); badge.dataset.status = item.status;
-      meta.append(badge, node("span", "", formatTime(item.startedAt)), node("span", "", `${Number(item.recordCount) || 0} 楼`), node("span", "", formatBytes(item.bytes)));
+      meta.append(badge, node("span", "", formatTime(item.updatedAt || item.startedAt)), node("span", "", `${Number(item.recordCount) || 0} 楼`), node("span", "", formatBytes(item.bytes)));
       main.append(title, meta);
       actions.append(button("查看", () => { location.hash = item.id; }), button("删除", () => remove(item), "archive-danger"));
+      const update = button("更新备份", () => updateBackup(item)); update.disabled = item.status === "capturing";
+      actions.insertBefore(update, actions.lastElementChild);
       row.append(main, actions); list.append(row);
     }
     if (!visible.length) list.append(node("p", "archive-empty", query ? "没有匹配的存档" : "暂无本地存档"));
@@ -379,11 +381,18 @@
   async function loadList() {
     const response = await request("LIST"); state.items = response.items || []; renderList();
   }
+  async function updateBackup(item) {
+    if (!item || state.exporting) return;
+    showError(null);
+    try { await request("UPDATE_OPEN", { id: item.id }); }
+    catch (error) { showError(error); }
+  }
   function disposePage() {
     $("#archive-image-dialog").close(); $("#archive-large-image").removeAttribute("src");
     state.pool?.dispose(); state.pool = null; $("#archive-posts").replaceChildren();
   }
   async function remove(item) {
+    if (state.exporting) return;
     if (!confirm(`删除“${item.title || `帖子 ${item.topicId}`}”的这份本地存档？`)) return;
     try {
       await request("DELETE", { id: item.id });
@@ -461,12 +470,13 @@
     } catch (error) { if (epoch === state.epoch) { status(""); showError(error); renderPagination(); } }
   }
   async function navigate() {
+    if (state.exporting) return;
     const epoch = ++state.epoch; disposePage(); showError(null); status("");
     state.current = null; state.pageNumbers = []; state.page = 0;
     $("#archive-title").textContent = ""; $("#archive-meta").textContent = "";
     $("#archive-source").hidden = true; $("#archive-source").removeAttribute("href");
     renderPagination(); $("#archive-failures").hidden = true;
-    $("#archive-export").disabled = true; $("#archive-delete").disabled = true;
+    $("#archive-export").disabled = true; $("#archive-export-zip").disabled = true; $("#archive-delete").disabled = true; $("#archive-update").disabled = true;
     let id;
     try { id = decodeURIComponent(location.hash.slice(1)); } catch { id = ""; }
     $("#archive-library").hidden = Boolean(id); $("#archive-detail").hidden = !id;
@@ -477,42 +487,161 @@
       if (epoch !== state.epoch) return;
       state.current = response.snapshot; state.pageNumbers = [...new Set((response.pageNumbers || []).filter(page => Number.isSafeInteger(page) && page > 0))].sort((a, b) => a - b);
       $("#archive-delete").disabled = false;
+      $("#archive-update").disabled = state.exporting || state.current.status === "capturing";
       $("#archive-title").textContent = state.current.title || `帖子 ${state.current.topicId}`;
       $("#archive-meta").textContent = snapshotMeta(state.current); showFailures(state.current);
       const href = webUrl(state.current.url); $("#archive-source").hidden = !href;
       if (href) $("#archive-source").href = href; else $("#archive-source").removeAttribute("href");
       $("#archive-export").disabled = state.exporting || !state.pageNumbers.length;
+      $("#archive-export-zip").disabled = state.exporting || !state.pageNumbers.length;
       if (state.pageNumbers.length) await showPage(state.pageNumbers[0]);
       else { status(""); $("#archive-posts").append(node("p", "archive-empty", "尚无已保存的页面")); }
     } catch (error) { if (epoch === state.epoch) { status(""); showError(error); } }
   }
   function blobDataUrl(blob) { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = () => reject(new Error("无法导出资源")); reader.readAsDataURL(blob); }); }
-  function exportPagination(pages, current, index) {
+  function exportPagination(pages, current, index, hrefFor = page => `#archive-page-${page}`) {
     const nav = node("nav", "archive-pagination archive-export-pagination"); nav.setAttribute("aria-label", "存档页码");
     const numbers = node("div", "archive-page-numbers");
     for (const page of pageWindow(pages, index)) {
       if (page === null) { numbers.append(pageEllipsis()); continue; }
-      const link = node("a", "archive-page-number", String(page)); link.href = `#archive-page-${page}`; link.setAttribute("aria-label", `第 ${page} 页`);
+      const link = node("a", "archive-page-number", String(page)); link.setAttribute("href", hrefFor(page)); link.setAttribute("aria-label", `第 ${page} 页`);
       if (page === current) link.setAttribute("aria-current", "page"); numbers.append(link);
     }
     for (const [offset, label] of [[-1, "上一页"], [1, "下一页"]]) {
       const page = pages[index + offset];
       if (offset === 1) nav.append(numbers);
-      if (page) { const link = node("a", "", label); link.href = `#archive-page-${page}`; nav.append(link); }
+      if (page) { const link = node("a", "", label); link.setAttribute("href", hrefFor(page)); nav.append(link); }
     }
     return nav;
+  }
+  function setExporting(value) {
+    state.exporting = value;
+    for (const id of ["archive-export", "archive-export-zip"]) $("#" + id).disabled = value || !state.pageNumbers.length;
+    for (const id of ["archive-delete", "archive-back", "archive-refresh"]) $("#" + id).disabled = value;
+    $("#archive-update").disabled = value || !state.current || state.current.status === "capturing";
+  }
+  function exportPresentation() {
+    let css = "";
+    for (const sheet of document.styleSheets) for (const rule of sheet.cssRules) css += rule.cssText + "\n";
+    const attributes = ['lang="zh-CN"', 'class="cc98-reborn-popup"'];
+    for (const [key, value] of Object.entries(document.documentElement.dataset)) if (key.startsWith("cc98Comfort")) attributes.push(`data-${key.replace(/[A-Z]/g, char => "-" + char.toLowerCase())}="${escapeHtml(value)}"`);
+    const computed = getComputedStyle(document.documentElement);
+    const variables = ["--cc98-comfort-accent", "--cc98-comfort-accent-2", "--cc98-comfort-secondary", "--cc98-comfort-secondary-soft", "--cc98-comfort-link", "--emoji-size"].map(name => `${name}:${computed.getPropertyValue(name)}`).join(";");
+    css += `\n:root {${variables}}\n`;
+    return { css, attributes: attributes.join(" ") };
+  }
+  function saveExport(blob, filename) {
+    const url = URL.createObjectURL(blob), link = node("a"); link.href = url; link.download = filename;
+    document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 180000);
+  }
+  function resourceExtension(mime) {
+    return ({ "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/webp": "webp", "image/avif": "avif", "image/bmp": "bmp", "image/x-icon": "ico", "image/vnd.microsoft.icon": "ico",
+      "audio/mpeg": "mp3", "audio/mp4": "m4a", "audio/wav": "wav", "audio/x-wav": "wav", "audio/ogg": "ogg", "audio/flac": "flac", "audio/webm": "webm", "video/mp4": "mp4", "video/webm": "webm", "video/ogg": "ogv",
+      "application/pdf": "pdf", "text/plain": "txt", "text/csv": "csv", "application/zip": "zip", "application/x-zip-compressed": "zip", "application/x-7z-compressed": "7z", "application/vnd.rar": "rar", "application/x-rar-compressed": "rar", "application/gzip": "gz", "application/x-tar": "tar" })[mime] || "bin";
+  }
+  async function exportZipSnapshot() {
+    if (!state.current || state.exporting) return;
+    const id = state.current.id, zip = globalThis.CC98ArchiveZip.createWriter();
+    let reader;
+    setExporting(true); showError(null); status("正在准备 ZIP…");
+    const checkOpen = () => { if (state.closed) throw new Error("导出页面已关闭"); };
+    try {
+      // This extension page reads its own saved data in readonly transactions.
+      // The database is never migrated, recaptured or changed by an export.
+      reader = await globalThis.CC98ArchiveZip.openSnapshot(id);
+      const snapshot = reader.snapshot, pages = reader.pages, resources = new Map(), warnings = [];
+      if (!pages.length) throw new Error("没有已保存的页面");
+      let assetBytes = 0, recordCount = 0;
+      for await (const asset of reader.assets()) {
+        checkOpen();
+        const mime = String(asset.mime || asset.blob.type || "application/octet-stream").split(";")[0].trim().toLowerCase();
+        const path = `media/${String(resources.size + 1).padStart(6, "0")}.${resourceExtension(mime)}`;
+        status(`正在导出媒体 · ${resources.size + 1} / ${reader.assetCount}`);
+        await zip.add(path, asset.blob);
+        resources.set(asset.url, { url: asset.url, path, mime, bytes: asset.blob.size, kind: asset.kind || "" });
+        assetBytes += asset.blob.size;
+      }
+      const presentation = exportPresentation(); await zip.add("style.css", presentation.css);
+      const hrefFor = page => page === pages[0] ? "index.html" : `page-${String(page).padStart(6, "0")}.html`;
+      const missingResources = new Set();
+      const pool = { get: async url => {
+        const asset = resources.get(url);
+        if (!asset) { if (url) missingResources.add(url); throw new Error("资源未保存"); }
+        return asset;
+      } };
+      for (const [index, page] of pages.entries()) {
+        checkOpen(); status(`正在导出正文 · ${index + 1} / ${pages.length} 页`);
+        const saved = await reader.readPage(page);
+        await zip.add(`pages/page-${String(page).padStart(6, "0")}.json`, JSON.stringify(saved));
+        recordCount += saved.records.length;
+        // One page at a time, in an inert document. No image decoding, network
+        // loads, base64 duplication or accumulated 119-page DOM during export.
+        const template = document.createElement("template"), main = node("main", "archive-shell"), jobs = [];
+        template.content.append(main);
+        main.append(node("h1", "", snapshot.title || `帖子 ${snapshot.topicId}`), node("p", "archive-muted", snapshotMeta(snapshot)));
+        const actions = node("nav", "archive-actions");
+        const source = webUrl(snapshot.url);
+        if (source) { const link = node("a", "", "原帖"); link.href = source; link.target = "_blank"; link.rel = "noopener noreferrer"; actions.append(link); }
+        const inventory = node("a", "", "全部页码"); inventory.setAttribute("href", "contents.html"); actions.append(inventory); main.append(actions);
+        if (snapshot.failures?.length || snapshot.error) {
+          const details = node("details", "archive-failures"), list = node("ul");
+          details.append(node("summary", "", `未保存内容 · ${(snapshot.failures || []).length} 项`));
+          for (const item of snapshot.failures || []) list.append(node("li", "", [item.page ? `第 ${item.page} 页` : "", item.url || "", item.error || "读取失败"].filter(Boolean).join(" · ")));
+          if (snapshot.error) list.append(node("li", "", snapshot.error));
+          details.append(list); main.append(details);
+        }
+        main.append(node("h2", "", `第 ${page} 页`), exportPagination(pages, page, index, hrefFor));
+        const posts = node("div", "archive-posts"); main.append(posts);
+        for (const record of saved.records) posts.append(renderRecord(record, pool, jobs, true));
+        await Promise.all(jobs);
+        for (const el of main.querySelectorAll("[data-archive-export-url], [data-archive-export-poster]")) {
+          for (const [attribute, target] of [["data-archive-export-url", el.localName === "a" ? "href" : "src"], ["data-archive-export-poster", "poster"]]) {
+            const url = el.getAttribute(attribute); if (!url) continue;
+            const asset = resources.get(url); if (asset) el.setAttribute(target, asset.path);
+            el.removeAttribute(attribute);
+          }
+        }
+        // Static images open their saved original without requiring scripts.
+        for (const image of posts.querySelectorAll("img[src]")) if (!image.closest("a") && !image.classList.contains("archive-avatar")) {
+          const link = node("a"); link.setAttribute("href", image.getAttribute("src")); link.target = "_blank"; link.rel = "noopener noreferrer"; image.replaceWith(link); link.append(image);
+        }
+        main.append(exportPagination(pages, page, index, hrefFor));
+        await zip.add(hrefFor(page), zipHtml(snapshot.title, main.outerHTML, presentation.attributes));
+        template.content.replaceChildren();
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
+      if (recordCount !== Number(snapshot.recordCount) || pages.length !== Number(snapshot.pageCount) || resources.size !== Number(snapshot.assetCount)) warnings.push("原存档计数与实际保存数据不一致；已导出全部可读取的页面和资源。");
+      const index = node("main", "archive-shell"), links = node("nav", "archive-pagination archive-export-pagination");
+      index.append(node("h1", "", snapshot.title || "帖子存档"), node("p", "archive-muted", snapshotMeta(snapshot)), links);
+      for (const page of pages) { const link = node("a", "", `第 ${page} 页`); link.setAttribute("href", hrefFor(page)); links.append(link); }
+      await zip.add("contents.html", zipHtml(snapshot.title, index.outerHTML, presentation.attributes));
+      await zip.add("snapshot.json", JSON.stringify(snapshot, null, 2));
+      await zip.add("resources.json", JSON.stringify([...resources.values()], null, 2));
+      await zip.add("export.json", JSON.stringify({ format: "cc98-reborn-archive-zip", version: 1, exportedAt: new Date().toISOString(), snapshotId: id,
+        pageCount: pages.length, recordCount, assetCount: resources.size, assetBytes, missingResources: [...missingResources], warnings }, null, 2));
+      checkOpen(); await reader.assertUnchanged();
+      const blob = zip.finish();
+      saveExport(blob, `${safeName(snapshot.title)}-${snapshot.topicId}-${id.slice(0, 8)}.zip`);
+      status(`已开始下载 ZIP · ${pages.length} 页 · ${recordCount} 楼 · ${formatBytes(blob.size)}；解压后打开 index.html`);
+      if (warnings.length) showError(warnings.join("\n"));
+    } catch (error) { status(""); showError(error); }
+    finally { reader?.close(); zip.dispose(); setExporting(false); }
+  }
+  function zipHtml(title, body, attributes) {
+    const policy = "default-src 'none'; img-src 'self' data:; media-src 'self'; style-src 'self' 'unsafe-inline'; base-uri 'none'; form-action 'none'";
+    return `<!doctype html>\n<html ${attributes}><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${escapeHtml(policy)}"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title || "帖子存档")}</title><link rel="stylesheet" href="style.css"></head><body>${body}</body></html>`;
   }
   async function exportSnapshot() {
     if (!state.current || state.exporting) return;
     const snapshot = state.current, pages = [...state.pageNumbers];
-    if (Number(snapshot.bytes) > MAX_EXPORT_BYTES) { showError("这份存档超过 128 MB，请在本地存档中查看；暂不支持单文件导出。"); return; }
-    state.exporting = true; $("#archive-export").disabled = true; showError(null);
+    if (Number(snapshot.bytes) > 32 * 1024 * 1024 || pages.length > 30) { showError("这份存档较大，请点击“导出 ZIP”，避免单个 HTML 过大。"); return; }
+    setExporting(true); showError(null);
     const pool = createAssetPool(snapshot.id);
     try {
       const main = node("main", "archive-shell"); main.append(node("h1", "", snapshot.title || `帖子 ${snapshot.topicId}`), node("p", "archive-muted", snapshotMeta(snapshot)));
       const href = webUrl(snapshot.url); if (href) { const link = node("a", "", "原帖"); link.href = href; link.target = "_blank"; link.rel = "noopener noreferrer"; main.append(link); }
       if (snapshot.failures?.length) main.append(node("p", "archive-error", `部分内容未保存：${snapshot.failures.length} 项`));
-      const exported = new Map();
+      const exported = new Map(); let embeddedBytes = 0;
       for (const [pageIndex, page] of pages.entries()) {
         status(`正在导出 · 第 ${page} 页`);
         const response = await request("GET", { id: snapshot.id, page });
@@ -526,7 +655,9 @@
           for (const [attribute, target] of [["data-archive-export-url", el.localName === "a" ? "href" : "src"], ["data-archive-export-poster", "poster"]]) {
             const url = el.getAttribute(attribute); if (!url) continue;
             if (!exported.has(url)) exported.set(url, pool.get(url).then(asset => blobDataUrl(asset.blob)));
-            el.setAttribute(target, await exported.get(url)); el.removeAttribute(attribute);
+            const data = await exported.get(url); embeddedBytes += data.length;
+            if (embeddedBytes > MAX_EXPORT_BYTES) throw new Error("重复媒体使 HTML 过大，请使用“导出 ZIP”。");
+            el.setAttribute(target, data); el.removeAttribute(attribute);
           }
         }
         section.append(exportPagination(pages, page, pageIndex)); main.append(section);
@@ -543,12 +674,14 @@
       attributes.push(`style="${escapeHtml(variables)}"`);
       const policy = "default-src 'none'; img-src data:; media-src data:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'";
       const html = `<!doctype html>\n<html ${attributes.join(" ")}><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${escapeHtml(policy)}"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(snapshot.title || "帖子存档")}</title><style>${css.replace(/<\/style/gi, "<\\/style")}</style></head><body>${main.outerHTML}</body></html>`;
+      const latest = (await request("GET", { id: snapshot.id })).snapshot;
+      if (latest.revision !== snapshot.revision || latest.updatedAt !== snapshot.updatedAt || latest.completedAt !== snapshot.completedAt) throw new Error("备份已更新，请重新导出");
       const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-      if (blob.size > MAX_EXPORT_BYTES * 1.5) throw new Error("单文件过大，请在本地存档中查看。");
+      if (blob.size > MAX_EXPORT_BYTES * 1.5) throw new Error("单文件过大，请使用“导出 ZIP”。");
       const url = URL.createObjectURL(blob), link = node("a"); link.href = url; link.download = `${safeName(snapshot.title)}-${snapshot.topicId}-${snapshot.id.slice(0, 8)}.html`;
       document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 30000); status("已导出 HTML");
     } catch (error) { status(""); showError(error); }
-    finally { pool.dispose(); state.exporting = false; $("#archive-export").disabled = !state.pageNumbers.length; }
+    finally { pool.dispose(); setExporting(false); }
   }
   function applyTheme() {
     globalThis.CC98RebornThemeCore?.apply(document.documentElement, state.settings);
@@ -558,7 +691,9 @@
   $("#archive-back").addEventListener("click", () => { location.hash = ""; });
   $("#archive-refresh").addEventListener("click", navigate);
   $("#archive-delete").addEventListener("click", () => state.current && remove(state.current));
+  $("#archive-update").addEventListener("click", () => updateBackup(state.current));
   $("#archive-export").addEventListener("click", exportSnapshot);
+  $("#archive-export-zip").addEventListener("click", exportZipSnapshot);
   $("#archive-image-close").addEventListener("click", () => $("#archive-image-dialog").close());
   $("#archive-image-dialog").addEventListener("close", () => { $("#archive-large-image").removeAttribute("src"); });
   $("#archive-posts").addEventListener("click", event => {
@@ -570,7 +705,7 @@
     $("#archive-image-dialog").showModal();
   });
   addEventListener("hashchange", navigate);
-  addEventListener("pagehide", () => { state.epoch++; disposePage(); state.stopTheme?.(); });
+  addEventListener("pagehide", () => { state.closed = true; state.epoch++; disposePage(); state.stopTheme?.(); });
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area === "local" && changes.cc98ComfortSettings) { state.settings = changes.cc98ComfortSettings.newValue || {}; applyTheme(); }
   });

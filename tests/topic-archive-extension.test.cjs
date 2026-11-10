@@ -8,6 +8,7 @@ const root = path.resolve(__dirname, '..'), origin='https://www.cc98.org';
 const markdownUrl='https://file.cc98.org/v4-upload/d/2026/1028/5m3z23ao.md';
 const markdownText='# 离线附件\n\n这是测试 Markdown。\n';
 const webpUrl='https://file.cc98.org/v4-upload/d/2026/1028/sauxtllp.webp';
+const externalPage='https://www.bilibili.com/toy/204bang/index.html';
 async function main(){
   const output=path.join(root,'outputs/topic-archive/extension');await fs.mkdir(output,{recursive:true});
   const context=await chromium.launchPersistentContext('',{executablePath:await executable(),headless:true,ignoreDefaultArgs:['--disable-extensions'],args:[`--disable-extensions-except=${root}`,`--load-extension=${root}`],viewport:{width:1280,height:900}});
@@ -34,7 +35,7 @@ async function main(){
       requests.push(u.href);
       if(u.origin===origin&&/^\/topic\/100(?:\/\d+)?$/.test(u.pathname)){
         const n=Number(u.pathname.split('/')[3]||1);
-        const content=native(n,true).replace('</article>',`<a href="${markdownUrl}">下载文件</a><img src="${webpUrl}" alt="WebP二进制头回归"></article>`);
+        const content=native(n,true).replace('</article>',`<a href="${markdownUrl}">下载文件</a><img src="${webpUrl}" alt="WebP二进制头回归"><a href="${externalPage}">外部网页链接</a><a href="${externalPage}"><img src="https://file.cc98.org/linked-picture.png" alt="超链接图片"></a></article>`);
         const body=`<!doctype html><html><head><meta charset="utf-8"><title>快照集成测试 - CC98论坛</title></head><body><div id="root"><header class="topBar"><span class="topBarUserName">测试用户</span></header>${content}</div></body></html>`;
         return route.fulfill({contentType:'text/html',body});
       }
@@ -85,12 +86,25 @@ async function main(){
     await page.waitForFunction(()=>document.querySelector('.cc98-topic-archive-status')?.textContent.startsWith('存档完成'),{},{timeout:20000});
     const markdownOpen=context.waitForEvent('page');await page.getByRole('button',{name:'查看存档',exact:true}).click();const filesPage=await markdownOpen;
     await filesPage.locator('.archive-post').first().waitFor();
+    assert.equal(await filesPage.locator(`a[href="${externalPage}"]`).count(),2,'external HTML and linked images remain ordinary links');
+    assert(!requests.some(url=>url.startsWith('https://www.bilibili.com/')),'no background request or permission expansion for web links');
     const downloading=filesPage.waitForEvent('download');await filesPage.getByRole('button',{name:'5m3z23ao.md',exact:true}).click();const downloaded=await downloading;
     assert.equal(downloaded.suggestedFilename(),'5m3z23ao.md');const downloadedPath=await downloaded.path();assert.equal(await fs.readFile(downloadedPath,'utf8'),markdownText);
     const exporting=filesPage.waitForEvent('download');await filesPage.locator('#archive-export').click();const exported=await exporting;
     const exportPath=path.join(output,'webp-offline.html');await exported.saveAs(exportPath);
     const html=await fs.readFile(exportPath,'utf8'), embedded=html.match(/data:image\/webp;base64,([a-z0-9+/=]+)/i);
+    assert(html.includes(externalPage),'standalone export preserves the external destination');
     assert(embedded,'WebP is embedded into standalone HTML');assert.deepEqual(Buffer.from(embedded[1],'base64'),webp);
+    const zipExporting=filesPage.waitForEvent('download');await filesPage.locator('#archive-export-zip').click();const zipExported=await zipExporting;
+    const zipPath=path.join(output,'actual-extension-offline.zip');await zipExported.saveAs(zipPath);
+    const entries=require('./archive-zip-core.test.cjs').unpackZip(await fs.readFile(zipPath));
+    const resources=JSON.parse(entries.get('resources.json').toString('utf8'));
+    const exportMeta=JSON.parse(entries.get('export.json').toString('utf8'));
+    assert.equal(exportMeta.pageCount,3);assert.deepEqual(exportMeta.warnings,[]);
+    assert.deepEqual(entries.get(resources.find(item=>item.url===webpUrl).path),webp);
+    assert.equal(entries.get(resources.find(item=>item.url===markdownUrl).path).toString('utf8'),markdownText);
+    assert(entries.has('index.html')&&entries.has('page-000003.html')&&entries.has('pages/page-000003.json'));
+    assert(!entries.get('index.html').toString('utf8').includes('data:image/'),'ZIP media must not be duplicated as base64');
     const offline=await context.browser().newContext({offline:true});
     try {
       const reader=await offline.newPage();await reader.goto(require('node:url').pathToFileURL(exportPath).href);

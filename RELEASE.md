@@ -1,68 +1,19 @@
 # Release Checklist
 
-Current release target: `0.4.3`.
+Current release target: `0.4.4`.
 
 1. Confirm `manifest.json` version.
-2. Run validation:
+2. Install the locked development dependencies with Node.js 22 and run the shared checks:
 
-```powershell
-node --check .\src\content.js
-node --check .\src\content-filter-core.js
-node --check .\src\content-filter.js
-node --check .\src\new-topics-virtual.js
-node --check .\src\content-filter-frame.js
-node --check .\src\content-filter-worker.js
-node --check .\src\semantic-client.js
-node --check .\src\semantic-filter-core.js
-node --check .\src\semantic-background.js
-node --check .\src\semantic-filter.js
-node --check .\popup\semantic-settings.js
-node --check .\src\theme-core.js
-node --check .\src\interface-style.js
-node --check .\src\extended-ubb-core.js
-node --check .\src\extended-ubb.js
-node --check .\src\markup-converter.js
-node --check .\src\conversation-core.js
-node --check .\src\conversation.js
-node --check .\src\topic-search.js
-node --check .\src\topic-drawer.js
-node --check .\src\favorite-share-core.js
-node --check .\src\favorite-share-service.js
-node --check .\src\favorite-share.js
-node --check .\src\user-notes-core.js
-node --check .\src\user-notes.js
-node --check .\src\background.js
-node --check .\src\openid-webvpn-bridge.js
-node --check .\src\page-submit-monitor.js
-node --check .\popup\popup.js
-node --check .\experiments\question-mark\background.js
-node --check .\experiments\question-mark\content.js
-node --check .\experiments\question-mark\admin-key-store.js
-node --check .\experiments\question-mark\admin.js
-node --check .\tests\local-static-server.cjs
-node -e "JSON.parse(require('fs').readFileSync('manifest.json','utf8')); console.log('manifest ok')"
-node .\tests\page-submit-monitor.test.js
-node .\tests\account-switch-removed.test.js
-node .\tests\account-switch-removed-browser.test.cjs
-node .\tests\settings-navigation.test.cjs
-node .\tests\linked-image-actions.test.cjs
-node .\tests\openid-refresh.test.js
-node .\tests\extended-ubb-core.test.js
-node .\tests\markup-converter-core.test.js
-node .\tests\question-mark-integration.test.js
-node .\tests\conversation-core.test.js
-node .\tests\media-resource-url.test.js
-node .\tests\favorite-share-core.test.js
-node .\tests\favorite-share-service.test.js
-node .\tests\user-notes-core.test.js
-node .\tests\theme-core.test.js
-node .\tests\content-filter-core.test.js
-node .\tests\title-filter.test.js
-node .\tests\semantic-client.test.js
-node .\tests\semantic-filter-core.test.js
-node .\tests\semantic-background.test.js
-node .\tests\semantic-filter.test.js
+```sh
+npm ci
+npm run check
 ```
+
+This runs the same format, lint, JavaScript syntax, manifest-reference and offline
+unit-test checks as CI. Formatting is introduced incrementally; see
+[CONTRIBUTING.md](CONTRIBUTING.md) for the first-adoption and changed-file policy.
+Run the relevant browser checks below when their features change.
 
 For dual UBB editor changes, start the local forum simulator:
 
@@ -236,46 +187,14 @@ third-party fixtures are intentionally excluded.
 
 ## Included Runtime Files
 
-- `manifest.json`
-- `assets/`
-- `images/`
-- `popup/`
-- `src/background.js`
-- `src/content.js`
-- `src/theme-core.js`
-- `src/theme-tokens.css`
-- `src/interface-style.js`
-- `src/interface-styles.css`
-- `src/extended-ubb-core.js`
-- `src/extended-ubb.js`
-- `src/extended-ubb.css`
-- `src/markup-converter.js`
-- `src/conversation-core.js`
-- `src/conversation.js`
-- `src/topic-search.js`
-- `src/topic-search.css`
-- `src/topic-archive.js`
-- `src/topic-archive.css`
-- `src/topic-archive-store.js`
-- `popup/archive.html`, `popup/archive.js`, `popup/archive.css`
-- `src/favorite-share-core.js`
-- `src/favorite-share-service.js`
-- `src/favorite-share.js`
-- `src/user-notes-core.js`
-- `src/user-notes.js`
-- `src/user-notes.css`
-- `src/private-message-pins-core.js`
-- `src/private-message-pins.js`
-- `src/settings-backup-core.js`
-- `src/openid-webvpn-bridge.js`
-- `src/page-submit-monitor.js`
-- `src/styles.css`
-- `src/vendor/` (Showdown, KaTeX, KaTeX fonts, and bundled licenses)
-- `experiments/question-mark/` (six extension runtime files; no local test server or database)
-- `README.md`
-- `CHANGELOG.md`
-- `LICENSE`
-- `PRIVACY.md`
+`scripts/package-extension.ps1` is the packaging allowlist. `manifest.json`
+identifies browser entry points and resources; `npm run check:manifest` verifies
+that its local references exist. Keep both lists current when adding a module.
+
+The package includes extension runtime, bundled resources/licenses, the optional
+semantic-lab source download and user-facing documentation. Development tools,
+`node_modules/`, tests, local configuration and generated release materials stay
+outside the extension package.
 
 ## Notes
 

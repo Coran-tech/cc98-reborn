@@ -1,0 +1,23 @@
+# Local state, generated output and third-party code are not maintained source.
+.git/
+.codex/
+.agents/
+node_modules/
+dist/
+build/
+outputs/
+reference/
+tmp/
+src/vendor/
+ios/CC98RebornShell/Resources/Reborn/
+question-mark-sites-demo/
+question-mark-sites-source/
+experiments/post-context-draft/package-preview/
+experiments/semantic-lab/.runtime/
+experiments/semantic-lab/models/
+experiments/semantic-lab/venv/
+tests/.baseline-*
+tests/fixtures/native-forum.css
+package-lock.json
+*.min.js
+*.min.css

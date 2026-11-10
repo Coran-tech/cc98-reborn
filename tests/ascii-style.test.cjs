@@ -257,7 +257,7 @@ async function main() {
     await forum.locator('#ascii-topic-index').screenshot({ path: path.join(output, "ascii-topic-index.png") });
     checks++;
     }
-    const topicViews = forum.locator('#cc98-comfort-app .cc98-rebuild-hero > .cc98-rebuild-topic-views');
+    const topicViews = forum.locator('#cc98-comfort-app .cc98-rebuild-hero > .cc98-rebuild-topic-context > .cc98-rebuild-topic-views');
     const waitForViews = value => forum.waitForFunction(value => document.querySelector('.cc98-rebuild-topic-views')?.textContent === '浏览 ' + value, value, { timeout: 5000 }).catch(async error => {
       console.error('View-count sync failed: ' + JSON.stringify(await forum.evaluate(() => ({ native: document.querySelector('#viewtimes .timeProp.tagSize')?.textContent, hero: document.querySelector('.cc98-rebuild-topic-views')?.textContent, kind: getPageKind() }))));
       throw error;

@@ -1898,8 +1898,14 @@ async function initializeTopicDrawerFrame(message, sender) {
 
 importScripts("semantic-client.js", "semantic-filter-core.js", "semantic-background.js");
 importScripts("topic-archive-store.js");
+importScripts("image-favorites-core.js", "image-favorites-store.js");
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message?.type === "CC98_IMAGE_FAVORITES") {
+    globalThis.CC98RebornImageFavoritesStore.handle(message, sender)
+      .then(sendResponse).catch(error => sendResponse({ ok: false, error: error?.message || "图片收藏保存失败" }));
+    return true;
+  }
   if (typeof message?.type === "string" && message.type.startsWith("CC98_ARCHIVE_")) {
     Promise.resolve(globalThis.CC98RebornTopicArchiveStore.handle(message, sender))
       .then(sendResponse).catch(error => sendResponse({ ok: false, error: error?.message || "本地存档失败" }));

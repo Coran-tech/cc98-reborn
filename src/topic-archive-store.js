@@ -95,13 +95,117 @@
     function stopResources(session) {
       for (const controller of session.controllers) controller.abort();
       session.controllers.clear();
+      if (session.cancelled && session.initializing) {
+        try { session.initializationTransaction?.abort(); } catch {}
+      }
     }
     function summary(snapshot) {
       if (!snapshot) return null;
-      const { captureSource, ...result } = snapshot;
+      const { captureSource, updateBaseFailures, updateReadPages, updateRetainedPages, updateBaseRevision, updateReceipt, ...result } = snapshot;
       return { ...result, failures: failuresOf(result.failures) };
     }
     function requireWritable(snapshot) { if (!snapshot || snapshot.status !== "capturing") throw error("存档任务已结束"); }
+    function storageLimit(message) { const cause = error(message); cause.code = "ARCHIVE_STORAGE_LIMIT"; return cause; }
+    function updateIdentity(snapshot, owner, sender) {
+      const source = forumUrl(sender.url), original = forumUrl(snapshot?.url);
+      if (!snapshot || snapshot.updateBaseId || !source || !original || source.origin !== original.origin
+        || source.pathname.match(/\/topic\/([1-9]\d*)(?:\/\d+)?\/?$/i)?.[1] !== snapshot.topicId
+        || !owner || snapshot.owner !== owner) throw error("请使用原存档的账号与访问地址打开本帖后更新");
+      if (snapshot.status === "capturing") throw error("这份存档仍在保存，请完成后再更新");
+    }
+    function updatePlan(snapshot, pageNumbers, refreshExisting, failedPages = []) {
+      const saved = new Set(pageNumbers), lastPage = pageNumbers.at(-1) || 1;
+      const expectedPages = Math.max(lastPage, Math.min(100000, Number(snapshot.expectedPages) || lastPage));
+      const scan = new Set([lastPage, ...failedPages]);
+      for (let page = 1; page <= expectedPages; page++) if (refreshExisting || !saved.has(page)) scan.add(page);
+      for (const item of snapshot.failures || []) if (Number.isSafeInteger(item.page) && item.page > 0 && item.page <= expectedPages) scan.add(item.page);
+      return { baseId: snapshot.id, pageNumbers, scanPages: [...scan].sort((a, b) => a - b), lastPage, expectedPages };
+    }
+    function hasUnlocatedFailure(page, failures) {
+      return failures.some(item => !item.page && item.url && page.records.some(record => [record.avatar, record.contentHtml, record.signatureHtml, record.extraHtml]
+        .some(value => typeof value === "string" && (value.includes(item.url) || value.includes(item.url.replace(/&/g, "&amp;").replace(/"/g, "&quot;"))))));
+    }
+    async function updateInfo(message, sender) {
+      return transaction(["snapshots", "pages"], "readonly", async tx => {
+        const snapshot = await request(tx.objectStore("snapshots").get(message.id));
+        updateIdentity(snapshot, cleanString(message.owner, 200), sender);
+        const keys = await request(tx.objectStore("pages").index("snapshotId").getAllKeys(message.id));
+        const pages = keys.map(key => key[1]).sort((a, b) => a - b);
+        const failedPages = [];
+        if (snapshot.failures?.some(item => !item.page && item.url)) for (const key of keys) {
+          const page = await request(tx.objectStore("pages").get(key));
+          if (hasUnlocatedFailure(page, snapshot.failures)) failedPages.push(page.page);
+        }
+        return { ok: true, snapshot: summary(snapshot), update: updatePlan(snapshot, pages, message.refreshExisting === true, failedPages) };
+      });
+    }
+    async function clearEntries(tx, id) {
+      for (const name of ["pages", "assets"]) {
+        const store = tx.objectStore(name), keys = await request(store.index("snapshotId").getAllKeys(id));
+        for (const key of keys) await request(store.delete(key));
+      }
+    }
+    async function updateReceipt(tx, work, status, note = "", updated = false) {
+      await clearEntries(tx, work.id);
+      await request(tx.objectStore("snapshots").put({ id: work.id, version: 1, updateBaseId: work.updateBaseId,
+        updateReceipt: true, captureSource: work.captureSource, status, error: cleanString(note, 1000), completedAt: clock(), updated }));
+    }
+    async function beginUpdate(meta, sender) {
+      if (!validId(meta.baseId)) throw error("无效的存档编号");
+      const id = crypto.randomUUID();
+      // Register before waiting for the clone transaction, so tab/document
+      // teardown also owns and cancels a BEGIN that has not returned an ID yet.
+      const pending = { owner: sourceKey(sender), tabId: sender.tab.id, frameId: sender.frameId, documentId: sender.documentId,
+        baseId: meta.baseId, controllers: new Set(), pending: new Map(), failedResources: new Map(), cancelled: false, initializing: true };
+      sessions.set(id, pending);
+      return serial(meta.baseId, async () => {
+        try {
+          if (pending.cancelled) throw error("更新已停止，原备份未修改");
+          const result = await transaction(["snapshots", "pages", "assets"], "readwrite", async tx => {
+            pending.initializationTransaction = tx;
+            if (pending.cancelled) throw error("更新已停止，原备份未修改");
+            const snapshots = tx.objectStore("snapshots"), base = await request(snapshots.get(meta.baseId));
+            updateIdentity(base, cleanString(meta.owner, 200), sender);
+            if (String(meta.topicId) !== base.topicId) throw error("存档与帖子不一致");
+            for (const previous of await request(snapshots.getAll())) if (previous.updateBaseId === base.id) {
+              if (previous.status === "capturing" && sessions.has(previous.id)) throw error("这份备份已有更新任务");
+              // Stale work from a terminated service worker is never promoted.
+              await clearEntries(tx, previous.id); await request(snapshots.delete(previous.id));
+            }
+            const work = { ...base, id, status: "capturing", startedAt: finiteTime(meta.startedAt, clock()), completedAt: null,
+              includeFiles: base.includeFiles === true, error: "", failures: [], captureSource: sourceKey(sender),
+              updateBaseId: base.id, updateBaseRevision: Number(base.revision) || 0, updateBaseFailures: failuresOf(base.failures), updateReadPages: [], updateRetainedPages: [] };
+            work.pageCount = 0; work.recordCount = 0; work.assetCount = 0; work.bytes = 0;
+            const pageNumbers = [], failedPages = [];
+            for (const name of ["pages", "assets"]) {
+              const store = tx.objectStore(name), keys = await request(store.index("snapshotId").getAllKeys(base.id));
+              for (const key of keys) {
+                const entry = await request(store.get(key)), copy = { ...entry, key: [id, key[1]], snapshotId: id };
+                if (name === "pages") {
+                  delete copy.bytes; copy.bytes = bytesOf(copy); pageNumbers.push(copy.page);
+                  if (hasUnlocatedFailure(copy, base.failures || [])) failedPages.push(copy.page);
+                  work.pageCount++; work.recordCount += copy.records.length;
+                } else work.assetCount++;
+                work.bytes += copy.bytes; await request(store.add(copy));
+              }
+            }
+            if (work.bytes > limits.snapshot) throw storageLimit("本帖存档已达到本地大小上限");
+            await request(snapshots.add(work));
+            return { ok: true, id, snapshot: summary(work), update: updatePlan(base, pageNumbers.sort((a, b) => a - b), meta.refreshExisting === true, failedPages) };
+          });
+          if (pending.cancelled || sessions.get(id) !== pending) throw error("更新已停止，原备份未修改");
+          pending.initializing = false; pending.initializationTransaction = null;
+          return result;
+        } catch (cause) {
+          await transaction(["snapshots", "pages", "assets"], "readwrite", async tx => {
+            await clearEntries(tx, id); await request(tx.objectStore("snapshots").delete(id));
+          }).catch(() => {});
+          if (sessions.get(id) === pending) sessions.delete(id);
+          if (pending.cancelled) throw error("更新已停止，原备份未修改");
+          throw cause;
+        }
+      });
+    }
 
     async function begin(meta, sender) {
       const url = forumUrl(meta?.url), source = forumUrl(sender.url);
@@ -109,6 +213,7 @@
       if (!numericId(topicId) || !url || url.origin !== source.origin
         || url.pathname.match(/\/topic\/([1-9]\d*)(?:\/\d+)?\/?$/i)?.[1] !== topicId
         || source.pathname.match(/\/topic\/([1-9]\d*)(?:\/\d+)?\/?$/i)?.[1] !== topicId) throw error("无效的帖子地址");
+      if (meta.baseId !== undefined) return beginUpdate(meta, sender);
       const id = crypto.randomUUID(), startedAt = finiteTime(meta.startedAt, clock());
       const snapshot = { version: 1, id, topicId, title: cleanString(meta.title, 1000) || `帖子 ${topicId}`, url: url.href,
         owner: cleanString(meta.owner, 200), startedAt, completedAt: null, includeFiles: meta.includeFiles === true,
@@ -132,17 +237,28 @@
       });
       const pageData = { key: [message.id, page], snapshotId: message.id, page, records, capturedAt: finiteTime(message.capturedAt, clock()) };
       pageData.bytes = bytesOf(pageData);
-      if (pageData.bytes > limits.page) throw error("单页内容超过本地存档大小限制");
+      if (pageData.bytes > limits.page) throw storageLimit("单页内容超过本地存档大小限制");
       return serial(message.id, () => transaction(["snapshots", "pages"], "readwrite", async tx => {
         sessionFor(message.id, sender);
         const snapshots = tx.objectStore("snapshots"), pages = tx.objectStore("pages");
         const snapshot = await request(snapshots.get(message.id)); requireWritable(snapshot);
         if (records.some(record => record.topicId !== snapshot.topicId)) throw error("楼层与存档帖子不一致");
         const previous = await request(pages.get(pageData.key));
+        if (snapshot.updateBaseId) {
+          if (records.some(record => Math.ceil(record.floor / 10) !== page) || new Set(records.map(record => record.floor)).size !== records.length) throw error("更新楼层与请求页不一致");
+          const updated = new Map(records.map(record => [record.floor, record]));
+          const retained = previous?.records.filter(record => !updated.has(record.floor)) || [];
+          for (const record of retained) updated.set(record.floor, record);
+          pageData.records = [...updated.values()].sort((a, b) => a.floor - b.floor);
+          delete pageData.bytes; pageData.bytes = bytesOf(pageData);
+          if (pageData.bytes > limits.page) throw storageLimit("单页内容超过本地存档大小限制");
+          snapshot.updateReadPages = [...new Set([...snapshot.updateReadPages, page])];
+          if (retained.length) snapshot.updateRetainedPages = [...new Set([...snapshot.updateRetainedPages, page])];
+        }
         const bytes = snapshot.bytes - (previous?.bytes || 0) + pageData.bytes;
-        if (bytes > limits.snapshot) throw error("本帖存档已达到本地大小上限");
+        if (bytes > limits.snapshot) throw storageLimit("本帖存档已达到本地大小上限");
         snapshot.bytes = bytes; snapshot.pageCount += previous ? 0 : 1;
-        snapshot.recordCount += records.length - (previous?.records.length || 0);
+        snapshot.recordCount += pageData.records.length - (previous?.records.length || 0);
         snapshot.expectedPages = Math.max(snapshot.expectedPages, page, Number.isSafeInteger(result.maxPage) ? result.maxPage : 0);
         if (page === 1 && result.title) snapshot.title = cleanString(result.title, 1000);
         await request(pages.put(pageData)); await request(snapshots.put(snapshot));
@@ -258,7 +374,7 @@
           const current = await request(snapshots.get(message.id)); requireWritable(current);
           const old = await request(assets.get(key));
           if (old) return { ok: true, asset: { url: value, mime: old.mime, bytes: old.bytes } };
-          if (current.bytes + resource.bytes > limits.snapshot) throw error("本帖存档已达到本地大小上限");
+          if (current.bytes + resource.bytes > limits.snapshot) throw storageLimit("本帖存档已达到本地大小上限");
           await request(assets.add({ key, snapshotId: message.id, url: value, kind, ...resource }));
           current.bytes += resource.bytes; current.assetCount += 1;
           await request(snapshots.put(current));
@@ -283,11 +399,98 @@
         seen.add(key); return true;
       });
     }
+    async function finishUpdate(message, sender, status, session) {
+      const owner = sourceKey(sender);
+      if (session) {
+        if (status === "cancelled" || status === "error") session.cancelled = true;
+        stopResources(session);
+        await Promise.allSettled([...session.pending.values()]);
+      }
+      try {
+        return await serial(message.id, () => transaction(["snapshots", "pages", "assets"], "readwrite", async tx => {
+          const snapshots = tx.objectStore("snapshots"), work = await request(snapshots.get(message.id));
+          if (!work?.updateBaseId || work.captureSource !== owner) throw error("存档任务已停止或不属于当前页面");
+          const base = await request(snapshots.get(work.updateBaseId));
+          if (!base) throw error("原备份已删除，更新未应用");
+          if (work.updateReceipt) return { ok: true, id: base.id, snapshot: summary(base), updateStatus: work.status, updated: work.updated === true, error: work.error || "" };
+          if (!session) throw error("更新任务已中断，原备份未修改");
+          requireWritable(work);
+          if (status === "cancelled" || status === "error" || session.fatalError || session.cancelled) {
+            const ended = status === "cancelled" || session.cancelled && !session.fatalError && status !== "error" ? "cancelled" : "error";
+            const note = session.fatalError || cleanString(message.error, 1000);
+            await updateReceipt(tx, work, ended, note);
+            return { ok: true, id: base.id, snapshot: summary(base), updateStatus: ended, updated: false, error: note };
+          }
+          if ((Number(base.revision) || 0) !== work.updateBaseRevision) throw error("原备份已被其他任务更新，请重新开始");
+          if (!work.updateReadPages.length) throw error("未读取任何更新页面，原备份未修改");
+          const pagesStore = tx.objectStore("pages"), assetsStore = tx.objectStore("assets");
+          const pageKeys = await request(pagesStore.index("snapshotId").getAllKeys(work.id));
+          const assetKeys = await request(assetsStore.index("snapshotId").getAllKeys(work.id));
+          const savedAssets = new Set(assetKeys.map(key => key[1])), visited = new Set(work.updateReadPages), retained = new Set(work.updateRetainedPages);
+          const currentFailures = failuresOf([...(Array.isArray(message.failures) ? message.failures : []), ...session.failedResources.values()]);
+          const failedPages = new Set(currentFailures.filter(item => item.page).map(item => item.page));
+          // A shared URL can occur on several pages although the capture loop
+          // downloads it only once and reports just its first failing page.
+          const resourceFailures = currentFailures.filter(item => item.url).map(item => ({ ...item, page: undefined }));
+          if (resourceFailures.length) for (const key of pageKeys) {
+            const page = await request(pagesStore.get(key));
+            if (hasUnlocatedFailure(page, resourceFailures)) failedPages.add(page.page);
+          }
+          // A page was staged before its media finished downloading. If that
+          // page later proves incomplete, keep its old records intact and only
+          // append genuinely new floors during the atomic promotion below.
+          for (const page of failedPages) retained.add(page);
+          const historical = work.updateBaseFailures.filter(item => !(item.url && savedAssets.has(item.url)) && !(item.page && visited.has(item.page) && !retained.has(item.page)));
+          const failures = failuresOf([...historical, ...currentFailures]);
+          const expectedPages = Math.max(base.expectedPages || 1, work.expectedPages || 1, Number.isSafeInteger(message.expectedPages) && message.expectedPages > 0 && message.expectedPages <= 100000 ? message.expectedPages : 1);
+          const numbers = new Set(pageKeys.map(key => key[1]));
+          const complete = numbers.size === expectedPages && Array.from({ length: expectedPages }, (_, i) => i + 1).every(page => numbers.has(page));
+          const next = { ...base, title: work.title, includeFiles: work.includeFiles, expectedPages, updatedAt: clock(), lastUpdateStartedAt: work.startedAt,
+            revision: (Number(base.revision) || 0) + 1, failures, error: cleanString(message.error, 1000) || (!complete ? "部分页面未保存" : ""),
+            pageCount: 0, recordCount: 0, assetCount: 0, bytes: 0 };
+          next.status = status === "partial" || !complete || failures.length || next.error ? "partial" : "complete";
+          for (const key of pageKeys) {
+            const page = await request(pagesStore.get(key)), copy = { ...page, key: [base.id, page.page], snapshotId: base.id };
+            if (failedPages.has(page.page)) {
+              const previous = await request(pagesStore.get([base.id, page.page]));
+              if (previous) {
+                const records = new Map(previous.records.map(record => [record.floor, record]));
+                for (const record of page.records) if (!records.has(record.floor)) records.set(record.floor, record);
+                copy.records = [...records.values()].sort((a, b) => a.floor - b.floor);
+              }
+            }
+            delete copy.bytes; copy.bytes = bytesOf(copy);
+            next.pageCount++; next.recordCount += copy.records.length; next.bytes += copy.bytes;
+            await request(pagesStore.put(copy));
+          }
+          for (const key of assetKeys) {
+            const asset = await request(assetsStore.get(key));
+            await request(assetsStore.put({ ...asset, key: [base.id, asset.url], snapshotId: base.id }));
+            next.assetCount++; next.bytes += asset.bytes;
+          }
+          if (next.bytes > limits.snapshot) throw storageLimit("本帖存档已达到本地大小上限");
+          if (session.cancelled) throw error("更新已取消，原备份未修改");
+          await request(snapshots.put(next));
+          await updateReceipt(tx, work, next.status, "", true);
+          return { ok: true, id: base.id, snapshot: summary(next), updateStatus: next.status, updated: true };
+        }));
+      } catch (cause) {
+        // Promotion is one atomic transaction. If it aborts (including quota),
+        // remove only temporary entries; the readable original stays untouched.
+        await serial(message.id, () => transaction(["snapshots", "pages", "assets"], "readwrite", async tx => {
+          const work = await request(tx.objectStore("snapshots").get(message.id));
+          if (work?.updateBaseId && !work.updateReceipt && work.captureSource === owner) await updateReceipt(tx, work, session?.cancelled ? "cancelled" : "error", cause.message);
+        })).catch(() => {});
+        throw cause;
+      } finally { sessions.delete(message.id); }
+    }
     async function finish(message, sender, cancelled = false) {
       const status = cancelled ? "cancelled" : message.status;
       if (!STATUSES.has(status)) throw error("无效的存档状态");
       const owner = sourceKey(sender), session = sessions.get(message.id);
       if (!validId(message.id) || session && session.owner !== owner) throw error("存档任务已停止或不属于当前页面");
+      const existing = await getSnapshot(message.id);
+      if (existing?.updateBaseId) return finishUpdate(message, sender, status, session);
       if (session) {
         if (cancelled) session.cancelled = true;
         stopResources(session);
@@ -314,28 +517,31 @@
       }));
     }
     async function list() {
-      const values = await transaction(["snapshots"], "readwrite", async tx => {
+      const values = await transaction(["snapshots", "pages", "assets"], "readwrite", async tx => {
         const store = tx.objectStore("snapshots"), snapshots = await request(store.getAll());
         for (const snapshot of snapshots) {
           if (snapshot.status === "capturing" && !sessions.has(snapshot.id)) {
+            if (snapshot.updateBaseId) { await updateReceipt(tx, snapshot, "error", "更新已中断，原备份未修改"); continue; }
             snapshot.status = "partial"; snapshot.completedAt = clock(); snapshot.error = "读取已中断，可重新存档";
             await request(store.put(snapshot));
           }
         }
-        return snapshots;
+        return snapshots.filter(snapshot => !snapshot.updateBaseId);
       });
-      return { ok: true, items: values.sort((a, b) => b.startedAt - a.startedAt).map(summary) };
+      return { ok: true, items: values.sort((a, b) => (b.updatedAt || b.startedAt) - (a.updatedAt || a.startedAt)).map(summary) };
     }
     async function get(message) {
-      const snapshot = await getSnapshot(message.id);
+      let snapshot = await getSnapshot(message.id);
       if (!snapshot) throw error("未找到这份存档");
+      if (snapshot.updateReceipt) { snapshot = await getSnapshot(snapshot.updateBaseId); if (!snapshot) throw error("原备份已删除"); }
+      const id = snapshot.id;
       return transaction(["pages"], "readonly", async tx => {
-        const store = tx.objectStore("pages"), keys = await request(store.index("snapshotId").getAllKeys(message.id));
+        const store = tx.objectStore("pages"), keys = await request(store.index("snapshotId").getAllKeys(id));
         const pageNumbers = keys.map(key => key[1]).sort((a, b) => a - b);
         let pages = [];
         if (message.page !== undefined) {
           if (!Number.isSafeInteger(message.page) || message.page < 1) throw error("无效的页码");
-          const page = await request(store.get([message.id, message.page]));
+          const page = await request(store.get([id, message.page]));
           if (!page) throw error("该页未保存");
           pages = [{ page: page.page, records: page.records, capturedAt: page.capturedAt }];
         }
@@ -357,13 +563,13 @@
       return { ok: true, url: entry.url, mime: entry.mime, bytes: entry.bytes, ...(chunked ? { base64, offset, length: bytes.length, nextOffset: offset + bytes.length } : { dataUrl: `data:${entry.mime};base64,${base64}` }) };
     }
     async function remove(message) {
-      const session = sessions.get(message.id);
-      if (session) { session.cancelled = true; stopResources(session); sessions.delete(message.id); }
+      for (const [id, session] of sessions) if (id === message.id || session.baseId === message.id) {
+        session.cancelled = true; stopResources(session); sessions.delete(id);
+      }
       return serial(message.id, () => transaction(["snapshots", "pages", "assets"], "readwrite", async tx => {
-        await request(tx.objectStore("snapshots").delete(message.id));
-        for (const name of ["pages", "assets"]) {
-          const store = tx.objectStore(name), keys = await request(store.index("snapshotId").getAllKeys(message.id));
-          for (const key of keys) await request(store.delete(key));
+        const snapshots = tx.objectStore("snapshots"), all = await request(snapshots.getAll());
+        for (const snapshot of all) if (snapshot.id === message.id || snapshot.updateBaseId === message.id) {
+          await clearEntries(tx, snapshot.id); await request(snapshots.delete(snapshot.id));
         }
         return { ok: true };
       }));
@@ -372,6 +578,15 @@
       const session = sessions.get(id);
       if (!session) return;
       session.cancelled = true; stopResources(session);
+      // beginUpdate owns rollback/cleanup of its not-yet-published work copy.
+      if (session.initializing) return;
+      if (session.baseId) {
+        serial(id, () => transaction(["snapshots", "pages", "assets"], "readwrite", async tx => {
+          const work = await request(tx.objectStore("snapshots").get(id));
+          if (work?.status === "capturing") await updateReceipt(tx, work, "cancelled", note);
+        })).catch(() => {}).finally(() => { if (sessions.get(id) === session) sessions.delete(id); });
+        return;
+      }
       serial(id, () => transaction(["snapshots"], "readwrite", async tx => {
         const store = tx.objectStore("snapshots"), snapshot = await request(store.get(id));
         if (snapshot?.status === "capturing") {
@@ -393,14 +608,23 @@
     chrome.tabs?.onRemoved?.addListener(tabRemoved);
     chrome.webNavigation?.onCommitted?.addListener(documentChanged);
     async function handle(message, sender) {
+      const pendingSession = sessions.get(message?.id);
       try {
         const action = message?.type?.startsWith("CC98_ARCHIVE_") ? message.type.slice(13) : "";
         const forum = forumSender(sender), ui = uiSender(sender);
-        if (["BEGIN", "PAGE", "RESOURCE", "FINISH", "ABORT"].includes(action)) {
+        if (["BEGIN", "PAGE", "RESOURCE", "FINISH", "ABORT", "UPDATE_INFO"].includes(action)) {
           if (!forum) throw error("此页面不能创建存档");
         } else if (action === "OPEN" ? !(forum || ui) : !ui) throw error("此页面不能读取本地存档");
         if (action !== "BEGIN" && action !== "LIST" && action !== "OPEN" && !validId(message.id)) throw error("无效的存档编号");
         if (action === "BEGIN") return await begin(message.meta, sender);
+        if (action === "UPDATE_INFO") return await updateInfo(message, sender);
+        if (action === "UPDATE_OPEN") {
+          const snapshot = await getSnapshot(message.id), url = forumUrl(snapshot?.url);
+          if (!snapshot || snapshot.updateBaseId || !url || url.pathname.match(/\/topic\/([1-9]\d*)(?:\/\d+)?\/?$/i)?.[1] !== snapshot.topicId) throw error("这份存档没有可更新的原帖地址");
+          if (snapshot.status === "capturing") throw error("这份存档仍在保存，请完成后再更新");
+          url.hash = "cc98-reborn-update-archive=" + snapshot.id;
+          await chrome.tabs.create({ url: url.href }); return { ok: true };
+        }
         if (action === "PAGE") return await putPage(message, sender);
         if (action === "RESOURCE") return await putResource(message, sender);
         if (action === "FINISH") return await finish(message, sender);
@@ -416,6 +640,12 @@
         }
         throw error("未知的存档操作");
       } catch (cause) {
+        const session = sessions.get(message?.id) || pendingSession;
+        const updateLimit = (session?.baseId || message?.type === "CC98_ARCHIVE_BEGIN" && validId(message.meta?.baseId))
+          && (cause?.name === "QuotaExceededError" || cause?.code === "ARCHIVE_STORAGE_LIMIT");
+        const safeUpdateError = "本地存储空间或大小限制导致更新停止，原备份未修改";
+        if (session?.baseId && updateLimit) session.fatalError = safeUpdateError;
+        if (session?.baseId && session.fatalError || updateLimit) return { ok: false, fatal: true, error: session?.fatalError || safeUpdateError };
         return { ok: false, error: cause?.name === "QuotaExceededError" ? "本地存储空间不足，请删除旧存档后重试" : cleanString(cause?.message, 1000) || "本地存档操作失败" };
       }
     }

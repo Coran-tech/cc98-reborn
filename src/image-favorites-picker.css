@@ -1,0 +1,58 @@
+:root.cc98-comfort .cc98-rebuild-message-emoji-panel.ubb-emoji .cc98-rebuild-message-emoji-tab[data-emoji-key="image-favorites"] {
+  min-width: 96px !important;
+  width: auto !important;
+  white-space: nowrap !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-message-emoji-panel.ubb-emoji .cc98-rebuild-message-emoji-content.cc98-rebuild-image-favorites-picker {
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)) !important;
+  gap: 8px !important;
+  padding: 12px !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-message-emoji-panel.ubb-emoji .cc98-rebuild-image-favorites-picker .cc98-rebuild-image-favorite-option {
+  width: 64px !important;
+  height: 64px !important;
+  padding: 4px !important;
+  overflow: hidden;
+  border: 1px solid var(--cc98-comfort-border) !important;
+  background: var(--cc98-comfort-surface) !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-message-emoji-panel.ubb-emoji .cc98-rebuild-image-favorites-picker .cc98-rebuild-image-favorite-option img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+}
+
+:root.cc98-comfort .cc98-rebuild-message-emoji-panel.ubb-emoji .cc98-rebuild-image-favorite-option:is(:hover, :focus-visible) {
+  border-color: var(--cc98-comfort-accent) !important;
+  background: var(--cc98-comfort-accent-2) !important;
+  outline: 1px solid var(--cc98-comfort-accent);
+  outline-offset: 1px;
+}
+
+:root.cc98-comfort .cc98-rebuild-message-emoji-panel.ubb-emoji .cc98-rebuild-image-favorite-option.is-unavailable {
+  color: var(--cc98-comfort-muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+:root.cc98-comfort .cc98-rebuild-message-emoji-panel.ubb-emoji .cc98-rebuild-image-favorites-picker-status {
+  grid-column: 1 / -1;
+  padding: 16px 8px;
+  color: var(--cc98-comfort-muted);
+  font-size: 14px;
+}
+
+:root.cc98-comfort .cc98-rebuild-message-emoji-panel.ubb-emoji .cc98-rebuild-message-emoji-tab[hidden],
+:root.cc98-comfort .cc98-rebuild-image-favorite-option img[hidden] {
+  display: none !important;
+}
+
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-message-emoji-panel.ubb-emoji,
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-message-emoji-panel.ubb-emoji .cc98-rebuild-image-favorite-option {
+  border-radius: 0 !important;
+}

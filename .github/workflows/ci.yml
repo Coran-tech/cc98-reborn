@@ -3,111 +3,40 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    name: Quality checks (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
 
-      - name: Check JavaScript syntax
-        run: |
-          node --check src/content.js
-          node --check src/content-filter-core.js
-          node --check src/content-filter.js
-          node --check src/new-topics-virtual.js
-          node --check src/content-filter-frame.js
-          node --check src/content-filter-worker.js
-          node --check src/semantic-client.js
-          node --check src/semantic-filter-core.js
-          node --check src/semantic-background.js
-          node --check src/semantic-filter.js
-          node --check popup/semantic-settings.js
-          node --check src/theme-core.js
-          node --check src/interface-style.js
-          node --check src/extended-ubb-core.js
-          node --check src/extended-ubb.js
-          node --check src/markup-converter.js
-          node --check src/conversation-core.js
-          node --check src/conversation.js
-          node --check src/topic-search.js
-          node --check src/topic-drawer.js
-          node --check src/favorite-share-core.js
-          node --check src/favorite-share-service.js
-          node --check src/favorite-share.js
-          node --check src/user-notes-core.js
-          node --check src/user-notes.js
-          node --check src/private-message-pins-core.js
-          node --check src/private-message-pins.js
-          node --check src/settings-backup-core.js
-          node --check src/background.js
-          node --check src/openid-webvpn-bridge.js
-          node --check src/page-submit-monitor.js
-          node --check popup/popup.js
-          node --check popup/settings-backup.js
-          node --check experiments/question-mark/background.js
-          node --check experiments/question-mark/content.js
-          node --check experiments/question-mark/admin-key-store.js
-          node --check experiments/question-mark/admin.js
+      - name: Install locked development dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
 
-      - name: Validate manifest
-        run: node -e "JSON.parse(require('fs').readFileSync('manifest.json','utf8')); console.log('manifest ok')"
-
-      - name: Test submit monitor
-        run: node tests/page-submit-monitor.test.js
-
-      - name: Test OpenID local binding
-        run: node tests/openid-refresh.test.js
-
-      - name: Test local watermark formatting and ownership
-        run: node --test tests/security-watermark.test.js
-
-      - name: Test extended UBB core
-        run: node tests/extended-ubb-core.test.js
-
-      - name: Test UBB Markdown conversion core
-        run: node tests/markup-converter-core.test.js
-
-      - name: Test question reaction integration
-        run: node tests/question-mark-integration.test.js
-
-      - name: Test conversation graph
-        run: node tests/conversation-core.test.js
-
-      - name: Test media resource URLs
-        run: node tests/media-resource-url.test.js
-
-      - name: Test favorite sharing
-        run: |
-          node tests/favorite-share-core.test.js
-          node tests/favorite-share-service.test.js
-
-      - name: Test local user notes
-        run: node tests/user-notes-core.test.js
-
-      - name: Test personal configuration backups
-        run: node tests/settings-backup-core.test.js
-
-      - name: Test theme schedule and migration
-        run: node tests/theme-core.test.js
-
-      - name: Test content rule expressions
-        run: node tests/content-filter-core.test.js
-
-      - name: Test title rule worker matching
-        run: node tests/title-filter.test.js
-
-      - name: Test local semantic client
-        run: node tests/semantic-client.test.js
-
-      - name: Test experimental semantic blocking
-        run: |
-          node tests/semantic-filter-core.test.js
-          node tests/semantic-background.test.js
-          node tests/semantic-filter.test.js
+      - name: Format, lint, syntax, manifest and offline regression tests
+        run: npm run check
+        env:
+          FORMAT_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before || 'HEAD' }}
+          FORMAT_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}

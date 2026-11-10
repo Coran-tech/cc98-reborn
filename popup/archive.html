@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="archive.css">
   <script src="../src/theme-core.js" defer></script>
   <script src="../src/vendor/katex/katex.min.js" defer></script>
+  <script src="archive-zip.js" defer></script>
   <script src="archive.js" defer></script>
 </head>
 <body>
@@ -24,7 +25,7 @@
       <div id="archive-list" class="archive-list"></div>
     </section>
     <section id="archive-detail" aria-label="帖子快照" hidden>
-      <nav class="archive-actions" aria-label="存档操作"><button id="archive-back" type="button">全部存档</button><span class="archive-spacer"></span><a id="archive-source" target="_blank" rel="noopener noreferrer">原帖</a><button id="archive-export" type="button">导出 HTML</button><button id="archive-delete" type="button" class="archive-danger">删除</button></nav>
+      <nav class="archive-actions" aria-label="存档操作"><button id="archive-back" type="button">全部存档</button><span class="archive-spacer"></span><a id="archive-source" target="_blank" rel="noopener noreferrer">原帖</a><button id="archive-update" type="button">更新备份</button><button id="archive-export-zip" type="button">导出 ZIP</button><button id="archive-export" type="button">导出 HTML</button><button id="archive-delete" type="button" class="archive-danger">删除</button></nav>
       <header class="archive-topic-heading"><h2 id="archive-title"></h2><p id="archive-meta" class="archive-muted"></p></header>
       <details id="archive-failures" class="archive-failures" hidden><summary id="archive-failure-summary"></summary><ul id="archive-failure-list"></ul></details>
       <nav id="archive-pagination" class="archive-pagination" aria-label="顶部存档分页" hidden></nav>

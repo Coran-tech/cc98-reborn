@@ -1,0 +1,31 @@
+/* Temporarily hide the experimental toolbar entry; retain the live runtime. */
+:root.cc98-comfort #cc98-comfort-app .cc98-topic-live-entry { display:none!important; }
+
+:root.cc98-comfort #cc98-comfort-app .cc98-topic-live-entry[aria-pressed="true"] {
+  color:var(--cc98-comfort-accent)!important; border-color:var(--cc98-comfort-accent)!important; background:var(--cc98-comfort-accent-2)!important;
+}
+:root.cc98-comfort .cc98-topic-live-bar {
+  position:sticky; z-index:20; display:flex; align-items:center; flex-wrap:wrap; gap:8px;
+  width:min(920px,100%); box-sizing:border-box;
+  padding:10px 14px; margin:0 0 12px; border:1px solid var(--cc98-comfort-border);
+  margin-inline:auto;
+  border-radius:var(--cc98-comfort-radius,12px); color:var(--cc98-comfort-text); background:var(--cc98-comfort-surface);
+}
+:root.cc98-comfort .cc98-topic-live-status { margin-right:auto; font-size:.82rem; color:var(--cc98-comfort-muted); }
+:root.cc98-comfort .cc98-topic-live-bar button {
+  min-height:30px; padding:3px 12px; border:1px solid var(--cc98-comfort-border); border-radius:999px;
+  font:inherit; font-size:.82rem; color:var(--cc98-comfort-text); background:var(--cc98-comfort-surface-2); cursor:pointer;
+}
+:root.cc98-comfort .cc98-topic-live-bar button[hidden] { display:none!important; }
+:root.cc98-comfort .cc98-topic-live-bar .cc98-topic-live-jump { color:var(--cc98-comfort-secondary); border-color:var(--cc98-comfort-secondary); background:var(--cc98-comfort-secondary-soft); }
+:root.cc98-comfort .cc98-topic-live-bar button:focus-visible { outline:2px solid var(--cc98-comfort-accent); outline-offset:2px; }
+:root.cc98-comfort .cc98-topic-live-posts { display:grid; gap:8px; padding-block:12px; }
+:root.cc98-comfort .cc98-topic-live-posts[hidden] { display:none!important; }
+:root.cc98-comfort .cc98-topic-live-source { color:var(--cc98-comfort-secondary)!important; border-color:var(--cc98-comfort-secondary)!important; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-topic-live-bar,
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-topic-live-bar button { border-radius:0!important; font-family:Consolas,"Microsoft YaHei",monospace; box-shadow:none; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-topic-live-bar { border-style:dashed; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-topic-live-bar { width:100%; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-topic-live-source svg { display:none; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-topic-live-source::before { content:"[OPEN]"; font-family:Consolas,monospace; }
+@media(max-width:600px) { :root.cc98-comfort .cc98-topic-live-bar { padding:8px; gap:6px; } }
