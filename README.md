@@ -19,31 +19,73 @@
 ### 统一的界面
 
 - 重构几乎所有CC98主站页面。
+
+  ![首页十大](./docs/images/interface-concepts-v2/01-home.png)
+
 - 顶栏“稍后再看”右侧和个人中心导航最底部均有“插件设置”，打开独立设置子页，包含弹窗里的全部设置和账号、更新等功能。
 - 设置最底部“恢复默认”旁可备份和导入个人配置。
 - 明暗与配色独立设置：白昼、黑夜、自动三种模式，六组主色／副色配色预设和自定义方案。
 - “界面风格”独立于明暗和配色。Reborn 保留当前界面；ASCII / BBS（实验性）使用字符边框、等宽字体、直角控件和彩色文字。
+
+  ![界面风格、昼夜与配色](./docs/images/interface-concepts-v2/02-theme.png)
+
 - 新增“分享收藏夹”、本地用户备注等功能。
+
+  ![导出收藏夹](./docs/images/interface-concepts-v2/03-favorite-export.png)
+
+  ![导入收藏夹](./docs/images/interface-concepts-v2/04-favorite-import.png)
+
+  ![用户备注](./docs/images/interface-concepts-v2/05-user-note.png)
+
 - 适配 CC98 直连与浙江大学 WebVPN。
 
 ### 更舒服的帖子阅读
 
 - 所有重构的帖子卡片列表共用帖子侧窗。直接点击帖子标题，会在网页右侧打开独立帖子侧窗，打开时保留主列表内容与阅读位置，在左侧按剩余宽度重新排版。右侧显示帖子时，左侧列表仍可滚动、继续加载、按需渲染和点击。
+
+  ![帖子侧拉窗](./docs/images/interface-concepts-v2/06-drawer.png)
+
 - 重构正文、引用、Markdown 回复、签名档、评分记录、投票、热评和楼主标识。
 - 高级用户屏蔽规则。
+
+  ![发言屏蔽规则](./docs/images/interface-concepts-v2/10-filter-rules.png)
+
 - 图片支持点击放大、鼠标焦点缩放。
+
+  ![图片查看器](./docs/images/interface-concepts-v2/11-image-viewer.png)
+
 - 评分记录默认展开并统计风评变化；正负数在明暗主题下分别使用清晰的绿色与红色。
 - 楼层操作区的“查看对话”可在单个弹窗中递归追溯上游引用、查找本帖的下游回复，并切换追溯中心。
+
+  ![引用对话树](./docs/images/interface-concepts-v2/07-conversation.png)
+
 - 收藏左侧的“全文搜索”在独立窗口中搜索本帖所有楼层，支持正文关键词、楼层作者的用户名／UID，以及 `[ac01]`、`[cc9801]`、`[tb01]` 等表情编号。
+
+  ![帖内全文搜索](./docs/images/interface-concepts-v2/08-topic-search.png)
+
+  ![按表情编号搜索](./docs/images/interface-concepts-v2/09-emoji-search.png)
+
 - 帖子操作栏的“存档本帖”会重新逐页读取当前账号可见内容，保存正文、引用、表情、图片和签名档；可选保存音视频及附件。已有存档可点击“更新备份”，在保存它的账号下打开原帖并确认更新。插件设置的“本地帖子存档”打开独立查看页，可离线分页阅读、搜索存档标题、删除或导出。
+
+  ![本地帖子存档](./docs/images/interface-concepts-v2/12-archive.png)
+
 - 帖子作者头像可展开资料卡，并继续使用原站的关注和私信功能。
 
 ### 发帖与编辑
 
 - 适配发主题、回复、编辑主题和编辑回复页面。
 - UBB 模式提供上下双区编辑：上方直接编辑渲染内容，下方编辑带语法高亮和逻辑行号的 UBB 源码；两边实时同步并可独立拉伸，中间分隔线也可拖动。
+
+  ![上下双区 UBB 编辑器](./docs/images/interface-concepts-v2/13-dual-editor.png)
+
 - 保留原站 UBB 工具栏、上传、表情、颜色、字号、链接、图片、视频和音频能力。
+
+  ![图片收藏与快速插入](./docs/images/interface-concepts-v2/15-image-favorites.png)
+
 - 双区工具栏的“扩展”可插入并预览引用、分割线、可编辑代码块、内嵌 Markdown、数学公式、原样文本、命名字体、1 至 6 行列的表格和折叠图片。
+
+  ![扩展编辑工具](./docs/images/interface-concepts-v2/14-extended-tools.png)
+
 - 双区工具栏的“互转”可在 UBB 与 Markdown 间转换常用语法；先预览和修改结果，再手动替换。无法等价转换的格式会提示。
 - 颜色面板支持常用色、透明色和快速渐变色。
 - 可选为普通回复加入 CC98 Reborn 小尾巴；匿名回复和心灵之约版面会自动停用。
@@ -55,9 +97,15 @@
 - 通过本地分词实现简单搜索联想。搜索联想只在本地分析当前输入。
 - 搜索历史。搜索历史按 CC98 用户 ID 保存，支持单条删除与全部清空。
 - 搜索结果可按原顺序、时间或浏览量排序。
+
+  ![搜索结果与排序](./docs/images/interface-concepts-v2/16-search.png)
+
 - 新帖、关注、精选和搜索结果右侧提供“稍后再看”侧栏，支持搜索、翻页、已读状态和删除。
 - 这些侧栏下方提供等宽的“回到顶部”按钮，窄屏布局中仍会紧跟稍后再看组件。
 - 完整“稍后再看”页面支持导入、导出和清除已读；数据按用户 ID 隔离保存在本地。
+
+  ![稍后再看管理](./docs/images/interface-concepts-v2/17-read-later.png)
+
 
 ### 其他便利功能
 
@@ -65,6 +113,9 @@
 - 主题卡片可选择始终展开附加信息并关闭悬浮展开动画。
 - 版面支持本地置顶。
 - 近期私信联系人右侧的图钉可置顶／取消置顶，最新置顶排在最前；按账号保存并跨标签同步。
+
+  ![私信阅读与置顶](./docs/images/interface-concepts-v2/18-private-messages.png)
+
 - 图片和列表内容可在滚动时从原页面无感同步到新 UI。
 - 支持手动及定时检查 GitHub Releases 中的新版本。
 - 提供显式的 CC98 Cookie 与站点数据清理入口，用于处理缓存异常或刷新十大。
