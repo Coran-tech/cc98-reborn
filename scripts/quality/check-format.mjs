@@ -31,7 +31,7 @@ export async function checkFormatting({
   base = "HEAD",
   files,
   write = false,
-  defaultBranch = process.env.FORMAT_DEFAULT_BRANCH
+  defaultBranch
 } = {}) {
   let bootstrap = false;
   if (!files) {
@@ -80,7 +80,11 @@ export async function checkFormatting({
 
 async function main() {
   const args = process.argv.slice(2);
-  const options = { base: process.env.FORMAT_BASE_REF || "HEAD", write: false };
+  const options = {
+    base: process.env.FORMAT_BASE_REF || "HEAD",
+    defaultBranch: process.env.FORMAT_DEFAULT_BRANCH,
+    write: false
+  };
   while (args.length) {
     const arg = args.shift();
     if (arg === "--base") {

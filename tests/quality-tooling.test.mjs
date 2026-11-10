@@ -11,6 +11,16 @@ const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "cc98-quality-"));
 const git = (...args) =>
   execFileSync("git", args, { cwd: temporary, encoding: "utf8", stdio: "pipe" });
 const write = (file, text) => fs.writeFile(path.join(temporary, file), text, "utf8");
+const formatCli = (defaultBranch) =>
+  spawnSync(process.execPath, [path.join(root, "scripts/quality/check-format.mjs")], {
+    cwd: temporary,
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      FORMAT_BASE_REF: "0".repeat(40),
+      FORMAT_DEFAULT_BRANCH: defaultBranch
+    }
+  });
 try {
   git("init", "--quiet");
   await write("legacy.js", "const legacy={old:true}\n");
@@ -74,11 +84,29 @@ try {
     "-m",
     "Change on a new branch"
   );
-  const firstPush = await checkFormatting({ cwd: temporary, base: "0".repeat(40) });
-  assert.equal(firstPush.bootstrap, false, "A new branch cannot restart first-adoption exemptions");
-  assert(
-    firstPush.failed.includes("legacy.js"),
-    "First push of a new branch checks modified legacy files"
+  const previousDefaultBranch = process.env.FORMAT_DEFAULT_BRANCH;
+  try {
+    process.env.FORMAT_DEFAULT_BRANCH = "main";
+    const firstPush = await checkFormatting({ cwd: temporary, base: "0".repeat(40) });
+    assert.equal(
+      firstPush.bootstrap,
+      false,
+      "A new branch cannot restart first-adoption exemptions"
+    );
+    assert(
+      firstPush.failed.includes("legacy.js"),
+      "The library ignores CI environment defaults and checks modified legacy files"
+    );
+  } finally {
+    if (previousDefaultBranch === undefined) delete process.env.FORMAT_DEFAULT_BRANCH;
+    else process.env.FORMAT_DEFAULT_BRANCH = previousDefaultBranch;
+  }
+  const missingDefault = formatCli("main");
+  assert.equal(missingDefault.status, 1, missingDefault.stderr);
+  assert.match(
+    missingDefault.stderr,
+    /Fetch its history or specify --base/,
+    "The CLI must read its default branch from the environment and fail if it is unavailable"
   );
   await assert.rejects(
     checkFormatting({ cwd: temporary, base: "0".repeat(40), defaultBranch: "missing" }),
@@ -103,6 +131,9 @@ try {
     checkFormatting({ cwd: temporary, base: "0".repeat(40), defaultBranch: "unrelated" }),
     /Fetch its history or specify --base/
   );
+  const unrelatedDefault = formatCli("unrelated");
+  assert.equal(unrelatedDefault.status, 1, unrelatedDefault.stderr);
+  assert.match(unrelatedDefault.stderr, /Fetch its history or specify --base/);
   await assert.rejects(checkFormatting({ cwd: temporary, base: "does-not-exist" }));
 
   const lint = spawnSync(
@@ -122,7 +153,7 @@ try {
   assert.equal(lint.status, 1, lint.stderr);
   assert.match(lint.stdout, /no-undef/);
   console.log(
-    "Quality tooling: first-adoption, new-file, changed-legacy-file, explicit-file, invalid-base and new lint violation checks passed."
+    "Quality tooling: first-adoption, new-file, changed-legacy-file, explicit-file, environment-isolation, CLI default-branch fail-closed, invalid-base and new lint violation checks passed."
   );
 } finally {
   const target = path.resolve(temporary);
