@@ -1,4 +1,4 @@
-# CC98 Reborn
+# ![CC98 Reborn](./assets/brand/cc98-reborn.svg)
 
 面向 Chrome / Edge 的 CC98 论坛界面重构扩展。
 
@@ -20,48 +20,48 @@
 
 - 重构几乎所有CC98主站页面。
 
-  ![首页十大：左为 Reborn，右为 ASCII](./docs/images/interface-details/01-home.webp)
+  ![首页十大：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/01-home.webp)
 
 - 顶栏“稍后再看”右侧和个人中心导航最底部均有“插件设置”，打开独立设置子页，包含弹窗里的全部设置和账号、更新等功能。
 
-  ![浏览偏好：左为 Reborn，右为 ASCII](./docs/images/interface-details/36-reading-options.webp)
+  ![浏览偏好：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/36-reading-options.webp)
 
   <details>
   <summary>字号与表情尺寸</summary>
 
-  ![字号与表情尺寸：左为 Reborn，右为 ASCII](./docs/images/interface-details/37-display-size.webp)
+  ![字号与表情尺寸：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/37-display-size.webp)
 
   </details>
 
 - 设置最底部“恢复默认”旁可备份和导入个人配置。
 
-  ![个人设置备份：左为 Reborn，右为 ASCII](./docs/images/interface-details/38-settings-backup.webp)
+  ![个人设置备份：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/38-settings-backup.webp)
 
 - 明暗与配色独立设置：白昼、黑夜、自动三种模式，六组主色／副色配色预设和自定义方案。
 
-  ![昼夜定时切换：左为 Reborn，右为 ASCII](./docs/images/interface-details/35-day-night.webp)
+  ![昼夜定时切换：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/35-day-night.webp)
 
   <details>
   <summary>自定义主题色</summary>
 
-  ![自定义主题色：左为 Reborn，右为 ASCII](./docs/images/interface-details/34-custom-palette.webp)
+  ![自定义主题色：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/34-custom-palette.webp)
 
   </details>
 
 - “界面风格”独立于明暗和配色。Reborn 保留当前界面；ASCII / BBS（实验性）使用字符边框、等宽字体、直角控件和彩色文字。
 
-  ![界面风格设置：左为 Reborn，右为 ASCII](./docs/images/interface-details/33-theme.webp)
+  ![界面风格设置：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/33-theme.webp)
 
 - 新增“分享收藏夹”、本地用户备注等功能。
 
-  ![分享收藏夹：左为 Reborn，右为 ASCII](./docs/images/interface-details/39-favorite-export.webp)
+  ![分享收藏夹：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/39-favorite-export.webp)
 
   <details>
   <summary>导入收藏夹与用户备注</summary>
 
-  ![导入收藏夹：左为 Reborn，右为 ASCII](./docs/images/interface-details/40-favorite-import.webp)
+  ![导入收藏夹：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/40-favorite-import.webp)
 
-  ![用户备注：左为 Reborn，右为 ASCII](./docs/images/interface-details/41-user-note.webp)
+  ![用户备注：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/41-user-note.webp)
 
   </details>
 
@@ -71,56 +71,56 @@
 
 - 所有重构的帖子卡片列表共用帖子侧窗。直接点击帖子标题，会在网页右侧打开独立帖子侧窗，打开时保留主列表内容与阅读位置，在左侧按剩余宽度重新排版。右侧显示帖子时，左侧列表仍可滚动、继续加载、按需渲染和点击。
 
-  ![帖子侧拉窗：左为 Reborn，右为 ASCII](./docs/images/interface-details/03-drawer.webp)
+  ![帖子侧拉窗：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/03-drawer.webp)
 
 - 重构正文、引用、Markdown 回复、签名档、评分记录、投票、热评和楼主标识。
 - 高级用户屏蔽规则。
 
-  ![逻辑屏蔽规则：左为 Reborn，右为 ASCII](./docs/images/interface-details/12-logic-filter.webp)
+  ![逻辑屏蔽规则：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/12-logic-filter.webp)
 
   <details>
   <summary>赞踩与风评、标题正则及表情条件</summary>
 
-  ![赞踩风评屏蔽：左为 Reborn，右为 ASCII](./docs/images/interface-details/13-score-filter.webp)
+  ![赞踩风评屏蔽：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/13-score-filter.webp)
 
-  ![标题正则匹配：左为 Reborn，右为 ASCII](./docs/images/interface-details/14-title-regex.webp)
+  ![标题正则匹配：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/14-title-regex.webp)
 
-  ![屏蔽表情选择器：左为 Reborn，右为 ASCII](./docs/images/interface-details/15-emoji-filter.webp)
+  ![屏蔽表情选择器：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/15-emoji-filter.webp)
 
   </details>
 
 - 图片支持点击放大、鼠标焦点缩放。
 
-  ![图片查看器：左为 Reborn，右为 ASCII](./docs/images/interface-details/16-image-viewer.webp)
+  ![图片查看器：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/16-image-viewer.webp)
 
   <details>
   <summary>图片收藏管理</summary>
 
-  ![图片收藏管理：左为 Reborn，右为 ASCII](./docs/images/interface-details/17-image-favorites.webp)
+  ![图片收藏管理：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/17-image-favorites.webp)
 
   </details>
 
 - 评分记录默认展开并统计风评变化；正负数在明暗主题下分别使用清晰的绿色与红色。
 - 楼层操作区的“查看对话”可在单个弹窗中递归追溯上游引用、查找本帖的下游回复，并切换追溯中心。
 
-  ![引用对话树：左为 Reborn，右为 ASCII](./docs/images/interface-details/08-conversation.webp)
+  ![引用对话树：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/08-conversation.webp)
 
 - 收藏左侧的“全文搜索”在独立窗口中搜索本帖所有楼层，支持正文关键词、楼层作者的用户名／UID，以及 `[ac01]`、`[cc9801]`、`[tb01]` 等表情编号。
 
-  ![帖内全文搜索：左为 Reborn，右为 ASCII](./docs/images/interface-details/09-text-search.webp)
+  ![帖内全文搜索：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/09-text-search.webp)
 
   <details>
   <summary>按用户或表情搜索</summary>
 
-  ![按用户搜索：左为 Reborn，右为 ASCII](./docs/images/interface-details/10-author-search.webp)
+  ![按用户搜索：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/10-author-search.webp)
 
-  ![按表情搜索：左为 Reborn，右为 ASCII](./docs/images/interface-details/11-emoji-search.webp)
+  ![按表情搜索：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/11-emoji-search.webp)
 
   </details>
 
 - 帖子操作栏的“存档本帖”会重新逐页读取当前账号可见内容，保存正文、引用、表情、图片和签名档；可选保存音视频及附件。已有存档可点击“更新备份”，在保存它的账号下打开原帖并确认更新。插件设置的“本地帖子存档”打开独立查看页，可离线分页阅读、搜索存档标题、删除或导出。
 
-  ![本地帖子存档：左为 Reborn，右为 ASCII](./docs/images/interface-details/07-archive.webp)
+  ![本地帖子存档：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/07-archive.webp)
 
 - 帖子作者头像可展开资料卡，并继续使用原站的关注和私信功能。
 
@@ -128,58 +128,58 @@
 
 - 适配发主题、回复、编辑主题和编辑回复页面。
 
-  ![本地草稿：左为 Reborn，右为 ASCII](./docs/images/interface-details/31-draft.webp)
+  ![本地草稿：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/31-draft.webp)
 
 - UBB 模式提供上下双区编辑：上方直接编辑渲染内容，下方编辑带语法高亮和逻辑行号的 UBB 源码；两边实时同步并可独立拉伸，中间分隔线也可拖动。
 
-  ![上下双区编辑器：左为 Reborn，右为 ASCII](./docs/images/interface-details/19-dual-editor.webp)
+  ![上下双区编辑器：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/19-dual-editor.webp)
 
 - 保留原站 UBB 工具栏、上传、表情、颜色、字号、链接、图片、视频和音频能力。
 
-  ![表情选择器：左为 Reborn，右为 ASCII](./docs/images/interface-details/29-emoji.webp)
+  ![表情选择器：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/29-emoji.webp)
 
   <details>
   <summary>收藏图片快速插入与文字排版</summary>
 
-  ![收藏图片快速插入：左为 Reborn，右为 ASCII](./docs/images/interface-details/18-favorite-picker.webp)
+  ![收藏图片快速插入：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/18-favorite-picker.webp)
 
-  ![字体与排版：左为 Reborn，右为 ASCII](./docs/images/interface-details/20-typography.webp)
+  ![字体与排版：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/20-typography.webp)
 
   </details>
 
 - 双区工具栏的“扩展”可插入并预览引用、分割线、可编辑代码块、内嵌 Markdown、数学公式、原样文本、命名字体、1 至 6 行列的表格和折叠图片。
 
-  ![扩展编辑工具：左为 Reborn，右为 ASCII](./docs/images/interface-details/32-extended-tools.webp)
+  ![扩展编辑工具：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/32-extended-tools.webp)
 
   <details>
   <summary>表格、代码、Markdown、公式、引用与原样文本</summary>
 
-  ![表格编辑：左为 Reborn，右为 ASCII](./docs/images/interface-details/23-table.webp)
+  ![表格编辑：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/23-table.webp)
 
-  ![代码块：左为 Reborn，右为 ASCII](./docs/images/interface-details/24-code.webp)
+  ![代码块：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/24-code.webp)
 
-  ![Markdown内容块：左为 Reborn，右为 ASCII](./docs/images/interface-details/25-markdown.webp)
+  ![Markdown内容块：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/25-markdown.webp)
 
-  ![数学公式：左为 Reborn，右为 ASCII](./docs/images/interface-details/26-math.webp)
+  ![数学公式：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/26-math.webp)
 
-  ![嵌套引用：左为 Reborn，右为 ASCII](./docs/images/interface-details/27-quotes.webp)
+  ![嵌套引用：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/27-quotes.webp)
 
-  ![原样文本：左为 Reborn，右为 ASCII](./docs/images/interface-details/28-literal-text.webp)
+  ![原样文本：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/28-literal-text.webp)
 
   </details>
 
 - 双区工具栏的“互转”可在 UBB 与 Markdown 间转换常用语法；先预览和修改结果，再手动替换。无法等价转换的格式会提示。
 
-  ![UBB与Markdown互转：左为 Reborn，右为 ASCII](./docs/images/interface-details/30-convert.webp)
+  ![UBB与Markdown互转：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/30-convert.webp)
 
 - 颜色面板支持常用色、透明色和快速渐变色。
 
-  ![文字渐变色：左为 Reborn，右为 ASCII](./docs/images/interface-details/22-gradient.webp)
+  ![文字渐变色：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/22-gradient.webp)
 
   <details>
   <summary>单色面板</summary>
 
-  ![文字颜色：左为 Reborn，右为 ASCII](./docs/images/interface-details/21-color.webp)
+  ![文字颜色：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/21-color.webp)
 
   </details>
 
@@ -191,30 +191,30 @@
 - 适配主题、用户、版面、版内和全站搜索类型。
 - 通过本地分词实现简单搜索联想。搜索联想只在本地分析当前输入。
 
-  ![搜索建议：左为 Reborn，右为 ASCII](./docs/images/interface-details/05-suggestions.webp)
+  ![搜索建议：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/05-suggestions.webp)
 
 - 搜索历史。搜索历史按 CC98 用户 ID 保存，支持单条删除与全部清空。
 - 搜索结果可按原顺序、时间或浏览量排序。
 
-  ![搜索与排序：左为 Reborn，右为 ASCII](./docs/images/interface-details/04-search.webp)
+  ![搜索与排序：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/04-search.webp)
 
 - 新帖、关注、精选和搜索结果右侧提供“稍后再看”侧栏，支持搜索、翻页、已读状态和删除。
 - 这些侧栏下方提供等宽的“回到顶部”按钮，窄屏布局中仍会紧跟稍后再看组件。
 - 完整“稍后再看”页面支持导入、导出和清除已读；数据按用户 ID 隔离保存在本地。
 
-  ![稍后再看：左为 Reborn，右为 ASCII](./docs/images/interface-details/06-read-later.webp)
+  ![稍后再看：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/06-read-later.webp)
 
 ### 其他便利功能
 
 - 首页可只保留十大，并记录排名变化。内容宽度与顶栏对齐。
 - 主题卡片可选择始终展开附加信息并关闭悬浮展开动画。
 
-  ![瀑布流卡片：左为 Reborn，右为 ASCII](./docs/images/interface-details/02-feed.webp)
+  ![瀑布流卡片：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/02-feed.webp)
 
 - 版面支持本地置顶。
 - 近期私信联系人右侧的图钉可置顶／取消置顶，最新置顶排在最前；按账号保存并跨标签同步。
 
-  ![私信阅读与置顶：左为 Reborn，右为 ASCII](./docs/images/interface-details/42-messages.webp)
+  ![私信阅读与置顶：左上为 Reborn，右下为 ASCII](./docs/images/interface-details/42-messages.webp)
 
 - 图片和列表内容可在滚动时从原页面无感同步到新 UI。
 - 支持手动及定时检查 GitHub Releases 中的新版本。
