@@ -22,7 +22,6 @@
 
   ![首页十大：左为 Reborn，右为 ASCII](./docs/images/interface-details/01-home.webp)
 
-
 - 顶栏“稍后再看”右侧和个人中心导航最底部均有“插件设置”，打开独立设置子页，包含弹窗里的全部设置和账号、更新等功能。
 
   ![浏览偏好：左为 Reborn，右为 ASCII](./docs/images/interface-details/36-reading-options.webp)
@@ -53,7 +52,6 @@
 
   ![界面风格设置：左为 Reborn，右为 ASCII](./docs/images/interface-details/33-theme.webp)
 
-
 - 新增“分享收藏夹”、本地用户备注等功能。
 
   ![分享收藏夹：左为 Reborn，右为 ASCII](./docs/images/interface-details/39-favorite-export.webp)
@@ -67,7 +65,6 @@
 
   </details>
 
-
 - 适配 CC98 直连与浙江大学 WebVPN。
 
 ### 更舒服的帖子阅读
@@ -75,7 +72,6 @@
 - 所有重构的帖子卡片列表共用帖子侧窗。直接点击帖子标题，会在网页右侧打开独立帖子侧窗，打开时保留主列表内容与阅读位置，在左侧按剩余宽度重新排版。右侧显示帖子时，左侧列表仍可滚动、继续加载、按需渲染和点击。
 
   ![帖子侧拉窗：左为 Reborn，右为 ASCII](./docs/images/interface-details/03-drawer.webp)
-
 
 - 重构正文、引用、Markdown 回复、签名档、评分记录、投票、热评和楼主标识。
 - 高级用户屏蔽规则。
@@ -93,7 +89,6 @@
 
   </details>
 
-
 - 图片支持点击放大、鼠标焦点缩放。
 
   ![图片查看器：左为 Reborn，右为 ASCII](./docs/images/interface-details/16-image-viewer.webp)
@@ -105,12 +100,10 @@
 
   </details>
 
-
 - 评分记录默认展开并统计风评变化；正负数在明暗主题下分别使用清晰的绿色与红色。
 - 楼层操作区的“查看对话”可在单个弹窗中递归追溯上游引用、查找本帖的下游回复，并切换追溯中心。
 
   ![引用对话树：左为 Reborn，右为 ASCII](./docs/images/interface-details/08-conversation.webp)
-
 
 - 收藏左侧的“全文搜索”在独立窗口中搜索本帖所有楼层，支持正文关键词、楼层作者的用户名／UID，以及 `[ac01]`、`[cc9801]`、`[tb01]` 等表情编号。
 
@@ -125,11 +118,9 @@
 
   </details>
 
-
 - 帖子操作栏的“存档本帖”会重新逐页读取当前账号可见内容，保存正文、引用、表情、图片和签名档；可选保存音视频及附件。已有存档可点击“更新备份”，在保存它的账号下打开原帖并确认更新。插件设置的“本地帖子存档”打开独立查看页，可离线分页阅读、搜索存档标题、删除或导出。
 
   ![本地帖子存档：左为 Reborn，右为 ASCII](./docs/images/interface-details/07-archive.webp)
-
 
 - 帖子作者头像可展开资料卡，并继续使用原站的关注和私信功能。
 
@@ -143,7 +134,6 @@
 
   ![上下双区编辑器：左为 Reborn，右为 ASCII](./docs/images/interface-details/19-dual-editor.webp)
 
-
 - 保留原站 UBB 工具栏、上传、表情、颜色、字号、链接、图片、视频和音频能力。
 
   ![表情选择器：左为 Reborn，右为 ASCII](./docs/images/interface-details/29-emoji.webp)
@@ -156,7 +146,6 @@
   ![字体与排版：左为 Reborn，右为 ASCII](./docs/images/interface-details/20-typography.webp)
 
   </details>
-
 
 - 双区工具栏的“扩展”可插入并预览引用、分割线、可编辑代码块、内嵌 Markdown、数学公式、原样文本、命名字体、1 至 6 行列的表格和折叠图片。
 
@@ -178,7 +167,6 @@
   ![原样文本：左为 Reborn，右为 ASCII](./docs/images/interface-details/28-literal-text.webp)
 
   </details>
-
 
 - 双区工具栏的“互转”可在 UBB 与 Markdown 间转换常用语法；先预览和修改结果，再手动替换。无法等价转换的格式会提示。
 
@@ -210,14 +198,11 @@
 
   ![搜索与排序：左为 Reborn，右为 ASCII](./docs/images/interface-details/04-search.webp)
 
-
 - 新帖、关注、精选和搜索结果右侧提供“稍后再看”侧栏，支持搜索、翻页、已读状态和删除。
 - 这些侧栏下方提供等宽的“回到顶部”按钮，窄屏布局中仍会紧跟稍后再看组件。
 - 完整“稍后再看”页面支持导入、导出和清除已读；数据按用户 ID 隔离保存在本地。
 
   ![稍后再看：左为 Reborn，右为 ASCII](./docs/images/interface-details/06-read-later.webp)
-
-
 
 ### 其他便利功能
 
@@ -230,7 +215,6 @@
 - 近期私信联系人右侧的图钉可置顶／取消置顶，最新置顶排在最前；按账号保存并跨标签同步。
 
   ![私信阅读与置顶：左为 Reborn，右为 ASCII](./docs/images/interface-details/42-messages.webp)
-
 
 - 图片和列表内容可在滚动时从原页面无感同步到新 UI。
 - 支持手动及定时检查 GitHub Releases 中的新版本。
