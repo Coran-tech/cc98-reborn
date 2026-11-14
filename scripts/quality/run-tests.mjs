@@ -24,6 +24,7 @@ const tests = [
   "tests/semantic-background.test.js",
   "tests/semantic-filter.test.js",
   "tests/topic-live-api.test.js",
+  "tests/home-live-core.test.cjs",
   "tests/home-rank-identity.test.cjs",
   "tests/quality-tooling.test.mjs"
 ];

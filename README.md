@@ -4,7 +4,7 @@
 
 主要目标：让 CC98 的页面更统一、更清爽，也顺手补上一些日常浏览真正用得上的便利功能。扩展会在浏览器本地读取原页面已经加载的内容，构建新的阅读界面；发帖、回复、上传、收藏、评分、关注、私信等关键操作则尽量继续调用原站逻辑。
 
-当前版本：`0.4.4`
+当前版本：`0.4.5`
 
 [下载发布包](https://github.com/Coran-tech/cc98-reborn/releases) ·
 [提交 Bug](https://github.com/Coran-tech/cc98-reborn/issues) ·
@@ -309,15 +309,15 @@ npm run check
 .\scripts\package-extension.ps1
 ```
 
-测试构建使用 `./scripts/package-extension.ps1 -TestBuild`，显示为 `beta 0.4.4 (build 年月日.时分秒)`；可用 `-Build xxx` 指定编号。固定覆盖 `dist/cc98-reborn-beta/` 和 `dist/cc98-reborn-beta.zip`，浏览器只需加载一次该目录，以后更新后点击重新加载。直接加载源码测试前运行 `./scripts/set-test-build.ps1` 更新编号。页面、popup 和插件设置页均优先显示 beta / build 版本；默认正式打包自动移除后缀，更新比较始终使用纯数字版本号。
+测试构建使用 `./scripts/package-extension.ps1 -TestBuild`，显示为 `beta 0.4.5 (build 年月日.时分秒)`；可用 `-Build xxx` 指定编号。固定覆盖 `dist/cc98-reborn-beta/` 和 `dist/cc98-reborn-beta.zip`，浏览器只需加载一次该目录，以后更新后点击重新加载。直接加载源码测试前运行 `./scripts/set-test-build.ps1` 更新编号。页面、popup 和插件设置页均优先显示 beta / build 版本；默认正式打包自动移除后缀，更新比较始终使用纯数字版本号。
 
 本地模拟论坛已独立到相邻项目 `cc98-local-forum`，包含前端、服务器和 `.runtime` 数据；在该目录运行 `node server.js` 或打开 `open-control-panel.cmd`。插件集成测试通过 `tests/local-forum-path.cjs` 引用它，可设置 `CC98_LOCAL_FORUM_ROOT` 指定目录，测试时自动注入当前插件源码路径。
 
 生成文件：
 
 ```text
-dist/cc98-reborn-0.4.4.zip
-dist/cc98-reborn-0.4.4/
+dist/cc98-reborn-0.4.5.zip
+dist/cc98-reborn-0.4.5/
 ```
 
 发布包不包含 `reference/`、`tests/`、`.git/` 或其他开发期文件。

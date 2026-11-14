@@ -1,6 +1,6 @@
 # Release Checklist
 
-Current release target: `0.4.4`. Run all commands below from the repository root.
+Current release target: `0.4.5`. Run all commands below from the repository root.
 
 1. Confirm `manifest.json` version.
 2. Install the locked development dependencies with Node.js 22 and run the shared checks:

@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "CC98 Reborn",
   "description": "A refreshed reading and browsing interface for CC98.",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsx4AY7VBQLt9+vyQu66ygsM332JqZkzTbXoGodjciunuxrkJ5PmN7qmlyhJQz3hd6rqxIQq7DRwEimcH3SaEYB6ypOh0fSSSWEWhjIbENVOJuVd0j+9ad8Ww9QE+AA/rfGEci0hHx02IvLarBCUBlROqVJjvofOFNg/8rhozdu/3lpcYqPqq+CKzYZWH7J26TC5Tcau0sXodmM27sI/4q5avmL0cFSruuCuqep69delrU/qSBLkJZar53AIpKPwwz48Jj75XQD5PFEpJ/8mTxiSRQ6cgQH2xypLwIiUbbtDMUmkLzVGEo364hUN1/GavubO6h78T5K8ealXNWUqgHQIDAQAB",
   "permissions": [
     "storage",
@@ -29,7 +29,11 @@
   "optional_host_permissions": ["http://127.0.0.1/*"],
   "web_accessible_resources": [
     {
-      "resources": ["popup/popup.html", "popup/semantic-settings.html", "src/content-filter-frame.html"],
+      "resources": [
+        "popup/popup.html",
+        "popup/semantic-settings.html",
+        "src/content-filter-frame.html"
+      ],
       "matches": [
         "*://*.cc98.org/*",
         "*://cc98.org/*",
@@ -61,18 +65,19 @@
   "content_scripts": [
     {
       "matches": ["*://*.cc98.org/*", "*://cc98.org/*", "*://*.webvpn.zju.edu.cn/*"],
-      "exclude_matches": ["https://openid.cc98.org/*", "*://*.webvpn.zju.edu.cn/*/connect/authorize*", "*://*.webvpn.zju.edu.cn/*/Account/LogOn*", "*://*.webvpn.zju.edu.cn/*/PassKey/LogOn*"],
+      "exclude_matches": [
+        "https://openid.cc98.org/*",
+        "*://*.webvpn.zju.edu.cn/*/connect/authorize*",
+        "*://*.webvpn.zju.edu.cn/*/Account/LogOn*",
+        "*://*.webvpn.zju.edu.cn/*/PassKey/LogOn*"
+      ],
       "js": ["src/topic-drawer.js"],
       "run_at": "document_start",
       "all_frames": true
     },
     {
-      "matches": [
-        "*://*.webvpn.zju.edu.cn/*"
-      ],
-      "js": [
-        "src/openid-webvpn-bridge.js"
-      ],
+      "matches": ["*://*.webvpn.zju.edu.cn/*"],
+      "js": ["src/openid-webvpn-bridge.js"],
       "run_at": "document_start"
     },
     {
@@ -88,9 +93,7 @@
         "*://*.webvpn.zju.edu.cn/*/Account/LogOn*",
         "*://*.webvpn.zju.edu.cn/*/PassKey/LogOn*"
       ],
-      "js": [
-        "src/page-submit-monitor.js"
-      ],
+      "js": ["src/page-submit-monitor.js"],
       "all_frames": true,
       "run_at": "document_start",
       "world": "MAIN"
@@ -138,6 +141,7 @@
         "src/semantic-filter-core.js",
         "src/semantic-filter.js",
         "src/new-topics-virtual.js",
+        "src/home-live.js",
         "src/content.js",
         "experiments/question-mark/content.js"
       ],

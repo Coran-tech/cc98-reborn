@@ -9,12 +9,24 @@ class FakeElement {
     this.children = [];
     this.slots = [];
   }
-  closest() { return null; }
+  closest() {
+    return null;
+  }
+  querySelector(selector) {
+    return selector === ".userMessage" ? this.author : this.link;
+  }
+  removeAttribute(name) {
+    this.attributes.delete(name);
+  }
   querySelectorAll(selector) {
     return selector === ".lazyload-placeholder" ? this.slots : this.children;
   }
-  getAttribute(name) { return this.attributes.get(name) ?? null; }
-  setAttribute(name, value) { this.attributes.set(name, String(value)); }
+  getAttribute(name) {
+    return this.attributes.get(name) ?? null;
+  }
+  setAttribute(name, value) {
+    this.attributes.set(name, String(value));
+  }
 }
 class FakeCustomEvent {
   constructor(type, options = {}) {
@@ -125,7 +137,9 @@ async function main() {
       timers.set(++timerSequence, { callback, delay });
       return timerSequence;
     },
-    clearTimeout(id) { timers.delete(id); },
+    clearTimeout(id) {
+      timers.delete(id);
+    },
     window: null
   };
   context.Location.prototype.assign = function assign() {};
@@ -137,9 +151,7 @@ async function main() {
   context.window.fetch = async (url, init = {}) => {
     fetchCount += 1;
     const value = String(url);
-    const body = /\/board\/17\/topic$/i.test(value) && init.method === "POST"
-      ? "6581234"
-      : "";
+    const body = /\/board\/17\/topic$/i.test(value) && init.method === "POST" ? "6581234" : "";
     return makeResponse(value, body, topicResponses.get(value) || []);
   };
 
@@ -169,10 +181,14 @@ async function main() {
   await Promise.resolve();
   await Promise.resolve();
 
-  const submitMessages = postMessages.filter((message) => (
+  const submitMessages = postMessages.filter((message) =>
     /^editor-submit-(?:start|result)$/.test(message.type)
-  ));
-  assert.equal(submitMessages.length, 12, "direct and WebVPN submits should each emit start and result");
+  );
+  assert.equal(
+    submitMessages.length,
+    12,
+    "direct and WebVPN submits should each emit start and result"
+  );
   assert.deepEqual(
     submitMessages.map((message) => `${message.type}:${message.payload.kind}`),
     [
@@ -190,28 +206,40 @@ async function main() {
       "editor-submit-result:edit"
     ]
   );
-  const domSubmitMessages = domMessages.filter((message) => /^editor-submit-(?:start|result)$/.test(message.type));
-  assert.equal(domSubmitMessages.length, submitMessages.length, "DOM bridge should mirror every submit message");
+  const domSubmitMessages = domMessages.filter((message) =>
+    /^editor-submit-(?:start|result)$/.test(message.type)
+  );
+  assert.equal(
+    domSubmitMessages.length,
+    submitMessages.length,
+    "DOM bridge should mirror every submit message"
+  );
   assert.deepEqual(
     domSubmitMessages.map((message) => message.monitorEventId),
     submitMessages.map((message) => message.monitorEventId),
     "both bridges must use the same IDs for content-side deduplication"
   );
   assert.equal(
-    submitMessages.find((message) => (
-      message.type === "editor-submit-result" && message.payload.kind === "post"
-    )).payload.body,
+    submitMessages.find(
+      (message) => message.type === "editor-submit-result" && message.payload.kind === "post"
+    ).payload.body,
     "6581234"
   );
 
-  const snapshots = () => postMessages.filter((message) => message.type === "topic-content-snapshot");
-  const requestSnapshot = (overrides = {}) => document.dispatchEvent(new FakeCustomEvent(
-    "cc98-reborn-topic-content-request",
-    { detail: JSON.stringify({
-      source: "cc98-reborn-content", type: "request-topic-content-snapshot",
-      topicId: "6581234", from: 0, ...overrides
-    }) }
-  ));
+  const snapshots = () =>
+    postMessages.filter((message) => message.type === "topic-content-snapshot");
+  const requestSnapshot = (overrides = {}) =>
+    document.dispatchEvent(
+      new FakeCustomEvent("cc98-reborn-topic-content-request", {
+        detail: JSON.stringify({
+          source: "cc98-reborn-content",
+          type: "request-topic-content-snapshot",
+          topicId: "6581234",
+          from: 0,
+          ...overrides
+        })
+      })
+    );
   const setPage = (page) => {
     location.pathname = `/topic/6581234/${page}`;
     location.href = `${location.origin}${location.pathname}`;
@@ -231,15 +259,25 @@ async function main() {
   await fetchPage(0, firstPage);
   const captured = snapshots().at(-1);
   assert.equal(captured.payload.items.length, 2);
-  const capturedDom = domMessages.find((message) => message.monitorEventId === captured.monitorEventId);
-  assert.deepEqual(capturedDom.payload, JSON.parse(JSON.stringify(captured.payload)), "topic snapshots use both bridges with one event ID");
+  const capturedDom = domMessages.find(
+    (message) => message.monitorEventId === captured.monitorEventId
+  );
+  assert.deepEqual(
+    capturedDom.payload,
+    JSON.parse(JSON.stringify(captured.payload)),
+    "topic snapshots use both bridges with one event ID"
+  );
 
   const beforeReplayFetches = fetchCount;
   const beforeReplay = snapshots().length;
   requestSnapshot();
   assert.equal(snapshots().length, beforeReplay + 1, "a late receiver can replay the current page");
   assert.deepEqual(snapshots().at(-1).payload, captured.payload);
-  assert.notEqual(snapshots().at(-1).monitorEventId, captured.monitorEventId, "replays have a fresh ID after an earlier lost delivery");
+  assert.notEqual(
+    snapshots().at(-1).monitorEventId,
+    captured.monitorEventId,
+    "replays have a fresh ID after an earlier lost delivery"
+  );
   assert.equal(fetchCount, beforeReplayFetches, "replay never fetches the page again");
 
   const beforeInvalid = snapshots().length;
@@ -248,40 +286,95 @@ async function main() {
   requestSnapshot({ from: 10 });
   requestSnapshot({ from: "0" });
   document.dispatchEvent(new FakeCustomEvent("cc98-reborn-topic-content-request", { detail: "{" }));
-  assert.equal(snapshots().length, beforeInvalid, "malformed or stale-route requests cannot replay another page");
+  assert.equal(
+    snapshots().length,
+    beforeInvalid,
+    "malformed or stale-route requests cannot replay another page"
+  );
 
   const reply = new FakeElement();
   const content = new FakeElement();
+  const author = (reply.author = new FakeElement());
+  author.link = new FakeElement();
+  author.link.setAttribute("href", "/user/id/42");
+  const authorProps = {
+    userInfo: {
+      id: 42,
+      prestige: 999,
+      popularity: -12,
+      lastLogOnTime: "2026-11-14T00:03:07.1234567"
+    }
+  };
+  author.__reactFiber$fixture = { memoizedProps: {}, return: { memoizedProps: authorProps } };
   const slot = new FakeElement();
   const hiddenImage = new FakeElement();
   const sameSourceSlot = new FakeElement();
-  content.__reactFiber$fixture = { memoizedProps: { postId: 123456, floor: 1, content: "image-one" }, return: null };
-  slot.__reactFiber$fixture = { memoizedProps: {}, return: {
-    memoizedProps: { children: { type: "img", props: { src: "https://file.cc98.org/one.png", alt: "first" } } }, return: null
-  } };
-  sameSourceSlot.__reactFiber$fixture = { memoizedProps: {}, return: {
-    memoizedProps: { imageUri: "https://file.cc98.org/one.png", title: "repeated" }, return: null
-  } };
-  hiddenImage.__reactFiber$fixture = { memoizedProps: { imageUri: "https://file.cc98.org/hidden.png" }, return: null };
+  content.__reactFiber$fixture = {
+    memoizedProps: { postId: 123456, floor: 1, content: "image-one" },
+    return: null
+  };
+  slot.__reactFiber$fixture = {
+    memoizedProps: {},
+    return: {
+      memoizedProps: {
+        children: { type: "img", props: { src: "https://file.cc98.org/one.png", alt: "first" } }
+      },
+      return: null
+    }
+  };
+  sameSourceSlot.__reactFiber$fixture = {
+    memoizedProps: {},
+    return: {
+      memoizedProps: { imageUri: "https://file.cc98.org/one.png", title: "repeated" },
+      return: null
+    }
+  };
+  hiddenImage.__reactFiber$fixture = {
+    memoizedProps: { imageUri: "https://file.cc98.org/hidden.png" },
+    return: null
+  };
   reply.children = [content, hiddenImage];
   reply.slots = [slot, sameSourceSlot];
   replies = [reply];
   requestSnapshot();
+  assert.equal(author.getAttribute("data-cc98-author-popularity"), "42:-12");
+  assert.equal(author.getAttribute("data-cc98-author-login"), "42:2026-11-14 00:03:07");
   assert.equal(slot.getAttribute("data-cc98-lazy-src"), "https://file.cc98.org/one.png");
   assert.equal(slot.getAttribute("data-cc98-lazy-alt"), "first");
-  assert.equal(sameSourceSlot.getAttribute("data-cc98-lazy-src"), "https://file.cc98.org/one.png", "each occurrence keeps its own slot source");
-  assert.equal(hiddenImage.getAttribute("data-cc98-lazy-src"), null, "explicitly hidden images are not automatically materialized");
-  assert.equal(snapshots().at(-1).payload.items[0].content, "image-one", "request also captures current React props");
+  assert.equal(
+    sameSourceSlot.getAttribute("data-cc98-lazy-src"),
+    "https://file.cc98.org/one.png",
+    "each occurrence keeps its own slot source"
+  );
+  assert.equal(
+    hiddenImage.getAttribute("data-cc98-lazy-src"),
+    null,
+    "explicitly hidden images are not automatically materialized"
+  );
+  assert.equal(
+    snapshots().at(-1).payload.items[0].content,
+    "image-one",
+    "request also captures current React props"
+  );
 
   const beforeIndependentReplay = snapshots().length;
   replies = [];
   requestSnapshot();
-  assert.equal(snapshots().length, beforeIndependentReplay + 2, "partial rendered snapshots do not overwrite the complete API page cache");
-  assert.equal(snapshots().slice(beforeIndependentReplay).some((message) => message.payload.items.length === 2), true);
+  assert.equal(
+    snapshots().length,
+    beforeIndependentReplay + 2,
+    "partial rendered snapshots do not overwrite the complete API page cache"
+  );
+  assert.equal(
+    snapshots()
+      .slice(beforeIndependentReplay)
+      .some((message) => message.payload.items.length === 2),
+    true
+  );
 
   replies = [reply];
   const scheduleRenderedCapture = () => {
-    FakeMutationObserver.instances.at(-1).callback();
+    FakeMutationObserver.instances.at(-1).callback([{ target: reply }]);
     const [id, timer] = [...timers].filter(([, entry]) => entry.delay === 120).at(-1);
     timers.delete(id);
     timer.callback();
@@ -291,34 +384,86 @@ async function main() {
   assert.equal(snapshots().length, beforeUnchanged, "unchanged rendered snapshots are suppressed");
   content.__reactFiber$fixture.memoizedProps.content = "image-two";
   scheduleRenderedCapture();
-  assert.equal(snapshots().length, beforeUnchanged + 1, "equal-length content edits must emit an updated snapshot");
+  assert.equal(
+    snapshots().length,
+    beforeUnchanged + 1,
+    "equal-length content edits must emit an updated snapshot"
+  );
   assert.equal(snapshots().at(-1).payload.items[0].content, "image-two");
+  authorProps.userInfo.popularity = 0;
+  scheduleRenderedCapture();
+  assert.equal(author.getAttribute("data-cc98-author-popularity"), "42:0");
+  for (const [raw, expected] of [
+    ["2026-11-13T16:03:07Z", "42:2026-11-14 00:03:07"],
+    ["2026-11-13T18:03:07+02:00", "42:2026-11-14 00:03:07"],
+    ["2026-11-14T00:03", null],
+    ["2026-02-31T04:00:00", null],
+    [null, null],
+    ["2026-11-14 08:02:04", "42:2026-11-14 08:02:04"]
+  ]) {
+    authorProps.userInfo.lastLogOnTime = raw;
+    scheduleRenderedCapture();
+    assert.equal(author.getAttribute("data-cc98-author-login"), expected);
+  }
+  authorProps.userInfo.id = 200;
+  scheduleRenderedCapture();
+  assert.equal(
+    author.getAttribute("data-cc98-author-popularity"),
+    null,
+    "reused author node must not retain another user's score"
+  );
+  assert.equal(author.getAttribute("data-cc98-author-login"), null);
 
   reply.children = [];
-  slot.__reactFiber$fixture.return.memoizedProps.children.props.src = "https://file.cc98.org/fallback.png";
+  slot.__reactFiber$fixture.return.memoizedProps.children.props.src =
+    "https://file.cc98.org/fallback.png";
   scheduleRenderedCapture();
-  assert.equal(snapshots().at(-1).payload.kind, "rendered-media", "slot recovery without post props notifies the content renderer");
-  assert.equal(snapshots().at(-1).payload.items.length, 0, "a slot-only signal does not claim a complete page snapshot");
+  assert.equal(
+    snapshots().at(-1).payload.kind,
+    "rendered-media",
+    "slot recovery without post props notifies the content renderer"
+  );
+  assert.equal(
+    snapshots().at(-1).payload.items.length,
+    0,
+    "a slot-only signal does not claim a complete page snapshot"
+  );
   const beforeStableSlots = snapshots().length;
   scheduleRenderedCapture();
-  assert.equal(snapshots().length, beforeStableSlots, "stable slot attributes do not create a rebuild loop");
+  assert.equal(
+    snapshots().length,
+    beforeStableSlots,
+    "stable slot attributes do not create a rebuild loop"
+  );
 
   replies = [];
   for (let page = 2; page <= 16; page += 1) {
-    await fetchPage((page - 1) * 10, [{ id: 123456 + page, floor: (page - 1) * 10 + 1, content: `page-${page}` }]);
+    await fetchPage((page - 1) * 10, [
+      { id: 123456 + page, floor: (page - 1) * 10 + 1, content: `page-${page}` }
+    ]);
   }
   const beforeEvictedReplay = snapshots().length;
   requestSnapshot();
-  assert.equal(snapshots().length, beforeEvictedReplay, "old page snapshots are evicted from the bounded cache");
+  assert.equal(
+    snapshots().length,
+    beforeEvictedReplay,
+    "old page snapshots are evicted from the bounded cache"
+  );
   setPage(16);
   requestSnapshot({ from: 150 });
-  assert.equal(snapshots().length, beforeEvictedReplay + 1, "a recent page remains available after pagination");
+  assert.equal(
+    snapshots().length,
+    beforeEvictedReplay + 1,
+    "a recent page remains available after pagination"
+  );
   assert.equal(snapshots().at(-1).payload.items[0].floor, 151);
 }
 
-main().then(() => {
-  console.log("page-submit-monitor: ok");
-}).catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+main()
+  .then(() => {
+    console.log("page-submit-monitor: ok");
+  })
+  .catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });

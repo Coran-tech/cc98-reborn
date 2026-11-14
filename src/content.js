@@ -767,6 +767,7 @@ function applySettings(settings) {
   root.style.setProperty("--cc98-comfort-radius", `${lastSettings.cornerRadius}px`);
   globalThis.CC98RebornUserNotes?.sync();
   if (!lastSettings.enabled || !lastSettings.rebuildUi) {
+    homeLiveController?.stop();
     closeImageLinkMenu();
     releaseRebuildTransitionVeil({ immediate: true });
   }
@@ -12149,15 +12150,39 @@ function getPostAvatar(post, userHref = "") {
   return findImageSrc("img");
 }
 
-function getPostAuthorCardInfo(post) {
+function getPostAuthorCardInfo(post, uid) {
   const userMessage = post?.querySelector?.(".userMessage");
   if (!(userMessage instanceof HTMLElement)) {
     return null;
   }
-  const stats = [...userMessage.querySelectorAll(".userMessageOpt")]
+  const fields = [...userMessage.querySelectorAll(".userMessageOpt")]
     .map((node) => cleanupPostText(node.textContent))
-    .filter(Boolean)
+    .filter(Boolean);
+  const nativeScore = fields.find((text) => /^风评(?:值)?\s*[:：]?\s*[+-]?\d+$/.test(text));
+  const captured = userMessage
+    .getAttribute("data-cc98-author-popularity")
+    ?.match(/^(\d+):(-?\d+)$/);
+  const popularity = nativeScore
+    ? Number(nativeScore.match(/[+-]?\d+$/)[0])
+    : captured && captured[1] === uid
+      ? Number(captured[2])
+      : null;
+  const stats = fields
+    .filter((text) => !/^风评(?:值)?(?:\s|[:：]|[+-]?\d|$)/.test(text))
     .slice(0, 8);
+  const login = userMessage
+    .getAttribute("data-cc98-author-login")
+    ?.match(/^(\d+):(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})$/);
+  let lastLogin = stats.findIndex((text) => text.startsWith("最后登录"));
+  if (login && login[1] === uid) {
+    if (lastLogin < 0) lastLogin = stats.length;
+    stats[lastLogin] = `最后登录 ${login[2]}`;
+  }
+  stats.splice(
+    lastLogin < 0 ? stats.length : lastLogin,
+    0,
+    `风评 ${Number.isSafeInteger(popularity) ? formatAwardDelta(popularity) : "—"}`
+  );
   const genderIcon = userMessage.querySelector(".userGender i");
   const genderClasses = genderIcon?.classList ? [...genderIcon.classList] : [];
   const gender = genderClasses.includes("fa-mars")
@@ -12165,7 +12190,7 @@ function getPostAuthorCardInfo(post) {
     : genderClasses.includes("fa-venus")
       ? "\u2640"
       : "";
-  return { stats, gender };
+  return { stats, gender, uid, lastLoginTime: login && login[1] === uid ? login[2] : null };
 }
 
 function getAnonymousPostCode(post) {
@@ -13472,14 +13497,20 @@ function getPostItems() {
       const capturedSignatureMediaSources = extractCapturedPostMediaSources(
         capturedPost?.signatureCode || ""
       );
-      const user = getFirstLink(post, 'a[href*="/user/id/"], a[href*="/user/name/"]');
+      const authorLink =
+        getFirstLink(post, ".userMessage a.userMessage-userName[href]") ||
+        getFirstLink(post, '.userMessage a[href*="/user/id/"], :scope > a[href*="/user/id/"]');
+      const user = authorLink || getFirstLink(post, 'a[href*="/user/id/"], a[href*="/user/name/"]');
       const uidMatch = user?.href?.match(/\/user\/id\/(\d+)/);
       const userHref = makeAbsoluteCc98Url(
         user?.href || (uidMatch?.[1] ? `/user/id/${uidMatch[1]}` : "")
       );
       const anonymousCode = getAnonymousPostCode(post);
       const avatar = getPostAvatar(post, userHref);
-      const authorCard = anonymousCode ? null : getPostAuthorCardInfo(post);
+      const authorCard =
+        anonymousCode || post.querySelector(".userMessageAnonymous")
+          ? null
+          : getPostAuthorCardInfo(post, authorLink ? uidMatch?.[1] : "");
       const content = contentNode ? sanitizePostContent(contentNode, capturedMediaSources) : null;
       const signature = getPostSignatureContent(post, capturedSignatureMediaSources);
       let awardState = getPostAwardState(post);
@@ -13746,6 +13777,24 @@ function getHomeSections() {
       sections.push({ title, kind: "topics", items });
     }
   });
+  const hotTopics = homeLiveController?.getSnapshot().hotTopic;
+  if (hotTopics?.length) {
+    const items = hotTopics.map((item) => ({
+      type: "topic",
+      title: item.title,
+      href: normalizeHref(`/topic/${item.id}`),
+      board: item.boardName,
+      boardHref: normalizeHref(`/board/${item.boardId}`),
+      user: "",
+      uid: "",
+      meta: "",
+      hoverMeta: "",
+      replyCount: ""
+    }));
+    const hot = sections.find(isHotHomeSection);
+    if (hot) hot.items = items;
+    else sections.push({ title: "热门话题", kind: "topics", items });
+  }
   return sections;
 }
 
@@ -16114,7 +16163,90 @@ function renderPostAuthorMessageAction(action) {
   });
 }
 
-function renderPostAuthorCard(item) {
+function formatAuthorLoginElapsed(loginMs, nowMs) {
+  // Work in forum wall time. Count complete calendar months, clamping an
+  // anniversary to the last day when the target month is shorter.
+  const offset = 8 * 3600000;
+  const start = new Date(loginMs + offset);
+  const end = new Date(Math.max(loginMs, nowMs) + offset);
+  const anniversary = (months) => {
+    const date = new Date(start);
+    date.setUTCDate(1);
+    date.setUTCMonth(date.getUTCMonth() + months + 1, 0);
+    date.setUTCDate(Math.min(start.getUTCDate(), date.getUTCDate()));
+    return date.getTime();
+  };
+  let months =
+    (end.getUTCFullYear() - start.getUTCFullYear()) * 12 + end.getUTCMonth() - start.getUTCMonth();
+  if (anniversary(months) > end.getTime()) months--;
+  const seconds = Math.floor((end.getTime() - anniversary(months)) / 1000);
+  const parts = [
+    [Math.floor(months / 12), "年"],
+    [months % 12, "月"],
+    [Math.floor(seconds / 86400), "天"],
+    [Math.floor(seconds / 3600) % 24, "小时"],
+    [Math.floor(seconds / 60) % 60, "分"],
+    [seconds % 60, "秒"]
+  ];
+  return (
+    (parts
+      .filter(([n]) => n)
+      .map(([n, unit]) => n + unit)
+      .join("") || "0秒") + "前"
+  );
+}
+
+function createAuthorLoginToggle(exact, popover) {
+  const loginMs = Date.parse(exact.replace(" ", "T") + "+08:00");
+  let absolute = false;
+  let timer = 0;
+  const button = createButton(
+    "cc98-rebuild-post-author-card-stat-value cc98-rebuild-author-login",
+    "",
+    (event) => {
+      event.stopPropagation();
+      absolute = !absolute;
+      button.title = absolute ? "切换为多久前" : "查看精确登录时间";
+      update();
+    }
+  );
+  button.title = "查看精确登录时间";
+  const update = () => {
+    window.clearTimeout(timer);
+    const now = Date.now();
+    const text = absolute ? exact : formatAuthorLoginElapsed(loginMs, now);
+    if (button.textContent !== text) button.textContent = text;
+    if (!absolute && popover.isConnected && popover.matches(":hover, :focus-within")) {
+      timer = window.setTimeout(update, 1000 - (now % 1000));
+    }
+  };
+  // The avatar opens the panel too; don't start a clock for every hidden floor.
+  for (const type of ["pointerenter", "pointerleave", "focusin", "focusout"]) {
+    popover.addEventListener(type, () => queueMicrotask(update));
+  }
+  update();
+  return button;
+}
+
+function bindAuthorPopoverFocus(popover) {
+  let pointerFocus = false;
+  popover.addEventListener("pointerdown", (event) => {
+    pointerFocus = event.button === 0;
+  });
+  popover.addEventListener("keydown", () => {
+    pointerFocus = false;
+  });
+  popover.addEventListener("focusout", (event) => {
+    if (!popover.contains(event.relatedTarget)) pointerFocus = false;
+  });
+  popover.addEventListener("pointerleave", () => {
+    const focused = document.activeElement;
+    if (pointerFocus && focused instanceof HTMLElement && popover.contains(focused)) focused.blur();
+    pointerFocus = false;
+  });
+}
+
+function renderPostAuthorCard(item, popover) {
   if (!item?.authorCard || item.anonymousCode) {
     return null;
   }
@@ -16177,9 +16309,18 @@ function renderPostAuthorCard(item) {
         "div",
         `cc98-rebuild-post-author-card-stat${/^\u6700\u540e\u767b\u5f55/.test(text) ? " is-wide" : ""}`
       );
+      const value =
+        match?.[1] === "最后登录" && item.authorCard.lastLoginTime
+          ? createAuthorLoginToggle(item.authorCard.lastLoginTime, popover)
+          : createElement("strong", "cc98-rebuild-post-author-card-stat-value", match?.[2] || "");
+      if (match?.[1] === "风评" && /^[+-]?\d+$/.test(match[2])) {
+        value.classList.add("cc98-rebuild-action-delta");
+        value.dataset.awardDelta =
+          Number(match[2]) > 0 ? "positive" : Number(match[2]) < 0 ? "negative" : "zero";
+      }
       row.append(
         createElement("span", "cc98-rebuild-post-author-card-stat-label", match?.[1] || text),
-        createElement("strong", "cc98-rebuild-post-author-card-stat-value", match?.[2] || "")
+        value
       );
       stats.append(row);
     });
@@ -16192,6 +16333,23 @@ function renderPostAuthorCard(item) {
   }
   if (item.messageAction) {
     actions.append(renderPostAuthorMessageAction(item.messageAction));
+  }
+  if (!item.isCurrentUser && item.authorCard.uid === item.uid && /^[1-9]\d*$/.test(item.uid)) {
+    const blocked = Boolean(getUserBlockReason({ uid: item.uid, user: item.user }));
+    const block = createButton(
+      "cc98-rebuild-post-author-action is-block",
+      blocked ? "已屏蔽" : "屏蔽此用户",
+      (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (addBlacklistValue("users", item.uid, block)) {
+          block.textContent = "已屏蔽";
+          block.disabled = true;
+        }
+      }
+    );
+    block.disabled = blocked;
+    actions.append(block);
   }
   if (actions.children.length) {
     card.append(actions);
@@ -16279,6 +16437,7 @@ function renderPostCard(item) {
       if (item.authorCard && !item.anonymousCode) {
         avatarLink.setAttribute("aria-haspopup", "true");
         authorPopover = createElement("div", "cc98-rebuild-post-author-popover");
+        bindAuthorPopoverFocus(authorPopover);
         authorPopover.append(avatarLink);
         header.append(authorPopover);
       } else {
@@ -16309,7 +16468,7 @@ function renderPostCard(item) {
   if (item.followAction && !item.isCurrentUser) {
     userLine.append(renderNativeFollowControl(item.followAction));
   }
-  const authorCard = authorPopover ? renderPostAuthorCard(item) : null;
+  const authorCard = authorPopover ? renderPostAuthorCard(item, authorPopover) : null;
   if (authorCard) {
     authorPopover.append(authorCard);
   }
@@ -17918,9 +18077,7 @@ function getNativeEditorUploadInput(editor, control = null) {
   if (control instanceof HTMLLabelElement) {
     const forId = control.getAttribute("for");
     if (forId) {
-      const input =
-        control.ownerDocument?.getElementById(forId) ||
-        editor?.querySelector?.(`#${CSS.escape(forId)}`);
+      const input = editor?.querySelector?.(`input[type='file']#${CSS.escape(forId)}`);
       if (input instanceof HTMLInputElement && input.type === "file") {
         return input;
       }
@@ -17937,6 +18094,22 @@ function getNativeEditorUploadInput(editor, control = null) {
 function triggerNativeEditorUpload(editor, control) {
   const input = getNativeEditorUploadInput(editor, control);
   if (input instanceof HTMLInputElement) {
+    const state = editor.__cc98DualUbbState;
+    if (state && !state.workspace.hidden) {
+      const selection = isNativeDualUbbSourceActive(state)
+        ? getProfileSignatureSourceSelection(state.sourceEditor) || state.sourceSelection
+        : getEditorColorSourceSelectionForApply(
+            editor.__cc98WysiwygLogicalSelection,
+            state.textarea.value
+          );
+      if (selection) {
+        // CC98 inserts upload results using the offsets saved by its native
+        // textarea's onBlur, not the selection in either visible pane.
+        state.textarea.setSelectionRange(selection.start, selection.end);
+        state.textarea.dispatchEvent(new FocusEvent("blur"));
+        state.textarea.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+      }
+    }
     input.click();
     return true;
   }
@@ -22299,8 +22472,11 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
     scheduleNativeEditorDraftSave(editor);
     return true;
   };
-  const replaceSourceWithText = (replacement, requireSelection = false) => {
-    const selection = getSourceSelection();
+  const replaceSourceWithText = (
+    replacement,
+    requireSelection = false,
+    selection = getSourceSelection()
+  ) => {
     const start = Math.max(0, Math.min(textarea.value.length, selection.start));
     const end = Math.max(start, Math.min(textarea.value.length, selection.end));
     if (requireSelection && start === end) {
@@ -22476,8 +22652,9 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
       state.activeSurface = "visual";
       return insertProfileSignatureWysiwygMedia(editor, visual, tag, promptLabels[tag]);
     }
+    const selection = getSourceSelection();
     const url = promptPrivateMessageValue(promptLabels[tag], "");
-    return url ? insertSourceText(`[${tag}]${url}[/${tag}]`) : false;
+    return url ? replaceSourceWithText(`[${tag}]${url}[/${tag}]`, false, selection) : false;
   };
 
   state.updateVisualMeta = updateVisualMeta;
@@ -22983,10 +23160,8 @@ function bindNativeEditorStabilizer(editor) {
       const passthroughControl = getNativeEditorPassthroughControl(event.target);
       if (passthroughControl) {
         editor.__cc98DualUbbState?.rememberSelection?.();
-        if (getNativeEditorInsertControlKind(passthroughControl) !== "file") {
-          event.preventDefault();
-          event.stopPropagation();
-        }
+        event.preventDefault();
+        event.stopPropagation();
         return;
       }
       const colorButton = getEditorColorTriggerButton(event.target);
@@ -27091,8 +27266,11 @@ function stabilizeProfileSignatureToolbar(router) {
         restoreProfileSignatureSourceSelection(syntaxLayer, nextSelection);
         return true;
       };
-      const replaceSourceText = (replacement, requireSelection = false) => {
-        const selection = getActiveSourceSelection();
+      const replaceSourceText = (
+        replacement,
+        requireSelection = false,
+        selection = getActiveSourceSelection()
+      ) => {
         const start = Math.max(0, Math.min(textarea.value.length, selection.start));
         const end = Math.max(start, Math.min(textarea.value.length, selection.end));
         if (requireSelection && start === end) {
@@ -27262,14 +27440,14 @@ function stabilizeProfileSignatureToolbar(router) {
       addActionButton("\u94fe", "\u63d2\u5165\u94fe\u63a5", () =>
         insertProfileSignatureWysiwygLink(editor, wysiwyg)
       );
-      addActionButton("\u56fe", "\u63d2\u5165\u56fe\u7247", () =>
-        insertProfileSignatureWysiwygMedia(
-          editor,
-          wysiwyg,
-          "img",
-          "\u8bf7\u8f93\u5165\u56fe\u7247\u5730\u5740"
-        )
-      );
+      addActionButton("图", "插入图片", () => {
+        if (activeSurface !== "source") {
+          return insertProfileSignatureWysiwygMedia(editor, wysiwyg, "img", "请输入图片地址");
+        }
+        const selection = getActiveSourceSelection();
+        const url = promptPrivateMessageValue("请输入图片地址", "");
+        return url ? replaceSourceText(`[img]${url}[/img]`, false, selection) : false;
+      });
       addActionButton("\u5f71", "\u63d2\u5165\u89c6\u9891", () =>
         insertProfileSignatureWysiwygMedia(
           editor,
@@ -28610,13 +28788,127 @@ function ensureNativeAntUiStabilizer() {
   stabilizeNativeAntUi();
 }
 
+let homeLiveController = null;
+const homeHotCardStates = new WeakMap();
+
+function isHomeLiveActive() {
+  return Boolean(
+    lastSettings?.enabled &&
+    lastSettings.rebuildUi &&
+    getCurrentCc98RoutePath().split(/[?#]/)[0] === "/" &&
+    getPageKind() === "home" &&
+    document.querySelector('#cc98-comfort-app[data-page-kind="home"]')
+  );
+}
+
+function syncHomeLive() {
+  if (!isHomeLiveActive()) {
+    homeLiveController?.stop();
+    return;
+  }
+  if (!homeLiveController && globalThis.CC98RebornHomeLive) {
+    homeLiveController = globalThis.CC98RebornHomeLive.create({
+      isActive: isHomeLiveActive,
+      onUpdate: syncHomeIndexUi
+    });
+  }
+  homeLiveController?.start();
+}
+
+function createHomeOnlineIndicator() {
+  const indicator = createElement("div", "cc98-rebuild-home-online");
+  indicator.setAttribute("role", "status");
+  indicator.setAttribute("aria-live", "polite");
+  indicator.setAttribute("aria-atomic", "true");
+  indicator.append(
+    "当前在线 ",
+    createElement(
+      "span",
+      "cc98-rebuild-home-online-count",
+      String(homeLiveController?.getSnapshot().onlineUserCount ?? "—")
+    )
+  );
+  return indicator;
+}
+
+function getHomeCardState(item) {
+  const reason = shouldBlockRebuiltItem(item);
+  const saved = (!reason || isBlacklistItemRevealed(item)) && isReadLaterSaved(item.href);
+  // A completed rank animation does not change the card's data. In particular,
+  // online-count-only updates must not remount cards or restart their animation.
+  const stableItem = { ...item, rankMovementAnimated: false };
+  return (
+    getTopicCardRenderState(stableItem, reason, saved) ||
+    JSON.stringify([
+      { ...stableItem, href: normalizeHref(item.href), boardHref: normalizeHref(item.boardHref) },
+      reason,
+      isBlacklistItemRevealed(item),
+      saved,
+      lastSettings?.placeholderText,
+      Boolean(lastSettings?.openLinksInNewTab)
+    ])
+  );
+}
+
+function renderHomeTopicCard(item, section, index, hotOnly) {
+  const card = renderTopicCard(item);
+  card.dataset.itemKey = `home-topic:${item.href || `${section.title}:${index}:${item.title}`}`;
+  if (hotOnly && isHotHomeSection(section)) {
+    const title = card.querySelector(".cc98-rebuild-card-title");
+    if (title instanceof HTMLAnchorElement) title.title = item.title || "";
+  }
+  homeHotCardStates.set(card, getHomeCardState(item));
+  return card;
+}
+
+function syncHomeIndexUi() {
+  if (!isHomeLiveActive() || isRebuilding) return;
+  const app = document.querySelector('#cc98-comfort-app[data-page-kind="home"]');
+  const count = String(homeLiveController?.getSnapshot().onlineUserCount ?? "—");
+  app.querySelectorAll(".cc98-rebuild-home-online-count").forEach((node) => {
+    if (node.textContent !== count) node.textContent = count;
+  });
+  const section = getHomeSections().find(isHotHomeSection);
+  if (!section?.items.length) return;
+  const list = app.querySelector('[data-home-section-kind="hot"] > .cc98-rebuild-list');
+  if (!list) return;
+  const hotOnly = Boolean(lastSettings.homeHotOnly);
+  const items = getHomeHotItemsWithRankMovement(section).slice(0, hotOnly ? 10 : 12);
+  const mounted = new Map([...list.children].map((card) => [card.dataset.itemKey, card]));
+  const expected = new Set();
+  items.forEach((entry, index) => {
+    const item = { ...entry, rank: index < 10 ? index + 1 : 0 };
+    const key = `home-topic:${item.href || `${section.title}:${index}:${item.title}`}`;
+    expected.add(key);
+    let card = mounted.get(key);
+    if (!card || homeHotCardStates.get(card) !== getHomeCardState(item)) {
+      const next = renderHomeTopicCard(item, section, index, hotOnly);
+      if (card) card.replaceWith(next);
+      card = next;
+    }
+    const current = list.children[index] || null;
+    if (current !== card) list.insertBefore(card, current);
+  });
+  [...list.children].forEach((card) => {
+    if (!expected.has(card.dataset.itemKey)) card.remove();
+  });
+}
+
 function renderHome(app) {
   const sections = getHomeSections();
+  // Keep a stable mount point even before the native hot list arrives, so the
+  // API response can fill it without rebuilding the header or the whole page.
+  if (!sections.some(isHotHomeSection)) {
+    sections.push({ title: "热门话题", kind: "topics", items: [] });
+  }
   const hotOnly = Boolean(lastSettings?.homeHotOnly);
   const hotSections = sections.filter(isHotHomeSection);
   const visibleSections = hotOnly && hotSections.length > 0 ? hotSections : sections;
   if (hotOnly && visibleSections.length > 0) {
-    const hero = createElement("section", "cc98-rebuild-hero cc98-rebuild-home-hot-hero");
+    const hero = createElement(
+      "section",
+      "cc98-rebuild-hero cc98-rebuild-home-hot-hero cc98-rebuild-home-hero"
+    );
     hero.append(
       createElement(
         "p",
@@ -28625,6 +28917,7 @@ function renderHome(app) {
       )
     );
     hero.append(createElement("h1", "", visibleSections[0].title));
+    hero.append(createHomeOnlineIndicator());
     app.append(hero);
   }
   const grid = createElement("div", "cc98-rebuild-section-grid");
@@ -28638,6 +28931,7 @@ function renderHome(app) {
     if (!hotOnly) {
       const header = createElement("div", "cc98-rebuild-section-heading");
       header.append(createElement("h2", "", section.title));
+      if (hotSection) header.append(createHomeOnlineIndicator());
       block.append(header);
     }
     if (hotOnly && hotSection) {
@@ -28647,15 +28941,15 @@ function renderHome(app) {
     const rankedItems = hotSection ? getHomeHotItemsWithRankMovement(section) : section.items;
     const visibleItemLimit = hotOnly && hotSection ? 10 : 12;
     rankedItems.slice(0, visibleItemLimit).forEach((item, index) => {
-      const card = renderTopicCard({
-        ...item,
-        rank: hotSection && index < 10 ? index + 1 : 0
-      });
-      card.dataset.itemKey = `home-topic:${item.href || `${section.title}:${index}:${item.title}`}`;
-      if (hotOnly && hotSection) {
-        const title = card.querySelector(".cc98-rebuild-card-title");
-        if (title instanceof HTMLAnchorElement) title.title = item.title || "";
-      }
+      const card = renderHomeTopicCard(
+        {
+          ...item,
+          rank: hotSection && index < 10 ? index + 1 : 0
+        },
+        section,
+        index,
+        hotOnly
+      );
       list.append(card);
     });
     block.append(list);
@@ -33888,6 +34182,7 @@ function renderPendingPageContent(app, kind) {
 }
 
 function renderRebuiltUi(options = {}) {
+  if (!isHomeLiveActive()) homeLiveController?.stop();
   globalThis.CC98RebornTopicDrawer?.sync(lastSettings);
   if (!isNewTopicsPage() || !lastSettings?.enabled || !lastSettings.rebuildUi) {
     globalThis.CC98RebornNewTopicsVirtual?.destroy();
@@ -34129,6 +34424,10 @@ function renderRebuiltUi(options = {}) {
           title
         )
       );
+      if (kind === "home") {
+        hero.classList.add("cc98-rebuild-home-hero");
+        hero.append(createHomeOnlineIndicator());
+      }
       if (kind === "post" && !options.pending) {
         syncTopicContextRow(hero);
       }
@@ -34292,6 +34591,7 @@ function renderRebuiltUi(options = {}) {
     releaseRebuildTransitionVeil({ immediate: true });
   } finally {
     isRebuilding = false;
+    syncHomeLive();
   }
 }
 
@@ -34713,6 +35013,7 @@ function reconcileCardFeed(feed, entries) {
 }
 
 function syncRebuiltContent() {
+  syncHomeLive();
   globalThis.CC98RebornTopicLive?.sync();
   globalThis.CC98RebornUserNotes?.sync();
   if (isRebuilding || !lastSettings?.enabled || !lastSettings.rebuildUi) {
@@ -35261,6 +35562,7 @@ function patchHistoryNavigation() {
         }
       }
       const result = original.apply(this, args);
+      syncHomeLive();
       if (location.hash !== beforeHash) {
         clearRebuiltHashScrollIntent();
       }
@@ -35301,6 +35603,7 @@ function patchHistoryNavigation() {
     };
   });
   window.addEventListener("popstate", () => {
+    syncHomeLive();
     if (embeddedBlacklistOpenPath && embeddedBlacklistOpenPath !== getCurrentCc98RoutePath()) {
       embeddedBlacklistOpenPath = "";
     }
@@ -35323,6 +35626,7 @@ function patchHistoryNavigation() {
     scheduleSync();
   });
   window.addEventListener("hashchange", () => {
+    syncHomeLive();
     if (syncUserSettingsRoute()) return;
     if (Date.now() < imageViewerSuppressHashScrollUntil) {
       return;
@@ -35462,6 +35766,8 @@ function initializeNormalPageDom() {
   }
   normalPageDomBooted = true;
   window.addEventListener("pagehide", rememberReadingPositionBeforeReload);
+  window.addEventListener("pagehide", () => homeLiveController?.stop());
+  window.addEventListener("pageshow", syncHomeLive);
   clearPublicUserProfileLoadingOverlay();
   ensureSecurityWatermark();
   enforceRecentLogoutRedirectIntent();

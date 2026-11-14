@@ -1,5 +1,11 @@
 (() => {
-  if (window.top && window.top !== window && (window.parent !== window.top || !/^cc98-reborn-topic-drawer:v1:[a-z0-9-]{20,80}$/i.test(window.name))) return;
+  if (
+    window.top &&
+    window.top !== window &&
+    (window.parent !== window.top ||
+      !/^cc98-reborn-topic-drawer:v1:[a-z0-9-]{20,80}$/i.test(window.name))
+  )
+    return;
   function decodeLocationValue(value) {
     let decoded = String(value || "");
     for (let attempt = 0; attempt < 2; attempt += 1) {
@@ -32,8 +38,9 @@
       return false;
     }
     const result = decodeLocationValue(`${location.pathname}${location.search}${location.hash}`);
-    return /(?:^|[?&#])state=[^&#]+/i.test(result)
-      && /(?:^|[?&#])(?:code|error)=[^&#]+/i.test(result);
+    return (
+      /(?:^|[?&#])state=[^&#]+/i.test(result) && /(?:^|[?&#])(?:code|error)=[^&#]+/i.test(result)
+    );
   }
 
   function getConfirmedWebVpnPrefixCacheKey() {
@@ -41,7 +48,9 @@
   }
 
   function normalizeWebVpnProxyPrefix(prefix) {
-    return String(prefix || "").replace(/\/+$/, "").toLowerCase();
+    return String(prefix || "")
+      .replace(/\/+$/, "")
+      .toLowerCase();
   }
 
   function isConfirmedExternalWebVpnProxyPage() {
@@ -53,12 +62,13 @@
       return false;
     }
     try {
-      const confirmedPrefix = sessionStorage.getItem(getConfirmedWebVpnPrefixCacheKey())
-        || localStorage.getItem(getConfirmedWebVpnPrefixCacheKey())
-        || "";
+      const confirmedPrefix =
+        sessionStorage.getItem(getConfirmedWebVpnPrefixCacheKey()) ||
+        localStorage.getItem(getConfirmedWebVpnPrefixCacheKey()) ||
+        "";
       return Boolean(
-        confirmedPrefix
-        && normalizeWebVpnProxyPrefix(currentPrefix) !== normalizeWebVpnProxyPrefix(confirmedPrefix)
+        confirmedPrefix &&
+        normalizeWebVpnProxyPrefix(currentPrefix) !== normalizeWebVpnProxyPrefix(confirmedPrefix)
       );
     } catch {
       return false;
@@ -66,9 +76,9 @@
   }
 
   if (
-    isOpenIdAuthorizationRoute()
-    || isPotentialWebVpnOpenIdCallback()
-    || isConfirmedExternalWebVpnProxyPage()
+    isOpenIdAuthorizationRoute() ||
+    isPotentialWebVpnOpenIdCallback() ||
+    isConfirmedExternalWebVpnProxyPage()
   ) {
     return;
   }
@@ -90,7 +100,9 @@
   }
 
   function isCc98RoutePath(pathname = "") {
-    return /^\/(?:boardList|boardlist|newTopics|recommendedTopics|searchBoard|usercenter|topic|board|focus|search|user|message|editor|signin|logOn)(?:\/|$|\?)/i.test(String(pathname || ""));
+    return /^\/(?:boardList|boardlist|newTopics|recommendedTopics|searchBoard|usercenter|topic|board|focus|search|user|message|editor|signin|logOn)(?:\/|$|\?)/i.test(
+      String(pathname || "")
+    );
   }
 
   function getWebVpnPrefixCacheKey() {
@@ -127,9 +139,11 @@
       return "";
     }
     try {
-      return sessionStorage.getItem(getWebVpnPrefixCacheKey())
-        || localStorage.getItem(getWebVpnPrefixCacheKey())
-        || "";
+      return (
+        sessionStorage.getItem(getWebVpnPrefixCacheKey()) ||
+        localStorage.getItem(getWebVpnPrefixCacheKey()) ||
+        ""
+      );
     } catch {
       return "";
     }
@@ -158,7 +172,11 @@
     }
     try {
       const url = new URL(value, location.href);
-      if (!isWebVpnHost(url.hostname) || getWebVpnProxyPrefixFromUrl(url.href) || !isCc98RoutePath(url.pathname)) {
+      if (
+        !isWebVpnHost(url.hostname) ||
+        getWebVpnProxyPrefixFromUrl(url.href) ||
+        !isCc98RoutePath(url.pathname)
+      ) {
         return url.href;
       }
       const prefix = getCurrentWebVpnPrefix();
@@ -236,27 +254,31 @@
     } catch {
       // Some browsers expose Location methods as non-writable.
     }
-    document.addEventListener("click", (event) => {
-      const link = event.target?.closest?.("a[href]");
-      if (!(link instanceof HTMLAnchorElement)) {
-        return;
-      }
-      const rawHref = link.getAttribute("href") || link.href || "";
-      const fixedHref = repairWebVpnNakedCc98Url(rawHref);
-      let originalHref = rawHref;
-      try {
-        originalHref = new URL(rawHref, location.href).href;
-      } catch {
-        originalHref = rawHref;
-      }
-      if (!fixedHref || fixedHref === originalHref) {
-        return;
-      }
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
-      location.assign(fixedHref);
-    }, true);
+    document.addEventListener(
+      "click",
+      (event) => {
+        const link = event.target?.closest?.("a[href]");
+        if (!(link instanceof HTMLAnchorElement)) {
+          return;
+        }
+        const rawHref = link.getAttribute("href") || link.href || "";
+        const fixedHref = repairWebVpnNakedCc98Url(rawHref);
+        let originalHref = rawHref;
+        try {
+          originalHref = new URL(rawHref, location.href).href;
+        } catch {
+          originalHref = rawHref;
+        }
+        if (!fixedHref || fixedHref === originalHref) {
+          return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        location.assign(fixedHref);
+      },
+      true
+    );
     [0, 80, 180, 360, 700, 1200, 2000].forEach((delay) => {
       setTimeout(enforceCurrentWebVpnNakedRoute, delay);
     });
@@ -272,9 +294,7 @@
       return "";
     }
     const normalizedMethod = String(method || "GET").toUpperCase();
-    const pathname = decodeLocationValue(parsed.pathname)
-      .replace(/\\/g, "/")
-      .replace(/\/+$/, "");
+    const pathname = decodeLocationValue(parsed.pathname).replace(/\\/g, "/").replace(/\/+$/, "");
     if (normalizedMethod === "POST" && /\/topic\/\d+\/post$/i.test(pathname)) {
       return "reply";
     }
@@ -315,9 +335,11 @@
       monitorEventId: `${Date.now()}:${++monitorEventSequence}:${type}`
     };
     try {
-      document.dispatchEvent(new CustomEvent(DOM_BRIDGE_EVENT, {
-        detail: JSON.stringify(message)
-      }));
+      document.dispatchEvent(
+        new CustomEvent(DOM_BRIDGE_EVENT, {
+          detail: JSON.stringify(message)
+        })
+      );
     } catch {
       // The postMessage bridge below remains available.
     }
@@ -338,7 +360,12 @@
     }
     const items = data.slice(0, 60).map((item, index) => ({
       id: String(item?.id ?? item?.postId ?? ""),
-      floor: Math.max(0, Number(item?.floor ?? item?.index ?? (request.kind === "page" ? request.from + index + 1 : 0)) || 0),
+      floor: Math.max(
+        0,
+        Number(
+          item?.floor ?? item?.index ?? (request.kind === "page" ? request.from + index + 1 : 0)
+        ) || 0
+      ),
       content: typeof item?.content === "string" ? item.content : "",
       contentType: Number(item?.contentType) || 0,
       userId: String(item?.userId ?? ""),
@@ -363,7 +390,8 @@
   const nativeFetch = window.fetch;
   if (typeof nativeFetch === "function") {
     window.fetch = async function monitoredFetch(input, init) {
-      const requestUrl = typeof input === "string" || input instanceof URL ? String(input) : input?.url;
+      const requestUrl =
+        typeof input === "string" || input instanceof URL ? String(input) : input?.url;
       const requestMethod = init?.method || input?.method || "GET";
       const requestKind = classifyRequest(requestUrl, requestMethod);
       const topicContentRequest = classifyTopicContentRequest(requestUrl, requestMethod);
@@ -378,12 +406,16 @@
       try {
         const response = await nativeFetch.apply(this, arguments);
         if (topicContentRequest && response.ok) {
-          response.clone().json()
-            .then((data) => reportTopicContentSnapshot(
-              topicContentRequest,
-              data,
-              response.url || String(requestUrl || "")
-            ))
+          response
+            .clone()
+            .json()
+            .then((data) =>
+              reportTopicContentSnapshot(
+                topicContentRequest,
+                data,
+                response.url || String(requestUrl || "")
+              )
+            )
             .catch(() => {});
         }
         if (requestKind) {
@@ -397,7 +429,9 @@
             ok: response.ok
           };
           if (requestKind === "post") {
-            response.clone().text()
+            response
+              .clone()
+              .text()
               .catch(() => "")
               .then((body) => {
                 reportResult({
@@ -446,43 +480,54 @@
     const request = this.__cc98RebornSubmitRequest;
     const topicContentRequest = this.__cc98RebornTopicContentRequest;
     if (topicContentRequest) {
-      this.addEventListener("loadend", () => {
-        if (this.status < 200 || this.status >= 300) {
-          return;
-        }
-        try {
-          const data = this.responseType === "json"
-            ? this.response
-            : JSON.parse(this.responseText || "[]");
-          reportTopicContentSnapshot(topicContentRequest, data, this.responseURL || topicContentRequest.url);
-        } catch {
-          // Ignore non-JSON and incomplete responses.
-        }
-      }, { once: true });
+      this.addEventListener(
+        "loadend",
+        () => {
+          if (this.status < 200 || this.status >= 300) {
+            return;
+          }
+          try {
+            const data =
+              this.responseType === "json" ? this.response : JSON.parse(this.responseText || "[]");
+            reportTopicContentSnapshot(
+              topicContentRequest,
+              data,
+              this.responseURL || topicContentRequest.url
+            );
+          } catch {
+            // Ignore non-JSON and incomplete responses.
+          }
+        },
+        { once: true }
+      );
     }
     if (request?.kind) {
       reportSubmitStart({
         ...request,
         startedAt: Date.now()
       });
-      this.addEventListener("loadend", () => {
-        let body = "";
-        try {
-          body = typeof this.responseText === "string" ? this.responseText : "";
-        } catch {
-          body = "";
-        }
-        reportResult({
-          ...request,
-          url: this.responseURL || request.url,
-          responseUrl: this.responseURL || "",
-          location: this.getResponseHeader("location") || "",
-          status: this.status,
-          ok: this.status >= 200 && this.status < 300,
-          networkError: this.status === 0,
-          body: String(body || "").slice(0, 2048)
-        });
-      }, { once: true });
+      this.addEventListener(
+        "loadend",
+        () => {
+          let body = "";
+          try {
+            body = typeof this.responseText === "string" ? this.responseText : "";
+          } catch {
+            body = "";
+          }
+          reportResult({
+            ...request,
+            url: this.responseURL || request.url,
+            responseUrl: this.responseURL || "",
+            location: this.getResponseHeader("location") || "",
+            status: this.status,
+            ok: this.status >= 200 && this.status < 300,
+            networkError: this.status === 0,
+            body: String(body || "").slice(0, 2048)
+          });
+        },
+        { once: true }
+      );
     }
     return nativeSend.apply(this, arguments);
   };
@@ -507,10 +552,9 @@
     if (!(node instanceof Element)) {
       return null;
     }
-    const key = Object.keys(node).find((name) => (
-      name.startsWith("__reactFiber$")
-      || name.startsWith("__reactInternalInstance$")
-    ));
+    const key = Object.keys(node).find(
+      (name) => name.startsWith("__reactFiber$") || name.startsWith("__reactInternalInstance$")
+    );
     return key ? node[key] : null;
   }
 
@@ -528,12 +572,13 @@
         if (!props || typeof props !== "object") {
           continue;
         }
-        const possiblePost = props.postInfo && typeof props.postInfo === "object"
-          ? props.postInfo
-          : props;
-        if (!postInfo
-          && typeof possiblePost.content === "string"
-          && (possiblePost.postId || possiblePost.id || possiblePost.floor)) {
+        const possiblePost =
+          props.postInfo && typeof props.postInfo === "object" ? props.postInfo : props;
+        if (
+          !postInfo &&
+          typeof possiblePost.content === "string" &&
+          (possiblePost.postId || possiblePost.id || possiblePost.floor)
+        ) {
           postInfo = possiblePost;
         }
         if (!userInfo && props.userInfo && typeof props.userInfo === "object") {
@@ -557,7 +602,9 @@
           continue;
         }
         const children = Array.isArray(props.children) ? props.children : [props.children];
-        const image = children.find((child) => child?.type === "img" && typeof child.props?.src === "string");
+        const image = children.find(
+          (child) => child?.type === "img" && typeof child.props?.src === "string"
+        );
         const src = typeof props.imageUri === "string" ? props.imageUri : image?.props.src;
         if (!src?.trim()) {
           continue;
@@ -577,6 +624,24 @@
     return changed;
   }
 
+  function forumLoginTimeToSeconds(raw) {
+    if (typeof raw !== "string") return null;
+    // CC98's unzoned dates are forum wall time (UTC+8), not browser-local time.
+    const match =
+      /^(\d{4}-\d{2}-\d{2})[T ]([01]\d|2[0-3]):([0-5]\d):([0-5]\d)(?:\.\d+)?(Z|[+-]\d{2}:\d{2})?$/.exec(
+        raw.trim()
+      );
+    if (!match) return null;
+    const [, day, hour, minute, second, zone] = match;
+    const calendar = new Date(day + "T00:00:00Z");
+    if (!Number.isFinite(calendar.getTime()) || calendar.toISOString().slice(0, 10) !== day)
+      return null;
+    const instant = Date.parse(`${day}T${hour}:${minute}:${second}${zone || "+08:00"}`);
+    return Number.isFinite(instant)
+      ? new Date(instant + 8 * 3600000).toISOString().slice(0, 19).replace("T", " ")
+      : null;
+  }
+
   function collectRenderedTopicSnapshot(force = false) {
     renderedTopicSnapshotTimer = null;
     const route = getCurrentTopicRouteInfo();
@@ -587,30 +652,74 @@
     const replies = [...document.querySelectorAll(".reply")]
       .filter((reply) => !reply.closest("#cc98-comfort-app"))
       .slice(0, 30);
-    let mediaSlotsChanged = false;
-    const items = replies.map((reply, index) => {
-      // React already knows the URL before react-lazyload mounts its <img>.
-      // Keep this information on the original slot so clones preserve its place.
-      mediaSlotsChanged = annotateRenderedLazyImageSources(reply) || mediaSlotsChanged;
-      const { postInfo, userInfo } = collectReactPostProps(reply);
-      if (!postInfo || typeof postInfo.content !== "string") {
-        return null;
-      }
-      return {
-        id: String(postInfo.postId ?? postInfo.id ?? ""),
-        floor: Math.max(0, Number(postInfo.floor) || route.from + index + 1),
-        content: postInfo.content,
-        contentType: Number(postInfo.contentType) || 0,
-        userId: String(postInfo.userId ?? userInfo?.id ?? ""),
-        userName: String(postInfo.userName ?? userInfo?.name ?? ""),
-        isAnonymous: Boolean(postInfo.isAnonymous),
-        signatureCode: typeof userInfo?.signatureCode === "string" ? userInfo.signatureCode : ""
-      };
-    }).filter(Boolean);
+    let renderedMetadataChanged = false;
+    const items = replies
+      .map((reply, index) => {
+        // React already knows the URL before react-lazyload mounts its <img>.
+        // Keep this information on the original slot so clones preserve its place.
+        renderedMetadataChanged =
+          annotateRenderedLazyImageSources(reply) || renderedMetadataChanged;
+        const author = reply.querySelector(".userMessage");
+        if (author) {
+          // Bind profile details to the public author link, never to quoted users.
+          const uid = author
+            .querySelector("a[href*='/user/id/']")
+            ?.getAttribute("href")
+            ?.match(/\/user\/id\/([1-9]\d*)(?:[/?#]|$)/i)?.[1];
+          let score = null;
+          let login = null;
+          if (uid) {
+            for (
+              let fiber = getReactFiber(author), depth = 0;
+              fiber && depth < 24;
+              fiber = fiber.return, depth++
+            ) {
+              const props = fiber.memoizedProps || fiber.pendingProps;
+              if (props?.userInfo && String(props.userInfo.id) === uid) {
+                if (!props.isAnonymous) {
+                  if (Number.isSafeInteger(props.userInfo.popularity))
+                    score = props.userInfo.popularity;
+                  login = forumLoginTimeToSeconds(props.userInfo.lastLogOnTime);
+                }
+                break;
+              }
+            }
+          }
+          for (const [key, detail] of [
+            ["data-cc98-author-popularity", score],
+            ["data-cc98-author-login", login]
+          ]) {
+            const value = detail === null ? null : `${uid}:${detail}`;
+            if (author.getAttribute(key) !== value) {
+              if (value === null) author.removeAttribute(key);
+              else author.setAttribute(key, value);
+              renderedMetadataChanged = true;
+            }
+          }
+        }
+        const { postInfo, userInfo } = collectReactPostProps(reply);
+        if (!postInfo || typeof postInfo.content !== "string") {
+          return null;
+        }
+        return {
+          id: String(postInfo.postId ?? postInfo.id ?? ""),
+          floor: Math.max(0, Number(postInfo.floor) || route.from + index + 1),
+          content: postInfo.content,
+          contentType: Number(postInfo.contentType) || 0,
+          userId: String(postInfo.userId ?? userInfo?.id ?? ""),
+          userName: String(postInfo.userName ?? userInfo?.name ?? ""),
+          isAnonymous: Boolean(postInfo.isAnonymous),
+          signatureCode: typeof userInfo?.signatureCode === "string" ? userInfo.signatureCode : ""
+        };
+      })
+      .filter(Boolean);
     const reportMediaChange = () => {
-      if (mediaSlotsChanged) {
+      if (renderedMetadataChanged) {
         emitMonitorMessage("topic-content-snapshot", {
-          ...route, kind: "rendered-media", items: [], responseUrl: location.href
+          ...route,
+          kind: "rendered-media",
+          items: [],
+          responseUrl: location.href
         });
       }
     };
@@ -624,20 +733,24 @@
       return;
     }
     renderedTopicSnapshotSignature = signature;
-    reportTopicContentSnapshot({
-      topicId: route.topicId,
-      kind: "page",
-      from: route.from,
-      size: items.length,
-      url: location.href
-    }, items, location.href, "rendered");
+    reportTopicContentSnapshot(
+      {
+        topicId: route.topicId,
+        kind: "page",
+        from: route.from,
+        size: items.length,
+        url: location.href
+      },
+      items,
+      location.href,
+      "rendered"
+    );
   }
 
   function scheduleRenderedTopicSnapshot() {
-    if (!getCurrentTopicRouteInfo()) {
+    if (renderedTopicSnapshotTimer !== null || !getCurrentTopicRouteInfo()) {
       return;
     }
-    clearTimeout(renderedTopicSnapshotTimer);
     renderedTopicSnapshotTimer = setTimeout(collectRenderedTopicSnapshot, 120);
   }
 
@@ -649,19 +762,23 @@
       return;
     }
     const route = getCurrentTopicRouteInfo();
-    if (!route
-      || request?.source !== "cc98-reborn-content"
-      || request.type !== "request-topic-content-snapshot"
-      || String(request.topicId) !== route.topicId
-      || !Number.isInteger(request.from)
-      || request.from !== route.from) {
+    if (
+      !route ||
+      request?.source !== "cc98-reborn-content" ||
+      request.type !== "request-topic-content-snapshot" ||
+      String(request.topicId) !== route.topicId ||
+      !Number.isInteger(request.from) ||
+      request.from !== route.from
+    ) {
       return;
     }
     // A receiver can attach after a fast API response or lose one bridge event.
     // Replay only this page (plus its hot posts), without another network read.
     for (const payload of topicContentSnapshots.values()) {
-      if (String(payload.topicId) === route.topicId
-        && (payload.kind === "hot" || payload.from === route.from)) {
+      if (
+        String(payload.topicId) === route.topicId &&
+        (payload.kind === "hot" || payload.from === route.from)
+      ) {
         emitMonitorMessage("topic-content-snapshot", payload);
       }
     }
@@ -669,7 +786,10 @@
     collectRenderedTopicSnapshot(true);
   });
 
-  const renderedTopicObserver = new MutationObserver(scheduleRenderedTopicSnapshot);
+  const renderedTopicObserver = new MutationObserver((records) => {
+    if (records.some((record) => !record.target.closest?.("#cc98-comfort-app")))
+      scheduleRenderedTopicSnapshot();
+  });
   renderedTopicObserver.observe(document.documentElement, {
     childList: true,
     subtree: true

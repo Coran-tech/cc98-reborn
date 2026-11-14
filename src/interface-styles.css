@@ -31,12 +31,20 @@
   --cc98-comfort-border: #7f9278;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(.cc98-rebuild-shell, .cc98-rebuild-shell[data-page-kind="home"][data-home-hot-only="true"]) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(.cc98-rebuild-shell, .cc98-rebuild-shell[data-page-kind="home"][data-home-hot-only="true"]) {
   width: min(1120px, calc(100vw - 32px));
   padding-top: 12px;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(#cc98-comfort-app, .cc98-rebuild-conversation-layer, .cc98-favorite-share-layer, .cc98-user-note-layer) :is(button, input, textarea, select) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(
+    #cc98-comfort-app,
+    .cc98-rebuild-conversation-layer,
+    .cc98-favorite-share-layer,
+    .cc98-user-note-layer
+  )
+  :is(button, input, textarea, select) {
   font-family: var(--cc98-comfort-font-body) !important;
   border-radius: 0 !important;
   box-shadow: none !important;
@@ -45,25 +53,69 @@
 /* One rule for all owned UI boxes, including nested cards and pseudo-elements.
    Authored post/preview/editor markup keeps its own formatting. The ID in :is
    also wins against the original native-page overrides with !important. */
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(#cc98-comfort-app, [data-cc98-ascii-surface]) :where(*):not(:where(
-  [contenteditable], [contenteditable] *, .cc98-rebuild-post-body *,
-  .cc98-rebuild-conversation-body *, .cc98-rebuild-signature *,
-  .ubb-preview *, .mde-preview-content *, .cc98-rebuild-dual-ubb-visual-pane *
-)),
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(#cc98-comfort-app, [data-cc98-ascii-surface]) :where(*):not(:where(
-  [contenteditable], [contenteditable] *, .cc98-rebuild-post-body *,
-  .cc98-rebuild-conversation-body *, .cc98-rebuild-signature *,
-  .ubb-preview *, .mde-preview-content *, .cc98-rebuild-dual-ubb-visual-pane *
-))::before,
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(#cc98-comfort-app, [data-cc98-ascii-surface]) :where(*):not(:where(
-  [contenteditable], [contenteditable] *, .cc98-rebuild-post-body *,
-  .cc98-rebuild-conversation-body *, .cc98-rebuild-signature *,
-  .ubb-preview *, .mde-preview-content *, .cc98-rebuild-dual-ubb-visual-pane *
-))::after {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(#cc98-comfort-app, [data-cc98-ascii-surface])
+  :where(*):not(
+    :where(
+      [contenteditable],
+      [contenteditable] *,
+      .cc98-rebuild-post-body *,
+      .cc98-rebuild-conversation-body *,
+      .cc98-rebuild-signature *,
+      .ubb-preview *,
+      .mde-preview-content *,
+      .cc98-rebuild-dual-ubb-visual-pane *
+    )
+  ),
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(#cc98-comfort-app, [data-cc98-ascii-surface])
+  :where(*):not(
+    :where(
+      [contenteditable],
+      [contenteditable] *,
+      .cc98-rebuild-post-body *,
+      .cc98-rebuild-conversation-body *,
+      .cc98-rebuild-signature *,
+      .ubb-preview *,
+      .mde-preview-content *,
+      .cc98-rebuild-dual-ubb-visual-pane *
+    )
+  )::before,
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(#cc98-comfort-app, [data-cc98-ascii-surface])
+  :where(*):not(
+    :where(
+      [contenteditable],
+      [contenteditable] *,
+      .cc98-rebuild-post-body *,
+      .cc98-rebuild-conversation-body *,
+      .cc98-rebuild-signature *,
+      .ubb-preview *,
+      .mde-preview-content *,
+      .cc98-rebuild-dual-ubb-visual-pane *
+    )
+  )::after {
   border-radius: 0 !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(.cc98-rebuild-topbar, .cc98-rebuild-card, .cc98-rebuild-board, .cc98-rebuild-board-hero, .cc98-rebuild-message-hero, .cc98-rebuild-native-message, .cc98-rebuild-native-user-center, .cc98-rebuild-native-editor, .cc98-rebuild-conversation-dialog, .cc98-favorite-share-dialog, .cc98-user-note-dialog, .cc98-rebuild-signature, .cc98-rebuild-signature-notice-tag, .cc98-rebuild-awards, .cc98-rebuild-awards-table) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(
+    .cc98-rebuild-topbar,
+    .cc98-rebuild-card,
+    .cc98-rebuild-board,
+    .cc98-rebuild-board-hero,
+    .cc98-rebuild-message-hero,
+    .cc98-rebuild-native-message,
+    .cc98-rebuild-native-user-center,
+    .cc98-rebuild-native-editor,
+    .cc98-rebuild-conversation-dialog,
+    .cc98-favorite-share-dialog,
+    .cc98-user-note-dialog,
+    .cc98-rebuild-signature,
+    .cc98-rebuild-signature-notice-tag,
+    .cc98-rebuild-awards,
+    .cc98-rebuild-awards-table
+  ) {
   border-radius: 0 !important;
   background: var(--cc98-comfort-surface) !important;
   box-shadow: none !important;
@@ -71,45 +123,82 @@
   transition: none !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(.cc98-rebuild-hero, .cc98-rebuild-board-hero, .cc98-rebuild-native-editor, .cc98-rebuild-conversation-dialog, .cc98-favorite-share-dialog, .cc98-user-note-dialog) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(
+    .cc98-rebuild-hero,
+    .cc98-rebuild-board-hero,
+    .cc98-rebuild-native-editor,
+    .cc98-rebuild-conversation-dialog,
+    .cc98-favorite-share-dialog,
+    .cc98-user-note-dialog
+  ) {
   position: relative;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(.cc98-rebuild-openid-bind-dialog, .cc98-rebuild-convert-dialog) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(.cc98-rebuild-openid-bind-dialog, .cc98-rebuild-convert-dialog) {
   position: relative;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app :is(
-  .cc98-rebuild-editor-draftbar, .cc98-rebuild-editor-draft-button,
-  .createTopicTitle, .createTopicType, .createTopicContent,
-  .ubb-editor, .ubb-buttons, .ubb-toolbar, .cc98-rebuild-font-family-control,
-  .cc98-rebuild-font-size-split, .cc98-rebuild-color-split, .ubb-button-fontSize,
-  .ubb-button-color, .sp-preview, .react-mde, .mde-header,
-  .cc98-rebuild-dual-ubb-visual-pane, .cc98-rebuild-dual-ubb-source-pane,
-  .cc98-local-syntax-experimental-badge, .cc98-rebuild-color-popover,
-  .cc98-rebuild-font-size-popover, .tagBoxSub, .tagBoxSub1
-) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-app
+  :is(
+    .cc98-rebuild-editor-draftbar,
+    .cc98-rebuild-editor-draft-button,
+    .createTopicTitle,
+    .createTopicType,
+    .createTopicContent,
+    .ubb-editor,
+    .ubb-buttons,
+    .ubb-toolbar,
+    .cc98-rebuild-font-family-control,
+    .cc98-rebuild-font-size-split,
+    .cc98-rebuild-color-split,
+    .ubb-button-fontSize,
+    .ubb-button-color,
+    .sp-preview,
+    .react-mde,
+    .mde-header,
+    .cc98-rebuild-dual-ubb-visual-pane,
+    .cc98-rebuild-dual-ubb-source-pane,
+    .cc98-local-syntax-experimental-badge,
+    .cc98-rebuild-color-popover,
+    .cc98-rebuild-font-size-popover,
+    .tagBoxSub,
+    .tagBoxSub1
+  ) {
   border-radius: 0 !important;
   box-shadow: none !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app .cc98-rebuild-dual-editor-divider::after {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-app
+  .cc98-rebuild-dual-editor-divider::after {
   border-radius: 0 !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app .cc98-rebuild-native-editor :is(#post-topic-changeMode, .changeEditor, .cc98-rebuild-markdown-entry) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-app
+  .cc98-rebuild-native-editor
+  :is(#post-topic-changeMode, .changeEditor, .cc98-rebuild-markdown-entry) {
   border-radius: 0 !important;
   box-shadow: none !important;
 }
 
 /* These menus are mounted under body, outside the editor shell. */
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(.cc98-rebuild-color-popover, .cc98-rebuild-font-size-popover),
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(.cc98-rebuild-color-popover, .cc98-rebuild-font-size-popover) * {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(.cc98-rebuild-color-popover, .cc98-rebuild-font-size-popover),
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(.cc98-rebuild-color-popover, .cc98-rebuild-font-size-popover)
+  * {
   border-radius: 0 !important;
   box-shadow: none !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app .cc98-rebuild-native-editor [data-cc98-ascii-toolbar-label] {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-app
+  .cc98-rebuild-native-editor
+  [data-cc98-ascii-toolbar-label] {
   flex: 0 0 auto !important;
   width: auto !important;
   min-width: 30px !important;
@@ -119,14 +208,21 @@
   border-radius: 0 !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app .cc98-rebuild-native-editor [data-cc98-ascii-toolbar-label]::before {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-app
+  .cc98-rebuild-native-editor
+  [data-cc98-ascii-toolbar-label]::before {
   content: attr(data-cc98-ascii-toolbar-label) !important;
   display: inline !important;
   font: 700 0.8rem/1 var(--cc98-comfort-font-body) !important;
   color: currentColor !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app .cc98-rebuild-native-editor [data-cc98-ascii-toolbar-label] :is(.ubb-button-icon, .fa, svg) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-app
+  .cc98-rebuild-native-editor
+  [data-cc98-ascii-toolbar-label]
+  :is(.ubb-button-icon, .fa, svg) {
   display: none !important;
 }
 
@@ -182,8 +278,12 @@
   font-size: 0.88rem !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-nav a::before { content: "["; }
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-nav a::after { content: "]"; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-nav a::before {
+  content: "[";
+}
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-nav a::after {
+  content: "]";
+}
 
 :root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-nav a[aria-current="page"] {
   text-decoration: underline;
@@ -191,8 +291,17 @@
   font-weight: 700;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(.cc98-rebuild-actions, .cc98-rebuild-pager, .cc98-rebuild-post-actions) :is(a, button),
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(.cc98-rebuild-chip, .cc98-rebuild-mini-action, .cc98-rebuild-action, .cc98-rebuild-page-link, .cc98-rebuild-page-gap) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(.cc98-rebuild-actions, .cc98-rebuild-pager, .cc98-rebuild-post-actions)
+  :is(a, button),
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(
+    .cc98-rebuild-chip,
+    .cc98-rebuild-mini-action,
+    .cc98-rebuild-action,
+    .cc98-rebuild-page-link,
+    .cc98-rebuild-page-gap
+  ) {
   border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
@@ -201,18 +310,22 @@
   transform: none !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-board-toolbar > :is(.cc98-rebuild-board-post-topic-action, .cc98-rebuild-board-post-vote-action) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  .cc98-rebuild-board-toolbar
+  > :is(.cc98-rebuild-board-post-topic-action, .cc98-rebuild-board-post-vote-action) {
   background: var(--cc98-comfort-accent) !important;
   color: var(--cc98-comfort-on-accent) !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(.cc98-rebuild-hero, .cc98-rebuild-board-hero) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(.cc98-rebuild-hero, .cc98-rebuild-board-hero) {
   width: 100% !important;
   margin: 18px 0 !important;
   padding: 24px 18px 20px !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(.cc98-rebuild-hero h1, .cc98-rebuild-board-hero h1, .cc98-rebuild-message-hero h1) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(.cc98-rebuild-hero h1, .cc98-rebuild-board-hero h1, .cc98-rebuild-message-hero h1) {
   font-family: var(--cc98-comfort-font-body) !important;
   font-size: clamp(1.2rem, 2.5vw, 1.8rem) !important;
   line-height: 1.5 !important;
@@ -220,20 +333,23 @@
   font-weight: 700 !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(.cc98-rebuild-kicker, .cc98-rebuild-version-kicker) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(.cc98-rebuild-kicker, .cc98-rebuild-version-kicker) {
   font-size: 0.75rem !important;
   letter-spacing: 0 !important;
   margin-bottom: 4px;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(.cc98-rebuild-section-grid, .cc98-rebuild-home-hot-section .cc98-rebuild-list) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(.cc98-rebuild-section-grid, .cc98-rebuild-home-hot-section .cc98-rebuild-list) {
   grid-template-columns: minmax(0, 1fr) !important;
   grid-template-rows: none !important;
   grid-auto-flow: row !important;
   gap: 0 !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(.cc98-rebuild-list, .cc98-rebuild-board-topic-feed) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(.cc98-rebuild-list, .cc98-rebuild-board-topic-feed) {
   gap: 0 !important;
 }
 
@@ -241,19 +357,24 @@
   width: 100% !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-card:not(.cc98-rebuild-post, .cc98-rebuild-conversation-post) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  .cc98-rebuild-card:not(.cc98-rebuild-post, .cc98-rebuild-conversation-post) {
   padding: 10px 72px 10px 12px !important;
   border: 0 !important;
   border-bottom: 1px dashed var(--cc98-comfort-border) !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-card:not(.cc98-rebuild-post, .cc98-rebuild-conversation-post) .cc98-rebuild-card-title {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  .cc98-rebuild-card:not(.cc98-rebuild-post, .cc98-rebuild-conversation-post)
+  .cc98-rebuild-card-title {
   font-size: 0.96rem !important;
   line-height: 1.5 !important;
   font-weight: 600 !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-list > .cc98-rebuild-card:not(.cc98-rebuild-post) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  .cc98-rebuild-list
+  > .cc98-rebuild-card:not(.cc98-rebuild-post) {
   display: grid;
   grid-template-columns: 100px minmax(0, 1fr) 170px;
   gap: 2px 12px;
@@ -262,11 +383,38 @@
   padding-block: 8px !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-list > .cc98-rebuild-card > .cc98-rebuild-card-top { grid-column: 1; grid-row: 1 / span 2; }
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-home-hot-section .cc98-rebuild-list > .cc98-rebuild-card > .cc98-rebuild-card-top { grid-row: 1; }
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-list > .cc98-rebuild-card > .cc98-rebuild-card-title { grid-column: 2; grid-row: 1; }
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-list > .cc98-rebuild-card > .cc98-rebuild-hover-meta { grid-column: 2; grid-row: 2; }
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-list > .cc98-rebuild-card > .cc98-rebuild-card-meta {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  .cc98-rebuild-list
+  > .cc98-rebuild-card
+  > .cc98-rebuild-card-top {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+}
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  .cc98-rebuild-home-hot-section
+  .cc98-rebuild-list
+  > .cc98-rebuild-card
+  > .cc98-rebuild-card-top {
+  grid-row: 1;
+}
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  .cc98-rebuild-list
+  > .cc98-rebuild-card
+  > .cc98-rebuild-card-title {
+  grid-column: 2;
+  grid-row: 1;
+}
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  .cc98-rebuild-list
+  > .cc98-rebuild-card
+  > .cc98-rebuild-hover-meta {
+  grid-column: 2;
+  grid-row: 2;
+}
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  .cc98-rebuild-list
+  > .cc98-rebuild-card
+  > .cc98-rebuild-card-meta {
   grid-column: 3;
   grid-row: 1 / span 2;
   margin: 0 !important;
@@ -274,17 +422,30 @@
   line-height: 1.5 !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-list > .cc98-rebuild-card > .cc98-rebuild-topic-media-grid { grid-column: 2; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  .cc98-rebuild-list
+  > .cc98-rebuild-card
+  > .cc98-rebuild-topic-media-grid {
+  grid-column: 2;
+}
 
 :root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-board-topic-marker {
   background: transparent !important;
   border-radius: 0 !important;
   font-size: 0 !important;
 }
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-board-topic-marker::before { content: "[T]"; font-size: 0.75rem; }
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] .is-pinned .cc98-rebuild-board-topic-marker::before { content: "[PIN]"; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-board-topic-marker::before {
+  content: "[T]";
+  font-size: 0.75rem;
+}
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  .is-pinned
+  .cc98-rebuild-board-topic-marker::before {
+  content: "[PIN]";
+}
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(.cc98-rebuild-card-top, .cc98-rebuild-board-topic-meta) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(.cc98-rebuild-card-top, .cc98-rebuild-board-topic-meta) {
   gap: 8px;
   margin: 2px 0;
   font-size: 0.75rem !important;
@@ -314,7 +475,9 @@
   color: var(--cc98-comfort-secondary) !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-rank::before { content: "#"; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-rank::before {
+  content: "#";
+}
 
 :root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-rank-motion {
   top: 32px;
@@ -341,20 +504,34 @@
 
 /* Compact rows can put the bottom save button on the movement's line. Give
    them separate columns in the right rail and reserve space beside the title. */
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-card.has-rank.has-read-later:has(> .cc98-rebuild-rank-motion) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  .cc98-rebuild-card.has-rank.has-read-later:has(> .cc98-rebuild-rank-motion) {
   padding-right: 104px !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-card.has-rank.has-read-later > .cc98-rebuild-rank-motion {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  .cc98-rebuild-card.has-rank.has-read-later
+  > .cc98-rebuild-rank-motion {
   right: 56px;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"][data-cc98-comfort-tone="dark"] .cc98-rebuild-rank-motion-up { color: #f3a39b !important; }
-:root.cc98-comfort[data-cc98-comfort-style="ascii"][data-cc98-comfort-tone="dark"] .cc98-rebuild-rank-motion-down { color: #91b8f3 !important; }
-:root.cc98-comfort[data-cc98-comfort-style="ascii"][data-cc98-comfort-tone="dark"] .cc98-rebuild-rank-motion-new { color: #9bd6a4 !important; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"][data-cc98-comfort-tone="dark"]
+  .cc98-rebuild-rank-motion-up {
+  color: #f3a39b !important;
+}
+:root.cc98-comfort[data-cc98-comfort-style="ascii"][data-cc98-comfort-tone="dark"]
+  .cc98-rebuild-rank-motion-down {
+  color: #91b8f3 !important;
+}
+:root.cc98-comfort[data-cc98-comfort-style="ascii"][data-cc98-comfort-tone="dark"]
+  .cc98-rebuild-rank-motion-new {
+  color: #9bd6a4 !important;
+}
 
 /* Include portals attached to body, not just the rebuilt page tree. */
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(body, #cc98-comfort-app) [data-cc98-ascii-surface] {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(body, #cc98-comfort-app)
+  [data-cc98-ascii-surface] {
   box-sizing: border-box !important;
   border: 1px solid var(--cc98-comfort-border) !important;
   border-top-color: var(--cc98-comfort-accent) !important;
@@ -367,53 +544,100 @@
   transition: none !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(body, #cc98-comfort-app) [data-cc98-ascii-surface][data-cc98-ascii-frame] {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(body, #cc98-comfort-app)
+  [data-cc98-ascii-surface][data-cc98-ascii-frame] {
   border-color: transparent !important;
 }
 
 /* Square every UI box inside a floating surface without restyling quoted
    post content, artwork, or editable markup. Keep positioning transforms. */
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(body, #cc98-comfort-app) [data-cc98-ascii-surface] :is(
-  button, input, select, textarea, fieldset, details, summary,
-  .ant-modal-header, .ant-modal-body, .ant-modal-footer, .ant-btn, .ant-input,
-  .ant-select-selection, .ant-select-dropdown-menu, .ant-dropdown-menu, .ant-menu,
-  .ant-menu-item, .ant-select-dropdown-menu-item, .ant-pagination-item, .ant-tag,
-  .cc98-rebuild-post-author-card-avatar-link, .cc98-rebuild-post-author-card-chip,
-  .cc98-rebuild-post-author-card-stat, .cc98-rebuild-side-topbar-menu-count,
-  .cc98-rebuild-search-history-item, .cc98-rebuild-search-suggestion,
-  .cc98-rebuild-color-popover-swatch, .cc98-rebuild-message-emoji-tabs,
-  .cc98-rebuild-conversation-pill, .cc98-favorite-share-button, .cc98-user-note-button,
-  .cc98-local-syntax-example, .cc98-local-syntax-snippet
-) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(body, #cc98-comfort-app)
+  [data-cc98-ascii-surface]
+  :is(
+    button,
+    input,
+    select,
+    textarea,
+    fieldset,
+    details,
+    summary,
+    .ant-modal-header,
+    .ant-modal-body,
+    .ant-modal-footer,
+    .ant-btn,
+    .ant-input,
+    .ant-select-selection,
+    .ant-select-dropdown-menu,
+    .ant-dropdown-menu,
+    .ant-menu,
+    .ant-menu-item,
+    .ant-select-dropdown-menu-item,
+    .ant-pagination-item,
+    .ant-tag,
+    .cc98-rebuild-post-author-card-avatar-link,
+    .cc98-rebuild-post-author-card-chip,
+    .cc98-rebuild-post-author-card-stat,
+    .cc98-rebuild-side-topbar-menu-count,
+    .cc98-rebuild-search-history-item,
+    .cc98-rebuild-search-suggestion,
+    .cc98-rebuild-color-popover-swatch,
+    .cc98-rebuild-message-emoji-tabs,
+    .cc98-rebuild-conversation-pill,
+    .cc98-favorite-share-button,
+    .cc98-user-note-button,
+    .cc98-local-syntax-example,
+    .cc98-local-syntax-snippet
+  ) {
   border-radius: 0 !important;
   box-shadow: none !important;
   backdrop-filter: none !important;
   transition: none !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(body, #cc98-comfort-app) [data-cc98-ascii-surface] :is(button, input, select, textarea) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(body, #cc98-comfort-app)
+  [data-cc98-ascii-surface]
+  :is(button, input, select, textarea) {
   font-family: var(--cc98-comfort-font-body) !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(body, #cc98-comfort-app) [data-cc98-ascii-surface] :is(button, a[role="option"], .ant-menu-item):is(:hover, :focus-visible) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(body, #cc98-comfort-app)
+  [data-cc98-ascii-surface]
+  :is(button, a[role="option"], .ant-menu-item):is(:hover, :focus-visible) {
   border-color: var(--cc98-comfort-accent) !important;
   outline-color: var(--cc98-comfort-accent) !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(.cc98-rebuild-side-topbar-menu, .cc98-rebuild-side-rail-menu)::before,
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(.cc98-rebuild-side-topbar-menu, .cc98-rebuild-side-rail-menu)::before,
 :root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(.ant-tooltip-arrow, .ant-popover-arrow) {
   display: none !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(.cc98-rebuild-post-author-card, .cc98-rebuild-toast) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(.cc98-rebuild-post-author-card, .cc98-rebuild-toast) {
   transform: none !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(.cc98-rebuild-openid-bind-overlay, .cc98-local-syntax-tour-layer, .cc98-rebuild-conversation-layer, .cc98-user-note-layer, .cc98-favorite-share-layer, .cc98-rebuild-convert-layer) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(
+    .cc98-rebuild-openid-bind-overlay,
+    .cc98-local-syntax-tour-layer,
+    .cc98-rebuild-conversation-layer,
+    .cc98-user-note-layer,
+    .cc98-favorite-share-layer,
+    .cc98-rebuild-convert-layer
+  ) {
   backdrop-filter: none !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(body, #cc98-comfort-app) [data-cc98-ascii-surface] [data-cc98-ascii-control] {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(body, #cc98-comfort-app)
+  [data-cc98-ascii-surface]
+  [data-cc98-ascii-control] {
   width: auto !important;
   min-width: 34px !important;
   height: auto !important;
@@ -430,7 +654,9 @@
   color: inherit !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] [data-cc98-ascii-control] :is(svg, i) { display: none !important; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] [data-cc98-ascii-control] :is(svg, i) {
+  display: none !important;
+}
 
 :root.cc98-comfort[data-cc98-comfort-style="ascii"] [data-cc98-ascii-control] > .ant-modal-close-x {
   display: none !important;
@@ -441,7 +667,9 @@
   border: 1px dashed var(--cc98-comfort-accent) !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-image-viewer :is(button, .cc98-image-viewer-counter) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-image-viewer
+  :is(button, .cc98-image-viewer-counter) {
   border: 1px solid var(--cc98-comfort-border) !important;
   border-radius: 0 !important;
   color: var(--cc98-comfort-text) !important;
@@ -451,13 +679,20 @@
   font-family: var(--cc98-comfort-font-body) !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-image-viewer .cc98-image-viewer-stage img {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-image-viewer
+  .cc98-image-viewer-stage
+  img {
   box-shadow: none !important;
   transition: none !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-image-viewer-counter::before { content: "["; }
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-image-viewer-counter::after { content: "]"; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-image-viewer-counter::before {
+  content: "[";
+}
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-image-viewer-counter::after {
+  content: "]";
+}
 
 :root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-comfort-loading-spinner {
   width: auto !important;
@@ -466,29 +701,60 @@
   border-radius: 0 !important;
   animation: none !important;
 }
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-comfort-loading-spinner::before { content: "[...]"; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-comfort-loading-spinner::before {
+  content: "[...]";
+}
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-hot-label { font-size: 0 !important; }
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-hot-label::before { content: "> HOT"; font-size: 0.75rem; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-hot-label {
+  font-size: 0 !important;
+}
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-hot-label::before {
+  content: "> HOT";
+  font-size: 0.75rem;
+}
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app :is(.cc98-rebuild-avatar-link, .cc98-rebuild-avatar-link img, .cc98-rebuild-native-user-entry, .cc98-rebuild-native-user-entry .topBarUserInfo, .cc98-rebuild-op-badge, .cc98-rebuild-chip, .cc98-rebuild-rank, .cc98-rebuild-vote-capsule, .cc98-rebuild-user-note, .cc98-rebuild-post-user-note) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-app
+  :is(
+    .cc98-rebuild-avatar-link,
+    .cc98-rebuild-avatar-link img,
+    .cc98-rebuild-native-user-entry,
+    .cc98-rebuild-native-user-entry .topBarUserInfo,
+    .cc98-rebuild-op-badge,
+    .cc98-rebuild-chip,
+    .cc98-rebuild-rank,
+    .cc98-rebuild-vote-capsule,
+    .cc98-rebuild-user-note,
+    .cc98-rebuild-post-user-note
+  ) {
   border-radius: 0 !important;
   box-shadow: none !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app .cc98-rebuild-native-user-entry .topBarBell::before {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-app
+  .cc98-rebuild-native-user-entry
+  .topBarBell::before {
   content: "[!]";
   font: 0.8rem var(--cc98-comfort-font-body) !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app .cc98-rebuild-avatar-link img {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-app
+  .cc98-rebuild-avatar-link
+  img {
   width: 32px !important;
   height: 32px !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app .cc98-rebuild-read-later-button { font-size: 0 !important; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-app
+  .cc98-rebuild-read-later-button {
+  font-size: 0 !important;
+}
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-post:not(.cc98-rebuild-conversation-post) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  .cc98-rebuild-post:not(.cc98-rebuild-conversation-post) {
   display: grid;
   grid-template-columns: 144px minmax(0, 1fr);
   column-gap: 20px;
@@ -508,7 +774,14 @@
   border-right: 1px dashed var(--cc98-comfort-secondary);
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-post > :is(.cc98-rebuild-post-body, .cc98-rebuild-awards, .cc98-rebuild-signature, .cc98-rebuild-post-footer) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  .cc98-rebuild-post
+  > :is(
+    .cc98-rebuild-post-body,
+    .cc98-rebuild-awards,
+    .cc98-rebuild-signature,
+    .cc98-rebuild-post-footer
+  ) {
   grid-column: 2;
   min-width: 0;
 }
@@ -524,16 +797,23 @@
   font-size: 0.9rem !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(.cc98-rebuild-card-title, .cc98-rebuild-hero h1, .cc98-rebuild-board-hero h1) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(.cc98-rebuild-card-title, .cc98-rebuild-hero h1, .cc98-rebuild-board-hero h1) {
   color: var(--cc98-comfort-accent) !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(.cc98-rebuild-nav a[aria-current="page"], .cc98-rebuild-page-link.is-current, .cc98-rebuild-mini-action.is-active) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(
+    .cc98-rebuild-nav a[aria-current="page"],
+    .cc98-rebuild-page-link.is-current,
+    .cc98-rebuild-mini-action.is-active
+  ) {
   background: var(--cc98-comfort-accent-2) !important;
   color: var(--cc98-comfort-accent) !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(.cc98-rebuild-chip, .cc98-rebuild-op-badge) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(.cc98-rebuild-chip, .cc98-rebuild-op-badge) {
   background: var(--cc98-comfort-secondary-soft) !important;
   color: var(--cc98-comfort-secondary) !important;
   border: 0 !important;
@@ -554,7 +834,8 @@
   background: transparent !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(.cc98-rebuild-avatar, .cc98-rebuild-native-user-entry img) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(.cc98-rebuild-avatar, .cc98-rebuild-native-user-entry img) {
   width: 28px !important;
   height: 28px !important;
   border-radius: 0 !important;
@@ -578,7 +859,16 @@
   line-height: 1.75 !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(.cc98-rebuild-conversation-tabs, .cc98-rebuild-conversation-relation, .cc98-rebuild-conversation-link, .cc98-rebuild-conversation-author img, .cc98-rebuild-post-body pre, .cc98-rebuild-post-body code, .cc98-rebuild-post-body .ubb-code) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(
+    .cc98-rebuild-conversation-tabs,
+    .cc98-rebuild-conversation-relation,
+    .cc98-rebuild-conversation-link,
+    .cc98-rebuild-conversation-author img,
+    .cc98-rebuild-post-body pre,
+    .cc98-rebuild-post-body code,
+    .cc98-rebuild-post-body .ubb-code
+  ) {
   border-radius: 0 !important;
 }
 
@@ -601,7 +891,13 @@
   text-underline-offset: 3px;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(.cc98-rebuild-legacy-quote, .cc98-rebuild-quote-box, .cc98-local-experimental-quote, .cc98-rebuild-markdown-post blockquote) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(
+    .cc98-rebuild-legacy-quote,
+    .cc98-rebuild-quote-box,
+    .cc98-local-experimental-quote,
+    .cc98-rebuild-markdown-post blockquote
+  ) {
   border-radius: 0 !important;
   border: 0 !important;
   border-left: 1px dashed var(--cc98-comfort-secondary) !important;
@@ -610,7 +906,8 @@
   color: inherit !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(.cc98-rebuild-legacy-quote, .cc98-rebuild-quote-box, .cc98-local-experimental-quote)::before {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(.cc98-rebuild-legacy-quote, .cc98-rebuild-quote-box, .cc98-local-experimental-quote)::before {
   content: "> QUOTED TEXT";
   display: block;
   font-size: 0.72rem;
@@ -618,12 +915,27 @@
   margin-bottom: 4px;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(.cc98-rebuild-image-frame, .cc98-rebuild-content-image, .cc98-rebuild-message-bubble, .message-message-wcText, .message-message-pMessage, .message-message-person, .message-message-pPortraitUrl, .message-message-wcPortraitUrl, .user-center-navigation, .user-center-router, .cc98-rebuild-user-settings-frame) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(
+    .cc98-rebuild-image-frame,
+    .cc98-rebuild-content-image,
+    .cc98-rebuild-message-bubble,
+    .message-message-wcText,
+    .message-message-pMessage,
+    .message-message-person,
+    .message-message-pPortraitUrl,
+    .message-message-wcPortraitUrl,
+    .user-center-navigation,
+    .user-center-router,
+    .cc98-rebuild-user-settings-frame
+  ) {
   border-radius: 0 !important;
   box-shadow: none !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(#cc98-comfort-app, .cc98-rebuild-conversation-dialog) a:is(.download-file, .cc98-rebuild-download-button, .cc98-local-experimental-download) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(#cc98-comfort-app, .cc98-rebuild-conversation-dialog)
+  a:is(.download-file, .cc98-rebuild-download-button, .cc98-local-experimental-download) {
   display: inline-flex !important;
   align-items: baseline !important;
   gap: 6px !important;
@@ -643,7 +955,9 @@
   overflow-wrap: anywhere;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(#cc98-comfort-app, .cc98-rebuild-conversation-dialog) a:is(.download-file, .cc98-rebuild-download-button, .cc98-local-experimental-download)::before {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(#cc98-comfort-app, .cc98-rebuild-conversation-dialog)
+  a:is(.download-file, .cc98-rebuild-download-button, .cc98-local-experimental-download)::before {
   content: "[DL]" !important;
   display: inline !important;
   flex: 0 0 auto;
@@ -656,7 +970,12 @@
   font: inherit !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(#cc98-comfort-app, .cc98-rebuild-conversation-dialog) a:is(.download-file, .cc98-rebuild-download-button, .cc98-local-experimental-download):is(:hover, :focus-visible) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(#cc98-comfort-app, .cc98-rebuild-conversation-dialog)
+  a:is(.download-file, .cc98-rebuild-download-button, .cc98-local-experimental-download):is(
+    :hover,
+    :focus-visible
+  ) {
   border-color: var(--cc98-comfort-secondary) !important;
   background: var(--cc98-comfort-accent-2) !important;
   color: var(--cc98-comfort-accent) !important;
@@ -668,11 +987,16 @@
   border-top: 1px dashed var(--cc98-comfort-border);
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(#cc98-comfort-app, .cc98-rebuild-conversation-dialog) .cc98-rebuild-post-actions :is(a, button).cc98-rebuild-mini-action {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(#cc98-comfort-app, .cc98-rebuild-conversation-dialog)
+  .cc98-rebuild-post-actions
+  :is(a, button).cc98-rebuild-mini-action {
   border-radius: 0 !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(#cc98-comfort-app, .cc98-rebuild-conversation-dialog) .cc98-rebuild-icon-action[data-cc98-ascii-glyph] {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(#cc98-comfort-app, .cc98-rebuild-conversation-dialog)
+  .cc98-rebuild-icon-action[data-cc98-ascii-glyph] {
   flex: 0 0 auto !important;
   width: auto !important;
   min-width: 30px !important;
@@ -687,12 +1011,16 @@
   gap: 8px;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-post-footer .cc98-rebuild-post-meta-row {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  .cc98-rebuild-post-footer
+  .cc98-rebuild-post-meta-row {
   width: auto;
   flex: 1 1 220px;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-post-footer .cc98-rebuild-post-actions {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  .cc98-rebuild-post-footer
+  .cc98-rebuild-post-actions {
   border-top: 0;
   padding-top: 0;
 }
@@ -726,13 +1054,15 @@
   background: transparent !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(.cc98-rebuild-page-link.is-current, .cc98-rebuild-chip[aria-current="page"]) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(.cc98-rebuild-page-link.is-current, .cc98-rebuild-chip[aria-current="page"]) {
   outline: 1px solid var(--cc98-comfort-accent);
   outline-offset: -2px;
   box-shadow: none !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] :is(a, button, input, textarea, select):focus-visible {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  :is(a, button, input, textarea, select):focus-visible {
   outline: 2px dashed var(--cc98-comfort-accent) !important;
   outline-offset: 2px;
 }
@@ -755,24 +1085,45 @@
   display: block !important;
   margin: 0 !important;
   padding: 0 !important;
-  font: 12px/16px Consolas, "Courier New", monospace !important;
+  font:
+    12px/16px Consolas,
+    "Courier New",
+    monospace !important;
   white-space: pre !important;
   font-style: normal !important;
   letter-spacing: 0 !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-ascii-decoration i::before { content: attr(data-rule); }
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-ascii-top { top: 0; left: 0; }
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-ascii-bottom { bottom: 0; left: 0; }
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-ascii-left { top: 16px; bottom: 16px; left: 0; overflow: hidden; }
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-ascii-right { top: 16px; bottom: 16px; right: 0; overflow: hidden; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-ascii-decoration i::before {
+  content: attr(data-rule);
+}
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-ascii-top {
+  top: 0;
+  left: 0;
+}
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-ascii-bottom {
+  bottom: 0;
+  left: 0;
+}
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-ascii-left {
+  top: 16px;
+  bottom: 16px;
+  left: 0;
+  overflow: hidden;
+}
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-ascii-right {
+  top: 16px;
+  bottom: 16px;
+  right: 0;
+  overflow: hidden;
+}
 
-@media (max-width: 700px) {
-  :root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-shell {
-    width: calc(100vw - 16px) !important;
-  }
+@media (max-width: 860px) {
   :root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-topbar {
     grid-template-columns: minmax(0, 1fr) auto;
+  }
+  :root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-topbar > .cc98-rebuild-brand {
+    justify-self: start;
   }
   :root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-topbar .cc98-rebuild-nav {
     grid-column: 1 / -1;
@@ -781,43 +1132,75 @@
     grid-column: 2;
     grid-row: 1;
   }
+}
+
+@media (max-width: 700px) {
+  :root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-shell {
+    width: calc(100vw - 16px) !important;
+  }
   :root.cc98-comfort[data-cc98-comfort-style="ascii"] [data-cc98-ascii-frame] {
     padding-inline: 12px !important;
   }
   :root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-conversation-post {
     padding-inline: 12px !important;
   }
-  :root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-post:not(.cc98-rebuild-conversation-post) { display: block; }
-  :root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-post > .cc98-rebuild-post-header {
+  :root.cc98-comfort[data-cc98-comfort-style="ascii"]
+    .cc98-rebuild-post:not(.cc98-rebuild-conversation-post) {
+    display: block;
+  }
+  :root.cc98-comfort[data-cc98-comfort-style="ascii"]
+    .cc98-rebuild-post
+    > .cc98-rebuild-post-header {
     flex-direction: row;
     border-right: 0;
     border-bottom: 1px dashed var(--cc98-comfort-secondary);
     padding: 0 0 10px;
     margin-bottom: 12px;
   }
-  :root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-list > .cc98-rebuild-card:not(.cc98-rebuild-post) { grid-template-columns: 72px minmax(0, 1fr); }
-  :root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-list > .cc98-rebuild-card > .cc98-rebuild-card-meta { grid-column: 2; grid-row: 3; }
+  :root.cc98-comfort[data-cc98-comfort-style="ascii"]
+    .cc98-rebuild-list
+    > .cc98-rebuild-card:not(.cc98-rebuild-post) {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+  :root.cc98-comfort[data-cc98-comfort-style="ascii"]
+    .cc98-rebuild-list
+    > .cc98-rebuild-card
+    > .cc98-rebuild-card-meta {
+    grid-column: 2;
+    grid-row: 3;
+  }
 }
 
 /* Hot-only home: one baseline for rank, board, title, movement and save. */
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] > .cc98-rebuild-home-hot-hero {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"]
+  > .cc98-rebuild-home-hot-hero {
   min-height: 90px;
   gap: 6px;
   margin: 16px 0 !important;
   padding: 16px 14px !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] > .cc98-rebuild-home-hot-hero h1 {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"]
+  > .cc98-rebuild-home-hot-hero
+  h1 {
   font-size: 1.8rem !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] > .cc98-rebuild-topbar {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"]
+  > .cc98-rebuild-topbar {
   min-height: 0;
   padding: 18px 16px 16px !important;
   gap: 8px 10px;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-list > .cc98-rebuild-card {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"]
+  .cc98-rebuild-home-hot-section
+  .cc98-rebuild-list
+  > .cc98-rebuild-card {
   grid-template-columns: 2.3rem 7rem minmax(0, 1fr) 3.5rem 2.2rem;
   grid-template-rows: auto;
   min-height: 3.2rem;
@@ -825,14 +1208,22 @@
   padding: 10px 10px !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-card > .cc98-rebuild-card-top {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"]
+  .cc98-rebuild-home-hot-section
+  .cc98-rebuild-card
+  > .cc98-rebuild-card-top {
   grid-column: 2;
   grid-row: 1;
   margin: 0;
   min-width: 0;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-card > .cc98-rebuild-card-title {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"]
+  .cc98-rebuild-home-hot-section
+  .cc98-rebuild-card
+  > .cc98-rebuild-card-title {
   grid-column: 3;
   grid-row: 1;
   min-width: 0;
@@ -842,7 +1233,11 @@
   font-size: 0.96rem !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-card > :is(.cc98-rebuild-rank, .cc98-rebuild-rank-motion, .cc98-rebuild-read-later-button) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"]
+  .cc98-rebuild-home-hot-section
+  .cc98-rebuild-card
+  > :is(.cc98-rebuild-rank, .cc98-rebuild-rank-motion, .cc98-rebuild-read-later-button) {
   position: static !important;
   grid-row: 1;
   justify-self: center;
@@ -853,15 +1248,35 @@
   padding: 0 !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-card > .cc98-rebuild-rank { grid-column: 1; }
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-card > .cc98-rebuild-rank-motion { grid-column: 4; }
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-card > .cc98-rebuild-read-later-button {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"]
+  .cc98-rebuild-home-hot-section
+  .cc98-rebuild-card
+  > .cc98-rebuild-rank {
+  grid-column: 1;
+}
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"]
+  .cc98-rebuild-home-hot-section
+  .cc98-rebuild-card
+  > .cc98-rebuild-rank-motion {
+  grid-column: 4;
+}
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"]
+  .cc98-rebuild-home-hot-section
+  .cc98-rebuild-card
+  > .cc98-rebuild-read-later-button {
   grid-column: 5;
   width: 2.2rem !important;
   height: 1.7rem !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-card > :is(.cc98-rebuild-card-meta, .cc98-rebuild-hover-meta) {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"]
+  .cc98-rebuild-home-hot-section
+  .cc98-rebuild-card
+  > :is(.cc98-rebuild-card-meta, .cc98-rebuild-hover-meta) {
   grid-column: 3 / -1;
   grid-row: 2;
   margin: 0 !important;
@@ -869,24 +1284,69 @@
   line-height: 1.3 !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-card:has(> .cc98-rebuild-card-meta) > .cc98-rebuild-hover-meta { grid-row: 3; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"]
+  .cc98-rebuild-home-hot-section
+  .cc98-rebuild-card:has(> .cc98-rebuild-card-meta)
+  > .cc98-rebuild-hover-meta {
+  grid-row: 3;
+}
 
 @media (max-width: 700px) {
-  :root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-list > .cc98-rebuild-card {
+  :root.cc98-comfort[data-cc98-comfort-style="ascii"]
+    #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"]
+    .cc98-rebuild-home-hot-section
+    .cc98-rebuild-list
+    > .cc98-rebuild-card {
     grid-template-columns: 2rem minmax(0, 1fr) 3.2rem 2.2rem;
     padding-block: 6px !important;
     gap: 2px 6px;
   }
-  :root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-card > .cc98-rebuild-card-title {
+  :root.cc98-comfort[data-cc98-comfort-style="ascii"]
+    #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"]
+    .cc98-rebuild-home-hot-section
+    .cc98-rebuild-card
+    > .cc98-rebuild-card-title {
     grid-column: 2;
     grid-row: 2;
     white-space: normal;
   }
-  :root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-card > :is(.cc98-rebuild-rank, .cc98-rebuild-rank-motion, .cc98-rebuild-read-later-button) { grid-row: 1 / span 2; }
-  :root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-card > .cc98-rebuild-rank-motion { grid-column: 3; }
-  :root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-card > .cc98-rebuild-read-later-button { grid-column: 4; }
-  :root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-card > :is(.cc98-rebuild-card-meta, .cc98-rebuild-hover-meta) { grid-column: 2 / -1; grid-row: 3; }
-  :root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"] .cc98-rebuild-home-hot-section .cc98-rebuild-card:has(> .cc98-rebuild-card-meta) > .cc98-rebuild-hover-meta { grid-row: 4; }
+  :root.cc98-comfort[data-cc98-comfort-style="ascii"]
+    #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"]
+    .cc98-rebuild-home-hot-section
+    .cc98-rebuild-card
+    > :is(.cc98-rebuild-rank, .cc98-rebuild-rank-motion, .cc98-rebuild-read-later-button) {
+    grid-row: 1 / span 2;
+  }
+  :root.cc98-comfort[data-cc98-comfort-style="ascii"]
+    #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"]
+    .cc98-rebuild-home-hot-section
+    .cc98-rebuild-card
+    > .cc98-rebuild-rank-motion {
+    grid-column: 3;
+  }
+  :root.cc98-comfort[data-cc98-comfort-style="ascii"]
+    #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"]
+    .cc98-rebuild-home-hot-section
+    .cc98-rebuild-card
+    > .cc98-rebuild-read-later-button {
+    grid-column: 4;
+  }
+  :root.cc98-comfort[data-cc98-comfort-style="ascii"]
+    #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"]
+    .cc98-rebuild-home-hot-section
+    .cc98-rebuild-card
+    > :is(.cc98-rebuild-card-meta, .cc98-rebuild-hover-meta) {
+    grid-column: 2 / -1;
+    grid-row: 3;
+  }
+  :root.cc98-comfort[data-cc98-comfort-style="ascii"]
+    #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"]
+    .cc98-rebuild-home-hot-section
+    .cc98-rebuild-card:has(> .cc98-rebuild-card-meta)
+    > .cc98-rebuild-hover-meta {
+    grid-row: 4;
+  }
 }
 
 /* Blocking placeholders have a reason and controls, rather than topic columns.
@@ -902,7 +1362,10 @@
   padding: 8px 10px !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app .cc98-rebuild-blocked > .cc98-rebuild-card-title {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-app
+  .cc98-rebuild-blocked
+  > .cc98-rebuild-card-title {
   grid-column: 1 !important;
   grid-row: 1 !important;
   min-width: 0;
@@ -912,11 +1375,17 @@
   word-break: normal;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app .cc98-rebuild-blocked:not(:has(> .cc98-rebuild-blocked-actions)) > .cc98-rebuild-card-title {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-app
+  .cc98-rebuild-blocked:not(:has(> .cc98-rebuild-blocked-actions))
+  > .cc98-rebuild-card-title {
   grid-column: 1 / -1 !important;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app .cc98-rebuild-blocked > .cc98-rebuild-blocked-actions {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-app
+  .cc98-rebuild-blocked
+  > .cc98-rebuild-blocked-actions {
   grid-column: 2 !important;
   grid-row: 1 !important;
   display: flex;
@@ -929,7 +1398,10 @@
   margin: 0;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app .cc98-rebuild-blocked-actions > .cc98-rebuild-mini-action {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-app
+  .cc98-rebuild-blocked-actions
+  > .cc98-rebuild-mini-action {
   flex: 0 0 auto;
   width: max-content !important;
   min-width: max-content !important;
@@ -947,10 +1419,62 @@
   writing-mode: horizontal-tb;
 }
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app .cc98-rebuild-blocked-actions > .cc98-rebuild-mini-action::before { content: "["; }
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app .cc98-rebuild-blocked-actions > .cc98-rebuild-mini-action::after { content: "]"; }
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-app
+  .cc98-rebuild-blocked-actions
+  > .cc98-rebuild-mini-action::before {
+  content: "[";
+}
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-app
+  .cc98-rebuild-blocked-actions
+  > .cc98-rebuild-mini-action::after {
+  content: "]";
+}
 
-:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app .cc98-rebuild-blocked-actions > .cc98-rebuild-mini-action:focus-visible {
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-app
+  .cc98-rebuild-blocked-actions
+  > .cc98-rebuild-mini-action:focus-visible {
   outline: 1px dashed currentColor;
   outline-offset: 2px;
+}
+
+/* ASCII keeps the online count on the version/status line rather than a card. */
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-app[data-page-kind="home"][data-home-hot-only]
+  > .cc98-rebuild-home-hero {
+  grid-template-areas: "version online" "title title";
+}
+
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"]
+  > .cc98-rebuild-home-hero {
+  grid-template-areas: "title title" "version online";
+}
+
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] #cc98-comfort-app .cc98-rebuild-home-online {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--cc98-comfort-muted);
+  font-family: var(--cc98-comfort-font-body);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-app
+  .cc98-rebuild-home-online-count {
+  font-size: 1em;
+}
+
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  #cc98-comfort-app[data-page-kind="home"]
+  [data-home-section-kind="hot"]
+  > .cc98-rebuild-section-heading
+  > .cc98-rebuild-home-online {
+  display: none;
 }
