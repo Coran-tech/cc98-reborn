@@ -11,7 +11,9 @@ const BLACKLIST_ROUTE_HASH = "#cc98-reborn-blacklist";
 const USER_SETTINGS_ROUTE_HASH = "#cc98-reborn-settings";
 const EXTENSION_MANIFEST = globalThis.chrome?.runtime?.getManifest?.() || {};
 const EXTENSION_VERSION = EXTENSION_MANIFEST.version_name || EXTENSION_MANIFEST.version || "dev";
-const EXTENSION_VERSION_LABEL = /^beta\s/i.test(EXTENSION_VERSION) ? EXTENSION_VERSION : `v${EXTENSION_VERSION}`;
+const EXTENSION_VERSION_LABEL = /^beta\s/i.test(EXTENSION_VERSION)
+  ? EXTENSION_VERSION
+  : `v${EXTENSION_VERSION}`;
 const LOGIN_REDIRECT_MARK_KEY = "cc98RebornLoginRedirectStartedAt";
 const LOGIN_REDIRECT_SNAPSHOT_KEY = "cc98RebornLoginRedirectSnapshot";
 const LOGIN_HOME_REFRESH_MARK_KEY = "cc98RebornLoginHomeRefreshPendingAt";
@@ -86,9 +88,11 @@ const WATERMARK_FEATURE_ENABLED = true;
 const WATERMARK_CACHE_TTL = 30 * 60 * 1000;
 const WATERMARK_DIRECTION_INTERVAL = 3600;
 const WATERMARK_REVALIDATE_INTERVAL = 5 * 60 * 1000;
-const REPLY_REBORN_TAIL_LEGACY_BRAND_UBB = "[color=#eb2f96]C[/color][color=#de2f9d]C[/color][color=#d02fa3]9[/color][color=#c32faa]8[/color] [color=#b52fb0]R[/color][color=#a82eb7]e[/color][color=#9a2ebd]b[/color][color=#8d2ec4]o[/color][color=#7f2eca]r[/color][color=#722ed1]n[/color]";
+const REPLY_REBORN_TAIL_LEGACY_BRAND_UBB =
+  "[color=#eb2f96]C[/color][color=#de2f9d]C[/color][color=#d02fa3]9[/color][color=#c32faa]8[/color] [color=#b52fb0]R[/color][color=#a82eb7]e[/color][color=#9a2ebd]b[/color][color=#8d2ec4]o[/color][color=#7f2eca]r[/color][color=#722ed1]n[/color]";
 const REPLY_REBORN_TAIL_BRAND_UBB = `[url=https://www.cc98.org/topic/6521472]${REPLY_REBORN_TAIL_LEGACY_BRAND_UBB}[/url]`;
-const REPLY_REBORN_TAIL_MARKER = "\u2014\u2014\u6765\u81ea\u300c[url=https://www.cc98.org/topic/6521472]";
+const REPLY_REBORN_TAIL_MARKER =
+  "\u2014\u2014\u6765\u81ea\u300c[url=https://www.cc98.org/topic/6521472]";
 const REPLY_REBORN_TAIL_LEGACY_MARKER = "\u2014\u2014\u6765\u81ea\u300c[color=#eb2f96]C[/color]";
 const REPLY_REBORN_TAIL_UBB = `[align=right]\u2014\u2014\u6765\u81ea\u300c${REPLY_REBORN_TAIL_BRAND_UBB}\u300d[/align]`;
 const REPLY_REBORN_TAIL_LEGACY_RIGHT_UBB = `[right]\u2014\u2014\u6765\u81ea\u300c${REPLY_REBORN_TAIL_LEGACY_BRAND_UBB}\u300d\uff0c[/right]`;
@@ -133,10 +137,34 @@ const DEFAULT_SETTINGS = {
   placeholderText: "已根据你的屏蔽规则折叠一条内容"
 };
 
-const SEAMLESS_SCROLL_SYNC_PAGE_KINDS = new Set(["home", "boardList", "topics", "search", "boardSearch", "board", "post"]);
+const SEAMLESS_SCROLL_SYNC_PAGE_KINDS = new Set([
+  "home",
+  "boardList",
+  "topics",
+  "search",
+  "boardSearch",
+  "board",
+  "post"
+]);
 const THEME_LOADING_COLORS = {
-  light: { bg: "#f6f7f8", surface: "#ffffff", text: "#262b31", muted: "#626b76", border: "#dce1e6", accent: "#1f7166", shadow: "0 18px 48px rgba(20, 28, 36, 0.16)" },
-  dark: { bg: "#16181b", surface: "#212428", text: "#e8ebef", muted: "#b2bac4", border: "#3b4149", accent: "#88c9bb", shadow: "0 18px 52px rgba(0, 0, 0, 0.35)" }
+  light: {
+    bg: "#f6f7f8",
+    surface: "#ffffff",
+    text: "#262b31",
+    muted: "#626b76",
+    border: "#dce1e6",
+    accent: "#1f7166",
+    shadow: "0 18px 48px rgba(20, 28, 36, 0.16)"
+  },
+  dark: {
+    bg: "#16181b",
+    surface: "#212428",
+    text: "#e8ebef",
+    muted: "#b2bac4",
+    border: "#3b4149",
+    accent: "#88c9bb",
+    shadow: "0 18px 52px rgba(0, 0, 0, 0.35)"
+  }
 };
 
 const BLOCKABLE_SELECTORS = [
@@ -372,36 +400,173 @@ const AI_SEARCH_PROVIDER_DEFAULTS = {
 };
 
 const SEARCH_SPLIT_HINTS = [
-  "医学院", "竺院", "信电", "计院", "临床", "口腔", "药学", "护理",
-  "混合班", "选拔", "人工智能", "机器学习", "深度学习", "大模型", "计算机", "软工",
-  "推免", "保研", "考研", "复试", "选课", "补选", "退课", "春夏", "秋冬",
-  "大一", "大二", "大三", "大四", "体测", "补测", "免测", "跑腿", "证明",
-  "1000米", "800米", "军训", "绩点", "综评", "奖学金", "转专业", "实习", "实验", "有偿",
-  "ChatGPT", "Codex", "deepseek", "openai"
+  "医学院",
+  "竺院",
+  "信电",
+  "计院",
+  "临床",
+  "口腔",
+  "药学",
+  "护理",
+  "混合班",
+  "选拔",
+  "人工智能",
+  "机器学习",
+  "深度学习",
+  "大模型",
+  "计算机",
+  "软工",
+  "推免",
+  "保研",
+  "考研",
+  "复试",
+  "选课",
+  "补选",
+  "退课",
+  "春夏",
+  "秋冬",
+  "大一",
+  "大二",
+  "大三",
+  "大四",
+  "体测",
+  "补测",
+  "免测",
+  "跑腿",
+  "证明",
+  "1000米",
+  "800米",
+  "军训",
+  "绩点",
+  "综评",
+  "奖学金",
+  "转专业",
+  "实习",
+  "实验",
+  "有偿",
+  "ChatGPT",
+  "Codex",
+  "deepseek",
+  "openai"
 ];
 
-const SEARCH_SOLID_TERMS = new Set([
-  "混合班", "人工智能", "机器学习", "深度学习", "大模型", "ChatGPT", "Codex", "DeepSeek", "OpenAI", "1000米", "800米"
-].map((term) => term.toLowerCase()));
+const SEARCH_SOLID_TERMS = new Set(
+  [
+    "混合班",
+    "人工智能",
+    "机器学习",
+    "深度学习",
+    "大模型",
+    "ChatGPT",
+    "Codex",
+    "DeepSeek",
+    "OpenAI",
+    "1000米",
+    "800米"
+  ].map((term) => term.toLowerCase())
+);
 
 const SEARCH_OPTIONAL_TERMS = new Set([
-  "我", "你", "他", "她", "它", "我们", "你们", "他们", "她们", "为什么", "为啥", "什么",
-  "怎么", "如何", "是否", "需要", "要", "进", "去", "吗", "呢", "吧", "的", "了",
-  "求问", "请问", "有没有", "有无", "关于", "咨询", "求助", "分析", "利弊", "证明", "跑腿"
+  "我",
+  "你",
+  "他",
+  "她",
+  "它",
+  "我们",
+  "你们",
+  "他们",
+  "她们",
+  "为什么",
+  "为啥",
+  "什么",
+  "怎么",
+  "如何",
+  "是否",
+  "需要",
+  "要",
+  "进",
+  "去",
+  "吗",
+  "呢",
+  "吧",
+  "的",
+  "了",
+  "求问",
+  "请问",
+  "有没有",
+  "有无",
+  "关于",
+  "咨询",
+  "求助",
+  "分析",
+  "利弊",
+  "证明",
+  "跑腿"
 ]);
 
 const SEARCH_IMPORTANT_TERMS = new Set([
-  "选课", "推免", "保研", "考研", "复试", "人工智能", "机器学习", "深度学习", "大模型",
-  "体测", "补测", "免测", "临床", "医学院", "竺院", "混合班", "选拔", "转专业", "绩点", "综评", "奖学金"
+  "选课",
+  "推免",
+  "保研",
+  "考研",
+  "复试",
+  "人工智能",
+  "机器学习",
+  "深度学习",
+  "大模型",
+  "体测",
+  "补测",
+  "免测",
+  "临床",
+  "医学院",
+  "竺院",
+  "混合班",
+  "选拔",
+  "转专业",
+  "绩点",
+  "综评",
+  "奖学金"
 ]);
 
 const SEARCH_STOP_PHRASES = [
-  "为什么", "为啥", "怎么", "如何", "是否", "有没有", "有无", "我", "你", "他", "她", "它",
-  "我们", "你们", "他们", "她们", "需要", "想", "要", "进", "去", "上", "吗", "呢", "吧", "的", "了",
-  "利弊", "分析", "求问", "请问", "关于", "咨询", "求助"
+  "为什么",
+  "为啥",
+  "怎么",
+  "如何",
+  "是否",
+  "有没有",
+  "有无",
+  "我",
+  "你",
+  "他",
+  "她",
+  "它",
+  "我们",
+  "你们",
+  "他们",
+  "她们",
+  "需要",
+  "想",
+  "要",
+  "进",
+  "去",
+  "上",
+  "吗",
+  "呢",
+  "吧",
+  "的",
+  "了",
+  "利弊",
+  "分析",
+  "求问",
+  "请问",
+  "关于",
+  "咨询",
+  "求助"
 ];
 
-const TOPIC_TIME_PATTERN = "(?:刚刚|\\d+\\s*(?:秒前|分钟前|小时前|天前|周前|月前|年前)|(?:今天|昨天|前天)\\s*\\d{1,2}:\\d{2}(?::\\d{2})?|\\d{4}[-/]\\d{1,2}[-/]\\d{1,2}(?:\\s+\\d{1,2}:\\d{2}(?::\\d{2})?)?|\\d{1,2}[-/]\\d{1,2}\\s+\\d{1,2}:\\d{2}(?::\\d{2})?)";
+const TOPIC_TIME_PATTERN =
+  "(?:刚刚|\\d+\\s*(?:秒前|分钟前|小时前|天前|周前|月前|年前)|(?:今天|昨天|前天)\\s*\\d{1,2}:\\d{2}(?::\\d{2})?|\\d{4}[-/]\\d{1,2}[-/]\\d{1,2}(?:\\s+\\d{1,2}:\\d{2}(?::\\d{2})?)?|\\d{1,2}[-/]\\d{1,2}\\s+\\d{1,2}:\\d{2}(?::\\d{2})?)";
 const TOPIC_TIME_RE = new RegExp(`^${TOPIC_TIME_PATTERN}$`);
 
 function normalizeSettings(settings = {}) {
@@ -425,7 +590,12 @@ function normalizeSettings(settings = {}) {
     fontScale: clampNumber(settings.fontScale, 90, 120, DEFAULT_SETTINGS.fontScale),
     emojiScale: clampNumber(settings.emojiScale, 70, 200, DEFAULT_SETTINGS.emojiScale),
     prewarmPostImages: Boolean(settings.prewarmPostImages),
-    imageLoadDuration: clampNumber(settings.imageLoadDuration, 800, 8000, DEFAULT_SETTINGS.imageLoadDuration),
+    imageLoadDuration: clampNumber(
+      settings.imageLoadDuration,
+      800,
+      8000,
+      DEFAULT_SETTINGS.imageLoadDuration
+    ),
     previsitFirstPageForTopicImages: Boolean(
       settings.previsitFirstPageForTopicImages ?? DEFAULT_SETTINGS.previsitFirstPageForTopicImages
     ),
@@ -439,15 +609,21 @@ function normalizeSettings(settings = {}) {
     aiSearchSuggestProvider: ["openai", "deepseek"].includes(settings.aiSearchSuggestProvider)
       ? settings.aiSearchSuggestProvider
       : DEFAULT_SETTINGS.aiSearchSuggestProvider,
-    aiSearchSuggestEndpoint: String(settings.aiSearchSuggestEndpoint ?? DEFAULT_SETTINGS.aiSearchSuggestEndpoint).trim(),
-    aiSearchSuggestModel: String(settings.aiSearchSuggestModel ?? DEFAULT_SETTINGS.aiSearchSuggestModel).trim(),
+    aiSearchSuggestEndpoint: String(
+      settings.aiSearchSuggestEndpoint ?? DEFAULT_SETTINGS.aiSearchSuggestEndpoint
+    ).trim(),
+    aiSearchSuggestModel: String(
+      settings.aiSearchSuggestModel ?? DEFAULT_SETTINGS.aiSearchSuggestModel
+    ).trim(),
     aiSearchSuggestApiKey: String(settings.aiSearchSuggestApiKey ?? "").trim(),
     externalAiSearchConsent: Boolean(settings.externalAiSearchConsent),
     blockedBoards: String(settings.blockedBoards ?? ""),
     blockedTitleKeywords: String(settings.blockedTitleKeywords ?? ""),
     blockedUserIds: String(settings.blockedUserIds ?? ""),
     blockedContentRules: String(settings.blockedContentRules ?? "[]"),
-    placeholderText: String(settings.placeholderText ?? DEFAULT_SETTINGS.placeholderText).trim() || DEFAULT_SETTINGS.placeholderText
+    placeholderText:
+      String(settings.placeholderText ?? DEFAULT_SETTINGS.placeholderText).trim() ||
+      DEFAULT_SETTINGS.placeholderText
   };
 }
 
@@ -480,7 +656,10 @@ function syncComfortTheme() {
   if (!lastSettings) return;
   const root = document.documentElement;
   const previousTone = root.dataset.cc98ComfortTone;
-  const tone = globalThis.CC98RebornThemeCore.apply(root, isRebornManagementRoute() ? { ...lastSettings, enabled: true } : lastSettings);
+  const tone = globalThis.CC98RebornThemeCore.apply(
+    root,
+    isRebornManagementRoute() ? { ...lastSettings, enabled: true } : lastSettings
+  );
   globalThis.CC98RebornInterfaceStyle?.sync(lastSettings);
   globalThis.CC98RebornNativeMessages?.sync(lastSettings);
   globalThis.CC98RebornTopicDrawer?.sync(lastSettings);
@@ -490,37 +669,70 @@ function syncComfortTheme() {
   if (!lastSettings.enabled) return;
   if (previousTone && previousTone !== tone) {
     // Only replace tone-specific emoji resources: keep the post/editor DOM and selection intact.
-    document.querySelectorAll("#cc98-comfort-app img, .cc98-rebuild-conversation-layer img, .cc98-rebuild-message-emoji-panel img").forEach((image) => {
-      if (isNativeMessageContentNode(image) && !image.classList.contains("cc98-rebuild-inline-emoji")) return;
-      const src = image.getAttribute("src") || "";
-      if (!/\/images\/ac1?\/\d+\.png(?:[?#].*)?$/i.test(src)) return;
-      const next = getLocalEmojiAssetUrlFromSrc(src);
-      if (next && image.src !== next) image.src = next;
-    });
+    document
+      .querySelectorAll(
+        "#cc98-comfort-app img, .cc98-rebuild-conversation-layer img, .cc98-rebuild-message-emoji-panel img"
+      )
+      .forEach((image) => {
+        if (
+          isNativeMessageContentNode(image) &&
+          !image.classList.contains("cc98-rebuild-inline-emoji")
+        )
+          return;
+        const src = image.getAttribute("src") || "";
+        if (!/\/images\/ac1?\/\d+\.png(?:[?#].*)?$/i.test(src)) return;
+        const next = getLocalEmojiAssetUrlFromSrc(src);
+        if (next && image.src !== next) image.src = next;
+      });
   }
   if (loadingOverlayActive) ensureLoadingOverlayElement();
 }
 
 function settingsWithoutAppearance(settings) {
-  const { theme, themeStyle, themeMode, themePalette, themeCustomPrimary, themeCustomSecondary, themeDayStart, themeNightStart, emojiScale, ...other } = settings;
+  const {
+    theme,
+    themeStyle,
+    themeMode,
+    themePalette,
+    themeCustomPrimary,
+    themeCustomSecondary,
+    themeDayStart,
+    themeNightStart,
+    emojiScale,
+    ...other
+  } = settings;
   return other;
 }
 
 function applySettings(settings) {
   const nextSettings = normalizeSettings(settings);
-  const appearanceOnlyChange = lastSettings
-    && JSON.stringify(settingsWithoutAppearance(lastSettings)) === JSON.stringify(settingsWithoutAppearance(nextSettings));
-  const messageScrollState = appearanceOnlyChange && lastSettings.emojiScale !== nextSettings.emojiScale
-    ? captureMessageWindowScrollState()
+  const appearanceOnlyChange =
+    lastSettings &&
+    JSON.stringify(settingsWithoutAppearance(lastSettings)) ===
+      JSON.stringify(settingsWithoutAppearance(nextSettings));
+  const messageScrollState =
+    appearanceOnlyChange && lastSettings.emojiScale !== nextSettings.emojiScale
+      ? captureMessageWindowScrollState()
+      : null;
+  const messagePageScrollPosition = messageScrollState?.length
+    ? captureImageViewerScrollPosition()
     : null;
-  const messagePageScrollPosition = messageScrollState?.length ? captureImageViewerScrollPosition() : null;
   lastSettings = nextSettings;
   if (!lastSettings.enabled || !lastSettings.rebuildUi) syncTopicViewCount();
   syncBlacklistedQuotesInPage();
-  document.documentElement.style.setProperty("--cc98-emoji-size", `${(1.75 * lastSettings.emojiScale / 100).toFixed(3)}em`);
-  document.documentElement.style.setProperty("--cc98-editor-emoji-size", `${(2.2 * lastSettings.emojiScale / 100).toFixed(3)}em`);
+  document.documentElement.style.setProperty(
+    "--cc98-emoji-size",
+    `${((1.75 * lastSettings.emojiScale) / 100).toFixed(3)}em`
+  );
+  document.documentElement.style.setProperty(
+    "--cc98-editor-emoji-size",
+    `${((2.2 * lastSettings.emojiScale) / 100).toFixed(3)}em`
+  );
   themeWatcherCleanup?.();
-  themeWatcherCleanup = globalThis.CC98RebornThemeCore.watch(() => isRebornManagementRoute() ? { ...lastSettings, enabled: true } : lastSettings, syncComfortTheme);
+  themeWatcherCleanup = globalThis.CC98RebornThemeCore.watch(
+    () => (isRebornManagementRoute() ? { ...lastSettings, enabled: true } : lastSettings),
+    syncComfortTheme
+  );
   if (appearanceOnlyChange) {
     restoreMessageWindowScrollState(messageScrollState, document, messagePageScrollPosition);
     return;
@@ -611,19 +823,34 @@ function normalizeUserIdentityText(value) {
 
 function getBlacklistRules(settings = lastSettings) {
   let contentRules = [];
-  try { const value = JSON.parse(settings?.blockedContentRules || "[]"); if (Array.isArray(value)) contentRules = value.filter(rule => typeof rule === "string"); } catch {}
+  try {
+    const value = JSON.parse(settings?.blockedContentRules || "[]");
+    if (Array.isArray(value)) contentRules = value.filter((rule) => typeof rule === "string");
+  } catch {}
   return {
     contentRules,
     boards: parseList(settings?.blockedBoards),
-    titleKeywords: globalThis.CC98RebornContentFilterCore?.splitTitleRules?.(settings?.blockedTitleKeywords) || parseList(settings?.blockedTitleKeywords),
-    userIds: [...new Set(parseList(settings?.blockedUserIds).map(normalizeBlockedUserId).filter(Boolean))],
-    placeholderText: String(settings?.placeholderText || DEFAULT_SETTINGS.placeholderText).trim() || DEFAULT_SETTINGS.placeholderText
+    titleKeywords:
+      globalThis.CC98RebornContentFilterCore?.splitTitleRules?.(settings?.blockedTitleKeywords) ||
+      parseList(settings?.blockedTitleKeywords),
+    userIds: [
+      ...new Set(parseList(settings?.blockedUserIds).map(normalizeBlockedUserId).filter(Boolean))
+    ],
+    placeholderText:
+      String(settings?.placeholderText || DEFAULT_SETTINGS.placeholderText).trim() ||
+      DEFAULT_SETTINGS.placeholderText
   };
 }
 
 function hasBlacklistRules(settings = lastSettings) {
   const rules = getBlacklistRules(settings);
-  return rules.boards.length > 0 || rules.titleKeywords.length > 0 || rules.userIds.length > 0 || rules.contentRules.length > 0 || settings?.semanticFilterEnabled === true;
+  return (
+    rules.boards.length > 0 ||
+    rules.titleKeywords.length > 0 ||
+    rules.userIds.length > 0 ||
+    rules.contentRules.length > 0 ||
+    settings?.semanticFilterEnabled === true
+  );
 }
 
 function userRuleMatchesIdentity(rule, identity = {}) {
@@ -636,7 +863,9 @@ function userRuleMatchesIdentity(rule, identity = {}) {
     identity.user,
     ...(identity.ids || []),
     ...(identity.users || [])
-  ].map(normalizeUserIdentityText).filter(Boolean);
+  ]
+    .map(normalizeUserIdentityText)
+    .filter(Boolean);
   if (textValues.includes(normalizedRule)) {
     return true;
   }
@@ -644,15 +873,16 @@ function userRuleMatchesIdentity(rule, identity = {}) {
   if (!uidRule) {
     return false;
   }
-  const uidValues = [
-    identity.uid,
-    ...(identity.uids || [])
-  ].map(normalizeBlockedUid).filter(Boolean);
+  const uidValues = [identity.uid, ...(identity.uids || [])]
+    .map(normalizeBlockedUid)
+    .filter(Boolean);
   return uidValues.includes(uidRule);
 }
 
 function getUserBlockReason(identity = {}, settings = lastSettings) {
-  const matched = getBlacklistRules(settings).userIds.find((rule) => userRuleMatchesIdentity(rule, identity));
+  const matched = getBlacklistRules(settings).userIds.find((rule) =>
+    userRuleMatchesIdentity(rule, identity)
+  );
   if (!matched) {
     return "";
   }
@@ -665,7 +895,9 @@ function isUserIdBlocked(identity, settings = lastSettings) {
 }
 
 function getBlockedUserReason(identity) {
-  return getUserBlockReason(typeof identity === "object" ? identity : { id: identity, uid: identity });
+  return getUserBlockReason(
+    typeof identity === "object" ? identity : { id: identity, uid: identity }
+  );
 }
 
 function getQuoteBlacklistIdentities() {
@@ -677,20 +909,29 @@ function getQuoteBlacklistIdentities() {
     if (!identities.has(name)) identities.set(name, new Set());
     identities.get(name).add(String(uid));
   };
-  capturedTopicPostsById.forEach(post => { if (!post.isAnonymous) add(post.userName, post.userId); });
-  document.querySelectorAll('.reply a[href*="/user/id/"], a.cc98-rebuild-post-user[href*="/user/id/"]').forEach(link => {
-    if (link.closest('.reply-content, .cc98-rebuild-post-body, blockquote')) return;
-    const post = link.closest('.reply');
-    if (post && getAnonymousPostCode(post)) return;
-    add(link.textContent, link.getAttribute('href')?.match(/\/user\/id\/(\d+)(?:\/|[?#]|$)/)?.[1]);
+  capturedTopicPostsById.forEach((post) => {
+    if (!post.isAnonymous) add(post.userName, post.userId);
   });
+  document
+    .querySelectorAll('.reply a[href*="/user/id/"], a.cc98-rebuild-post-user[href*="/user/id/"]')
+    .forEach((link) => {
+      if (link.closest(".reply-content, .cc98-rebuild-post-body, blockquote")) return;
+      const post = link.closest(".reply");
+      if (post && getAnonymousPostCode(post)) return;
+      add(
+        link.textContent,
+        link.getAttribute("href")?.match(/\/user\/id\/(\d+)(?:\/|[?#]|$)/)?.[1]
+      );
+    });
   quoteBlacklistIdentityCache = identities;
-  queueMicrotask(() => { quoteBlacklistIdentityCache = null; });
+  queueMicrotask(() => {
+    quoteBlacklistIdentityCache = null;
+  });
   return identities;
 }
 
 function restoreBlacklistedQuoteFragments(root) {
-  root.querySelectorAll('.cc98-rebuild-blocked-quote').forEach(placeholder => {
+  root.querySelectorAll(".cc98-rebuild-blocked-quote").forEach((placeholder) => {
     const fragment = hiddenBlacklistQuoteFragments.get(placeholder);
     if (!fragment) return;
     restoreBlacklistedQuoteFragments(fragment);
@@ -701,8 +942,8 @@ function restoreBlacklistedQuoteFragments(root) {
 
 function cloneContentWithHiddenQuotes(root) {
   const clone = root.cloneNode(true);
-  const original = [...root.querySelectorAll('.cc98-rebuild-blocked-quote')];
-  [...clone.querySelectorAll('.cc98-rebuild-blocked-quote')].forEach((placeholder, index) => {
+  const original = [...root.querySelectorAll(".cc98-rebuild-blocked-quote")];
+  [...clone.querySelectorAll(".cc98-rebuild-blocked-quote")].forEach((placeholder, index) => {
     const fragment = hiddenBlacklistQuoteFragments.get(original[index]);
     if (fragment) placeholder.replaceWith(cloneContentWithHiddenQuotes(fragment));
   });
@@ -716,21 +957,28 @@ function filterBlacklistedQuotes(root, publicAuthors) {
   restoreBlacklistedQuoteFragments(root);
   const rules = getBlacklistRules(lastSettings).userIds;
   if (!lastSettings?.enabled || !rules.length) return;
-  const selector = 'blockquote, .cc98-rebuild-legacy-quote, .cc98-rebuild-quote-box, div[style]';
-  const quotes = new Set([...(root.matches?.(selector) ? [root] : []), ...root.querySelectorAll(selector)]
-    .filter(node => !node.closest('pre, code, .ubb-code, .cc98-local-experimental-noubb')
-      && (node.matches('blockquote, .cc98-rebuild-legacy-quote, .cc98-rebuild-quote-box') || isLegacyQuoteStyle(node.getAttribute('style'), ''))));
+  const selector = "blockquote, .cc98-rebuild-legacy-quote, .cc98-rebuild-quote-box, div[style]";
+  const quotes = new Set(
+    [...(root.matches?.(selector) ? [root] : []), ...root.querySelectorAll(selector)].filter(
+      (node) =>
+        !node.closest("pre, code, .ubb-code, .cc98-local-experimental-noubb") &&
+        (node.matches("blockquote, .cc98-rebuild-legacy-quote, .cc98-rebuild-quote-box") ||
+          isLegacyQuoteStyle(node.getAttribute("style"), ""))
+    )
+  );
   let identities;
-  const uidForName = name => {
-    identities ||= new Map([...getQuoteBlacklistIdentities()].map(([key, values]) => [key, new Set(values)]));
+  const uidForName = (name) => {
+    identities ||= new Map(
+      [...getQuoteBlacklistIdentities()].map(([key, values]) => [key, new Set(values)])
+    );
     for (const author of publicAuthors) {
-      if (!author.uid || /^(?:匿名|CC98 用户$)/.test(author.user || '')) continue;
+      if (!author.uid || /^(?:匿名|CC98 用户$)/.test(author.user || "")) continue;
       const key = normalizeUserIdentityText(author.user);
       if (!identities.has(key)) identities.set(key, new Set());
       identities.get(key).add(String(author.uid));
     }
     const matches = identities.get(normalizeUserIdentityText(name));
-    return matches?.size === 1 ? [...matches][0] : '';
+    return matches?.size === 1 ? [...matches][0] : "";
   };
   for (const quote of quotes) {
     if (quote !== root && !root.contains(quote)) continue;
@@ -738,53 +986,78 @@ function filterBlacklistedQuotes(root, publicAuthors) {
     const segments = [];
     let node;
     while ((node = walker.nextNode())) {
-      if (node.parentElement.closest('pre, code, .ubb-code, .cc98-local-experimental-noubb')) continue;
+      if (node.parentElement.closest("pre, code, .ubb-code, .cc98-local-experimental-noubb"))
+        continue;
       let owner = node.parentElement;
       while (owner && !quotes.has(owner)) owner = owner.parentElement;
       if (owner !== quote) continue;
-      if (/^\s*以下是引用\s*\d+\s*楼\s*[：:]/.test(node.textContent)) segments.push({ node, text: '', nodes: [] });
+      if (/^\s*以下是引用\s*\d+\s*楼\s*[：:]/.test(node.textContent))
+        segments.push({ node, text: "", nodes: [] });
       const segment = segments.at(-1);
-      if (segment) { segment.text += node.textContent; segment.nodes.push(node); }
+      if (segment) {
+        segment.text += node.textContent;
+        segment.nodes.push(node);
+      }
     }
     // Native UBB can flatten several authors into a single quote container.
     // Replace each matching header-to-next-header range independently.
     for (const segment of segments) {
       segment.start = segment.node;
-      for (let parent = segment.node.parentElement; parent && parent !== quote; parent = parent.parentElement) {
+      for (
+        let parent = segment.node.parentElement;
+        parent && parent !== quote;
+        parent = parent.parentElement
+      ) {
         const first = document.createTreeWalker(parent, NodeFilter.SHOW_TEXT);
         let text;
         while ((text = first.nextNode()) && !text.textContent.trim()) {}
-        if (text !== segment.node || segments.some(other => other !== segment && parent.contains(other.node))) break;
+        if (
+          text !== segment.node ||
+          segments.some((other) => other !== segment && parent.contains(other.node))
+        )
+          break;
         segment.start = parent;
       }
     }
     for (let index = segments.length - 1; index >= 0; index--) {
       const segment = segments[index];
-      const match = segment.text.match(/^\s*以下是引用\s*\d+\s*楼\s*[：:]\s*用户([\s\S]+?)在\s*\d{4}[-/年]\d{1,2}[-/月]\d{1,2}[\s\S]*?的发言\s*[：:]/);
+      const match = segment.text.match(
+        /^\s*以下是引用\s*\d+\s*楼\s*[：:]\s*用户([\s\S]+?)在\s*\d{4}[-/年]\d{1,2}[-/月]\d{1,2}[\s\S]*?的发言\s*[：:]/
+      );
       if (!match) continue;
       const user = cleanupPostText(match[1]);
-      let uid = '', offset = 0;
+      let uid = "",
+        offset = 0;
       for (const text of segment.nodes) {
         if (offset >= match[0].length) break;
-        const link = text.parentElement.closest('a[href]');
+        const link = text.parentElement.closest("a[href]");
         if (link && cleanupPostText(link.textContent) === user) {
-          const href = makeAbsoluteCc98Url(link.getAttribute('href'));
+          const href = makeAbsoluteCc98Url(link.getAttribute("href"));
           const url = new URL(href, location.href);
-          if (url.origin === location.origin || isDirectCc98Host(url.hostname) || isWebVpnHost(url.hostname)) {
+          if (
+            url.origin === location.origin ||
+            isDirectCc98Host(url.hostname) ||
+            isWebVpnHost(url.hostname)
+          ) {
             const route = getCc98RoutePathFromHref(href) || url.pathname;
             uid = route.match(/\/user\/id\/(\d+)(?:\/|$)/)?.[1] || uid;
           }
         }
         offset += text.textContent.length;
       }
-      if (!uid && rules.some(rule => normalizeBlockedUid(rule))) uid = uidForName(user);
-      if (!rules.some(rule => userRuleMatchesIdentity(rule, { user, uid }))) continue;
+      if (!uid && rules.some((rule) => normalizeBlockedUid(rule))) uid = uidForName(user);
+      if (!rules.some((rule) => userRuleMatchesIdentity(rule, { user, uid }))) continue;
       const range = document.createRange();
       range.setStartBefore(segment.start);
-      if (segments[index + 1]) range.setEndBefore(segments[index + 1].boundary || segments[index + 1].start);
+      if (segments[index + 1])
+        range.setEndBefore(segments[index + 1].boundary || segments[index + 1].start);
       else range.setEnd(quote, quote.childNodes.length);
       const fragment = range.extractContents();
-      const placeholder = createElement('span', 'cc98-rebuild-blocked-quote cc98-rebuild-muted', '已隐藏被屏蔽用户的引用内容');
+      const placeholder = createElement(
+        "span",
+        "cc98-rebuild-blocked-quote cc98-rebuild-muted",
+        "已隐藏被屏蔽用户的引用内容"
+      );
       hiddenBlacklistQuoteFragments.set(placeholder, fragment);
       range.insertNode(placeholder);
       segment.boundary = placeholder;
@@ -793,7 +1066,9 @@ function filterBlacklistedQuotes(root, publicAuthors) {
 }
 
 function syncBlacklistedQuotesInPage() {
-  document.querySelectorAll('.cc98-rebuild-post-body, .cc98-rebuild-user-reply-ubb').forEach(root => filterBlacklistedQuotes(root));
+  document
+    .querySelectorAll(".cc98-rebuild-post-body, .cc98-rebuild-user-reply-ubb")
+    .forEach((root) => filterBlacklistedQuotes(root));
 }
 
 function writeSettingsPatch(patch) {
@@ -817,11 +1092,21 @@ function writeSettingsPatch(patch) {
 
 function writeBlacklistRules(rules) {
   writeSettingsPatch({
-    blockedBoards: (rules.boards || []).map((item) => String(item).trim()).filter(Boolean).join("\n"),
-    blockedTitleKeywords: (rules.titleKeywords || []).map((item) => String(item).trim()).filter(Boolean).join("\n"),
-    blockedUserIds: [...new Set((rules.userIds || []).map(normalizeBlockedUserId).filter(Boolean))].join("\n"),
+    blockedBoards: (rules.boards || [])
+      .map((item) => String(item).trim())
+      .filter(Boolean)
+      .join("\n"),
+    blockedTitleKeywords: (rules.titleKeywords || [])
+      .map((item) => String(item).trim())
+      .filter(Boolean)
+      .join("\n"),
+    blockedUserIds: [
+      ...new Set((rules.userIds || []).map(normalizeBlockedUserId).filter(Boolean))
+    ].join("\n"),
     blockedContentRules: JSON.stringify(rules.contentRules || []),
-    placeholderText: String(rules.placeholderText || DEFAULT_SETTINGS.placeholderText).trim() || DEFAULT_SETTINGS.placeholderText
+    placeholderText:
+      String(rules.placeholderText || DEFAULT_SETTINGS.placeholderText).trim() ||
+      DEFAULT_SETTINGS.placeholderText
   });
 }
 
@@ -838,12 +1123,9 @@ function revealBlacklistScope(prefix, id = "") {
 }
 
 function getBlacklistItemRevealId(item) {
-  return [
-    item?.type || "",
-    item?.id || "",
-    item?.href || "",
-    item?.uid || ""
-  ].filter(Boolean).join(":");
+  return [item?.type || "", item?.id || "", item?.href || "", item?.uid || ""]
+    .filter(Boolean)
+    .join(":");
 }
 
 function isBlacklistItemRevealed(item) {
@@ -865,7 +1147,9 @@ function normalizeText(value) {
 }
 
 function getBoardInfo(item) {
-  const boardNode = item.querySelector(".focus-topic-board, .card-topic-boardName, .mainPageListBoardName, .boardName2, .card-recommendation-topic-detail a");
+  const boardNode = item.querySelector(
+    ".focus-topic-board, .card-topic-boardName, .mainPageListBoardName, .boardName2, .card-recommendation-topic-detail a"
+  );
   const names = [];
   const ids = [];
 
@@ -890,7 +1174,9 @@ function getBoardInfo(item) {
 }
 
 function getTitleText(item) {
-  const titleNode = item.querySelector(".focus-topic-title, .card-topic-title, .mainPageListTitle a, .recommendedReadingTitle a, .specialOfferTitle a, .card-recommendation-topic-title a");
+  const titleNode = item.querySelector(
+    ".focus-topic-title, .card-topic-title, .mainPageListTitle a, .recommendedReadingTitle a, .specialOfferTitle a, .card-recommendation-topic-title a"
+  );
   return titleNode?.textContent?.trim() ?? "";
 }
 
@@ -948,10 +1234,7 @@ function getUserIdentityTexts(item) {
   if (primary.length) {
     return primary;
   }
-  return collectTexts([
-    "a[href*='/user/id/']",
-    "a[href*='/user/name/']"
-  ]);
+  return collectTexts(["a[href*='/user/id/']", "a[href*='/user/name/']"]);
 }
 
 function getFirstText(root, selector) {
@@ -1015,10 +1298,18 @@ function shouldForceLinkNewTab(link, href = getLinkNewTabHref(link)) {
   if (!lastSettings?.openLinksInNewTab || !(link instanceof HTMLAnchorElement) || !href) {
     return false;
   }
-  if (link.hasAttribute("download") || link.classList.contains("download-file") || link.classList.contains("cc98-rebuild-download-button")) {
+  if (
+    link.hasAttribute("download") ||
+    link.classList.contains("download-file") ||
+    link.classList.contains("cc98-rebuild-download-button")
+  ) {
     return false;
   }
-  if (link.closest(".download-file, .cc98-rebuild-download-button, [data-cc98-rebuild-no-new-tab], .cc98-image-viewer")) {
+  if (
+    link.closest(
+      ".download-file, .cc98-rebuild-download-button, [data-cc98-rebuild-no-new-tab], .cc98-image-viewer"
+    )
+  ) {
     return false;
   }
   return true;
@@ -1029,27 +1320,31 @@ function bindOpenLinksInNewTabGuard() {
     return;
   }
   openLinksInNewTabGuardBound = true;
-  document.addEventListener("click", (event) => {
-    if (!lastSettings?.openLinksInNewTab || event.defaultPrevented || event.button !== 0) {
-      return;
-    }
-    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-      return;
-    }
-    const link = event.target?.closest?.("a[href]");
-    if (!(link instanceof HTMLAnchorElement) || link.target === "_blank") {
-      return;
-    }
-    if (getLinkedImageAction(getImageViewerEventImage(event))) return;
-    const href = getLinkNewTabHref(link);
-    if (!shouldForceLinkNewTab(link, href)) {
-      return;
-    }
-    event.preventDefault();
-    event.stopPropagation();
-    event.stopImmediatePropagation();
-    window.open(href, "_blank", "noopener");
-  }, true);
+  document.addEventListener(
+    "click",
+    (event) => {
+      if (!lastSettings?.openLinksInNewTab || event.defaultPrevented || event.button !== 0) {
+        return;
+      }
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+        return;
+      }
+      const link = event.target?.closest?.("a[href]");
+      if (!(link instanceof HTMLAnchorElement) || link.target === "_blank") {
+        return;
+      }
+      if (getLinkedImageAction(getImageViewerEventImage(event))) return;
+      const href = getLinkNewTabHref(link);
+      if (!shouldForceLinkNewTab(link, href)) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      window.open(href, "_blank", "noopener");
+    },
+    true
+  );
 }
 
 function createLink(className, text, href) {
@@ -1065,7 +1360,11 @@ function createLink(className, text, href) {
   }
   if (isCc98Link) {
     link.addEventListener("click", () => {
-      if (!forceNewTab && isWebVpnHost() && stripUrlHash(link.href) !== stripUrlHash(location.href)) {
+      if (
+        !forceNewTab &&
+        isWebVpnHost() &&
+        stripUrlHash(link.href) !== stripUrlHash(location.href)
+      ) {
         showLoadingOverlay("正在通过 WebVPN 跳转...");
       }
       scheduleDelayedRebuilds();
@@ -1105,8 +1404,9 @@ function getRebuiltHashScrollTargetTop(card) {
   if (!(card instanceof HTMLElement)) {
     return 0;
   }
-  const topbarBottom = document.querySelector("#cc98-comfort-app .cc98-rebuild-topbar")
-    ?.getBoundingClientRect?.().bottom || 0;
+  const topbarBottom =
+    document.querySelector("#cc98-comfort-app .cc98-rebuild-topbar")?.getBoundingClientRect?.()
+      .bottom || 0;
   const scrollMarginTop = Number.parseFloat(getComputedStyle(card).scrollMarginTop) || 0;
   return Math.max(scrollMarginTop, topbarBottom + 8);
 }
@@ -1131,10 +1431,12 @@ function scheduleRebuiltHashScrollGuard() {
   rebuiltHashScrollGuardTimer = window.setTimeout(() => {
     rebuiltHashScrollGuardTimer = 0;
     const key = getRebuiltHashScrollKey();
-    if (!key
-      || rebuiltHashScrollAppliedKey !== key
-      || rebuiltHashScrollAppliedInteractionRevision !== seamlessScrollInteractionRevision
-      || Date.now() >= rebuiltHashScrollGuardUntil) {
+    if (
+      !key ||
+      rebuiltHashScrollAppliedKey !== key ||
+      rebuiltHashScrollAppliedInteractionRevision !== seamlessScrollInteractionRevision ||
+      Date.now() >= rebuiltHashScrollGuardUntil
+    ) {
       cancelRebuiltHashScrollGuard();
       return;
     }
@@ -1231,8 +1533,9 @@ function resolveTopicHashFloorForUrl(url) {
 
 function getQuotedOriginalFloorFromText(text) {
   const normalized = cleanupPostText(text);
-  const match = normalized.match(/\u4ee5\u4e0b\u662f\u5f15\u7528\s*(\d{1,5})\s*\u697c/)
-    || normalized.match(/\u5f15\u7528\s*(\d{1,5})\s*\u697c/);
+  const match =
+    normalized.match(/\u4ee5\u4e0b\u662f\u5f15\u7528\s*(\d{1,5})\s*\u697c/) ||
+    normalized.match(/\u5f15\u7528\s*(\d{1,5})\s*\u697c/);
   const floor = Number(match?.[1]);
   return Number.isFinite(floor) && floor > 0 ? floor : null;
 }
@@ -1277,10 +1580,10 @@ function getOriginalPostQuoteTargetFromLink(link) {
       currentUrl = null;
     }
     const isCurrentTopicDocument = Boolean(
-      currentUrl
-      && url.origin === currentUrl.origin
-      && url.pathname === currentUrl.pathname
-      && url.search === currentUrl.search
+      currentUrl &&
+      url.origin === currentUrl.origin &&
+      url.pathname === currentUrl.pathname &&
+      url.search === currentUrl.search
     );
     if (isCurrentTopicDocument) {
       topicId = pageInfo.topicId;
@@ -1309,9 +1612,10 @@ function rewriteOriginalPostQuoteLinks(root) {
 
 function getRebuiltPostCardByFloor(floor) {
   const normalized = String(Number(floor));
-  const escaped = typeof CSS !== "undefined" && typeof CSS.escape === "function"
-    ? CSS.escape(normalized)
-    : normalized.replace(/["\\]/g, "\\$&");
+  const escaped =
+    typeof CSS !== "undefined" && typeof CSS.escape === "function"
+      ? CSS.escape(normalized)
+      : normalized.replace(/["\\]/g, "\\$&");
   return document.querySelector(`#cc98-comfort-app [data-post-floor="${escaped}"]`);
 }
 
@@ -1339,7 +1643,12 @@ function getSameTopicFloorFromLink(link) {
   if (targetTopic && targetTopic !== pageInfo.topicId) {
     return null;
   }
-  if (!targetTopic && (url.origin !== location.origin || url.pathname !== location.pathname || url.search !== location.search)) {
+  if (
+    !targetTopic &&
+    (url.origin !== location.origin ||
+      url.pathname !== location.pathname ||
+      url.search !== location.search)
+  ) {
     return null;
   }
   if (target?.page && target.page !== pageInfo.current) {
@@ -1380,46 +1689,61 @@ function scrollToRebuiltFloor(floor, options = {}) {
 }
 
 function bindRebuiltFloorLinks(app) {
-  app.addEventListener("click", (event) => {
-    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-      return;
-    }
-    if (getLinkedImageAction(getImageViewerEventImage(event))) return;
-    const link = event.target?.closest?.("a[href]");
-    const quoteTarget = getOriginalPostQuoteTargetFromLink(link);
-    if (quoteTarget) {
+  app.addEventListener(
+    "click",
+    (event) => {
+      if (
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      ) {
+        return;
+      }
+      if (getLinkedImageAction(getImageViewerEventImage(event))) return;
+      const link = event.target?.closest?.("a[href]");
+      const quoteTarget = getOriginalPostQuoteTargetFromLink(link);
+      if (quoteTarget) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        const currentTopicId = getTopicPageInfo()?.topicId || "";
+        const isSameTopic = Boolean(currentTopicId && quoteTarget.topicId === currentTopicId);
+        if (!isSameTopic || !scrollToRebuiltFloor(quoteTarget.floor, { updateHash: true })) {
+          navigateToRebuiltHref(quoteTarget.href);
+        }
+        return;
+      }
+      const floor = getSameTopicFloorFromLink(link);
+      if (!floor) {
+        return;
+      }
+
       event.preventDefault();
       event.stopImmediatePropagation();
-      const currentTopicId = getTopicPageInfo()?.topicId || "";
-      const isSameTopic = Boolean(currentTopicId && quoteTarget.topicId === currentTopicId);
-      if (!isSameTopic || !scrollToRebuiltFloor(quoteTarget.floor, { updateHash: true })) {
-        navigateToRebuiltHref(quoteTarget.href);
-      }
-      return;
-    }
-    const floor = getSameTopicFloorFromLink(link);
-    if (!floor) {
-      return;
-    }
-
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    scrollToRebuiltFloor(floor, { updateHash: true });
-  }, true);
+      scrollToRebuiltFloor(floor, { updateHash: true });
+    },
+    true
+  );
 }
 
 function attemptCurrentRebuiltHashScroll(key, generation, options = {}) {
   const forceApplied = Boolean(options.forceApplied);
-  if (generation !== rebuiltHashScrollAttemptGeneration
-    || getRebuiltHashScrollKey() !== key
-    || (!forceApplied && rebuiltHashScrollAppliedKey === key)
-    || rebuiltHashScrollSuppressedKey === key) {
+  if (
+    generation !== rebuiltHashScrollAttemptGeneration ||
+    getRebuiltHashScrollKey() !== key ||
+    (!forceApplied && rebuiltHashScrollAppliedKey === key) ||
+    rebuiltHashScrollSuppressedKey === key
+  ) {
     return;
   }
 
-  if (forceApplied
-    && rebuiltHashScrollAppliedKey === key
-    && rebuiltHashScrollAppliedInteractionRevision !== seamlessScrollInteractionRevision) {
+  if (
+    forceApplied &&
+    rebuiltHashScrollAppliedKey === key &&
+    rebuiltHashScrollAppliedInteractionRevision !== seamlessScrollInteractionRevision
+  ) {
     return;
   }
 
@@ -1457,10 +1781,12 @@ function attemptCurrentRebuiltHashScroll(key, generation, options = {}) {
 
 function scheduleCurrentRebuiltHashAttempt(key, generation, options = {}) {
   const forceApplied = Boolean(options.forceApplied);
-  if (generation !== rebuiltHashScrollAttemptGeneration
-    || getRebuiltHashScrollKey() !== key
-    || (!forceApplied && rebuiltHashScrollAppliedKey === key)
-    || rebuiltHashScrollSuppressedKey === key) {
+  if (
+    generation !== rebuiltHashScrollAttemptGeneration ||
+    getRebuiltHashScrollKey() !== key ||
+    (!forceApplied && rebuiltHashScrollAppliedKey === key) ||
+    rebuiltHashScrollSuppressedKey === key
+  ) {
     return;
   }
   if (rebuiltHashScrollFrame) {
@@ -1475,14 +1801,18 @@ function scheduleCurrentRebuiltHashAttempt(key, generation, options = {}) {
 function scrollToCurrentRebuiltHash(options = {}) {
   const forceApplied = Boolean(options.forceApplied);
   const key = getRebuiltHashScrollKey();
-  if (!key
-    || (!forceApplied && rebuiltHashScrollAppliedKey === key)
-    || rebuiltHashScrollSuppressedKey === key) {
+  if (
+    !key ||
+    (!forceApplied && rebuiltHashScrollAppliedKey === key) ||
+    rebuiltHashScrollSuppressedKey === key
+  ) {
     return;
   }
-  if (forceApplied
-    && rebuiltHashScrollAppliedKey === key
-    && rebuiltHashScrollAppliedInteractionRevision !== seamlessScrollInteractionRevision) {
+  if (
+    forceApplied &&
+    rebuiltHashScrollAppliedKey === key &&
+    rebuiltHashScrollAppliedInteractionRevision !== seamlessScrollInteractionRevision
+  ) {
     return;
   }
 
@@ -1512,8 +1842,10 @@ function scrollToCurrentRebuiltHash(options = {}) {
   // unavailable.  This covers the initial native-to-rebuilt handoff and late
   // WebVPN responses without creating a recurring scroll listener.
   attemptCurrentRebuiltHashScroll(key, generation, { forceApplied });
-  if ((!forceApplied && rebuiltHashScrollAppliedKey === key)
-    || rebuiltHashScrollSuppressedKey === key) {
+  if (
+    (!forceApplied && rebuiltHashScrollAppliedKey === key) ||
+    rebuiltHashScrollSuppressedKey === key
+  ) {
     return;
   }
   if (rebuiltHashScrollFrame || rebuiltHashScrollRetryTimers.length) {
@@ -1559,10 +1891,16 @@ function getViewerImageSrc(image) {
 }
 
 function isImageViewerCandidate(image) {
-  if (!(image instanceof HTMLImageElement) || image.classList.contains("cc98-rebuild-inline-emoji")) {
+  if (
+    !(image instanceof HTMLImageElement) ||
+    image.classList.contains("cc98-rebuild-inline-emoji")
+  ) {
     return false;
   }
-  if (!image.classList.contains("cc98-rebuild-content-image") && !image.classList.contains("cc98-rebuild-board-image")) {
+  if (
+    !image.classList.contains("cc98-rebuild-content-image") &&
+    !image.classList.contains("cc98-rebuild-board-image")
+  ) {
     return false;
   }
   return Boolean(getViewerImageSrc(image));
@@ -1578,7 +1916,11 @@ function getImageViewerEventImage(event) {
   const text = document.createTreeWalker(link, NodeFilter.SHOW_TEXT);
   let node;
   while ((node = text.nextNode())) {
-    if (node.textContent.trim() && !node.parentElement?.closest(".cc98-rebuild-image-status, .cc98-ascii-decoration")) return null;
+    if (
+      node.textContent.trim() &&
+      !node.parentElement?.closest(".cc98-rebuild-image-status, .cc98-ascii-decoration")
+    )
+      return null;
   }
   return images[0];
 }
@@ -1592,9 +1934,15 @@ function getLinkedImageAction(image) {
   try {
     target = new URL(href);
     if (!/^https?:$/.test(target.protocol)) return null;
-  } catch { return null; }
-  if (isProbablyPostImageUrl(target.origin + target.pathname) || /\.(?:svg|ico)$/i.test(target.pathname)
-    || href === getViewerImageSrc(image)) return null;
+  } catch {
+    return null;
+  }
+  if (
+    isProbablyPostImageUrl(target.origin + target.pathname) ||
+    /\.(?:svg|ico)$/i.test(target.pathname) ||
+    href === getViewerImageSrc(image)
+  )
+    return null;
   return { image, link, href };
 }
 
@@ -1618,16 +1966,23 @@ function showImageLinkMenu(action, event) {
   const controller = new AbortController();
   const options = { signal: controller.signal };
   const view = createButton("cc98-image-link-action is-primary", "查看大图", (click) => {
-    click.preventDefault(); click.stopImmediatePropagation();
+    click.preventDefault();
+    click.stopImmediatePropagation();
     closeImageLinkMenu();
     openImageViewer(image);
   });
   const go = createLink("cc98-image-link-action", "前往链接", href);
-  if (!lastSettings?.openLinksInNewTab && ["_blank", "_self", "_top", "_parent"].includes(link.target)) go.target = link.target;
+  if (
+    !lastSettings?.openLinksInNewTab &&
+    ["_blank", "_self", "_top", "_parent"].includes(link.target)
+  )
+    go.target = link.target;
   if (go.target === "_blank") go.rel = "noopener noreferrer";
   go.addEventListener("click", () => {
     // Preserve native link activation, including Ctrl/Command and middle click.
-    setTimeout(() => { if (menu.isConnected) closeImageLinkMenu(); }, 0);
+    setTimeout(() => {
+      if (menu.isConnected) closeImageLinkMenu();
+    }, 0);
   });
   menu.append(view, go);
   menu.style.visibility = "hidden";
@@ -1636,13 +1991,16 @@ function showImageLinkMenu(action, event) {
   const offsetX = event.clientX ? event.clientX - anchor.left : 0;
   const offsetY = event.clientY ? event.clientY - anchor.top : Math.min(anchor.height, 40);
   imageLinkMenuCleanup = (restore) => {
-    controller.abort(); menu.remove();
+    controller.abort();
+    menu.remove();
     if (restore && link.isConnected) link.focus({ preventScroll: true });
   };
   const position = () => {
-    const rect = image.getBoundingClientRect(), box = menu.getBoundingClientRect();
+    const rect = image.getBoundingClientRect(),
+      box = menu.getBoundingClientRect();
     if (!image.isConnected || rect.bottom <= 0 || rect.top >= innerHeight) {
-      closeImageLinkMenu(); return;
+      closeImageLinkMenu();
+      return;
     }
     menu.style.left = `${Math.max(12, Math.min(innerWidth - box.width - 12, rect.left + offsetX))}px`;
     menu.style.top = `${Math.max(12, Math.min(innerHeight - box.height - 12, rect.top + offsetY + 10))}px`;
@@ -1650,18 +2008,30 @@ function showImageLinkMenu(action, event) {
   position();
   if (!menu.isConnected) return;
   menu.style.visibility = "";
-  document.addEventListener("pointerdown", (click) => {
-    if (!menu.contains(click.target)) closeImageLinkMenu();
-  }, { ...options, capture: true });
-  document.addEventListener("keydown", (key) => {
-    if (key.key === "Escape") {
-      key.preventDefault(); key.stopImmediatePropagation(); closeImageLinkMenu(true);
-    } else if (key.key === "Tab") {
-      key.preventDefault(); key.stopImmediatePropagation();
-      (document.activeElement === view ? go : view).focus({ preventScroll: true });
-    }
-  }, { ...options, capture: true });
-  for (const type of ["scroll", "resize"]) window.addEventListener(type, position, { ...options, capture: true, passive: true });
+  document.addEventListener(
+    "pointerdown",
+    (click) => {
+      if (!menu.contains(click.target)) closeImageLinkMenu();
+    },
+    { ...options, capture: true }
+  );
+  document.addEventListener(
+    "keydown",
+    (key) => {
+      if (key.key === "Escape") {
+        key.preventDefault();
+        key.stopImmediatePropagation();
+        closeImageLinkMenu(true);
+      } else if (key.key === "Tab") {
+        key.preventDefault();
+        key.stopImmediatePropagation();
+        (document.activeElement === view ? go : view).focus({ preventScroll: true });
+      }
+    },
+    { ...options, capture: true }
+  );
+  for (const type of ["scroll", "resize"])
+    window.addEventListener(type, position, { ...options, capture: true, passive: true });
   for (const type of ["popstate", "hashchange", "pagehide"]) {
     window.addEventListener(type, () => closeImageLinkMenu(), { ...options, capture: true });
   }
@@ -1672,15 +2042,23 @@ function getImageViewerItems(activeImage) {
   const virtualGallery = globalThis.CC98RebornNewTopicsVirtual?.gallery(activeImage);
   if (virtualGallery) return virtualGallery;
   const favoritesRoot = activeImage?.closest?.(".cc98-image-favorites-region");
-  const root = favoritesRoot || activeImage?.closest?.(".cc98-rebuild-conversation-dialog")
-    || document.querySelector("#cc98-comfort-app") || document;
-  const images = favoritesRoot ? [...favoritesRoot.querySelectorAll("img[data-cc98-favorite-image]")]
-    : [...root.querySelectorAll("img.cc98-rebuild-content-image, img.cc98-rebuild-board-image")].filter(isImageViewerCandidate);
-  const items = images.map((node) => ({
-    node,
-    src: getViewerImageSrc(node),
-    alt: node.alt || ""
-  })).filter((item) => item.src);
+  const root =
+    favoritesRoot ||
+    activeImage?.closest?.(".cc98-rebuild-conversation-dialog") ||
+    document.querySelector("#cc98-comfort-app") ||
+    document;
+  const images = favoritesRoot
+    ? [...favoritesRoot.querySelectorAll("img[data-cc98-favorite-image]")]
+    : [
+        ...root.querySelectorAll("img.cc98-rebuild-content-image, img.cc98-rebuild-board-image")
+      ].filter(isImageViewerCandidate);
+  const items = images
+    .map((node) => ({
+      node,
+      src: getViewerImageSrc(node),
+      alt: node.alt || ""
+    }))
+    .filter((item) => item.src);
   let index = items.findIndex((item) => item.node === activeImage);
   if (index < 0) {
     const activeSrc = getViewerImageSrc(activeImage);
@@ -1705,7 +2083,8 @@ function updateImageViewerTransform() {
     const height = sideways ? image.clientWidth : image.clientHeight;
     // Fit the rotated rectangle, not its original layout box. Zoom remains
     // relative to that fitted size; translating is always in screen pixels.
-    const fit = width && height ? Math.min(1, stage.clientWidth / width, stage.clientHeight / height) : 1;
+    const fit =
+      width && height ? Math.min(1, stage.clientWidth / width, stage.clientHeight / height) : 1;
     image.style.transform = `translate(${imageViewerOffsetX}px, ${imageViewerOffsetY}px) scale(${imageViewerScale * fit}) rotate(${imageViewerRotation}deg)`;
   }
 }
@@ -1765,7 +2144,10 @@ function updateImageViewerSource(resetTransform = true) {
   if (saveButton) {
     saveButton.dataset.href = item.src;
   }
-  globalThis.CC98RebornImageFavoriteControls?.setViewerItem(viewer.querySelector(".cc98-image-viewer-favorite"), item);
+  globalThis.CC98RebornImageFavoriteControls?.setViewerItem(
+    viewer.querySelector(".cc98-image-viewer-favorite"),
+    item
+  );
   if (resetTransform) {
     resetImageViewerTransform();
   }
@@ -1814,16 +2196,18 @@ function scheduleRestoreImageViewerScroll() {
   imageViewerSuppressHashScrollUntil = Date.now() + 1200;
   restoreImageViewerScrollPosition(positions);
   [30, 90, 180, 360, 720].forEach((delay) => {
-    imageViewerScrollRestoreTimers.push(window.setTimeout(() => {
-      if (document.querySelector("#cc98-comfort-image-viewer")) {
-        return;
-      }
-      restoreImageViewerScrollPosition(positions);
-      if (delay >= 620) {
-        restoreImageViewerScrollRestoration();
-        imageViewerScrollPositions = null;
-      }
-    }, delay));
+    imageViewerScrollRestoreTimers.push(
+      window.setTimeout(() => {
+        if (document.querySelector("#cc98-comfort-image-viewer")) {
+          return;
+        }
+        restoreImageViewerScrollPosition(positions);
+        if (delay >= 620) {
+          restoreImageViewerScrollRestoration();
+          imageViewerScrollPositions = null;
+        }
+      }, delay)
+    );
   });
 }
 
@@ -1831,7 +2215,12 @@ function captureImageViewerScrollPosition() {
   const root = document.querySelector("#root");
   return {
     x: window.scrollX || document.documentElement?.scrollLeft || document.body?.scrollLeft || 0,
-    y: window.scrollY || document.scrollingElement?.scrollTop || document.documentElement?.scrollTop || document.body?.scrollTop || 0,
+    y:
+      window.scrollY ||
+      document.scrollingElement?.scrollTop ||
+      document.documentElement?.scrollTop ||
+      document.body?.scrollTop ||
+      0,
     rootTop: root instanceof HTMLElement ? root.scrollTop || 0 : 0,
     rootLeft: root instanceof HTMLElement ? root.scrollLeft || 0 : 0
   };
@@ -1901,7 +2290,9 @@ function openImageViewer(image) {
   removeImageViewer({ restoreScroll: false });
   imageViewerScrollPositions = captureImageViewerScrollPosition();
   setImageViewerManualScrollRestoration();
-  imageViewerItems = viewerData.items.length ? viewerData.items : [{ node: image, src, alt: image.alt || "" }];
+  imageViewerItems = viewerData.items.length
+    ? viewerData.items
+    : [{ node: image, src, alt: image.alt || "" }];
   imageViewerIndex = Math.min(Math.max(0, viewerData.index), imageViewerItems.length - 1);
   const viewer = createElement("div", "cc98-image-viewer");
   viewer.id = "cc98-comfort-image-viewer";
@@ -1927,14 +2318,18 @@ function openImageViewer(image) {
     requestBrowserDownload(href, href);
   });
   const toolbar = createElement("div", "cc98-image-viewer-toolbar");
-  const rotateButtons = [-1, 1].map(direction => {
+  const rotateButtons = [-1, 1].map((direction) => {
     const side = direction < 0 ? "left" : "right";
     const label = direction < 0 ? "向左旋转 90°" : "向右旋转 90°";
-    const button = createButton(`cc98-image-viewer-rotate cc98-image-viewer-rotate-${side}`, "", event => {
-      event.preventDefault();
-      event.stopPropagation();
-      rotateImageViewer(direction * 90);
-    });
+    const button = createButton(
+      `cc98-image-viewer-rotate cc98-image-viewer-rotate-${side}`,
+      "",
+      (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        rotateImageViewer(direction * 90);
+      }
+    );
     button.setAttribute("aria-label", label);
     button.title = `${label}（Shift + ${direction < 0 ? "←" : "→"}）`;
     button.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path ${direction > 0 ? 'transform="translate(24 0) scale(-1 1)"' : ""} d="M4 9a8 8 0 1 1 1 9M4 4v5h5"/></svg>`;
@@ -1971,19 +2366,23 @@ function openImageViewer(image) {
 
   viewer.addEventListener("click", (event) => {
     if (
-      event.target === viewer
-      || event.target?.classList?.contains("cc98-image-viewer-stage")
-      || event.target.closest(".cc98-image-viewer-close")
+      event.target === viewer ||
+      event.target?.classList?.contains("cc98-image-viewer-stage") ||
+      event.target.closest(".cc98-image-viewer-close")
     ) {
       event.preventDefault();
       closeImageViewer();
     }
   });
-  viewer.addEventListener("wheel", (event) => {
-    event.preventDefault();
-    const factor = event.deltaY < 0 ? 1.12 : 0.9;
-    zoomImageViewerAt(viewerImage, event.clientX, event.clientY, imageViewerScale * factor);
-  }, { passive: false });
+  viewer.addEventListener(
+    "wheel",
+    (event) => {
+      event.preventDefault();
+      const factor = event.deltaY < 0 ? 1.12 : 0.9;
+      zoomImageViewerAt(viewerImage, event.clientX, event.clientY, imageViewerScale * factor);
+    },
+    { passive: false }
+  );
 
   let isDragging = false;
   let dragStartX = 0;
@@ -2060,18 +2459,26 @@ function openImageViewer(image) {
 
 function bindImageViewer(app) {
   globalThis.CC98RebornImageFavoriteControls?.bind();
-  app.addEventListener("click", (event) => {
-    const image = getImageViewerEventImage(event);
-    if (!isImageViewerCandidate(image)) {
-      return;
-    }
-    const action = getLinkedImageAction(image);
-    if (action && (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey)) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    if (action) showImageLinkMenu(action, event);
-    else openImageViewer(image);
-  }, true);
+  app.addEventListener(
+    "click",
+    (event) => {
+      const image = getImageViewerEventImage(event);
+      if (!isImageViewerCandidate(image)) {
+        return;
+      }
+      const action = getLinkedImageAction(image);
+      if (
+        action &&
+        (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey)
+      )
+        return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (action) showImageLinkMenu(action, event);
+      else openImageViewer(image);
+    },
+    true
+  );
 }
 
 function getDownloadFilename(url) {
@@ -2088,34 +2495,41 @@ function requestBrowserDownload(url, fallbackHref = url) {
     return;
   }
   try {
-    chrome.runtime.sendMessage({
-      type: "CC98_REBORN_DOWNLOAD_FILE",
-      url,
-      filename: getDownloadFilename(url)
-    }, (response) => {
-      if (chrome.runtime.lastError || !response?.ok) {
-        location.href = fallbackHref || url;
+    chrome.runtime.sendMessage(
+      {
+        type: "CC98_REBORN_DOWNLOAD_FILE",
+        url,
+        filename: getDownloadFilename(url)
+      },
+      (response) => {
+        if (chrome.runtime.lastError || !response?.ok) {
+          location.href = fallbackHref || url;
+        }
       }
-    });
+    );
   } catch {
     location.href = fallbackHref || url;
   }
 }
 
 function bindPostDownloadButtons(app) {
-  app.addEventListener("click", (event) => {
-    const link = event.target?.closest?.("a.cc98-rebuild-download-button, a.download-file");
-    if (!(link instanceof HTMLAnchorElement)) {
-      return;
-    }
-    const href = link.href || makeAbsoluteCc98Url(link.getAttribute("href") || "");
-    if (!href) {
-      return;
-    }
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    requestBrowserDownload(href, link.href);
-  }, true);
+  app.addEventListener(
+    "click",
+    (event) => {
+      const link = event.target?.closest?.("a.cc98-rebuild-download-button, a.download-file");
+      if (!(link instanceof HTMLAnchorElement)) {
+        return;
+      }
+      const href = link.href || makeAbsoluteCc98Url(link.getAttribute("href") || "");
+      if (!href) {
+        return;
+      }
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      requestBrowserDownload(href, link.href);
+    },
+    true
+  );
 }
 
 function triggerOriginalControl(control) {
@@ -2124,7 +2538,7 @@ function triggerOriginalControl(control) {
   }
   const target = control.matches("button, a, input, label, [role='button']")
     ? control
-    : (control.querySelector("button, a, input, label, [role='button']") || control);
+    : control.querySelector("button, a, input, label, [role='button']") || control;
   target.click();
   return true;
 }
@@ -2150,7 +2564,10 @@ function getPostActionKind(control, text = "") {
   if (control?.classList?.contains("downdown")) {
     return "dislike";
   }
-  const title = control?.querySelector?.("[title]")?.getAttribute("title") || control?.getAttribute?.("title") || "";
+  const title =
+    control?.querySelector?.("[title]")?.getAttribute("title") ||
+    control?.getAttribute?.("title") ||
+    "";
   return getActionKindFromText(`${text} ${title} ${control?.textContent || ""}`);
 }
 
@@ -2179,11 +2596,19 @@ function legacyLoosePostActionActive(control, kind = "") {
   if (kind === "like" && /\bfa-thumbs-up\b/.test(hints) && !/\bfa-thumbs-o-up\b/.test(hints)) {
     return true;
   }
-  if (kind === "dislike" && /\bfa-thumbs-down\b/.test(hints) && !/\bfa-thumbs-o-down\b/.test(hints)) {
+  if (
+    kind === "dislike" &&
+    /\bfa-thumbs-down\b/.test(hints) &&
+    !/\bfa-thumbs-o-down\b/.test(hints)
+  ) {
     return true;
   }
   const colorHint = [control.getAttribute("style"), icon?.getAttribute("style")].join(" ");
-  if (kind && /color\s*:/i.test(colorHint) && !/(?:gray|grey|#000|black|inherit|rgb\(\s*0\s*,\s*0\s*,\s*0\s*\))/i.test(colorHint)) {
+  if (
+    kind &&
+    /color\s*:/i.test(colorHint) &&
+    !/(?:gray|grey|#000|black|inherit|rgb\(\s*0\s*,\s*0\s*,\s*0\s*\))/i.test(colorHint)
+  ) {
     return true;
   }
   return false;
@@ -2196,11 +2621,15 @@ function isPostActionActive(control, kind = "") {
   const icon = control.querySelector("i, .fa");
   const hints = [control.className, icon?.className].join(" ");
   if (kind === "like") {
-    return control.classList.contains("red-color")
-      || (/\bfa-thumbs-up\b/.test(hints) && !/\bfa-thumbs-o-up\b/.test(hints));
+    return (
+      control.classList.contains("red-color") ||
+      (/\bfa-thumbs-up\b/.test(hints) && !/\bfa-thumbs-o-up\b/.test(hints))
+    );
   }
-  return control.classList.contains("red-color")
-    || (/\bfa-thumbs-down\b/.test(hints) && !/\bfa-thumbs-o-down\b/.test(hints));
+  return (
+    control.classList.contains("red-color") ||
+    (/\bfa-thumbs-down\b/.test(hints) && !/\bfa-thumbs-o-down\b/.test(hints))
+  );
 }
 
 function getOppositeVoteKind(kind) {
@@ -2272,7 +2701,9 @@ function getVoteActionNativeCount(action) {
   if (!action) {
     return 0;
   }
-  const countText = cleanupPostText(action.control?.querySelector?.(".commentProp")?.textContent || "");
+  const countText = cleanupPostText(
+    action.control?.querySelector?.(".commentProp")?.textContent || ""
+  );
   const text = countText || cleanupPostText(getActionText(action.control) || action.text || "");
   const match = text.match(/-?\d+/);
   return match ? Math.max(0, Number(match[0]) || 0) : 0;
@@ -2407,7 +2838,10 @@ function configureFollowProxyAction(proxy, action) {
   proxy.classList.add("cc98-rebuild-post-follow-action");
   proxy.dataset.followSymbol = followed ? "\u2212" : "+";
   proxy.dataset.followLabel = followed ? "\u53d6\u6d88\u5173\u6ce8" : "\u5173\u6ce8";
-  proxy.setAttribute("aria-label", followed ? "\u53d6\u6d88\u5173\u6ce8\u6b64\u7528\u6237" : "\u5173\u6ce8\u6b64\u7528\u6237");
+  proxy.setAttribute(
+    "aria-label",
+    followed ? "\u53d6\u6d88\u5173\u6ce8\u6b64\u7528\u6237" : "\u5173\u6ce8\u6b64\u7528\u6237"
+  );
 }
 
 function renderNativeFollowControl(action) {
@@ -2428,25 +2862,29 @@ function renderNativeFollowControl(action) {
   configureFollowProxyAction(control, action);
   if (control.dataset.cc98RebuildPostFollowBound !== "true") {
     control.dataset.cc98RebuildPostFollowBound = "true";
-    control.addEventListener("click", () => {
-      control.classList.add("is-pending");
-      [180, 650, 1400].forEach((delay, index, delays) => {
-        window.setTimeout(() => {
-          if (!control.isConnected) {
-            return;
-          }
-          configureFollowProxyAction(control, {
-            ...action,
-            text: control.textContent || action.text
-          });
-          if (index === delays.length - 1) {
-            control.classList.remove("is-pending");
-          }
-        }, delay);
-      });
-      window.setTimeout(scheduleRebuild, 850);
-      scheduleNativeAntUiStabilize();
-    }, false);
+    control.addEventListener(
+      "click",
+      () => {
+        control.classList.add("is-pending");
+        [180, 650, 1400].forEach((delay, index, delays) => {
+          window.setTimeout(() => {
+            if (!control.isConnected) {
+              return;
+            }
+            configureFollowProxyAction(control, {
+              ...action,
+              text: control.textContent || action.text
+            });
+            if (index === delays.length - 1) {
+              control.classList.remove("is-pending");
+            }
+          }, delay);
+        });
+        window.setTimeout(scheduleRebuild, 850);
+        scheduleNativeAntUiStabilize();
+      },
+      false
+    );
   }
   return control;
 }
@@ -2454,12 +2892,13 @@ function renderNativeFollowControl(action) {
 function setPostFooterActionIcon(control, text) {
   const label = cleanupPostText(text);
   const paths = {
-    "评分": "M4 7h6M7 4v6M15 17h6M18 6 6 18",
-    "私信": "M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm-1 2 9 6 9-6",
-    "引用": "M10 7H4v6h6V7Zm0 6c0 3-2 5-5 5M20 7h-6v6h6V7Zm0 6c0 3-2 5-5 5",
-    "追踪": "M7 7v7a3 3 0 0 0 3 3h5M17 7v8M9 5a2 2 0 1 1-4 0 2 2 0 0 1 4 0Zm10 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0Zm0 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z",
-    "编辑": "m14 5 5 5M4 20l5-1L20 8a2 2 0 0 0 0-3l-1-1a2 2 0 0 0-3 0L5 15l-1 5Z",
-    "查看对话": "M15 3H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h1v4l4-4h5a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2ZM10 18h4l4 3v-4h1a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2",
+    评分: "M4 7h6M7 4v6M15 17h6M18 6 6 18",
+    私信: "M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm-1 2 9 6 9-6",
+    引用: "M10 7H4v6h6V7Zm0 6c0 3-2 5-5 5M20 7h-6v6h6V7Zm0 6c0 3-2 5-5 5",
+    追踪: "M7 7v7a3 3 0 0 0 3 3h5M17 7v8M9 5a2 2 0 1 1-4 0 2 2 0 0 1 4 0Zm10 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0Zm0 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z",
+    编辑: "m14 5 5 5M4 20l5-1L20 8a2 2 0 0 0 0-3l-1-1a2 2 0 0 0-3 0L5 15l-1 5Z",
+    查看对话:
+      "M15 3H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h1v4l4-4h5a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2ZM10 18h4l4 3v-4h1a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2"
   };
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("viewBox", "0 0 24 24");
@@ -2491,7 +2930,12 @@ function renderPostFooterAction(action) {
   } else if (kind === "score") {
     control.classList.add("cc98-rebuild-score-action");
     control.dataset.actionKind = kind;
-    setProxyControlDisplayText(control, control.textContent || action.displayText || action.text, kind, action.awardDelta);
+    setProxyControlDisplayText(
+      control,
+      control.textContent || action.displayText || action.text,
+      kind,
+      action.awardDelta
+    );
   } else {
     setPostFooterActionIcon(control, control.textContent || action.displayText || action.text);
   }
@@ -2503,7 +2947,10 @@ function setProxyControlDisplayText(proxy, text, kind = "", scoreDelta = NaN) {
     return;
   }
   const value = String(text ?? "");
-  if (proxy.classList.contains("cc98-rebuild-vote-action") && (kind === "like" || kind === "dislike")) {
+  if (
+    proxy.classList.contains("cc98-rebuild-vote-action") &&
+    (kind === "like" || kind === "dislike")
+  ) {
     const count = value.match(/\d+\s*$/)?.[0].trim() || "0";
     const label = kind === "like" ? "赞" : "踩";
     proxy.textContent = count;
@@ -2546,10 +2993,11 @@ function setProxyControlDisplayText(proxy, text, kind = "", scoreDelta = NaN) {
 
 function syncProxyControlDisplay(proxy, action) {
   resolveCurrentProxyAction(action);
-  const nativeText = getTopicFavoriteDisplayText(action)
-    || action.displayText
-    || getActionText(action.control)
-    || action.text;
+  const nativeText =
+    getTopicFavoriteDisplayText(action) ||
+    action.displayText ||
+    getActionText(action.control) ||
+    action.text;
   const text = getVoteActionSyncedText(action, nativeText);
   const normalized = text.replace(/\s+\d+$/, "");
   proxy.dataset.actionType = normalized;
@@ -2561,9 +3009,11 @@ function syncProxyControlDisplay(proxy, action) {
   }
   const scoreDelta = Number.isFinite(action.awardDelta)
     ? action.awardDelta
-    : (kind === "score" ? Number(text.match(/([+-]\d+)/)?.[1]) : NaN);
+    : kind === "score"
+      ? Number(text.match(/([+-]\d+)/)?.[1])
+      : NaN;
   if (kind === "score" && Number.isFinite(scoreDelta)) {
-    proxy.dataset.awardDelta = scoreDelta > 0 ? "positive" : (scoreDelta < 0 ? "negative" : "zero");
+    proxy.dataset.awardDelta = scoreDelta > 0 ? "positive" : scoreDelta < 0 ? "negative" : "zero";
   } else {
     delete proxy.dataset.awardDelta;
   }
@@ -2592,20 +3042,22 @@ function clearProxyControlSyncTimers(button) {
 
 function scheduleProxyControlDisplaySync(button, action, delays, clearPendingAfter = 0) {
   clearProxyControlSyncTimers(button);
-  const timers = delays.map((delay, index) => window.setTimeout(() => {
-    if (!button.isConnected) {
-      clearProxyControlSyncTimers(button);
-      return;
-    }
-    syncProxyControlDisplay(button, action);
-    if (delay >= clearPendingAfter || index === delays.length - 1) {
-      button.classList.remove("is-pending");
-      button.removeAttribute("aria-busy");
-    }
-    if (index === delays.length - 1) {
-      proxyControlSyncTimers.delete(button);
-    }
-  }, delay));
+  const timers = delays.map((delay, index) =>
+    window.setTimeout(() => {
+      if (!button.isConnected) {
+        clearProxyControlSyncTimers(button);
+        return;
+      }
+      syncProxyControlDisplay(button, action);
+      if (delay >= clearPendingAfter || index === delays.length - 1) {
+        button.classList.remove("is-pending");
+        button.removeAttribute("aria-busy");
+      }
+      if (index === delays.length - 1) {
+        proxyControlSyncTimers.delete(button);
+      }
+    }, delay)
+  );
   proxyControlSyncTimers.set(button, timers);
 }
 
@@ -2648,7 +3100,10 @@ function watchProxyControlDisplay(button, action, timeoutMs = 30000) {
 }
 
 function isTopicShareAction(action) {
-  return action?.scope === "topic" && cleanupPostText(action.text).includes("\u5206\u4eab\u5e16\u5b50\u94fe\u63a5");
+  return (
+    action?.scope === "topic" &&
+    cleanupPostText(action.text).includes("\u5206\u4eab\u5e16\u5b50\u94fe\u63a5")
+  );
 }
 
 function getProxyActionIdentity(action) {
@@ -2656,8 +3111,10 @@ function getProxyActionIdentity(action) {
   if (kind) {
     return kind;
   }
-  const label = cleanupPostText(getActionText(action?.control) || action?.text || "")
-    .replace(/\s+[+-]?\d+\s*$/, "");
+  const label = cleanupPostText(getActionText(action?.control) || action?.text || "").replace(
+    /\s+[+-]?\d+\s*$/,
+    ""
+  );
   if (/^(?:\u5173\u6ce8|\u53d6\u5173|\u53d6\u6d88\u5173\u6ce8)$/.test(label)) {
     return "follow";
   }
@@ -2665,17 +3122,20 @@ function getProxyActionIdentity(action) {
 }
 
 function findCurrentNativePostForAction(action) {
-  if (action?.sourcePost instanceof HTMLElement
-    && action.sourcePost.isConnected
-    && !action.sourcePost.closest("#cc98-comfort-app")) {
+  if (
+    action?.sourcePost instanceof HTMLElement &&
+    action.sourcePost.isConnected &&
+    !action.sourcePost.closest("#cc98-comfort-app")
+  ) {
     return action.sourcePost;
   }
-  const posts = [...document.querySelectorAll(".reply")]
-    .filter((post) => post instanceof HTMLElement && !post.closest("#cc98-comfort-app"));
+  const posts = [...document.querySelectorAll(".reply")].filter(
+    (post) => post instanceof HTMLElement && !post.closest("#cc98-comfort-app")
+  );
   if (action?.nativePostId) {
-    const matchedById = posts.find((post) => (
+    const matchedById = posts.find((post) =>
       getCapturedPostIdCandidates(post).includes(action.nativePostId)
-    ));
+    );
     if (matchedById) {
       return matchedById;
     }
@@ -2690,12 +3150,12 @@ function resolveCurrentProxyAction(action) {
   if (!action) {
     return null;
   }
-  if (action.control instanceof HTMLElement
-    && action.control.isConnected
-    && (
-      !action.control.closest("#cc98-comfort-app")
-      || action.control.classList.contains("cc98-rebuild-native-post-follow-action")
-    )) {
+  if (
+    action.control instanceof HTMLElement &&
+    action.control.isConnected &&
+    (!action.control.closest("#cc98-comfort-app") ||
+      action.control.classList.contains("cc98-rebuild-native-post-follow-action"))
+  ) {
     return action.control;
   }
 
@@ -2707,8 +3167,10 @@ function resolveCurrentProxyAction(action) {
     const sourcePost = findCurrentNativePostForAction(action);
     if (sourcePost) {
       const identity = getProxyActionIdentity(action);
-      freshAction = collectPostActions(sourcePost)
-        .find((candidate) => getProxyActionIdentity(candidate) === identity) || null;
+      freshAction =
+        collectPostActions(sourcePost).find(
+          (candidate) => getProxyActionIdentity(candidate) === identity
+        ) || null;
       action.sourcePost = sourcePost;
     }
   }
@@ -2744,24 +3206,23 @@ function isTopicFavoriteAction(action) {
   if (action?.scope !== "topic") {
     return false;
   }
-  const text = cleanupPostText(getActionText(action.control) || action.text || "")
-    .replace(/\s+\d+\s*$/, "");
+  const text = cleanupPostText(getActionText(action.control) || action.text || "").replace(
+    /\s+\d+\s*$/,
+    ""
+  );
   return /^(?:\u6536\u85cf|\u53d6\u6d88\u6536\u85cf|\u5df2\u6536\u85cf)$/.test(text);
 }
 
 function getTopicShareClipboardText() {
   const topicInfo = getTopicRouteInfo();
   const topicId = topicInfo?.topicId || "";
-  const href = topicId
-    ? `https://www.cc98.org/topic/${topicId}`
-    : stripUrlHash(location.href);
+  const href = topicId ? `https://www.cc98.org/topic/${topicId}` : stripUrlHash(location.href);
   const title = cleanupPostText(
-    getFirstText(document, "#essay1")
-      || document.title.replace(/\s*-\s*CC98.*$/i, "")
+    getFirstText(document, "#essay1") || document.title.replace(/\s*-\s*CC98.*$/i, "")
   );
   const board = cleanupPostText(
-    getFirstText(document, ".topicInfo-boardMessage a")
-      || getFirstText(document, ".board-head-name")
+    getFirstText(document, ".topicInfo-boardMessage a") ||
+      getFirstText(document, ".board-head-name")
   );
   const label = title ? `${board ? `\u3010${board}\u3011` : ""}${title}` : "";
   return `${[label, href].filter(Boolean).join(" ")} \u590d\u5236\u672c\u94fe\u63a5\u5230\u6d4f\u89c8\u5668\u6216\u8005\u6253\u5f00\u3010CC98\u3011\u5fae\u4fe1\u5c0f\u7a0b\u5e8f\u67e5\u770b~`.trim();
@@ -2774,7 +3235,8 @@ function fallbackCopyTextToClipboard(text) {
   const textarea = document.createElement("textarea");
   textarea.value = text;
   textarea.setAttribute("readonly", "");
-  textarea.style.cssText = "position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none;";
+  textarea.style.cssText =
+    "position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none;";
   document.body.append(textarea);
   textarea.focus({ preventScroll: true });
   textarea.select();
@@ -2922,7 +3384,9 @@ async function ensureStartupUpdateNotice() {
   if (!lastSettings?.enabled) {
     return;
   }
-  const response = await sendExtensionMessage({ type: "CC98_REBORN_CONSUME_STARTUP_UPDATE_NOTICE" });
+  const response = await sendExtensionMessage({
+    type: "CC98_REBORN_CONSUME_STARTUP_UPDATE_NOTICE"
+  });
   if (response?.show && response.status?.hasUpdate) {
     showStartupUpdateNotice(response.status);
   }
@@ -2940,7 +3404,10 @@ function renderProxyControl(action) {
     const now = Date.now();
     const isShareAction = isTopicShareAction(action);
     if (!isShareAction && !(resolveCurrentProxyAction(action) instanceof HTMLElement)) {
-      showRebuiltTransientToast(button, "\u539f\u9875\u9762\u63a7\u4ef6\u5df2\u66f4\u65b0\uff0c\u8bf7\u518d\u8bd5\u4e00\u6b21");
+      showRebuiltTransientToast(
+        button,
+        "\u539f\u9875\u9762\u63a7\u4ef6\u5df2\u66f4\u65b0\uff0c\u8bf7\u518d\u8bd5\u4e00\u6b21"
+      );
       scheduleDelayedRebuilds();
       return;
     }
@@ -2957,15 +3424,17 @@ function renderProxyControl(action) {
     if (isShareAction) {
       button.classList.add("is-pending");
       button.setAttribute("aria-busy", "true");
-      copyTextToClipboard(getTopicShareClipboardText()).then((copied) => {
-        showRebuiltTransientToast(
-          button,
-          copied ? "\u590d\u5236\u6210\u529f" : "\u590d\u5236\u5931\u8d25\uff0c\u8bf7\u91cd\u8bd5"
-        );
-      }).finally(() => {
-        button.classList.remove("is-pending");
-        button.removeAttribute("aria-busy");
-      });
+      copyTextToClipboard(getTopicShareClipboardText())
+        .then((copied) => {
+          showRebuiltTransientToast(
+            button,
+            copied ? "\u590d\u5236\u6210\u529f" : "\u590d\u5236\u5931\u8d25\uff0c\u8bf7\u91cd\u8bd5"
+          );
+        })
+        .finally(() => {
+          button.classList.remove("is-pending");
+          button.removeAttribute("aria-busy");
+        });
       return;
     }
 
@@ -2975,7 +3444,8 @@ function renderProxyControl(action) {
     if (isVoteAction) {
       const wasActive = isVoteActionVisuallyActive(action);
       const shouldBeActive = !wasActive;
-      const oppositeWasVisuallyActive = shouldBeActive && oppositeAction && isVoteActionVisuallyActive(oppositeAction);
+      const oppositeWasVisuallyActive =
+        shouldBeActive && oppositeAction && isVoteActionVisuallyActive(oppositeAction);
       if (action.voteGroup) {
         setVoteGroupDesiredKind(action.voteGroup, shouldBeActive ? actionKind : "");
       }
@@ -3001,9 +3471,7 @@ function renderProxyControl(action) {
       button.classList.add("is-pending");
       button.setAttribute("aria-busy", "true");
     }
-    const syncDelays = isVoteAction
-      ? [80, 260, 700, 1400, 2400]
-      : [180, 700, 1600, 3200];
+    const syncDelays = isVoteAction ? [80, 260, 700, 1400, 2400] : [180, 700, 1600, 3200];
     if (shouldSyncDisplay) {
       scheduleProxyControlDisplaySync(button, action, syncDelays, isVoteAction ? 700 : 180);
     }
@@ -3031,8 +3499,12 @@ function renderProxyControl(action) {
 
 function isCc98RoutePath(pathname = "") {
   const path = String(pathname || "").trim();
-  return path === "/"
-    || /^\/(?:boardList|boardlist|newTopics|recommendedTopics|searchBoard|usercenter|topic|board|focus|search|user|message|editor|signin|logOn)(?:\/|$|\?)/i.test(path);
+  return (
+    path === "/" ||
+    /^\/(?:boardList|boardlist|newTopics|recommendedTopics|searchBoard|usercenter|topic|board|focus|search|user|message|editor|signin|logOn)(?:\/|$|\?)/i.test(
+      path
+    )
+  );
 }
 
 function getCc98RoutePathFromHref(href) {
@@ -3048,12 +3520,16 @@ function getCc98RoutePathFromHref(href) {
     if (isWebVpnHost(url.hostname)) {
       const proxyPrefix = getWebVpnProxyPrefixFromUrl(url.href);
       const cc98Prefix = getCurrentWebVpnCc98Prefix();
-      if (proxyPrefix
-        && cc98Prefix
-        && normalizeWebVpnProxyPrefix(proxyPrefix) !== normalizeWebVpnProxyPrefix(cc98Prefix)) {
+      if (
+        proxyPrefix &&
+        cc98Prefix &&
+        normalizeWebVpnProxyPrefix(proxyPrefix) !== normalizeWebVpnProxyPrefix(cc98Prefix)
+      ) {
         return "";
       }
-      const match = url.pathname.match(/\/(?:boardList|boardlist|newTopics|recommendedTopics|searchBoard|usercenter|topic|board|focus|search|user|message|editor|signin|logOn)(?:\/[^?#]*)?(?=$|[?#])/i);
+      const match = url.pathname.match(
+        /\/(?:boardList|boardlist|newTopics|recommendedTopics|searchBoard|usercenter|topic|board|focus|search|user|message|editor|signin|logOn)(?:\/[^?#]*)?(?=$|[?#])/i
+      );
       if (match) {
         return `${match[0]}${url.search}${url.hash}`;
       }
@@ -3067,7 +3543,10 @@ function getCc98RoutePathFromHref(href) {
 }
 
 function getCurrentCc98RoutePath() {
-  return getCc98RoutePathFromHref(location.href) || `${location.pathname}${location.search}${location.hash}`;
+  return (
+    getCc98RoutePathFromHref(location.href) ||
+    `${location.pathname}${location.search}${location.hash}`
+  );
 }
 
 function getWebVpnPrefixCacheKey() {
@@ -3095,9 +3574,11 @@ function getCachedWebVpnCc98Prefix() {
     return "";
   }
   try {
-    return sessionStorage.getItem(getWebVpnPrefixCacheKey())
-      || localStorage.getItem(getWebVpnPrefixCacheKey())
-      || "";
+    return (
+      sessionStorage.getItem(getWebVpnPrefixCacheKey()) ||
+      localStorage.getItem(getWebVpnPrefixCacheKey()) ||
+      ""
+    );
   } catch {
     return "";
   }
@@ -3108,9 +3589,11 @@ function getConfirmedWebVpnCc98Prefix() {
     return "";
   }
   try {
-    return sessionStorage.getItem(getConfirmedWebVpnPrefixCacheKey())
-      || localStorage.getItem(getConfirmedWebVpnPrefixCacheKey())
-      || "";
+    return (
+      sessionStorage.getItem(getConfirmedWebVpnPrefixCacheKey()) ||
+      localStorage.getItem(getConfirmedWebVpnPrefixCacheKey()) ||
+      ""
+    );
   } catch {
     return "";
   }
@@ -3154,8 +3637,10 @@ function getCurrentWebVpnCc98Prefix() {
   const currentProxyPrefix = getWebVpnProxyPrefixFromUrl(location.href);
   if (currentProxyPrefix) {
     const confirmedPrefix = getConfirmedWebVpnCc98Prefix();
-    if (confirmedPrefix
-      && normalizeWebVpnProxyPrefix(currentProxyPrefix) !== normalizeWebVpnProxyPrefix(confirmedPrefix)) {
+    if (
+      confirmedPrefix &&
+      normalizeWebVpnProxyPrefix(currentProxyPrefix) !== normalizeWebVpnProxyPrefix(confirmedPrefix)
+    ) {
       return confirmedPrefix;
     }
     cacheWebVpnCc98Prefix(currentProxyPrefix);
@@ -3171,7 +3656,9 @@ function getCurrentWebVpnCc98Prefix() {
       if (proxyPrefix) {
         return proxyPrefix;
       }
-      const match = url.pathname.match(/\/(?:boardList|boardlist|newTopics|recommendedTopics|searchBoard|usercenter|topic|board|focus|search|user|message|editor|signin|logOn)(?:\/|$)/i);
+      const match = url.pathname.match(
+        /\/(?:boardList|boardlist|newTopics|recommendedTopics|searchBoard|usercenter|topic|board|focus|search|user|message|editor|signin|logOn)(?:\/|$)/i
+      );
       if (!match) {
         return "";
       }
@@ -3205,7 +3692,9 @@ function getCurrentWebVpnCc98Prefix() {
 }
 
 function normalizeWebVpnProxyPrefix(prefix) {
-  return String(prefix || "").replace(/\/+$/, "").toLowerCase();
+  return String(prefix || "")
+    .replace(/\/+$/, "")
+    .toLowerCase();
 }
 
 function getWebVpnExternalOriginCacheKey() {
@@ -3245,12 +3734,17 @@ function getDirectExternalUrlCandidate(value) {
   if (!match) {
     return "";
   }
-  const candidate = match[0].replace(/[\])}>.,;!?\uff0c\u3002\uff1b\uff01\uff1f\u3011\u3009\u300b]+$/g, "");
+  const candidate = match[0].replace(
+    /[\])}>.,;!?\uff0c\u3002\uff1b\uff01\uff1f\u3011\u3009\u300b]+$/g,
+    ""
+  );
   try {
     const url = new URL(candidate);
-    if (!/^https?:$/i.test(url.protocol)
-      || isWebVpnHost(url.hostname)
-      || isDirectCc98Host(url.hostname)) {
+    if (
+      !/^https?:$/i.test(url.protocol) ||
+      isWebVpnHost(url.hostname) ||
+      isDirectCc98Host(url.hostname)
+    ) {
       return "";
     }
     return url.href;
@@ -3279,8 +3773,11 @@ function getWebVpnExternalProxyDirectHref(link) {
   }
   const proxyPrefix = getWebVpnProxyPrefixFromUrl(proxiedUrl.href);
   const cc98Prefix = getCurrentWebVpnCc98Prefix();
-  if (!proxyPrefix
-    || (cc98Prefix && normalizeWebVpnProxyPrefix(proxyPrefix) === normalizeWebVpnProxyPrefix(cc98Prefix))) {
+  if (
+    !proxyPrefix ||
+    (cc98Prefix &&
+      normalizeWebVpnProxyPrefix(proxyPrefix) === normalizeWebVpnProxyPrefix(cc98Prefix))
+  ) {
     return "";
   }
 
@@ -3399,7 +3896,7 @@ function getCurrentDocumentDirectExternalHref() {
     document.querySelector('meta[property="og:url"]')?.getAttribute("content"),
     document.querySelector('meta[name="twitter:url"]')?.getAttribute("content"),
     document.querySelector('meta[itemprop="url"]')?.getAttribute("content"),
-    document.querySelector('base[href]')?.getAttribute("href")
+    document.querySelector("base[href]")?.getAttribute("href")
   ];
   for (const value of candidateValues) {
     const directHref = getDirectExternalUrlCandidate(value);
@@ -3420,12 +3917,19 @@ function getCurrentDocumentDirectExternalHref() {
     }
   }
 
-  const cachedOrigin = readWebVpnExternalOriginCache()[normalizeWebVpnProxyPrefix(currentProxyPrefix)];
+  const cachedOrigin =
+    readWebVpnExternalOriginCache()[normalizeWebVpnProxyPrefix(currentProxyPrefix)];
   let inferredOrigin = cachedOrigin || "";
   if (!inferredOrigin) {
-    const siteName = cleanupPostText(document.querySelector('meta[property="og:site_name"]')?.getAttribute("content"));
-    const octolyticsHost = cleanupPostText(document.querySelector('meta[name="octolytics-host"]')?.getAttribute("content"));
-    const hasGitHubChrome = Boolean(document.querySelector('meta[name="route-pattern"], meta[name="github-keyboard-shortcuts"]'));
+    const siteName = cleanupPostText(
+      document.querySelector('meta[property="og:site_name"]')?.getAttribute("content")
+    );
+    const octolyticsHost = cleanupPostText(
+      document.querySelector('meta[name="octolytics-host"]')?.getAttribute("content")
+    );
+    const hasGitHubChrome = Boolean(
+      document.querySelector('meta[name="route-pattern"], meta[name="github-keyboard-shortcuts"]')
+    );
     if (/^github$/i.test(siteName) || /github\.com$/i.test(octolyticsHost) || hasGitHubChrome) {
       inferredOrigin = "https://github.com";
     }
@@ -3455,8 +3959,10 @@ function isCurrentWebVpnExternalProxyPage() {
     return false;
   }
   const confirmedPrefix = getConfirmedWebVpnCc98Prefix();
-  if (confirmedPrefix
-    && normalizeWebVpnProxyPrefix(currentPrefix) !== normalizeWebVpnProxyPrefix(confirmedPrefix)) {
+  if (
+    confirmedPrefix &&
+    normalizeWebVpnProxyPrefix(currentPrefix) !== normalizeWebVpnProxyPrefix(confirmedPrefix)
+  ) {
     return true;
   }
   return Boolean(getCurrentDocumentDirectExternalHref());
@@ -3489,7 +3995,9 @@ function isUsableCc98WebVpnRouteUrl(url) {
   if (isKnownCc98WebVpnHost(url.hostname)) {
     return true;
   }
-  const match = url.pathname.match(/\/(?:boardList|boardlist|newTopics|recommendedTopics|searchBoard|usercenter|topic|board|focus|search|user|message|editor|signin|logOn)(?:\/|$)/i);
+  const match = url.pathname.match(
+    /\/(?:boardList|boardlist|newTopics|recommendedTopics|searchBoard|usercenter|topic|board|focus|search|user|message|editor|signin|logOn)(?:\/|$)/i
+  );
   return Boolean(match && match.index > 0);
 }
 
@@ -3557,7 +4065,11 @@ function repairWebVpnNakedCc98Href(href) {
   }
   try {
     const url = new URL(href, location.href);
-    if (!isWebVpnHost(url.hostname) || !isCc98RoutePath(url.pathname) || getWebVpnProxyPrefixFromUrl(url.href)) {
+    if (
+      !isWebVpnHost(url.hostname) ||
+      !isCc98RoutePath(url.pathname) ||
+      getWebVpnProxyPrefixFromUrl(url.href)
+    ) {
       return url.href;
     }
     return buildCc98RouteHref(`${url.pathname}${url.search}${url.hash}`);
@@ -3572,7 +4084,11 @@ function enforceCurrentWebVpnNakedRouteRedirect() {
   }
   try {
     const url = new URL(location.href);
-    if (url.pathname === "/" || !isCc98RoutePath(url.pathname) || getWebVpnProxyPrefixFromUrl(url.href)) {
+    if (
+      url.pathname === "/" ||
+      !isCc98RoutePath(url.pathname) ||
+      getWebVpnProxyPrefixFromUrl(url.href)
+    ) {
       getCurrentWebVpnCc98Prefix();
       return false;
     }
@@ -3679,8 +4195,10 @@ function getBlacklistPageHref() {
 
 function isUserSettingsRoute(url = location.href) {
   try {
-    return isUserCenterRoutePath(getCc98RoutePathFromHref(url))
-      && new URL(url, location.href).hash === USER_SETTINGS_ROUTE_HASH;
+    return (
+      isUserCenterRoutePath(getCc98RoutePathFromHref(url)) &&
+      new URL(url, location.href).hash === USER_SETTINGS_ROUTE_HASH
+    );
   } catch {
     return false;
   }
@@ -3691,7 +4209,10 @@ function isRebornManagementRoute() {
 }
 
 function getUserSettingsPageHref() {
-  const url = new URL(isUserCenterRoutePath() ? location.href : normalizeHref("/userCenter"), location.href);
+  const url = new URL(
+    isUserCenterRoutePath() ? location.href : normalizeHref("/userCenter"),
+    location.href
+  );
   url.hash = USER_SETTINGS_ROUTE_HASH;
   return url.href;
 }
@@ -3787,15 +4308,23 @@ function bindWebVpnNakedRouteGuard() {
       enforceCurrentWebVpnNakedRouteRedirect();
     }, delay);
   });
-  window.addEventListener("load", () => {
-    if (redirectCurrentWebVpnExternalPage()) {
-      return;
-    }
-    if (loadingOverlayActive && /WebVPN/i.test(loadingOverlayMessage) && !editorSubmitOverlayAwaitingRebuild) {
-      hideLoadingOverlay({ force: true });
-      scheduleSync();
-    }
-  }, { once: true });
+  window.addEventListener(
+    "load",
+    () => {
+      if (redirectCurrentWebVpnExternalPage()) {
+        return;
+      }
+      if (
+        loadingOverlayActive &&
+        /WebVPN/i.test(loadingOverlayMessage) &&
+        !editorSubmitOverlayAwaitingRebuild
+      ) {
+        hideLoadingOverlay({ force: true });
+        scheduleSync();
+      }
+    },
+    { once: true }
+  );
   const linkObserver = new MutationObserver((records) => {
     if (redirectCurrentWebVpnExternalPage()) {
       return;
@@ -3809,54 +4338,62 @@ function bindWebVpnNakedRouteGuard() {
     });
   });
   linkObserver.observe(document.documentElement || document, { childList: true, subtree: true });
-  window.addEventListener("click", (event) => {
-    if (!isWebVpnHost() || event.button !== 0) {
-      return;
-    }
-    const link = event.target?.closest?.("a[href]");
-    if (!(link instanceof HTMLAnchorElement)) {
-      return;
-    }
-    const directHref = repairWebVpnExternalProxyLink(link);
-    if (!directHref) {
-      return;
-    }
-    event.preventDefault();
-    event.stopPropagation();
-    event.stopImmediatePropagation();
-    window.open(directHref, "_blank", "noopener,noreferrer");
-  }, true);
-  document.addEventListener("click", (event) => {
-    if (!isWebVpnHost()) {
-      return;
-    }
-    const link = event.target?.closest?.("a[href]");
-    if (!(link instanceof HTMLAnchorElement)) {
-      return;
-    }
-    if (repairWebVpnExternalProxyLink(link)) {
-      return;
-    }
-    const rawHref = link.getAttribute("href") || link.href || "";
-    const fixedHref = repairWebVpnNakedCc98Href(rawHref);
-    if (!fixedHref) {
-      return;
-    }
-    let originalHref = "";
-    try {
-      originalHref = new URL(rawHref, location.href).href;
-    } catch {
-      originalHref = rawHref;
-    }
-    if (stripUrlHash(fixedHref) === stripUrlHash(originalHref)) {
-      return;
-    }
-    event.preventDefault();
-    event.stopPropagation();
-    event.stopImmediatePropagation();
-    showLoadingOverlay("正在通过 WebVPN 跳转...");
-    location.assign(fixedHref);
-  }, true);
+  window.addEventListener(
+    "click",
+    (event) => {
+      if (!isWebVpnHost() || event.button !== 0) {
+        return;
+      }
+      const link = event.target?.closest?.("a[href]");
+      if (!(link instanceof HTMLAnchorElement)) {
+        return;
+      }
+      const directHref = repairWebVpnExternalProxyLink(link);
+      if (!directHref) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      window.open(directHref, "_blank", "noopener,noreferrer");
+    },
+    true
+  );
+  document.addEventListener(
+    "click",
+    (event) => {
+      if (!isWebVpnHost()) {
+        return;
+      }
+      const link = event.target?.closest?.("a[href]");
+      if (!(link instanceof HTMLAnchorElement)) {
+        return;
+      }
+      if (repairWebVpnExternalProxyLink(link)) {
+        return;
+      }
+      const rawHref = link.getAttribute("href") || link.href || "";
+      const fixedHref = repairWebVpnNakedCc98Href(rawHref);
+      if (!fixedHref) {
+        return;
+      }
+      let originalHref = "";
+      try {
+        originalHref = new URL(rawHref, location.href).href;
+      } catch {
+        originalHref = rawHref;
+      }
+      if (stripUrlHash(fixedHref) === stripUrlHash(originalHref)) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      showLoadingOverlay("正在通过 WebVPN 跳转...");
+      location.assign(fixedHref);
+    },
+    true
+  );
 }
 
 function rewriteWebVpnNakedRouteLinks(root = document) {
@@ -3896,7 +4433,7 @@ function scheduleRouteFollowup(targetHref, startedRouteKey = getRoutePageKey()) 
   if (!targetRouteKey) {
     return;
   }
-  routeFollowupTimers = [80, 180, 360, 700, 1200, 1900, 3000, 4600].map((delay, index, delays) => (
+  routeFollowupTimers = [80, 180, 360, 700, 1200, 1900, 3000, 4600].map((delay, index, delays) =>
     window.setTimeout(() => {
       const currentRouteKey = getRoutePageKey();
       if (currentRouteKey === targetRouteKey || currentRouteKey !== startedRouteKey) {
@@ -3909,14 +4446,15 @@ function scheduleRouteFollowup(targetHref, startedRouteKey = getRoutePageKey()) 
         routeFollowupTimers = [];
       }
     }, delay)
-  ));
+  );
 }
 
 function getTopicRouteInfo(url = location.href) {
   try {
     const parsed = new URL(url, location.href);
-    const match = parsed.pathname.match(/\/topic\/(\d+)(?:\/(\d+))?\/?$/i)
-      || parsed.pathname.match(/\/topic\/(\d+)(?:\/(\d+))?/i);
+    const match =
+      parsed.pathname.match(/\/topic\/(\d+)(?:\/(\d+))?\/?$/i) ||
+      parsed.pathname.match(/\/topic\/(\d+)(?:\/(\d+))?/i);
     if (!match) {
       return null;
     }
@@ -3947,7 +4485,10 @@ function getReadLaterKeyFromHref(href) {
     parsed.hash = "";
     return `url:${parsed.href.replace(/\/$/, "")}`;
   } catch {
-    const value = String(href ?? "").replace(/#.*/, "").replace(/\/$/, "").trim();
+    const value = String(href ?? "")
+      .replace(/#.*/, "")
+      .replace(/\/$/, "")
+      .trim();
     return value ? `url:${value}` : "";
   }
 }
@@ -3962,13 +4503,19 @@ function getCurrentReadLaterUserId() {
   if (storedId) {
     return storedId;
   }
-  const topbarLink = [...document.querySelectorAll([
-    ".topBarUserInfo a[href*='/user/id/']",
-    ".topBarUserCenter a[href*='/user/id/']",
-    ".topBarUserCenter-mainPage a[href*='/user/id/']",
-    ".cc98-rebuild-native-user-entry a[href*='/user/id/']"
-  ].join(","))].find((link) => link instanceof HTMLAnchorElement);
-  const uidMatch = (topbarLink?.getAttribute("href") || topbarLink?.href || "").match(/\/user\/id\/(\d+)/i);
+  const topbarLink = [
+    ...document.querySelectorAll(
+      [
+        ".topBarUserInfo a[href*='/user/id/']",
+        ".topBarUserCenter a[href*='/user/id/']",
+        ".topBarUserCenter-mainPage a[href*='/user/id/']",
+        ".cc98-rebuild-native-user-entry a[href*='/user/id/']"
+      ].join(",")
+    )
+  ].find((link) => link instanceof HTMLAnchorElement);
+  const uidMatch = (topbarLink?.getAttribute("href") || topbarLink?.href || "").match(
+    /\/user\/id\/(\d+)/i
+  );
   return normalizeCc98AccountId(uidMatch?.[1] || "guest");
 }
 
@@ -4016,7 +4563,10 @@ function normalizeReadLaterItemsForStorage(items) {
       existing.user = next.user || existing.user;
       existing.uid = next.uid || existing.uid;
       existing.meta = next.meta || existing.meta;
-      existing.addedAt = Math.min(existing.addedAt || next.addedAt, next.addedAt || existing.addedAt);
+      existing.addedAt = Math.min(
+        existing.addedAt || next.addedAt,
+        next.addedAt || existing.addedAt
+      );
       existing.readAt = Math.max(existing.readAt || 0, next.readAt || 0);
       return;
     }
@@ -4036,7 +4586,7 @@ function readLegacyReadLaterItemsForCurrentUser(storageKey = getReadLaterStorage
       return [];
     }
     const value = JSON.parse(localStorage.getItem(READ_LATER_STORAGE_KEY) || "[]");
-    const rawItems = Array.isArray(value) ? value : (Array.isArray(value?.items) ? value.items : []);
+    const rawItems = Array.isArray(value) ? value : Array.isArray(value?.items) ? value.items : [];
     return normalizeReadLaterItemsForStorage(rawItems);
   } catch {
     return [];
@@ -4057,7 +4607,10 @@ function writeLegacyReadLaterItemsForCurrentUser(items, storageKey = getReadLate
 
 function hydrateReadLaterStorage(options = {}) {
   const storageKey = getReadLaterStorageKey();
-  if (!options.force && (readLaterStorageHydratedKey === storageKey || readLaterStorageHydratingKey === storageKey)) {
+  if (
+    !options.force &&
+    (readLaterStorageHydratedKey === storageKey || readLaterStorageHydratingKey === storageKey)
+  ) {
     return;
   }
   if (!globalThis.chrome?.storage?.local?.get) {
@@ -4076,8 +4629,13 @@ function hydrateReadLaterStorage(options = {}) {
       return;
     }
     const storedItems = normalizeReadLaterItemsForStorage(result?.[storageKey] || []);
-    const cachedItems = readLaterItemsCache?.storageKey === storageKey ? readLaterItemsCache.items : [];
-    const merged = normalizeReadLaterItemsForStorage([...legacyItems, ...storedItems, ...cachedItems]);
+    const cachedItems =
+      readLaterItemsCache?.storageKey === storageKey ? readLaterItemsCache.items : [];
+    const merged = normalizeReadLaterItemsForStorage([
+      ...legacyItems,
+      ...storedItems,
+      ...cachedItems
+    ]);
     readLaterItemsCache = { storageKey, items: merged };
     writeLegacyReadLaterItemsForCurrentUser(merged, storageKey);
     readLaterStorageHydratedKey = storageKey;
@@ -4122,7 +4680,7 @@ function readReadLaterItems() {
   return readReadLaterItemsFromExtensionCache();
   try {
     const value = JSON.parse(localStorage.getItem(READ_LATER_STORAGE_KEY) || "[]");
-    const rawItems = Array.isArray(value) ? value : (Array.isArray(value?.items) ? value.items : []);
+    const rawItems = Array.isArray(value) ? value : Array.isArray(value?.items) ? value.items : [];
     return rawItems
       .map((item) => ({
         key: String(item?.key || getReadLaterKeyFromHref(item?.href) || ""),
@@ -4194,9 +4752,10 @@ function getReadLaterItemFromTopicItem(item) {
 }
 
 function isReadLaterSaved(itemOrHref) {
-  const key = typeof itemOrHref === "string"
-    ? getReadLaterKeyFromHref(itemOrHref)
-    : getReadLaterItemFromTopicItem(itemOrHref)?.key;
+  const key =
+    typeof itemOrHref === "string"
+      ? getReadLaterKeyFromHref(itemOrHref)
+      : getReadLaterItemFromTopicItem(itemOrHref)?.key;
   if (!key) {
     return false;
   }
@@ -4400,10 +4959,9 @@ function getEditorSubmitTargetHref() {
   if (currentTopic?.href) {
     return currentTopic.href;
   }
-  return getTopicReferrerHref()
-    || getEditorSubmitDestinationHref()
-    || getStoredLastTopicHref()
-    || "";
+  return (
+    getTopicReferrerHref() || getEditorSubmitDestinationHref() || getStoredLastTopicHref() || ""
+  );
 }
 
 function markEditorSubmitIntent(context = {}) {
@@ -4458,16 +5016,18 @@ function getSubmittedTopicIdFromResponseBody(body) {
 }
 
 function resetReleasedNativeEditors() {
-  document.querySelectorAll("[data-cc98-native-submit-released='true'], [data-cc98-submit-transaction-active='true']")
+  document
+    .querySelectorAll(
+      "[data-cc98-native-submit-released='true'], [data-cc98-submit-transaction-active='true']"
+    )
     .forEach((editor) => {
       delete editor.dataset.cc98NativeSubmitReleased;
       delete editor.dataset.cc98SubmitTransactionActive;
       delete editor.dataset.cc98SubmitTransactionStartedAt;
     });
-  document.querySelectorAll("[data-cc98-submit-pending='true']")
-    .forEach((control) => {
-      delete control.dataset.cc98SubmitPending;
-    });
+  document.querySelectorAll("[data-cc98-submit-pending='true']").forEach((control) => {
+    delete control.dataset.cc98SubmitPending;
+  });
 }
 
 function getCurrentTopicContentCapturePageKey() {
@@ -4504,9 +5064,13 @@ function hasCapturedCurrentTopicContentPage() {
   }
   return replies.every((reply, index) => {
     const contentNode = findPostContentNode(reply);
-    const signatureNode = reply.querySelector(".signature, [class*='signature'], [class*='Signature']");
-    const contentSlots = contentNode?.querySelectorAll(".lazyload-placeholder, .hiddenImage").length || 0;
-    const signatureSlots = signatureNode?.querySelectorAll(".lazyload-placeholder, .hiddenImage").length || 0;
+    const signatureNode = reply.querySelector(
+      ".signature, [class*='signature'], [class*='Signature']"
+    );
+    const contentSlots =
+      contentNode?.querySelectorAll(".lazyload-placeholder, .hiddenImage").length || 0;
+    const signatureSlots =
+      signatureNode?.querySelectorAll(".lazyload-placeholder, .hiddenImage").length || 0;
     if (!contentSlots && !signatureSlots) {
       return true;
     }
@@ -4551,9 +5115,16 @@ function requestCurrentTopicContentSnapshot() {
   topicContentReplayCount += 1;
   topicContentReplayLastAt = Date.now();
   const [topicId, from] = pageKey.split(":");
-  document.dispatchEvent(new CustomEvent("cc98-reborn-topic-content-request", {
-    detail: JSON.stringify({ source: "cc98-reborn-content", type: "request-topic-content-snapshot", topicId, from: Number(from) })
-  }));
+  document.dispatchEvent(
+    new CustomEvent("cc98-reborn-topic-content-request", {
+      detail: JSON.stringify({
+        source: "cc98-reborn-content",
+        type: "request-topic-content-snapshot",
+        topicId,
+        from: Number(from)
+      })
+    })
+  );
 }
 
 function handlePageTopicContentSnapshot(event) {
@@ -4569,7 +5140,10 @@ function handlePageTopicContentSnapshot(event) {
       return;
     }
   }
-  if (message?.source !== "cc98-reborn-submit-monitor" || message.type !== "topic-content-snapshot") {
+  if (
+    message?.source !== "cc98-reborn-submit-monitor" ||
+    message.type !== "topic-content-snapshot"
+  ) {
     return;
   }
   const payload = message.payload;
@@ -4584,7 +5158,9 @@ function handlePageTopicContentSnapshot(event) {
   if (monitorEventId) {
     handledTopicContentMonitorEvents.add(monitorEventId);
     while (handledTopicContentMonitorEvents.size > 80) {
-      handledTopicContentMonitorEvents.delete(handledTopicContentMonitorEvents.values().next().value);
+      handledTopicContentMonitorEvents.delete(
+        handledTopicContentMonitorEvents.values().next().value
+      );
     }
   }
   const from = Math.max(0, Number(payload.from) || 0);
@@ -4634,9 +5210,10 @@ function recoverEditorSubmitContextFromMonitor(result) {
     return existing;
   }
   const kind = String(result?.kind || "");
-  const editor = kind === "reply"
-    ? document.querySelector("#sendTopicInfo")
-    : document.querySelector(".createTopic");
+  const editor =
+    kind === "reply"
+      ? document.querySelector("#sendTopicInfo")
+      : document.querySelector(".createTopic");
   if (!(editor instanceof HTMLElement)) {
     return null;
   }
@@ -4696,8 +5273,10 @@ function handlePageEditorSubmitResult(event) {
       return;
     }
   }
-  if (message?.source !== "cc98-reborn-submit-monitor"
-    || !/^(?:editor-submit-start|editor-submit-result)$/.test(message.type || "")) {
+  if (
+    message?.source !== "cc98-reborn-submit-monitor" ||
+    !/^(?:editor-submit-start|editor-submit-result)$/.test(message.type || "")
+  ) {
     return;
   }
   const monitorEventId = String(message.monitorEventId || "");
@@ -4707,7 +5286,9 @@ function handlePageEditorSubmitResult(event) {
   if (monitorEventId) {
     handledEditorSubmitMonitorEvents.add(monitorEventId);
     while (handledEditorSubmitMonitorEvents.size > 80) {
-      handledEditorSubmitMonitorEvents.delete(handledEditorSubmitMonitorEvents.values().next().value);
+      handledEditorSubmitMonitorEvents.delete(
+        handledEditorSubmitMonitorEvents.values().next().value
+      );
     }
   }
   const result = message.payload;
@@ -4730,18 +5311,20 @@ function handlePageEditorSubmitResult(event) {
     });
     if (releaseReparentedNativeEditorForSubmit(result.kind)) {
       editorSubmitOverlayAwaitingRebuild = true;
-      showLoadingOverlay(result.kind === "edit"
-        ? "正在提交修改，请稍候..."
-        : "正在提交内容，请稍候...", { opaque: true });
+      showLoadingOverlay(
+        result.kind === "edit" ? "正在提交修改，请稍候..." : "正在提交内容，请稍候...",
+        { opaque: true }
+      );
     }
     return;
   }
 
   const responseEntityId = getSubmittedTopicIdFromResponseBody(result.body);
   const status = Number(result.status) || 0;
-  const accepted = Boolean(result.ok)
-    || (status >= 200 && status < 300)
-    || (/^(?:post|reply)$/.test(result.kind) && /^\d+$/.test(responseEntityId));
+  const accepted =
+    Boolean(result.ok) ||
+    (status >= 200 && status < 300) ||
+    (/^(?:post|reply)$/.test(result.kind) && /^\d+$/.test(responseEntityId));
   if (!accepted) {
     const definitiveFailure = status >= 400 && status < 500;
     if (definitiveFailure) {
@@ -4759,9 +5342,7 @@ function handlePageEditorSubmitResult(event) {
 
   clearNativePostSubmitRefreshTimers();
   clearNativeEditorDraftByKey(context.draftKey);
-  const topicId = result.kind === "post"
-    ? responseEntityId
-    : "";
+  const topicId = result.kind === "post" ? responseEntityId : "";
   const responseTopicHref = getStrictTopicPageHref(
     result.location || result.responseUrl || result.url || ""
   );
@@ -4775,15 +5356,20 @@ function handlePageEditorSubmitResult(event) {
     destinationHref: destination || context.destinationHref,
     responseStatus: Number(result.status) || 0
   });
-  showLoadingOverlay(result.kind === "edit"
-    ? "\u4fee\u6539\u5df2\u6210\u529f\uff0c\u6b63\u5728\u8fd4\u56de\u5e16\u5b50..."
-    : "\u63d0\u4ea4\u5df2\u6210\u529f\uff0c\u6b63\u5728\u5237\u65b0\u5e16\u5b50...");
-  window.setTimeout(() => {
-    navigateToEditorSubmitTarget(destination || location.href, {
-      reloadFallback: true,
-      fallbackDelay: 360
-    });
-  }, result.kind === "edit" ? 220 : 360);
+  showLoadingOverlay(
+    result.kind === "edit"
+      ? "\u4fee\u6539\u5df2\u6210\u529f\uff0c\u6b63\u5728\u8fd4\u56de\u5e16\u5b50..."
+      : "\u63d0\u4ea4\u5df2\u6210\u529f\uff0c\u6b63\u5728\u5237\u65b0\u5e16\u5b50..."
+  );
+  window.setTimeout(
+    () => {
+      navigateToEditorSubmitTarget(destination || location.href, {
+        reloadFallback: true,
+        fallbackDelay: 360
+      });
+    },
+    result.kind === "edit" ? 220 : 360
+  );
 }
 
 function bindPageEditorSubmitResultMonitor() {
@@ -4808,14 +5394,18 @@ function hasRecentEditorSubmitIntent(ttl = 45000) {
 }
 
 function pageHasNativeTopicContent() {
-  return Boolean(document.querySelector([
-    ".reply:not(.cc98-rebuild-card)",
-    "#sendTopicInfo",
-    ".topicInfo",
-    ".reply-content",
-    ".substance",
-    ".cc98-rebuild-post-feed"
-  ].join(",")));
+  return Boolean(
+    document.querySelector(
+      [
+        ".reply:not(.cc98-rebuild-card)",
+        "#sendTopicInfo",
+        ".topicInfo",
+        ".reply-content",
+        ".substance",
+        ".cc98-rebuild-post-feed"
+      ].join(",")
+    )
+  );
 }
 
 function pageHasStaleEditorOnTopicRoute() {
@@ -4826,9 +5416,14 @@ function pageHasStaleEditorOnTopicRoute() {
   if (pageHasNativeTopicContent()) {
     return false;
   }
-  const hasEditor = Boolean(document.querySelector(".createTopic, .cc98-rebuild-native-editor, #cc98-comfort-app[data-page-kind='editor']"));
-  const hasCrashTemplate = Boolean(document.querySelector("#error-text, #stack-text, #source-text"))
-    || /CC98\s*\u8bba\u575b\s*-\s*\u9519\u8bef/.test(document.title);
+  const hasEditor = Boolean(
+    document.querySelector(
+      ".createTopic, .cc98-rebuild-native-editor, #cc98-comfort-app[data-page-kind='editor']"
+    )
+  );
+  const hasCrashTemplate =
+    Boolean(document.querySelector("#error-text, #stack-text, #source-text")) ||
+    /CC98\s*\u8bba\u575b\s*-\s*\u9519\u8bef/.test(document.title);
   return hasEditor || (hasCrashTemplate && hasRecentEditorSubmitIntent());
 }
 
@@ -4854,7 +5449,9 @@ function repairStaleEditorTopicRoute() {
   } catch {
     // Continue with the reload; the guard is best-effort only.
   }
-  showLoadingOverlay("\u63d0\u4ea4\u5df2\u6210\u529f\uff0c\u6b63\u5728\u91cd\u65b0\u52a0\u8f7d\u5e16\u5b50\u9875\u9762...");
+  showLoadingOverlay(
+    "\u63d0\u4ea4\u5df2\u6210\u529f\uff0c\u6b63\u5728\u91cd\u65b0\u52a0\u8f7d\u5e16\u5b50\u9875\u9762..."
+  );
   updateEditorSubmitContext({ staleTopicReloadAttemptedAt: Date.now() });
   navigateToEditorSubmitTarget(location.href, { reloadFallback: true, fallbackDelay: 400 });
   return true;
@@ -4881,14 +5478,19 @@ function refreshSubmittedTopicRoute() {
   }
   try {
     const lastReloadAt = Number.parseInt(sessionStorage.getItem(key) || "", 10);
-    if (Number.isFinite(lastReloadAt) && Date.now() - lastReloadAt <= EDITOR_TOPIC_SUBMIT_RELOAD_TTL) {
+    if (
+      Number.isFinite(lastReloadAt) &&
+      Date.now() - lastReloadAt <= EDITOR_TOPIC_SUBMIT_RELOAD_TTL
+    ) {
       return false;
     }
     sessionStorage.setItem(key, String(Date.now()));
   } catch {
     // Continue with the reload; the guard is best-effort only.
   }
-  showLoadingOverlay("\u63d0\u4ea4\u5df2\u6210\u529f\uff0c\u6b63\u5728\u5237\u65b0\u5e16\u5b50\u9875\u9762...");
+  showLoadingOverlay(
+    "\u63d0\u4ea4\u5df2\u6210\u529f\uff0c\u6b63\u5728\u5237\u65b0\u5e16\u5b50\u9875\u9762..."
+  );
   updateEditorSubmitContext({ topicRefreshAttemptedAt: Date.now() });
   navigateToEditorSubmitTarget(routeInfo.href, { reloadFallback: true, fallbackDelay: 400 });
   return true;
@@ -4902,31 +5504,43 @@ function isElementDisplayed(element) {
     return false;
   }
   const style = window.getComputedStyle(element);
-  return style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity || 1) !== 0;
+  return (
+    style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity || 1) !== 0
+  );
 }
 
 function hasVisibleEditorSubmitSuccess() {
-  const successPattern = /\u6210\u529f|\u4fee\u6539\u5b8c\u6210|\u7f16\u8f91\u5b8c\u6210|\u5df2\u4fee\u6539|\u5df2\u53d1\u8868|\u5df2\u53d1\u5e03|\u5df2\u63d0\u4ea4|\u5df2\u4fdd\u5b58|\u5df2\u7f16\u8f91/;
+  const successPattern =
+    /\u6210\u529f|\u4fee\u6539\u5b8c\u6210|\u7f16\u8f91\u5b8c\u6210|\u5df2\u4fee\u6539|\u5df2\u53d1\u8868|\u5df2\u53d1\u5e03|\u5df2\u63d0\u4ea4|\u5df2\u4fdd\u5b58|\u5df2\u7f16\u8f91/;
   const notices = [
-    ...document.querySelectorAll(".send-topic-notice-success, .noticeSuccess, [class*='notice-success'], [class*='NoticeSuccess'], [class*='success'], [class*='Success']")
+    ...document.querySelectorAll(
+      ".send-topic-notice-success, .noticeSuccess, [class*='notice-success'], [class*='NoticeSuccess'], [class*='success'], [class*='Success']"
+    )
   ].filter((node) => node instanceof HTMLElement);
-  return notices.some((node) => isElementDisplayed(node) && successPattern.test(cleanupPostText(node.textContent)));
+  return notices.some(
+    (node) => isElementDisplayed(node) && successPattern.test(cleanupPostText(node.textContent))
+  );
 }
 
 function hasVisibleEditorSubmitFailure() {
-  const failurePattern = /\u5931\u8d25|\u9519\u8bef|\u65e0\u6cd5|\u4e0d\u80fd|\u672a\u767b\u5f55|\u6743\u9650|\u9a8c\u8bc1\u7801|\u5185\u5bb9\u4e3a\u7a7a|\u5185\u5bb9\u592a\u957f|\u53d1\u5e16\u8fc7\u5feb|\u8bf7\u7a0d\u540e|请输入合法的(?:过期天数|最大投票数)/;
+  const failurePattern =
+    /\u5931\u8d25|\u9519\u8bef|\u65e0\u6cd5|\u4e0d\u80fd|\u672a\u767b\u5f55|\u6743\u9650|\u9a8c\u8bc1\u7801|\u5185\u5bb9\u4e3a\u7a7a|\u5185\u5bb9\u592a\u957f|\u53d1\u5e16\u8fc7\u5feb|\u8bf7\u7a0d\u540e|请输入合法的(?:过期天数|最大投票数)/;
   const notices = [
-    ...document.querySelectorAll([
-      ".send-topic-notice-error",
-      ".noticeError",
-      ".ant-message-error",
-      ".ant-notification-notice-error",
-      ".ant-alert-error",
-      "[class*='notice-error']",
-      "[class*='NoticeError']"
-    ].join(","))
+    ...document.querySelectorAll(
+      [
+        ".send-topic-notice-error",
+        ".noticeError",
+        ".ant-message-error",
+        ".ant-notification-notice-error",
+        ".ant-alert-error",
+        "[class*='notice-error']",
+        "[class*='NoticeError']"
+      ].join(",")
+    )
   ].filter((node) => node instanceof HTMLElement);
-  return notices.some((node) => isElementDisplayed(node) && failurePattern.test(cleanupPostText(node.textContent)));
+  return notices.some(
+    (node) => isElementDisplayed(node) && failurePattern.test(cleanupPostText(node.textContent))
+  );
 }
 
 function getEditorSubmitDestinationHref() {
@@ -4939,7 +5553,9 @@ function getEditorSubmitDestinationHref() {
   if (/\/topic\/\d+/i.test(document.referrer || "")) {
     return document.referrer;
   }
-  const boardLink = [...document.querySelectorAll('.createTopic a[href*="/board/"], a[href*="/board/"]')]
+  const boardLink = [
+    ...document.querySelectorAll('.createTopic a[href*="/board/"], a[href*="/board/"]')
+  ]
     .map((link) => makeAbsoluteCc98Url(link.getAttribute("href") || link.href || ""))
     .find((href) => /\/board\/\d+/i.test(href));
   return boardLink || "";
@@ -4955,17 +5571,24 @@ function navigateAfterEditorSubmitSuccess(startedOnTopic = false) {
   }
   const routeInfo = getTopicRouteInfo();
   if (routeInfo) {
-    showLoadingOverlay("\u63d0\u4ea4\u5df2\u6210\u529f\uff0c\u6b63\u5728\u5237\u65b0\u5e16\u5b50\u9875\u9762...");
+    showLoadingOverlay(
+      "\u63d0\u4ea4\u5df2\u6210\u529f\uff0c\u6b63\u5728\u5237\u65b0\u5e16\u5b50\u9875\u9762..."
+    );
     clearNativeEditorDraftByKey(context?.draftKey);
-    updateEditorSubmitContext({ successNavigationAttemptedAt: Date.now(), topicRefreshAttemptedAt: Date.now() });
+    updateEditorSubmitContext({
+      successNavigationAttemptedAt: Date.now(),
+      topicRefreshAttemptedAt: Date.now()
+    });
     navigateToEditorSubmitTarget(routeInfo.href, { reloadFallback: true, fallbackDelay: 400 });
     return true;
   }
   const destination = getEditorSubmitDestinationHref();
   if (destination) {
-    showLoadingOverlay(startedOnTopic
-      ? "\u63d0\u4ea4\u5df2\u6210\u529f\uff0c\u6b63\u5728\u8fd4\u56de\u5e16\u5b50\u9875\u9762..."
-      : "\u63d0\u4ea4\u5df2\u6210\u529f\uff0c\u6b63\u5728\u8df3\u8f6c...");
+    showLoadingOverlay(
+      startedOnTopic
+        ? "\u63d0\u4ea4\u5df2\u6210\u529f\uff0c\u6b63\u5728\u8fd4\u56de\u5e16\u5b50\u9875\u9762..."
+        : "\u63d0\u4ea4\u5df2\u6210\u529f\uff0c\u6b63\u5728\u8df3\u8f6c..."
+    );
     clearNativeEditorDraftByKey(context?.draftKey);
     updateEditorSubmitContext({ successNavigationAttemptedAt: Date.now() });
     navigateToEditorSubmitTarget(destination, { reloadFallback: true, fallbackDelay: 450 });
@@ -4984,26 +5607,38 @@ function isEditorSubmitIntermediatePage() {
   }
   const title = cleanupPostText(document.title);
   const bodyText = cleanupPostText(document.body?.textContent || "");
-  const hasCrashTemplate = Boolean(document.querySelector("#error-text, #stack-text, #source-text"))
-    || /CC98\s*\u8bba\u575b\s*-\s*\u9519\u8bef/.test(title);
+  const hasCrashTemplate =
+    Boolean(document.querySelector("#error-text, #stack-text, #source-text")) ||
+    /CC98\s*\u8bba\u575b\s*-\s*\u9519\u8bef/.test(title);
   const hasErrorState = Boolean(document.querySelector(".errorState, .errorTitle, .errorText"));
-  return hasCrashTemplate
-    || hasErrorState
-    || (/(\u9519\u8bef|\u51fa\u9519|Error|Exception|Invariant)/i.test(`${title} ${bodyText}`) && !pageHasNativeTopicContent());
+  return (
+    hasCrashTemplate ||
+    hasErrorState ||
+    (/(\u9519\u8bef|\u51fa\u9519|Error|Exception|Invariant)/i.test(`${title} ${bodyText}`) &&
+      !pageHasNativeTopicContent())
+  );
 }
 
 function isNativeErrorPage() {
   const title = cleanupPostText(document.title);
-  return Boolean(document.querySelector([
-    ".errorState",
-    ".errorTitle",
-    ".errorText",
-    "#error-text",
-    "#stack-text",
-    "#source-text"
-  ].join(",")))
-    || /CC98\s*\u8bba\u575b\s*[-\u2013\u2014]\s*\u9519\u8bef/i.test(title)
-    || /^(?:\u5e16\u5b50\u4e0d\u5b58\u5728|\u60a8\u672a\u767b\u5f55)(?:\s*[-\u2013\u2014].*)?$/i.test(title);
+  return (
+    Boolean(
+      document.querySelector(
+        [
+          ".errorState",
+          ".errorTitle",
+          ".errorText",
+          "#error-text",
+          "#stack-text",
+          "#source-text"
+        ].join(",")
+      )
+    ) ||
+    /CC98\s*\u8bba\u575b\s*[-\u2013\u2014]\s*\u9519\u8bef/i.test(title) ||
+    /^(?:\u5e16\u5b50\u4e0d\u5b58\u5728|\u60a8\u672a\u767b\u5f55)(?:\s*[-\u2013\u2014].*)?$/i.test(
+      title
+    )
+  );
 }
 
 function restoreEditorSubmitOverlayAfterReload() {
@@ -5015,16 +5650,19 @@ function restoreEditorSubmitOverlayAfterReload() {
   const loadedAt = Number(performance?.timeOrigin) || Date.now();
   const loadedAfterSubmit = loadedAt > submittedAt;
   const isTopicDestination = Boolean(getTopicRouteInfo());
-  const isKnownRecoveryRoute = isTopicDestination
-    || /\/editor\/(?:postTopic|postVoteTopic|edit)\//i.test(location.pathname)
-    || isNativeErrorPage();
+  const isKnownRecoveryRoute =
+    isTopicDestination ||
+    /\/editor\/(?:postTopic|postVoteTopic|edit)\//i.test(location.pathname) ||
+    isNativeErrorPage();
   if (!loadedAfterSubmit || !isKnownRecoveryRoute) {
     return false;
   }
   editorSubmitOverlayAwaitingRebuild = true;
-  showLoadingOverlay(context.isEdit
-    ? "\u4fee\u6539\u5df2\u63d0\u4ea4\uff0c\u6b63\u5728\u5237\u65b0\u5e16\u5b50..."
-    : "\u63d0\u4ea4\u5df2\u5b8c\u6210\uff0c\u6b63\u5728\u5237\u65b0\u5e16\u5b50...");
+  showLoadingOverlay(
+    context.isEdit
+      ? "\u4fee\u6539\u5df2\u63d0\u4ea4\uff0c\u6b63\u5728\u5237\u65b0\u5e16\u5b50..."
+      : "\u63d0\u4ea4\u5df2\u5b8c\u6210\uff0c\u6b63\u5728\u5237\u65b0\u5e16\u5b50..."
+  );
   scheduleEditorSubmitOverlayRelease();
   return true;
 }
@@ -5034,9 +5672,10 @@ function releaseEditorSubmitOverlayOnTopic(options = {}) {
   if (!context || !hasRecentEditorSubmitIntent(90000) || !getTopicRouteInfo()) {
     return false;
   }
-  const canRelease = options.force
-    || pageHasNativeTopicContent()
-    || Boolean(document.querySelector("#cc98-comfort-app[data-page-kind='post']"));
+  const canRelease =
+    options.force ||
+    pageHasNativeTopicContent() ||
+    Boolean(document.querySelector("#cc98-comfort-app[data-page-kind='post']"));
   if (!canRelease) {
     return false;
   }
@@ -5070,9 +5709,11 @@ function forceReloadEditorSubmitErrorPage() {
     return false;
   }
   updateEditorSubmitContext({ errorPageHardReloadAttemptedAt: Date.now() });
-  showLoadingOverlay(context.isEdit
-    ? "\u4fee\u6539\u5df2\u63d0\u4ea4\uff0c\u6b63\u5728\u5f3a\u5236\u5237\u65b0\u5e16\u5b50..."
-    : "\u63d0\u4ea4\u5df2\u5b8c\u6210\uff0c\u6b63\u5728\u5f3a\u5236\u5237\u65b0\u5e16\u5b50...");
+  showLoadingOverlay(
+    context.isEdit
+      ? "\u4fee\u6539\u5df2\u63d0\u4ea4\uff0c\u6b63\u5728\u5f3a\u5236\u5237\u65b0\u5e16\u5b50..."
+      : "\u63d0\u4ea4\u5df2\u5b8c\u6210\uff0c\u6b63\u5728\u5f3a\u5236\u5237\u65b0\u5e16\u5b50..."
+  );
   window.setTimeout(hardReloadCurrentLocation, 0);
   return true;
 }
@@ -5084,9 +5725,11 @@ function getEditorSubmitRecoveryTarget(context = readEditorSubmitContext()) {
     getTopicReferrerHref(),
     getTopicRouteInfo()?.href
   ];
-  return candidates
-    .map((href) => makeAbsoluteCc98Url(href || ""))
-    .find((href) => href && getTopicRouteInfo(href)) || "";
+  return (
+    candidates
+      .map((href) => makeAbsoluteCc98Url(href || ""))
+      .find((href) => href && getTopicRouteInfo(href)) || ""
+  );
 }
 
 function getEditorSubmitHardTarget(context = readEditorSubmitContext()) {
@@ -5132,8 +5775,10 @@ function navigateToEditorSubmitTarget(destination, options = {}) {
         Number.isFinite(options.fallbackDelay) ? options.fallbackDelay : 6000
       );
       window.setTimeout(() => {
-        if (hasRecentEditorSubmitIntent(90000)
-          && stripUrlHash(location.href) === currentWithoutHash) {
+        if (
+          hasRecentEditorSubmitIntent(90000) &&
+          stripUrlHash(location.href) === currentWithoutHash
+        ) {
           location.replace(target);
         }
       }, fallbackDelay);
@@ -5149,38 +5794,50 @@ function getUnobservedNativeSubmitRecoveryTarget(context) {
     return currentTopic;
   }
   if (context?.submitKind === "reply") {
-    return getEditorSubmitRecoveryTarget(context)
-      || makeAbsoluteCc98Url(context.destinationHref || context.startedHref || "")
-      || getStoredLastTopicHref()
-      || getTopicReferrerHref()
-      || location.href;
+    return (
+      getEditorSubmitRecoveryTarget(context) ||
+      makeAbsoluteCc98Url(context.destinationHref || context.startedHref || "") ||
+      getStoredLastTopicHref() ||
+      getTopicReferrerHref() ||
+      location.href
+    );
   }
   if (context?.submitKind === "post") {
-    return currentTopic
-      || getEditorSubmitRecoveryTarget(context)
-      || makeAbsoluteCc98Url(context.destinationHref || "")
-      || location.href;
+    return (
+      currentTopic ||
+      getEditorSubmitRecoveryTarget(context) ||
+      makeAbsoluteCc98Url(context.destinationHref || "") ||
+      location.href
+    );
   }
   return getEditorSubmitHardTarget(context);
 }
 
 function hasPendingNativeEditorSubmitControl() {
-  return [...document.querySelectorAll(
-    ".createTopic button, .createTopic input[type='button'], .createTopic input[type='submit'], #sendTopicInfo button, #sendTopicInfo input[type='button'], #sendTopicInfo input[type='submit']"
-  )].some((control) => {
+  return [
+    ...document.querySelectorAll(
+      ".createTopic button, .createTopic input[type='button'], .createTopic input[type='submit'], #sendTopicInfo button, #sendTopicInfo input[type='button'], #sendTopicInfo input[type='submit']"
+    )
+  ].some((control) => {
     if (!(control instanceof HTMLElement) || isEditorAuxiliarySubmitControl(control)) {
       return false;
     }
     const label = cleanupPostText(
       control instanceof HTMLInputElement ? control.value : control.textContent
-    ).replace(/\*/g, "").trim();
+    )
+      .replace(/\*/g, "")
+      .trim();
     return label === "..." || control.dataset.cc98SubmitPending === "true";
   });
 }
 
 function recoverUnobservedNativePostSubmit(startedRouteKey, options = {}) {
   const context = readEditorSubmitContext();
-  if (!context || context.startedRouteKey !== startedRouteKey || !hasRecentEditorSubmitIntent(90000)) {
+  if (
+    !context ||
+    context.startedRouteKey !== startedRouteKey ||
+    !hasRecentEditorSubmitIntent(90000)
+  ) {
     return false;
   }
   if (!/^(?:post|reply)$/i.test(context.submitKind || "")) {
@@ -5198,7 +5855,10 @@ function recoverUnobservedNativePostSubmit(startedRouteKey, options = {}) {
     hideLoadingOverlay({ force: true });
     return false;
   }
-  if (isSubmitContextAttempted(context, "unobservedNativeSubmitReloadAttemptedAt") && !options.allowRepeat) {
+  if (
+    isSubmitContextAttempted(context, "unobservedNativeSubmitReloadAttemptedAt") &&
+    !options.allowRepeat
+  ) {
     return false;
   }
   const submittedAt = Number(context.submittedAt) || 0;
@@ -5244,22 +5904,24 @@ function handleEditorSubmitIntermediatePage() {
     hideLoadingOverlay();
     return false;
   }
-  const target = getEditorSubmitHardTarget(context)
-    || context?.destinationHref
-    || context?.startedHref
-    || "";
-  showLoadingOverlay(context?.isEdit
-    ? "\u5df2\u786e\u8ba4\u4fee\u6539\u5b8c\u6210\uff0c\u6b63\u5728\u5237\u65b0\u8fd4\u56de..."
-    : "\u5df2\u786e\u8ba4\u63d0\u4ea4\u5b8c\u6210\uff0c\u6b63\u5728\u5237\u65b0\u8fd4\u56de...");
+  const target =
+    getEditorSubmitHardTarget(context) || context?.destinationHref || context?.startedHref || "";
+  showLoadingOverlay(
+    context?.isEdit
+      ? "\u5df2\u786e\u8ba4\u4fee\u6539\u5b8c\u6210\uff0c\u6b63\u5728\u5237\u65b0\u8fd4\u56de..."
+      : "\u5df2\u786e\u8ba4\u63d0\u4ea4\u5b8c\u6210\uff0c\u6b63\u5728\u5237\u65b0\u8fd4\u56de..."
+  );
   if (editorSubmitIntermediateTimer) {
     return true;
   }
   const delay = 180;
   editorSubmitIntermediateTimer = window.setTimeout(() => {
     editorSubmitIntermediateTimer = null;
-    showLoadingOverlay(context?.isEdit
-      ? "\u4fee\u6539\u5b8c\u6210\uff0c\u6b63\u5728\u5f3a\u5236\u5237\u65b0..."
-      : "\u63d0\u4ea4\u5b8c\u6210\uff0c\u6b63\u5728\u5f3a\u5236\u5237\u65b0...");
+    showLoadingOverlay(
+      context?.isEdit
+        ? "\u4fee\u6539\u5b8c\u6210\uff0c\u6b63\u5728\u5f3a\u5236\u5237\u65b0..."
+        : "\u63d0\u4ea4\u5b8c\u6210\uff0c\u6b63\u5728\u5f3a\u5236\u5237\u65b0..."
+    );
     updateEditorSubmitContext({ intermediateRecoveryAttemptedAt: Date.now() });
     const recoveryTarget = addEditorSubmitRecoveryCacheBust(target);
     if (recoveryTarget) {
@@ -5332,8 +5994,12 @@ function markFreshFirstPagePrevisit(topicInfo) {
 }
 
 function isTopicFirstPagePrewarmEnabled(topicInfo = getTopicRouteInfo()) {
-  return Boolean(lastSettings?.enabled && lastSettings.previsitFirstPageForTopicImages
-    && topicInfo?.current > 1 && !isNativeErrorPage());
+  return Boolean(
+    lastSettings?.enabled &&
+    lastSettings.previsitFirstPageForTopicImages &&
+    topicInfo?.current > 1 &&
+    !isNativeErrorPage()
+  );
 }
 
 function syncTopicFirstPagePrewarm() {
@@ -5409,20 +6075,23 @@ async function prewarmNativeLazyMedia() {
 
     try {
       await wait(120);
-      const media = sortNodesByDocumentPosition([...document.querySelectorAll([
-        "#root .reply-content .substance img",
-        "#root .reply-content .substance [style*='url(']",
-        "#root .reply-content .substance .hiddenImage",
-        "#root .signature img",
-        "#root .signature [style*='url(']",
-        "#root .signature .hiddenImage",
-        "#root article img",
-        "#root article [style*='url(']",
-        "#root article .hiddenImage"
-      ].join(","))])
-        .filter((node) => node instanceof Element && !node.closest("#cc98-comfort-app"));
+      const media = sortNodesByDocumentPosition([
+        ...document.querySelectorAll(
+          [
+            "#root .reply-content .substance img",
+            "#root .reply-content .substance [style*='url(']",
+            "#root .reply-content .substance .hiddenImage",
+            "#root .signature img",
+            "#root .signature [style*='url(']",
+            "#root .signature .hiddenImage",
+            "#root article img",
+            "#root article [style*='url(']",
+            "#root article .hiddenImage"
+          ].join(",")
+        )
+      ]).filter((node) => node instanceof Element && !node.closest("#cc98-comfort-app"));
 
-      [...root?.querySelectorAll("img") ?? []].forEach(eagerNativeImage);
+      [...(root?.querySelectorAll("img") ?? [])].forEach(eagerNativeImage);
       triggerOriginalDeferredImagesForPrewarm(root);
       getNativeScrollTargets().forEach((target) => scrollNativeTargetTo(target, 0));
       dispatchNativeLazySignals();
@@ -5444,9 +6113,11 @@ async function prewarmNativeLazyMedia() {
       dispatchNativeLazySignals();
       await wait(180);
 
-      await Promise.all([...root?.querySelectorAll("img") ?? []]
-        .filter((image) => image instanceof HTMLImageElement)
-        .map((image) => waitForNativeImage(image)));
+      await Promise.all(
+        [...(root?.querySelectorAll("img") ?? [])]
+          .filter((image) => image instanceof HTMLImageElement)
+          .map((image) => waitForNativeImage(image))
+      );
       lazyPrewarmedPageKey = pageKey;
     } finally {
       try {
@@ -5473,13 +6144,13 @@ function triggerOriginalDeferredImagesForPrewarm(root = document) {
 
 function getNativeScrollTargets() {
   const root = document.querySelector("#root");
-  return [...new Set([
-    window,
-    document.scrollingElement,
-    document.documentElement,
-    document.body,
-    root
-  ].filter(Boolean))];
+  return [
+    ...new Set(
+      [window, document.scrollingElement, document.documentElement, document.body, root].filter(
+        Boolean
+      )
+    )
+  ];
 }
 
 function getScrollTargetMaxTop(target) {
@@ -5514,7 +6185,7 @@ function captureNativeScrollPositions() {
   return getNativeScrollTargets().map((target) => ({
     target,
     top: getNativeScrollTop(target),
-    left: target === window ? (window.scrollX || 0) : (target.scrollLeft || 0)
+    left: target === window ? window.scrollX || 0 : target.scrollLeft || 0
   }));
 }
 
@@ -5595,10 +6266,16 @@ function collectSnapshotMedia(root) {
   const media = [];
   const seen = new Set();
   root?.querySelectorAll("img, video, source").forEach((node) => {
-    const src = node instanceof HTMLImageElement
-      ? getNonDecorativeImageSrc(node)
-      : makeAbsoluteCc98Url(getMediaUrl(node) || node.src || "");
-    if (!src || isEmojiImageUrl(src) || isDownloadFileUrl(src) || (!isProbablyPostImageUrl(src) && !isProbablyPostVideoUrl(src))) {
+    const src =
+      node instanceof HTMLImageElement
+        ? getNonDecorativeImageSrc(node)
+        : makeAbsoluteCc98Url(getMediaUrl(node) || node.src || "");
+    if (
+      !src ||
+      isEmojiImageUrl(src) ||
+      isDownloadFileUrl(src) ||
+      (!isProbablyPostImageUrl(src) && !isProbablyPostVideoUrl(src))
+    ) {
       return;
     }
     const key = normalizeMediaKey(src);
@@ -5625,9 +6302,11 @@ function findPrewarmedPostSnapshot(id, index) {
   if (prewarmedSnapshotPageKey !== getLazyPrewarmPageKey()) {
     return null;
   }
-  return prewarmedPostSnapshots.find((snapshot) => {
-    return (id && snapshot.id === id) || (index && snapshot.index === index);
-  }) ?? null;
+  return (
+    prewarmedPostSnapshots.find((snapshot) => {
+      return (id && snapshot.id === id) || (index && snapshot.index === index);
+    }) ?? null
+  );
 }
 
 function applyPrewarmedPostSnapshot(content, snapshot) {
@@ -5640,8 +6319,10 @@ function applyPrewarmedPostSnapshot(content, snapshot) {
 function applyImportantStyle(element, styles) {
   Object.entries(styles).forEach(([property, value]) => {
     const nextValue = String(value);
-    if (element.style.getPropertyValue(property) === nextValue
-      && element.style.getPropertyPriority(property) === "important") {
+    if (
+      element.style.getPropertyValue(property) === nextValue &&
+      element.style.getPropertyPriority(property) === "important"
+    ) {
       return;
     }
     element.style.setProperty(property, nextValue, "important");
@@ -5662,18 +6343,29 @@ function normalizeSecurityWatermarkIdentity(value) {
 
 function getSecurityWatermarkTopicId() {
   const href = globalThis.CC98RebornTopicDrawer?.getTopicHref?.() || location.href;
-  return getCc98RoutePathFromHref(href).split(/[?#]/, 1)[0].match(/\/topic\/(\d+)(?:\/|$)/i)?.[1] || "0";
+  return (
+    getCc98RoutePathFromHref(href)
+      .split(/[?#]/, 1)[0]
+      .match(/\/topic\/(\d+)(?:\/|$)/i)?.[1] || "0"
+  );
 }
 
 function buildSecurityWatermarkLines(value, topicId, now = Date.now()) {
   const identity = normalizeSecurityWatermarkIdentity(value);
   if (!identity) return [];
   const id = /^\d+$/.test(String(topicId)) ? String(topicId).replace(/^0+(?=\d)/, "") : "0";
-  return [`${identity.userId}  ${id.padStart(8, "0")}`, `${identity.watermarkIdPrefix}${String(Math.floor(now / 1000)).padStart(10, "0")}`];
+  return [
+    `${identity.userId}  ${id.padStart(8, "0")}`,
+    `${identity.watermarkIdPrefix}${String(Math.floor(now / 1000)).padStart(10, "0")}`
+  ];
 }
 
 function readCachedSecurityWatermarkIdentity() {
-  if (!securityWatermarkCachedIdentity || Date.now() - securityWatermarkCachedAt > WATERMARK_CACHE_TTL) return null;
+  if (
+    !securityWatermarkCachedIdentity ||
+    Date.now() - securityWatermarkCachedAt > WATERMARK_CACHE_TTL
+  )
+    return null;
   return normalizeSecurityWatermarkIdentity(securityWatermarkCachedIdentity);
 }
 
@@ -5837,7 +6529,11 @@ function chooseSecurityWatermarkDirection() {
 }
 
 function requestSecurityWatermarkRedraw() {
-  if (window.top !== window || document.visibilityState === "hidden" || securityWatermarkAnimationFrame) {
+  if (
+    window.top !== window ||
+    document.visibilityState === "hidden" ||
+    securityWatermarkAnimationFrame
+  ) {
     return;
   }
   securityWatermarkAnimationFrame = requestAnimationFrame(() => {
@@ -5849,7 +6545,12 @@ function requestSecurityWatermarkRedraw() {
 function drawSecurityWatermarkFrame() {
   const canvas = securityWatermarkCanvas;
   const identity = normalizeSecurityWatermarkIdentity(securityWatermarkIdentity);
-  if (window.top !== window || !(canvas instanceof HTMLCanvasElement) || !identity || !canvas.isConnected) {
+  if (
+    window.top !== window ||
+    !(canvas instanceof HTMLCanvasElement) ||
+    !identity ||
+    !canvas.isConnected
+  ) {
     securityWatermarkAnimationFrame = 0;
     return;
   }
@@ -5873,12 +6574,14 @@ function drawSecurityWatermarkFrame() {
   // Render the two lines once per second, then repeat that bitmap. Avoid
   // laying out hundreds of copies of the same text on every clock update.
   if (tileKey !== securityWatermarkTileKey) {
-    tile.width = Math.ceil(tileX * ratio); tile.height = Math.ceil(tileY * ratio);
+    tile.width = Math.ceil(tileX * ratio);
+    tile.height = Math.ceil(tileY * ratio);
     const text = tile.getContext("2d", { alpha: true });
     if (!text) return;
     text.setTransform(ratio, 0, 0, ratio, 0, 0);
     text.font = "600 14px Consolas, monospace";
-    text.textAlign = "center"; text.textBaseline = "middle";
+    text.textAlign = "center";
+    text.textBaseline = "middle";
     text.fillStyle = "rgba(128, 128, 128, 0.05)";
     text.fillText(lines[0], tileX / 2, tileY / 2 - 9);
     text.fillText(lines[1], tileX / 2, tileY / 2 + 9);
@@ -5904,7 +6607,10 @@ function startSecurityWatermarkAnimation() {
   requestSecurityWatermarkRedraw();
   if (!securityWatermarkDirectionTimer) {
     chooseSecurityWatermarkDirection();
-    securityWatermarkDirectionTimer = window.setInterval(chooseSecurityWatermarkDirection, WATERMARK_DIRECTION_INTERVAL);
+    securityWatermarkDirectionTimer = window.setInterval(
+      chooseSecurityWatermarkDirection,
+      WATERMARK_DIRECTION_INTERVAL
+    );
   }
   if (!securityWatermarkClockTimer) {
     securityWatermarkClockTimer = window.setInterval(requestSecurityWatermarkRedraw, 1000);
@@ -5922,9 +6628,15 @@ function stopSecurityWatermark() {
     window.clearInterval(securityWatermarkDirectionTimer);
     securityWatermarkDirectionTimer = 0;
   }
-  for (const timer of [securityWatermarkClockTimer, securityWatermarkEnsureTimer, securityWatermarkRevalidateTimer]) window.clearInterval(timer);
+  for (const timer of [
+    securityWatermarkClockTimer,
+    securityWatermarkEnsureTimer,
+    securityWatermarkRevalidateTimer
+  ])
+    window.clearInterval(timer);
   securityWatermarkClockTimer = securityWatermarkEnsureTimer = securityWatermarkRevalidateTimer = 0;
-  securityWatermarkObserver?.disconnect(); securityWatermarkObserver = null;
+  securityWatermarkObserver?.disconnect();
+  securityWatermarkObserver = null;
   window.removeEventListener("resize", resizeSecurityWatermarkCanvas);
   document.removeEventListener("visibilitychange", requestSecurityWatermarkRedraw);
   securityWatermarkHost?.remove();
@@ -6023,10 +6735,12 @@ function getRebuildTransitionRoutePath(value = location.href) {
 
 function isRebuildTransitionVeilTarget(value = location.href) {
   const path = getRebuildTransitionRoutePath(value).replace(/\/+$/, "") || "/";
-  return path === "/"
-    || /^\/(?:newTopics|focus|recommendedTopics)(?:\/|$)/i.test(path)
-    || /^\/user\/(?:id|name)(?:\/|$)/i.test(path)
-    || /^\/usercenter(?:\/|$)/i.test(path);
+  return (
+    path === "/" ||
+    /^\/(?:newTopics|focus|recommendedTopics)(?:\/|$)/i.test(path) ||
+    /^\/user\/(?:id|name)(?:\/|$)/i.test(path) ||
+    /^\/usercenter(?:\/|$)/i.test(path)
+  );
 }
 
 function releaseRebuildTransitionVeil(options = {}) {
@@ -6054,8 +6768,10 @@ function releaseRebuildTransitionVeil(options = {}) {
 }
 
 function beginRebuildTransitionVeil(value = location.href) {
-  if (!isRebuildTransitionVeilTarget(value)
-    || (lastSettings && (!lastSettings.enabled || !lastSettings.rebuildUi))) {
+  if (
+    !isRebuildTransitionVeilTarget(value) ||
+    (lastSettings && (!lastSettings.enabled || !lastSettings.rebuildUi))
+  ) {
     return false;
   }
   if (rebuildTransitionVeilReleaseTimer) {
@@ -6084,38 +6800,51 @@ function bindRebuildTransitionVeilNavigationGuard() {
     return;
   }
   rebuildTransitionVeilNavigationBound = true;
-  document.addEventListener("click", (event) => {
-    if (event.defaultPrevented || event.button !== 0
-      || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-      return;
-    }
-    const link = event.target?.closest?.("a[href]");
-    if (!(link instanceof HTMLAnchorElement)
-      || link.target === "_blank"
-      || link.hasAttribute("download")) {
-      return;
-    }
-    const href = getLinkNewTabHref(link);
-    if (!href || shouldForceLinkNewTab(link, href) || !isRebuildTransitionVeilTarget(href)) {
-      return;
-    }
-    if (getLinkedImageAction(getImageViewerEventImage(event))) return;
-    try {
-      if (new URL(href, location.href).href === location.href) {
+  document.addEventListener(
+    "click",
+    (event) => {
+      if (
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      ) {
         return;
       }
-    } catch {
-      // A valid internal route can still be handled by the native page.
-    }
-    beginRebuildTransitionVeil(href);
-    releaseReparentedNativeNodesForNavigation();
-  }, true);
+      const link = event.target?.closest?.("a[href]");
+      if (
+        !(link instanceof HTMLAnchorElement) ||
+        link.target === "_blank" ||
+        link.hasAttribute("download")
+      ) {
+        return;
+      }
+      const href = getLinkNewTabHref(link);
+      if (!href || shouldForceLinkNewTab(link, href) || !isRebuildTransitionVeilTarget(href)) {
+        return;
+      }
+      if (getLinkedImageAction(getImageViewerEventImage(event))) return;
+      try {
+        if (new URL(href, location.href).href === location.href) {
+          return;
+        }
+      } catch {
+        // A valid internal route can still be handled by the native page.
+      }
+      beginRebuildTransitionVeil(href);
+      releaseReparentedNativeNodesForNavigation();
+    },
+    true
+  );
 }
 
 function armInitialRebuildTransitionVeil() {
-  const canBeCc98 = isDirectCc98Host()
-    || isKnownCc98WebVpnHost()
-    || (isWebVpnHost() && Boolean(getWebVpnProxyPrefixFromUrl(location.href)));
+  const canBeCc98 =
+    isDirectCc98Host() ||
+    isKnownCc98WebVpnHost() ||
+    (isWebVpnHost() && Boolean(getWebVpnProxyPrefixFromUrl(location.href)));
   if (canBeCc98 && !isOpenIdAuthorizationPage() && !isPotentialWebVpnOpenIdCallback()) {
     beginRebuildTransitionVeil(location.href);
   }
@@ -6130,10 +6859,13 @@ function isUserCenterRoutePath(path = getCurrentCc98RoutePath()) {
 }
 
 function getUserCenterNativeShell() {
-  const outsideApp = (selector) => [...document.querySelectorAll(selector)]
-    .find((node) => node instanceof HTMLElement && !node.closest("#cc98-comfort-app"));
+  const outsideApp = (selector) =>
+    [...document.querySelectorAll(selector)].find(
+      (node) => node instanceof HTMLElement && !node.closest("#cc98-comfort-app")
+    );
   return {
-    navSource: outsideApp(".user-center-navigation") || document.querySelector(".user-center-navigation"),
+    navSource:
+      outsideApp(".user-center-navigation") || document.querySelector(".user-center-navigation"),
     router: outsideApp(".user-center-router") || document.querySelector(".user-center-router")
   };
 }
@@ -6142,8 +6874,9 @@ function getPublicUserProfileNativeShell() {
   const rebuiltRouter = document.querySelector(
     "#cc98-comfort-app .cc98-rebuild-native-user-router"
   );
-  const nativeRouter = [...document.querySelectorAll(".user-center-router")]
-    .find((node) => node instanceof HTMLElement && !node.closest("#cc98-comfort-app"));
+  const nativeRouter = [...document.querySelectorAll(".user-center-router")].find(
+    (node) => node instanceof HTMLElement && !node.closest("#cc98-comfort-app")
+  );
   const router = rebuiltRouter || nativeRouter || null;
   return {
     router,
@@ -6158,15 +6891,17 @@ function isPublicUserProfileNativeShellReady() {
     return true;
   }
   const { router, exact, profile, activities } = getPublicUserProfileNativeShell();
-  if (!(router instanceof HTMLElement)
-    || !(exact instanceof HTMLElement)
-    || !(profile instanceof HTMLElement)
-    || !(activities instanceof HTMLElement)) {
+  if (
+    !(router instanceof HTMLElement) ||
+    !(exact instanceof HTMLElement) ||
+    !(profile instanceof HTMLElement) ||
+    !(activities instanceof HTMLElement)
+  ) {
     return false;
   }
   const hasProfile = Boolean(
-    cleanupPostText(profile.textContent)
-    && exact.querySelector(".user-avatar img, .user-avatar-img")
+    cleanupPostText(profile.textContent) &&
+    exact.querySelector(".user-avatar img, .user-avatar-img")
   );
   const hasActivities = Boolean(activities.querySelector(".user-posts"));
   return hasProfile && hasActivities;
@@ -6176,23 +6911,27 @@ function eagerUserCenterImages(root = document) {
   if (!root?.querySelectorAll) {
     return [];
   }
-  const images = [...root.querySelectorAll("img")]
-    .filter((image) => image instanceof HTMLImageElement);
+  const images = [...root.querySelectorAll("img")].filter(
+    (image) => image instanceof HTMLImageElement
+  );
   images.forEach((image) => {
-    const source = [
-      "data-src",
-      "data-original",
-      "data-url",
-      "data-avatar",
-      "data-portrait",
-      "data-original-src",
-      "data-lazy-src",
-      "data-actualsrc"
-    ].map((attribute) => image.getAttribute(attribute)).find(Boolean)
-      || image.getAttribute("src")
-      || image.currentSrc
-      || image.src
-      || "";
+    const source =
+      [
+        "data-src",
+        "data-original",
+        "data-url",
+        "data-avatar",
+        "data-portrait",
+        "data-original-src",
+        "data-lazy-src",
+        "data-actualsrc"
+      ]
+        .map((attribute) => image.getAttribute(attribute))
+        .find(Boolean) ||
+      image.getAttribute("src") ||
+      image.currentSrc ||
+      image.src ||
+      "";
     const resolved = makeWebVpnCc98ResourceUrl(source);
     if (resolved && image.getAttribute("src") !== resolved) {
       image.src = resolved;
@@ -6217,33 +6956,40 @@ function isUserCenterNativeShellReady() {
   }
   const navText = cleanupPostText(navSource.textContent || "");
   const routerText = cleanupPostText(router.textContent || "");
-  const hasRouterSurface = Boolean(router.querySelector([
-    ".user-center-config",
-    ".user-post",
-    ".user-center-myfavorites",
-    ".user-center-myfavorite",
-    ".user-center-myfollowings-user",
-    ".user-center-myfollowers-user",
-    ".user-center-myfans",
-    ".user-profile",
-    ".user-theme",
-    "#userInfoContent",
-    "#userCenterPageCount",
-    "input",
-    "textarea",
-    "select",
-    "button",
-    "img",
-    "canvas",
-    ".ant-list",
-    ".ant-table"
-  ].join(",")));
+  const hasRouterSurface = Boolean(
+    router.querySelector(
+      [
+        ".user-center-config",
+        ".user-post",
+        ".user-center-myfavorites",
+        ".user-center-myfavorite",
+        ".user-center-myfollowings-user",
+        ".user-center-myfollowers-user",
+        ".user-center-myfans",
+        ".user-profile",
+        ".user-theme",
+        "#userInfoContent",
+        "#userCenterPageCount",
+        "input",
+        "textarea",
+        "select",
+        "button",
+        "img",
+        "canvas",
+        ".ant-list",
+        ".ant-table"
+      ].join(",")
+    )
+  );
   return Boolean(navText && (routerText || hasRouterSurface));
 }
 
 function isUserCenterPendingNativeLoad() {
-  return !isUserSettingsRoute()
-    && (isUserCenterRoutePath() || isPublicUserProfilePage()) && !isUserCenterNativeShellReady();
+  return (
+    !isUserSettingsRoute() &&
+    (isUserCenterRoutePath() || isPublicUserProfilePage()) &&
+    !isUserCenterNativeShellReady()
+  );
 }
 
 function scheduleUserCenterPendingRebuild() {
@@ -6288,7 +7034,9 @@ function clearPublicUserProfileLoadingOverlay() {
 function beginNativeLazyScrollOverlay() {
   nativeLazyScrollOverlayDepth += 1;
   document.documentElement.dataset.cc98ComfortNativeLazyScrolling = "true";
-  showLoadingOverlay("\u6b63\u5728\u52a0\u8f7d\u5e16\u5b50\u56fe\u7247...", { allowUserCenter: true });
+  showLoadingOverlay("\u6b63\u5728\u52a0\u8f7d\u5e16\u5b50\u56fe\u7247...", {
+    allowUserCenter: true
+  });
 }
 
 function maintainNativeLazyScrollOverlay() {
@@ -6296,7 +7044,9 @@ function maintainNativeLazyScrollOverlay() {
     return;
   }
   if (!loadingOverlayActive) {
-    showLoadingOverlay("\u6b63\u5728\u52a0\u8f7d\u5e16\u5b50\u56fe\u7247...", { allowUserCenter: true });
+    showLoadingOverlay("\u6b63\u5728\u52a0\u8f7d\u5e16\u5b50\u56fe\u7247...", {
+      allowUserCenter: true
+    });
     return;
   }
   ensureLoadingOverlayElement();
@@ -6315,7 +7065,8 @@ function endNativeLazyScrollOverlay(options = {}) {
 }
 
 function clearUserCenterStaleLoadingOverlay(kind = getPageKind()) {
-  const isUserCenter = kind === "userCenter" || isUserCenterRoutePath() || isPublicUserProfilePage();
+  const isUserCenter =
+    kind === "userCenter" || isUserCenterRoutePath() || isPublicUserProfilePage();
   if (!isUserCenter) {
     return false;
   }
@@ -6398,7 +7149,9 @@ function ensureLoadingOverlayElement() {
       opacity: "1",
       visibility: "visible",
       cursor: isDismissible ? "pointer" : "default",
-      background: isSoft ? "color-mix(in srgb, var(--cc98-comfort-bg) 72%, transparent)" : colors.bg,
+      background: isSoft
+        ? "color-mix(in srgb, var(--cc98-comfort-bg) 72%, transparent)"
+        : colors.bg,
       color: colors.text
     });
 
@@ -6439,18 +7192,22 @@ function ensureLoadingOverlayElement() {
   return overlay;
 }
 
-function showLoadingOverlay(message = "\u6b63\u5728\u52a0\u8f7d\u5e16\u5b50\u56fe\u7247...", options = {}) {
+function showLoadingOverlay(
+  message = "\u6b63\u5728\u52a0\u8f7d\u5e16\u5b50\u56fe\u7247...",
+  options = {}
+) {
   if (clearPublicUserProfileLoadingOverlay()) {
     return;
   }
   if (!options.allowUserCenter && clearUserCenterStaleLoadingOverlay(getPageKind())) {
     return;
   }
-  const nextSoft = !options.opaque
-    && isSoftLoadingOverlayMessage(message)
-    && !editorSubmitOverlayAwaitingRebuild
-    && document.documentElement.dataset.cc98ComfortOriginalPrewarming !== "true"
-    && document.documentElement.dataset.cc98ComfortPrewarming !== "true";
+  const nextSoft =
+    !options.opaque &&
+    isSoftLoadingOverlayMessage(message) &&
+    !editorSubmitOverlayAwaitingRebuild &&
+    document.documentElement.dataset.cc98ComfortOriginalPrewarming !== "true" &&
+    document.documentElement.dataset.cc98ComfortPrewarming !== "true";
   const shouldRestartOverlayTimer = !loadingOverlayActive || loadingOverlaySoft !== nextSoft;
   if (shouldRestartOverlayTimer) {
     loadingOverlayStartedAt = Date.now();
@@ -6484,14 +7241,18 @@ function showLoadingOverlay(message = "\u6b63\u5728\u52a0\u8f7d\u5e16\u5b50\u56f
       if (!loadingOverlayActive) {
         return;
       }
-      if (isUserCenterRoutePath()
-        && !isPublicUserProfilePage()
-        && !editorSubmitOverlayAwaitingRebuild
-        && isUserCenterNativeShellReady()) {
+      if (
+        isUserCenterRoutePath() &&
+        !isPublicUserProfilePage() &&
+        !editorSubmitOverlayAwaitingRebuild &&
+        isUserCenterNativeShellReady()
+      ) {
         nativeLazyScrollOverlayDepth = 0;
         delete document.documentElement.dataset.cc98ComfortNativeLazyScrolling;
         hideLoadingOverlay({ force: true, releaseNativeLazyScroll: true });
-        const app = document.querySelector("#cc98-comfort-app[data-cc98-user-center-pending='true']");
+        const app = document.querySelector(
+          "#cc98-comfort-app[data-cc98-user-center-pending='true']"
+        );
         if (app) {
           scheduleRebuild();
         }
@@ -6503,7 +7264,9 @@ function showLoadingOverlay(message = "\u6b63\u5728\u52a0\u8f7d\u5e16\u5b50\u56f
   if (!loadingOverlayFailsafeTimer) {
     const failsafeDelay = loadingOverlaySoft
       ? 3800
-      : (isWebVpnHost() && !editorSubmitOverlayAwaitingRebuild ? 9000 : 18500);
+      : isWebVpnHost() && !editorSubmitOverlayAwaitingRebuild
+        ? 9000
+        : 18500;
     loadingOverlayFailsafeTimer = window.setTimeout(() => {
       loadingOverlayFailsafeTimer = null;
       if (!loadingOverlayActive) {
@@ -6572,19 +7335,17 @@ function hideLoadingOverlayWhenReady(root, options = {}) {
     finish();
     return;
   }
-  const images = [...root.querySelectorAll("img")]
-    .filter((image) => {
-      if (!(image instanceof HTMLImageElement)) {
-        return false;
-      }
-      if (image.loading !== "lazy" || image.complete) {
-        return true;
-      }
-      const rect = image.getBoundingClientRect();
-      return rect.bottom >= -240 && rect.top <= window.innerHeight + 240;
-    });
-  Promise.all(images.map((image) => waitForNativeImage(image, 1300)))
-    .finally(finish);
+  const images = [...root.querySelectorAll("img")].filter((image) => {
+    if (!(image instanceof HTMLImageElement)) {
+      return false;
+    }
+    if (image.loading !== "lazy" || image.complete) {
+      return true;
+    }
+    const rect = image.getBoundingClientRect();
+    return rect.bottom >= -240 && rect.top <= window.innerHeight + 240;
+  });
+  Promise.all(images.map((image) => waitForNativeImage(image, 1300))).finally(finish);
 }
 
 function waitForDomReady() {
@@ -6601,19 +7362,19 @@ function withTimeout(promise, timeout, label) {
   const timeoutPromise = new Promise((_, reject) => {
     timeoutId = setTimeout(() => reject(new Error(`${label} timed out`)), timeout);
   });
-  return Promise.race([promise, timeoutPromise])
-    .finally(() => {
-      clearTimeout(timeoutId);
-    });
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    clearTimeout(timeoutId);
+  });
 }
 
 function shouldPrewarmOriginalBeforeRebuild() {
-  const eligible = lastSettings?.enabled
-    && lastSettings.rebuildUi
-    && lastSettings.prewarmPostImages
-    && getPageKind() === "post"
-    && !isNativeErrorPage()
-    && lazyPrewarmedPageKey !== getLazyPrewarmPageKey();
+  const eligible =
+    lastSettings?.enabled &&
+    lastSettings.rebuildUi &&
+    lastSettings.prewarmPostImages &&
+    getPageKind() === "post" &&
+    !isNativeErrorPage() &&
+    lazyPrewarmedPageKey !== getLazyPrewarmPageKey();
   if (!eligible || hasCapturedCurrentTopicContentPage()) {
     return false;
   }
@@ -6621,29 +7382,40 @@ function shouldPrewarmOriginalBeforeRebuild() {
 }
 
 function shouldPrewarmHomeAvatarBeforeRebuild() {
-  if (!lastSettings?.enabled
-    || !lastSettings.rebuildUi
-    || getPageKind() !== "home"
-    || isNativeErrorPage()
-    || homeAvatarPrewarmedPageKey === getLazyPrewarmPageKey()) {
+  if (
+    !lastSettings?.enabled ||
+    !lastSettings.rebuildUi ||
+    getPageKind() !== "home" ||
+    isNativeErrorPage() ||
+    homeAvatarPrewarmedPageKey === getLazyPrewarmPageKey()
+  ) {
     return false;
   }
-  return isWebVpnHost() || hasFreshCc98LoginSession() || Boolean(document.querySelector(
-    ".topBarUserImg img, .topBarUserName, .topBarRight:not(:has(a[href*='/logOn']))"
-  ));
+  return (
+    isWebVpnHost() ||
+    hasFreshCc98LoginSession() ||
+    Boolean(
+      document.querySelector(
+        ".topBarUserImg img, .topBarUserName, .topBarRight:not(:has(a[href*='/logOn']))"
+      )
+    )
+  );
 }
 
 function getNativeHomeAvatarImages() {
-  return [...document.querySelectorAll([
-    ".topBarUserImg img",
-    ".topBarUserInfo img",
-    ".topBarRight img[class*='avatar' i]",
-    ".topBarRight img[class*='portrait' i]",
-    ".mainPageListRow img",
-    ".focus-topic img",
-    ".card-topic img"
-  ].join(","))]
-    .filter((image) => image instanceof HTMLImageElement);
+  return [
+    ...document.querySelectorAll(
+      [
+        ".topBarUserImg img",
+        ".topBarUserInfo img",
+        ".topBarRight img[class*='avatar' i]",
+        ".topBarRight img[class*='portrait' i]",
+        ".mainPageListRow img",
+        ".focus-topic img",
+        ".card-topic img"
+      ].join(",")
+    )
+  ].filter((image) => image instanceof HTMLImageElement);
 }
 
 function getPreferredHomeAvatarUrl(image) {
@@ -6661,7 +7433,9 @@ function getPreferredHomeAvatarUrl(image) {
     "data-actualsrc"
   ];
   const lazyUrl = lazyAttrs.map((attr) => image.getAttribute(attr)).find(Boolean);
-  const sourceUrl = String(lazyUrl || image.getAttribute("src") || image.currentSrc || image.src || "").trim();
+  const sourceUrl = String(
+    lazyUrl || image.getAttribute("src") || image.currentSrc || image.src || ""
+  ).trim();
   const resolvedUrl = makeWebVpnCc98ResourceUrl(sourceUrl);
   if (resolvedUrl && image.closest(".topBarUserImg, .topBarUserInfo, .topBarRight")) {
     lastKnownTopbarAvatarUrl = resolvedUrl;
@@ -6677,11 +7451,13 @@ function getCurrentWebVpnFileResourcePrefix() {
   if (!isWebVpnHost()) {
     return "";
   }
-  const media = [...document.querySelectorAll([
-    "img[src*='/v4-upload/']",
-    "video[src*='/v4-upload/']",
-    "source[src*='/v4-upload/']"
-  ].join(","))];
+  const media = [
+    ...document.querySelectorAll(
+      ["img[src*='/v4-upload/']", "video[src*='/v4-upload/']", "source[src*='/v4-upload/']"].join(
+        ","
+      )
+    )
+  ];
   for (const node of media) {
     const src = node.getAttribute("src") || node.currentSrc || node.src || "";
     const prefix = getWebVpnProxyPrefixFromUrl(src);
@@ -6707,9 +7483,12 @@ function upgradeCc98AssetUrl(value) {
   if (!raw) return "";
   try {
     const url = new URL(raw, location.href);
-    if (url.protocol === "http:" && !url.port
-      && /^(?:(?:www|file)\.)?cc98\.org$/i.test(url.hostname)
-      && /^\/(?:static|v4-upload)(?:\/|$)/i.test(url.pathname)) {
+    if (
+      url.protocol === "http:" &&
+      !url.port &&
+      /^(?:(?:www|file)\.)?cc98\.org$/i.test(url.hostname) &&
+      /^\/(?:static|v4-upload)(?:\/|$)/i.test(url.pathname)
+    ) {
       url.protocol = "https:";
       return url.href;
     }
@@ -6727,8 +7506,10 @@ function makeWebVpnCc98ResourceUrl(value) {
   if (isWebVpnHost()) {
     try {
       const directUrl = new URL(raw, "https://www.cc98.org");
-      if (/^(?:file\.)?cc98\.org$/i.test(directUrl.hostname)
-        && /^\/v4-upload(?:\/|$)/i.test(directUrl.pathname)) {
+      if (
+        /^(?:file\.)?cc98\.org$/i.test(directUrl.hostname) &&
+        /^\/v4-upload(?:\/|$)/i.test(directUrl.pathname)
+      ) {
         const filePrefix = getCurrentWebVpnFileResourcePrefix();
         if (filePrefix) {
           return `${filePrefix}${directUrl.pathname}${directUrl.search}${directUrl.hash}`;
@@ -6750,9 +7531,11 @@ function makeWebVpnCc98ResourceUrl(value) {
       if (isWebVpnHost(url.hostname) && getWebVpnProxyPrefixFromUrl(url.href)) {
         return url.href;
       }
-      if (isWebVpnHost(url.hostname)
-        && !getWebVpnProxyPrefixFromUrl(url.href)
-        && /^\/(?:static|v4-upload|download)(?:\/|$)/i.test(url.pathname)) {
+      if (
+        isWebVpnHost(url.hostname) &&
+        !getWebVpnProxyPrefixFromUrl(url.href) &&
+        /^\/(?:static|v4-upload|download)(?:\/|$)/i.test(url.pathname)
+      ) {
         const prefix = getCurrentWebVpnCc98Prefix();
         if (prefix) {
           return `${prefix}${url.pathname}${url.search}${url.hash}`;
@@ -6789,7 +7572,9 @@ function startHomeAvatarPrewarm() {
 
   const useShortWebVpnOverlay = isWebVpnHost();
   if (useShortWebVpnOverlay) {
-    showLoadingOverlay("\u6b63\u5728\u901a\u8fc7 WebVPN \u52a0\u8f7d\u9996\u9875\u5934\u50cf...", { opaque: true });
+    showLoadingOverlay("\u6b63\u5728\u901a\u8fc7 WebVPN \u52a0\u8f7d\u9996\u9875\u5934\u50cf...", {
+      opaque: true
+    });
   }
 
   homeAvatarPrewarmPromise = (async () => {
@@ -6803,7 +7588,9 @@ function startHomeAvatarPrewarm() {
       }
       while (Date.now() < deadline) {
         const images = eagerNativeHomeAvatarImages();
-        const nativeAvatar = images.find((image) => Boolean(image.closest(".topBarUserImg, .topBarUserInfo, .topBarRight")));
+        const nativeAvatar = images.find((image) =>
+          Boolean(image.closest(".topBarUserImg, .topBarUserInfo, .topBarRight"))
+        );
         const storedAvatarUrl = makeWebVpnCc98ResourceUrl(getStoredCc98UserAvatar());
         if (storedAvatarUrl) {
           const preload = new Image();
@@ -6832,7 +7619,8 @@ function startHomeAvatarPrewarm() {
       dispatchNativeLazySignals();
       delete document.documentElement.dataset.cc98ComfortPrewarming;
     }
-  })().catch(() => {})
+  })()
+    .catch(() => {})
     .finally(() => {
       homeAvatarPrewarmedPageKey = pageKey;
       homeAvatarPrewarmPromise = null;
@@ -6854,16 +7642,23 @@ function startHomeAvatarPrewarm() {
 }
 
 function getOriginalPagePrewarmDuration() {
-  const configured = clampNumber(lastSettings?.imageLoadDuration, 800, 8000, DEFAULT_SETTINGS.imageLoadDuration);
+  const configured = clampNumber(
+    lastSettings?.imageLoadDuration,
+    800,
+    8000,
+    DEFAULT_SETTINGS.imageLoadDuration
+  );
   return isWebVpnHost() ? Math.min(configured, 3200) : configured;
 }
 
 function isPostImagePrewarmEnabled() {
-  return Boolean(lastSettings?.enabled
-    && lastSettings.rebuildUi
-    && lastSettings.prewarmPostImages
-    && getPageKind() === "post"
-    && !isNativeErrorPage());
+  return Boolean(
+    lastSettings?.enabled &&
+    lastSettings.rebuildUi &&
+    lastSettings.prewarmPostImages &&
+    getPageKind() === "post" &&
+    !isNativeErrorPage()
+  );
 }
 
 function startOriginalPagePrewarm() {
@@ -7011,9 +7806,11 @@ function startPostLazyFallbackPrewarm() {
   const remaining = Math.max(0, ensureTopicContentCaptureGraceWindow() - Date.now());
   topicContentCaptureFallbackTimer = window.setTimeout(() => {
     topicContentCaptureFallbackTimer = null;
-    if (!isPostImagePrewarmEnabled()
-      || hasCapturedCurrentTopicContentPage()
-      || lazyPrewarmedPageKey === getLazyPrewarmPageKey()) {
+    if (
+      !isPostImagePrewarmEnabled() ||
+      hasCapturedCurrentTopicContentPage() ||
+      lazyPrewarmedPageKey === getLazyPrewarmPageKey()
+    ) {
       return;
     }
     startOriginalPagePrewarm();
@@ -7057,10 +7854,15 @@ function isOpenIdAuthorizationPage(root = document) {
   }
 
   const title = String(root.title || document.title || "");
-  const hasOpenIdTitle = /CC98\s*(?:OpenID|\u767b\u5f55\u4e2d\u5fc3)|(?:OpenID|\u767b\u5f55\u4e2d\u5fc3)\s*[-|·]?\s*CC98/i.test(title);
-  const hasOpenIdForm = Boolean(root.querySelector(
-    'form[action*="/connect/authorize"], form[action*="/Account/LogOn"], form[action*="/PassKey/LogOn"]'
-  ));
+  const hasOpenIdTitle =
+    /CC98\s*(?:OpenID|\u767b\u5f55\u4e2d\u5fc3)|(?:OpenID|\u767b\u5f55\u4e2d\u5fc3)\s*[-|·]?\s*CC98/i.test(
+      title
+    );
+  const hasOpenIdForm = Boolean(
+    root.querySelector(
+      'form[action*="/connect/authorize"], form[action*="/Account/LogOn"], form[action*="/PassKey/LogOn"]'
+    )
+  );
   return hasOpenIdTitle || hasOpenIdForm;
 }
 
@@ -7069,8 +7871,9 @@ function isPotentialWebVpnOpenIdCallback() {
     return false;
   }
   const result = decodeLocationValue(`${location.pathname}${location.search}${location.hash}`);
-  return /(?:^|[?&#])state=[^&#]+/i.test(result)
-    && /(?:^|[?&#])(?:code|error)=[^&#]+/i.test(result);
+  return (
+    /(?:^|[?&#])state=[^&#]+/i.test(result) && /(?:^|[?&#])(?:code|error)=[^&#]+/i.test(result)
+  );
 }
 
 function recoverPendingWebVpnOpenIdCallback() {
@@ -7078,8 +7881,7 @@ function recoverPendingWebVpnOpenIdCallback() {
 }
 
 function isDirectCc98Host(hostname = location.hostname) {
-  return /(?:^|\.)cc98\.org$/i.test(String(hostname || ""))
-    || hostname === "cc98.org";
+  return /(?:^|\.)cc98\.org$/i.test(String(hostname || "")) || hostname === "cc98.org";
 }
 
 function isKnownCc98WebVpnHost(hostname = location.hostname) {
@@ -7096,12 +7898,18 @@ function isLikelyCc98Document(root = document) {
   if (/CC98/i.test(document.title || "")) {
     return true;
   }
-  if (root.querySelector(".topBarCC98, .topBarLogo, .mainPage, .topicInfo-info, .reply-content, .reply, .boardList, .board-body, .board-postItem-body, .createTopic, #sendTopicInfo, .message-root, .message, .user-center, .sign-in, .login, .errorState")) {
+  if (
+    root.querySelector(
+      ".topBarCC98, .topBarLogo, .mainPage, .topicInfo-info, .reply-content, .reply, .boardList, .board-body, .board-postItem-body, .createTopic, #sendTopicInfo, .message-root, .message, .user-center, .sign-in, .login, .errorState"
+    )
+  ) {
     return true;
   }
   return Array.from(root.querySelectorAll?.("a[href]") || [])
     .slice(0, 80)
-    .some((link) => /(?:^|\/\/)(?:www\.)?cc98\.org\//i.test(link.getAttribute("href") || link.href || ""));
+    .some((link) =>
+      /(?:^|\/\/)(?:www\.)?cc98\.org\//i.test(link.getAttribute("href") || link.href || "")
+    );
 }
 
 function shouldBootCc98Reborn() {
@@ -7192,7 +8000,10 @@ function getPageKind() {
   if (cc98RoutePath.includes("search")) {
     return "search";
   }
-  if (/\/editor\/(?:postTopic|postVoteTopic|edit)\/\d+/i.test(cc98RoutePath) || document.querySelector(".createTopic")) {
+  if (
+    /\/editor\/(?:postTopic|postVoteTopic|edit)\/\d+/i.test(cc98RoutePath) ||
+    document.querySelector(".createTopic")
+  ) {
     return "editor";
   }
   if (/\/logOn/i.test(cc98RoutePath) || document.querySelector(".login")) {
@@ -7210,7 +8021,11 @@ function getPageKind() {
   if (/^\/boardList\/?$/i.test(cc98RoutePath) || document.querySelector(".boardList")) {
     return "boardList";
   }
-  if (isPublicUserProfilePage() || isUserCenterRoutePath(cc98RoutePath) || document.querySelector(".user-center")) {
+  if (
+    isPublicUserProfilePage() ||
+    isUserCenterRoutePath(cc98RoutePath) ||
+    document.querySelector(".user-center")
+  ) {
     return "userCenter";
   }
   if (/^\/(?:newTopics|focus|recommendedTopics)(?:\/|$)/i.test(cc98RoutePath)) {
@@ -7244,9 +8059,9 @@ function getNewTopicsRouteAge() {
 }
 
 function hasNativeNewTopicsReadySignal() {
-  return Boolean(document.querySelector(
-    ".focus-topic, .card-topic, .noResultText, #focus-topic-getMore"
-  ));
+  return Boolean(
+    document.querySelector(".focus-topic, .card-topic, .noResultText, #focus-topic-getMore")
+  );
 }
 
 function shouldDeferNewTopicsRebuild() {
@@ -7264,9 +8079,7 @@ function scheduleNewTopicsPendingRecheck() {
   window.clearTimeout(newTopicPendingRecheckTimer);
   const age = getNewTopicsRouteAge();
   const initialRemaining = NEW_TOPICS_INITIAL_GRACE_MS - age;
-  const delay = initialRemaining > 0
-    ? Math.max(120, Math.min(420, initialRemaining))
-    : 520;
+  const delay = initialRemaining > 0 ? Math.max(120, Math.min(420, initialRemaining)) : 520;
   newTopicPendingRecheckTimer = window.setTimeout(() => {
     newTopicPendingRecheckTimer = null;
     scheduleRebuild();
@@ -7274,9 +8087,11 @@ function scheduleNewTopicsPendingRecheck() {
 }
 
 function getNativeNewTopicControl(id) {
-  return [...document.querySelectorAll(`#${id}`)]
-    .find((node) => node instanceof HTMLButtonElement && !node.closest("#cc98-comfort-app"))
-    || null;
+  return (
+    [...document.querySelectorAll(`#${id}`)].find(
+      (node) => node instanceof HTMLButtonElement && !node.closest("#cc98-comfort-app")
+    ) || null
+  );
 }
 
 function getNativeNewTopicViewMode() {
@@ -7311,11 +8126,19 @@ function getPageTitle() {
   const map = {
     home: "首页",
     boardList: "版面列表",
-    board: getFirstText(document, ".board-head-name") || document.title.replace(" - CC98论坛", "") || "版面",
-    editor: /\/editor\/postVoteTopic\/\d+/i.test(cc98RoutePath) ? "发表投票主题" : /\/editor\/edit\/\d+/i.test(cc98RoutePath) ? "编辑帖子" : "发表主题",
+    board:
+      getFirstText(document, ".board-head-name") ||
+      document.title.replace(" - CC98论坛", "") ||
+      "版面",
+    editor: /\/editor\/postVoteTopic\/\d+/i.test(cc98RoutePath)
+      ? "发表投票主题"
+      : /\/editor\/edit\/\d+/i.test(cc98RoutePath)
+        ? "编辑帖子"
+        : "发表主题",
     login: "登录",
     signin: "签到",
-    error: getFirstText(document, ".errorText") || document.title.replace(" - CC98论坛", "") || "出错了",
+    error:
+      getFirstText(document, ".errorText") || document.title.replace(" - CC98论坛", "") || "出错了",
     message: "消息",
     readLater: "\u7a0d\u540e\u518d\u770b",
     blacklist: "屏蔽规则",
@@ -7330,13 +8153,19 @@ function getPageTitle() {
 }
 
 function parseTopicMetaText(text) {
-  const raw = String(text ?? "").replace(/\s+/g, " ").trim();
+  const raw = String(text ?? "")
+    .replace(/\s+/g, " ")
+    .trim();
   if (!raw) {
     return { meta: "", author: "", replyCount: "" };
   }
 
   const timePattern = TOPIC_TIME_PATTERN;
-  const replyInfo = raw.match(new RegExp(`(?:标签[:：]\\s*(.*?)\\s*/\\s*(.*?)\\s*)?(${timePattern})\\s+(\\d+)\\s*最后回复[:：]\\s*(.*?)\\s*(${timePattern})(?:\\s|$)`));
+  const replyInfo = raw.match(
+    new RegExp(
+      `(?:标签[:：]\\s*(.*?)\\s*/\\s*(.*?)\\s*)?(${timePattern})\\s+(\\d+)\\s*最后回复[:：]\\s*(.*?)\\s*(${timePattern})(?:\\s|$)`
+    )
+  );
   if (replyInfo) {
     const [, tag, author, _postedAt, replyCount, lastReplyUser, lastReplyAt] = replyInfo;
     const tagText = tag ? `标签: ${tag.trim()} / ${author?.trim() || ""} ` : "";
@@ -7351,7 +8180,12 @@ function parseTopicMetaText(text) {
     };
   }
 
-  const cardInfo = raw.match(new RegExp(`^(\\d+(?:\\.\\d+)?(?:万|[wk])?)\\s+(\\d+)\\s*最后回复[:：]\\s*(.*?)\\s*(${timePattern})(?:\\s|$)`, "i"));
+  const cardInfo = raw.match(
+    new RegExp(
+      `^(\\d+(?:\\.\\d+)?(?:万|[wk])?)\\s+(\\d+)\\s*最后回复[:：]\\s*(.*?)\\s*(${timePattern})(?:\\s|$)`,
+      "i"
+    )
+  );
   if (cardInfo) {
     const [, viewCount, replyCount, lastReplyUser, lastReplyAt] = cardInfo;
     return {
@@ -7366,7 +8200,12 @@ function parseTopicMetaText(text) {
     };
   }
 
-  const searchInfo = raw.match(new RegExp(`^(${timePattern})\\s+(\\d+(?:\\.\\d+)?(?:万|[wk])?)\\s*最后回复[:：]\\s*(.+?)\\s*$`, "i"));
+  const searchInfo = raw.match(
+    new RegExp(
+      `^(${timePattern})\\s+(\\d+(?:\\.\\d+)?(?:万|[wk])?)\\s*最后回复[:：]\\s*(.+?)\\s*$`,
+      "i"
+    )
+  );
   if (searchInfo) {
     const [, listedAt, viewCount, lastReplyUser] = searchInfo;
     return {
@@ -7409,7 +8248,7 @@ function getTopicInfoText(topic) {
   const childTexts = [...info.children]
     .map((child) => child.textContent?.replace(/\s+/g, " ").trim() ?? "")
     .filter(Boolean);
-  return (childTexts.length > 1 ? childTexts.join(" ") : info.textContent ?? "").trim();
+  return (childTexts.length > 1 ? childTexts.join(" ") : (info.textContent ?? "")).trim();
 }
 
 function getTopicInfoParts(topic) {
@@ -7432,7 +8271,11 @@ function getFirstNumber(text) {
 }
 
 function getFirstCountText(text) {
-  return String(text ?? "").match(/\d+(?:\.\d+)?\s*(?:万|[wk])?/i)?.[0]?.replace(/\s+/g, "") ?? "";
+  return (
+    String(text ?? "")
+      .match(/\d+(?:\.\d+)?\s*(?:万|[wk])?/i)?.[0]
+      ?.replace(/\s+/g, "") ?? ""
+  );
 }
 
 function isTopicTimeText(text) {
@@ -7440,7 +8283,9 @@ function isTopicTimeText(text) {
 }
 
 function stripTopicLabel(text) {
-  return String(text ?? "").replace(/^标签[:：]\s*/, "").trim();
+  return String(text ?? "")
+    .replace(/^标签[:：]\s*/, "")
+    .trim();
 }
 
 function parseStructuredTopicMeta(topic) {
@@ -7453,9 +8298,10 @@ function parseStructuredTopicMeta(topic) {
     const viewCount = getFirstCountText(parts[0].text);
     const replyCount = getFirstNumber(parts[1].text);
     const lastReplyPart = parts.find((part) => part.text.includes("最后回复"));
-    const lastReplyUser = getFirstLink(lastReplyPart?.node ?? info, 'a[href*="/user/"]')?.text
-      || lastReplyPart?.text.replace(/最后回复[:：]\s*/, "").trim()
-      || "";
+    const lastReplyUser =
+      getFirstLink(lastReplyPart?.node ?? info, 'a[href*="/user/"]')?.text ||
+      lastReplyPart?.text.replace(/最后回复[:：]\s*/, "").trim() ||
+      "";
     const lastReplyAt = parts[3].text;
     if (viewCount && replyCount && lastReplyUser && lastReplyAt) {
       return {
@@ -7483,16 +8329,19 @@ function parseStructuredTopicMeta(topic) {
     const tag = stripTopicLabel(tagPart?.text || "");
     const viewCount = getFirstCountText(viewPart?.text);
     const lastReplyPart = parts.find((part) => part.text.includes("最后回复"));
-    const lastReplyUser = getFirstLink(lastReplyPart?.node ?? info, 'a[href*="/user/"]')?.text
-      || lastReplyPart?.text.replace(/最后回复[:：]\s*/, "").trim()
-      || "";
+    const lastReplyUser =
+      getFirstLink(lastReplyPart?.node ?? info, 'a[href*="/user/"]')?.text ||
+      lastReplyPart?.text.replace(/最后回复[:：]\s*/, "").trim() ||
+      "";
     if ((listedAt || tag) && viewCount && lastReplyUser) {
       const hoverMeta = [
         tag ? `标签: ${tag}` : "",
         listedAt ? `时间: ${listedAt}` : "",
         `浏览数: ${viewCount}`,
         `最后回复: ${lastReplyUser}`
-      ].filter(Boolean).join(" ");
+      ]
+        .filter(Boolean)
+        .join(" ");
       return {
         meta: "",
         hoverMeta,
@@ -7514,34 +8363,44 @@ function collectNewTopicCardMedia(topic) {
   }
   const media = [];
   const seen = new Set();
-  topic.querySelectorAll([
-    ".card-topic-thumbnail img",
-    ".dplayer video[poster]",
-    ".dplayer [style*='background-image']"
-  ].join(",")).forEach((node) => {
-    if (!(node instanceof Element) || node.closest(".card-topic-thumbnail-mini")) {
-      return;
-    }
-    const rawUrl = node instanceof HTMLVideoElement
-      ? (node.getAttribute("poster") || "")
-      : (getRuntimeMediaUrl(node) || getMediaUrl(node));
-    if (!String(rawUrl || "").trim() || /^(?:data:|blob:|about:blank)/i.test(String(rawUrl).trim())) {
-      return;
-    }
-    const src = makeWebVpnCc98ResourceUrl(rawUrl);
-    if (!src
-      || seen.has(src)
-      || (!isProbablyPostImageUrl(src) && !/\/v(?:2|4)-upload\/(?:thumbnail|t)\//i.test(src))
-      || isDecorativeFrameImageUrl(src)
-      || /\/static\/images\/audio_cover\.png(?:[?#]|$)/i.test(src)) {
-      return;
-    }
-    seen.add(src);
-    media.push({
-      src,
-      alt: cleanupPostText(node.getAttribute("alt") || "")
+  topic
+    .querySelectorAll(
+      [
+        ".card-topic-thumbnail img",
+        ".dplayer video[poster]",
+        ".dplayer [style*='background-image']"
+      ].join(",")
+    )
+    .forEach((node) => {
+      if (!(node instanceof Element) || node.closest(".card-topic-thumbnail-mini")) {
+        return;
+      }
+      const rawUrl =
+        node instanceof HTMLVideoElement
+          ? node.getAttribute("poster") || ""
+          : getRuntimeMediaUrl(node) || getMediaUrl(node);
+      if (
+        !String(rawUrl || "").trim() ||
+        /^(?:data:|blob:|about:blank)/i.test(String(rawUrl).trim())
+      ) {
+        return;
+      }
+      const src = makeWebVpnCc98ResourceUrl(rawUrl);
+      if (
+        !src ||
+        seen.has(src) ||
+        (!isProbablyPostImageUrl(src) && !/\/v(?:2|4)-upload\/(?:thumbnail|t)\//i.test(src)) ||
+        isDecorativeFrameImageUrl(src) ||
+        /\/static\/images\/audio_cover\.png(?:[?#]|$)/i.test(src)
+      ) {
+        return;
+      }
+      seen.add(src);
+      media.push({
+        src,
+        alt: cleanupPostText(node.getAttribute("alt") || "")
+      });
     });
-  });
   return media.slice(0, 6);
 }
 
@@ -7559,21 +8418,25 @@ function getNativeTopicItemCache(mode) {
     clearNativeTopicItemCache();
     return null;
   }
-  const sources = [...document.querySelectorAll(".focus-topic-topicArea, .card-topic-area-middle")]
-    .filter(node => !node.closest("#cc98-comfort-app"));
+  const sources = [
+    ...document.querySelectorAll(".focus-topic-topicArea, .card-topic-area-middle")
+  ].filter((node) => !node.closest("#cc98-comfort-app"));
   if (!sources.length) {
     clearNativeTopicItemCache();
     return null;
   }
   const key = `${getRoutePageKey()}|${document.baseURI}|${mode}`;
-  if (nativeTopicItemCache?.key !== key
-    || sources.length !== nativeTopicItemCache.sources.length
-    || sources.some((node, index) => node !== nativeTopicItemCache.sources[index])) {
+  if (
+    nativeTopicItemCache?.key !== key ||
+    sources.length !== nativeTopicItemCache.sources.length ||
+    sources.some((node, index) => node !== nativeTopicItemCache.sources[index])
+  ) {
     clearNativeTopicItemCache();
     const cache = { key, sources, items: new WeakMap(), observer: null };
-    cache.invalidate = records => {
+    cache.invalidate = (records) => {
       for (const record of records) {
-        const target = record.target instanceof Element ? record.target : record.target.parentElement;
+        const target =
+          record.target instanceof Element ? record.target : record.target.parentElement;
         const topic = target?.closest(".focus-topic, .card-topic");
         if (topic) cache.items.delete(topic);
         // Detached/reinserted rows may have changed while outside observation.
@@ -7581,12 +8444,20 @@ function getNativeTopicItemCache(mode) {
         for (const node of record.addedNodes) {
           if (!(node instanceof Element)) continue;
           if (node.matches(".focus-topic, .card-topic")) cache.items.delete(node);
-          node.querySelectorAll(".focus-topic, .card-topic").forEach(row => cache.items.delete(row));
+          node
+            .querySelectorAll(".focus-topic, .card-topic")
+            .forEach((row) => cache.items.delete(row));
         }
       }
     };
     cache.observer = new MutationObserver(cache.invalidate);
-    for (const source of sources) cache.observer.observe(source, { subtree: true, childList: true, characterData: true, attributes: true });
+    for (const source of sources)
+      cache.observer.observe(source, {
+        subtree: true,
+        childList: true,
+        characterData: true,
+        attributes: true
+      });
     nativeTopicItemCache = cache;
   }
   // A native update and a synchronous refresh can share a task, before the
@@ -7598,27 +8469,31 @@ function getNativeTopicItemCache(mode) {
 function getTopicItems(root = document) {
   const items = [];
   const seen = new Set();
-  const currentNewTopicMode = root === document && isNewTopicsPage()
-    ? getNativeNewTopicViewMode()
-    : "";
+  const currentNewTopicMode =
+    root === document && isNewTopicsPage() ? getNativeNewTopicViewMode() : "";
   // Parsed background documents retain the uncached extraction contract.
   const cache = root === document ? getNativeTopicItemCache(currentNewTopicMode) : null;
-  const preferredSelector = currentNewTopicMode && currentNewTopicMode !== "classic"
-    ? ".card-topic"
-    : (currentNewTopicMode === "classic" ? ".focus-topic" : ".focus-topic, .card-topic");
-  let topicNodes = [...root.querySelectorAll(preferredSelector)]
-    .filter((topic) => !topic.closest("#cc98-comfort-app"));
+  const preferredSelector =
+    currentNewTopicMode && currentNewTopicMode !== "classic"
+      ? ".card-topic"
+      : currentNewTopicMode === "classic"
+        ? ".focus-topic"
+        : ".focus-topic, .card-topic";
+  let topicNodes = [...root.querySelectorAll(preferredSelector)].filter(
+    (topic) => !topic.closest("#cc98-comfort-app")
+  );
   if (!topicNodes.length && preferredSelector !== ".focus-topic, .card-topic") {
-    topicNodes = [...root.querySelectorAll(".focus-topic, .card-topic")]
-      .filter((topic) => !topic.closest("#cc98-comfort-app"));
+    topicNodes = [...root.querySelectorAll(".focus-topic, .card-topic")].filter(
+      (topic) => !topic.closest("#cc98-comfort-app")
+    );
   }
   topicNodes.forEach((topic) => {
-    const canCache = cache?.sources.some(source => source.contains(topic));
+    const canCache = cache?.sources.some((source) => source.contains(topic));
     const cached = canCache && cache.items.get(topic);
     if (cached) {
       if (!seen.has(cached.href)) {
         seen.add(cached.href);
-        items.push({ ...cached, media: cached.media.map(media => ({ ...media })) });
+        items.push({ ...cached, media: cached.media.map((media) => ({ ...media })) });
       }
       return;
     }
@@ -7628,10 +8503,17 @@ function getTopicItems(root = document) {
     }
     seen.add(titleLink.href);
 
-    const board = getFirstLink(topic, '.focus-topic-right[href*="/board/"], .card-topic-boardName a[href*="/board/"]');
-    const user = getFirstLink(topic, '.focus-topic-left[href*="/user/id/"], .card-topic-userName[href*="/user/id/"]');
+    const board = getFirstLink(
+      topic,
+      '.focus-topic-right[href*="/board/"], .card-topic-boardName a[href*="/board/"]'
+    );
+    const user = getFirstLink(
+      topic,
+      '.focus-topic-left[href*="/user/id/"], .card-topic-userName[href*="/user/id/"]'
+    );
     const avatar = topic.querySelector("img")?.src ?? "";
-    const parsedMeta = parseStructuredTopicMeta(topic) ?? parseTopicMetaText(getTopicInfoText(topic));
+    const parsedMeta =
+      parseStructuredTopicMeta(topic) ?? parseTopicMetaText(getTopicInfoText(topic));
     const uidMatch = user?.href?.match(/\/user\/id\/(\d+)/);
     const item = {
       type: "topic",
@@ -7639,7 +8521,10 @@ function getTopicItems(root = document) {
       href: titleLink.href,
       board: board?.text ?? "",
       boardHref: board?.href ?? "",
-      user: user?.text || getFirstText(topic, ".focus-topic-userName, .card-topic-userName") || parsedMeta.author,
+      user:
+        user?.text ||
+        getFirstText(topic, ".focus-topic-userName, .card-topic-userName") ||
+        parsedMeta.author,
       uid: uidMatch?.[1] ?? "",
       avatar,
       meta: parsedMeta.meta,
@@ -7650,7 +8535,7 @@ function getTopicItems(root = document) {
       media: collectNewTopicCardMedia(topic)
     };
     if (canCache) cache.items.set(topic, item);
-    items.push({ ...item, media: item.media.map(media => ({ ...media })) });
+    items.push({ ...item, media: item.media.map((media) => ({ ...media })) });
   });
   return items;
 }
@@ -7678,7 +8563,9 @@ function normalizeSearchSortSetting(value) {
 
 function getSearchSortSetting() {
   try {
-    return normalizeSearchSortSetting(JSON.parse(localStorage.getItem(SEARCH_SORT_STORAGE_KEY) || "null"));
+    return normalizeSearchSortSetting(
+      JSON.parse(localStorage.getItem(SEARCH_SORT_STORAGE_KEY) || "null")
+    );
   } catch {
     return "original";
   }
@@ -7695,7 +8582,9 @@ function setSearchSortSetting(nextSetting) {
 }
 
 function parseCountValue(value) {
-  const text = String(value ?? "").replace(/,/g, "").trim();
+  const text = String(value ?? "")
+    .replace(/,/g, "")
+    .trim();
   const match = text.match(/(\d+(?:\.\d+)?)\s*(万|w|k)?/i);
   if (!match) {
     return 0;
@@ -7727,29 +8616,45 @@ function parseTopicTimeValue(value) {
   if (relative) {
     const amount = Number(relative[1]);
     const unit = relative[2];
-    const unitMs = {
-      秒前: 1000,
-      分钟前: 60 * 1000,
-      小时前: 60 * 60 * 1000,
-      天前: 24 * 60 * 60 * 1000,
-      周前: 7 * 24 * 60 * 60 * 1000,
-      月前: 30 * 24 * 60 * 60 * 1000,
-      年前: 365 * 24 * 60 * 60 * 1000
-    }[unit] || 0;
+    const unitMs =
+      {
+        秒前: 1000,
+        分钟前: 60 * 1000,
+        小时前: 60 * 60 * 1000,
+        天前: 24 * 60 * 60 * 1000,
+        周前: 7 * 24 * 60 * 60 * 1000,
+        月前: 30 * 24 * 60 * 60 * 1000,
+        年前: 365 * 24 * 60 * 60 * 1000
+      }[unit] || 0;
     return unitMs ? now - amount * unitMs : 0;
   }
   const today = new Date();
-  const dayOffset = text.startsWith("今天") ? 0 : text.startsWith("昨天") ? 1 : text.startsWith("前天") ? 2 : null;
+  const dayOffset = text.startsWith("今天")
+    ? 0
+    : text.startsWith("昨天")
+      ? 1
+      : text.startsWith("前天")
+        ? 2
+        : null;
   if (dayOffset !== null) {
     const time = text.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
     if (!time) {
       return 0;
     }
-    const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() - dayOffset, Number(time[1]), Number(time[2]), Number(time[3] || 0));
+    const date = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate() - dayOffset,
+      Number(time[1]),
+      Number(time[2]),
+      Number(time[3] || 0)
+    );
     return date.getTime();
   }
   const normalized = text.replace(/\//g, "-");
-  const absolute = normalized.match(/(\d{4})-(\d{1,2})-(\d{1,2})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+  const absolute = normalized.match(
+    /(\d{4})-(\d{1,2})-(\d{1,2})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/
+  );
   if (absolute) {
     return new Date(
       Number(absolute[1]),
@@ -7762,7 +8667,14 @@ function parseTopicTimeValue(value) {
   }
   const monthDay = normalized.match(/(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?/);
   if (monthDay) {
-    return new Date(today.getFullYear(), Number(monthDay[1]) - 1, Number(monthDay[2]), Number(monthDay[3]), Number(monthDay[4]), Number(monthDay[5] || 0)).getTime();
+    return new Date(
+      today.getFullYear(),
+      Number(monthDay[1]) - 1,
+      Number(monthDay[2]),
+      Number(monthDay[3]),
+      Number(monthDay[4]),
+      Number(monthDay[5] || 0)
+    ).getTime();
   }
   return 0;
 }
@@ -7800,7 +8712,11 @@ function sortSearchTopicItems(items, _keyword, setting = getSearchSortSetting())
 function createSearchSortControls(totalCount, keyword) {
   const setting = getSearchSortSetting();
   const controls = createElement("section", "cc98-rebuild-search-sort");
-  const label = createElement("span", "cc98-rebuild-search-sort-label", `搜索结果排序 · ${totalCount} 条`);
+  const label = createElement(
+    "span",
+    "cc98-rebuild-search-sort-label",
+    `搜索结果排序 · ${totalCount} 条`
+  );
   const options = createElement("div", "cc98-rebuild-search-sort-options");
   const wrap = createElement("label", "cc98-rebuild-search-sort-select");
   wrap.append(createElement("span", "", "排序方式"));
@@ -7833,7 +8749,9 @@ function getBoardSearchItems(root = document) {
       return;
     }
     const href = makeAbsoluteCc98Url(link.getAttribute("href") || link.href || "");
-    const title = cleanupPostText(link.querySelector(".focus-board")?.textContent || link.textContent);
+    const title = cleanupPostText(
+      link.querySelector(".focus-board")?.textContent || link.textContent
+    );
     if (!href || !title || seen.has(href)) {
       return;
     }
@@ -7853,13 +8771,7 @@ function getBoardSearchItems(root = document) {
 }
 
 function getPostTitle() {
-  const selectors = [
-    ".topic-title",
-    ".post-title",
-    ".title",
-    "h1",
-    "h2"
-  ];
+  const selectors = [".topic-title", ".post-title", ".title", "h1", "h2"];
   for (const selector of selectors) {
     const text = getFirstText(document, selector);
     if (text && text.length > 1 && !["CC98论坛", "首页"].includes(text)) {
@@ -7903,7 +8815,10 @@ function getOwnMediaUrl(node) {
   }
   const srcset = node.getAttribute?.("srcset") || node.getAttribute?.("data-srcset");
   if (srcset) {
-    const first = srcset.split(",").map((item) => item.trim().split(/\s+/)[0]).find(Boolean);
+    const first = srcset
+      .split(",")
+      .map((item) => item.trim().split(/\s+/)[0])
+      .find(Boolean);
     if (first) {
       return first;
     }
@@ -7918,7 +8833,9 @@ function getMediaUrl(node) {
     return ownUrl;
   }
 
-  const source = node.closest?.("picture")?.querySelector("source[srcset], source[data-srcset], source[src], source[data-src]");
+  const source = node
+    .closest?.("picture")
+    ?.querySelector("source[srcset], source[data-srcset], source[src], source[data-src]");
   if (source) {
     return getMediaUrl(source);
   }
@@ -7946,7 +8863,9 @@ function isImageUrl(url) {
 }
 
 function getExtensionAssetUrl(assetPath) {
-  const path = String(assetPath ?? "").replace(/^\/+/, "").replace(/\\/g, "/");
+  const path = String(assetPath ?? "")
+    .replace(/^\/+/, "")
+    .replace(/\\/g, "/");
   if (!path) {
     return "";
   }
@@ -7961,9 +8880,11 @@ function getExtensionAssetUrl(assetPath) {
 }
 
 function isDarkComfortTheme() {
-  return document.documentElement.dataset.cc98ComfortTone === "dark"
-    || (!document.documentElement.dataset.cc98ComfortTone
-      && globalThis.CC98RebornThemeCore.resolveTone(lastSettings) === "dark");
+  return (
+    document.documentElement.dataset.cc98ComfortTone === "dark" ||
+    (!document.documentElement.dataset.cc98ComfortTone &&
+      globalThis.CC98RebornThemeCore.resolveTone(lastSettings) === "dark")
+  );
 }
 
 function getLocalAcEmojiFolder() {
@@ -7990,9 +8911,13 @@ function getLocalEmojiAssetUrlFromSrc(src) {
   if (match) {
     return getExtensionAssetUrl(`${getLocalAcEmojiFolder()}/${match[1]}.png`);
   }
-  match = value.match(/(?:^|\/)(?:static\/)?images\/mahjong\/(animal2017|carton2017|face2017)\/(\d{3})\.(gif|png)(?:[?#].*)?$/i);
+  match = value.match(
+    /(?:^|\/)(?:static\/)?images\/mahjong\/(animal2017|carton2017|face2017)\/(\d{3})\.(gif|png)(?:[?#].*)?$/i
+  );
   if (match) {
-    return getExtensionAssetUrl(`images/mahjong/${match[1].toLowerCase()}/${match[2]}.${match[3].toLowerCase()}`);
+    return getExtensionAssetUrl(
+      `images/mahjong/${match[1].toLowerCase()}/${match[2]}.${match[3].toLowerCase()}`
+    );
   }
   match = value.match(/(?:^|\/)(?:static\/)?images\/tb\/tb(\d{2})\.png(?:[?#].*)?$/i);
   if (match) {
@@ -8015,8 +8940,13 @@ function isAudioUrl(url) {
 
 function isDownloadFileUrl(url) {
   const value = String(url ?? "");
-  return /\.(?:pdf|docx?|xlsx?|pptx?|zip|rar|7z|txt|csv|tsv|md)(?:[?#].*)?$/i.test(value)
-    || (/\/v4-upload\/d\//i.test(value) && !isAudioUrl(value) && !isImageUrl(value) && !isVideoUrl(value));
+  return (
+    /\.(?:pdf|docx?|xlsx?|pptx?|zip|rar|7z|txt|csv|tsv|md)(?:[?#].*)?$/i.test(value) ||
+    (/\/v4-upload\/d\//i.test(value) &&
+      !isAudioUrl(value) &&
+      !isImageUrl(value) &&
+      !isVideoUrl(value))
+  );
 }
 
 function isDecorativeFrameImageUrl(url) {
@@ -8057,11 +8987,12 @@ function removeDecorativeFrameImages(root = document) {
     if (!(image instanceof HTMLImageElement)) {
       return;
     }
-    const rawSrc = image.getAttribute("src")
-      || image.getAttribute("data-src")
-      || image.currentSrc
-      || image.src
-      || getOwnMediaUrl(image);
+    const rawSrc =
+      image.getAttribute("src") ||
+      image.getAttribute("data-src") ||
+      image.currentSrc ||
+      image.src ||
+      getOwnMediaUrl(image);
     if (isDecorativeFrameImageUrl(rawSrc)) {
       image.remove();
     }
@@ -8090,10 +9021,12 @@ function isBilibiliVideoUrl(url) {
 
 function isUsableNativeVideoUrl(url) {
   const value = String(url ?? "");
-  return Boolean(value)
-    && !value.startsWith("data:")
-    && !isBilibiliVideoUrl(value)
-    && (/^blob:/i.test(value) || isProbablyPostVideoUrl(value));
+  return (
+    Boolean(value) &&
+    !value.startsWith("data:") &&
+    !isBilibiliVideoUrl(value) &&
+    (/^blob:/i.test(value) || isProbablyPostVideoUrl(value))
+  );
 }
 
 function isAPlayerElement(node) {
@@ -8101,7 +9034,9 @@ function isAPlayerElement(node) {
 }
 
 function extractAudioUrlFromText(text) {
-  const match = String(text ?? "").match(/(?:https?:\/\/[^\s<>"']+|\/[^\s<>"']+)\.(?:mp3|m4a|wav|flac|aac|ogg|opus)(?:[?#][^\s<>"']*)?/i);
+  const match = String(text ?? "").match(
+    /(?:https?:\/\/[^\s<>"']+|\/[^\s<>"']+)\.(?:mp3|m4a|wav|flac|aac|ogg|opus)(?:[?#][^\s<>"']*)?/i
+  );
   return match ? makeAbsoluteCc98Url(match[0]) : "";
 }
 
@@ -8110,8 +9045,14 @@ function getAPlayerAudioUrl(player) {
     return "";
   }
   const mediaNodes = [
-    ...(player.matches("audio, source, a[href], [data-src], [data-original], [data-url], [data-file], [data-href]") ? [player] : []),
-    ...player.querySelectorAll("audio, source, a[href], [data-src], [data-original], [data-url], [data-file], [data-href]")
+    ...(player.matches(
+      "audio, source, a[href], [data-src], [data-original], [data-url], [data-file], [data-href]"
+    )
+      ? [player]
+      : []),
+    ...player.querySelectorAll(
+      "audio, source, a[href], [data-src], [data-original], [data-url], [data-file], [data-href]"
+    )
   ];
   for (const mediaNode of mediaNodes) {
     const mediaUrl = getRuntimeMediaUrl(mediaNode) || getOwnMediaUrl(mediaNode);
@@ -8119,7 +9060,9 @@ function getAPlayerAudioUrl(player) {
       return makeAbsoluteCc98Url(mediaUrl);
     }
   }
-  for (const node of player.querySelectorAll(".aplayer-title, .aplayer-list-title, [class*='title']")) {
+  for (const node of player.querySelectorAll(
+    ".aplayer-title, .aplayer-list-title, [class*='title']"
+  )) {
     const url = extractAudioUrlFromText(node.textContent);
     if (url) {
       return url;
@@ -8130,7 +9073,9 @@ function getAPlayerAudioUrl(player) {
 
 function getAudioTitleFromUrl(url) {
   try {
-    const filename = decodeURIComponent(new URL(url, location.href).pathname.split("/").filter(Boolean).pop() || "");
+    const filename = decodeURIComponent(
+      new URL(url, location.href).pathname.split("/").filter(Boolean).pop() || ""
+    );
     return filename || "\u97f3\u9891";
   } catch {
     return "\u97f3\u9891";
@@ -8142,11 +9087,13 @@ function isLikelyAudioTitleUrl(text) {
 }
 
 function getAPlayerTitle(player, src = "") {
-  const title = cleanupPostText(player?.querySelector?.(".aplayer-title, .aplayer-list-title")?.textContent);
+  const title = cleanupPostText(
+    player?.querySelector?.(".aplayer-title, .aplayer-list-title")?.textContent
+  );
   if (title && !isLikelyAudioTitleUrl(title)) {
     return title;
   }
-  return src ? getAudioTitleFromUrl(src) : (title || "\u97f3\u9891");
+  return src ? getAudioTitleFromUrl(src) : title || "\u97f3\u9891";
 }
 
 function getAPlayerPlayTrigger(player) {
@@ -8168,7 +9115,9 @@ function getSourceAPlayerPlayingState(sourcePlayer) {
     sourcePlayer.className,
     sourcePlayer.querySelector(".aplayer-button, .aplayer-icon-play")?.className,
     sourcePlayer.querySelector(".aplayer-pause")?.className
-  ].filter(Boolean).join(" ");
+  ]
+    .filter(Boolean)
+    .join(" ");
   if (/\b(?:aplayer-pause|aplayer-playing)\b/i.test(stateText)) {
     return true;
   }
@@ -8196,8 +9145,9 @@ async function toggleSourceAPlayer(sourcePlayer) {
     const previousState = getSourceAPlayerPlayingState(sourcePlayer);
     trigger.click();
     await wait(80);
-    return getSourceAPlayerPlayingState(sourcePlayer)
-      ?? (previousState === null ? null : !previousState);
+    return (
+      getSourceAPlayerPlayingState(sourcePlayer) ?? (previousState === null ? null : !previousState)
+    );
   }
   return null;
 }
@@ -8205,7 +9155,10 @@ async function toggleSourceAPlayer(sourcePlayer) {
 function setAudioPlayButtonState(playButton, isPlaying) {
   playButton.classList.toggle("is-playing", Boolean(isPlaying));
   playButton.textContent = isPlaying ? "\u275a\u275a" : "\u25b6";
-  playButton.setAttribute("aria-label", isPlaying ? "\u6682\u505c\u97f3\u9891" : "\u64ad\u653e\u97f3\u9891");
+  playButton.setAttribute(
+    "aria-label",
+    isPlaying ? "\u6682\u505c\u97f3\u9891" : "\u64ad\u653e\u97f3\u9891"
+  );
 }
 
 function getSourceAPlayerAudio(sourcePlayer) {
@@ -8230,7 +9183,11 @@ function getSourceAPlayerAudio(sourcePlayer) {
 }
 
 function getAudioProgressPercent(audio) {
-  if (!(audio instanceof HTMLMediaElement) || !Number.isFinite(audio.duration) || audio.duration <= 0) {
+  if (
+    !(audio instanceof HTMLMediaElement) ||
+    !Number.isFinite(audio.duration) ||
+    audio.duration <= 0
+  ) {
     return { played: 0, loaded: 0 };
   }
   let loadedEnd = 0;
@@ -8278,7 +9235,8 @@ function createAudioPlayerFromUrl(url, title = "", sourcePlayer = null) {
     }
     try {
       const sourceState = await toggleSourceAPlayer(sourcePlayer);
-      const playing = sourceState === null ? playButton.classList.toggle("is-playing") : sourceState;
+      const playing =
+        sourceState === null ? playButton.classList.toggle("is-playing") : sourceState;
       playButton.classList.toggle("is-playing", playing);
       playButton.textContent = playing ? "\u275a\u275a" : "\u25b6";
       setAudioPlayButtonState(playButton, playing);
@@ -8297,7 +9255,13 @@ function createAudioPlayerFromUrl(url, title = "", sourcePlayer = null) {
   playButton.setAttribute("aria-label", "播放音频");
   setAudioPlayButtonState(playButton, false);
   const body = createElement("div", "cc98-rebuild-audio-body");
-  body.append(createElement("div", "cc98-rebuild-audio-title", title || (src ? getAudioTitleFromUrl(src) : "\u97f3\u9891")));
+  body.append(
+    createElement(
+      "div",
+      "cc98-rebuild-audio-title",
+      title || (src ? getAudioTitleFromUrl(src) : "\u97f3\u9891")
+    )
+  );
   const progressTrack = createElement("div", "cc98-rebuild-audio-progress");
   const loadedBar = createElement("span", "cc98-rebuild-audio-progress-loaded");
   const playedBar = createElement("span", "cc98-rebuild-audio-progress-played");
@@ -8327,7 +9291,11 @@ function createAudioPlayerFromUrl(url, title = "", sourcePlayer = null) {
   };
   const syncProgress = () => {
     const playableAudio = getPlayableAudio();
-    if (playableAudio instanceof HTMLMediaElement && Number.isFinite(playableAudio.duration) && playableAudio.duration > 0) {
+    if (
+      playableAudio instanceof HTMLMediaElement &&
+      Number.isFinite(playableAudio.duration) &&
+      playableAudio.duration > 0
+    ) {
       const progress = getAudioProgressPercent(playableAudio);
       setProgressState(progress.played, progress.loaded);
       return;
@@ -8351,9 +9319,11 @@ function createAudioPlayerFromUrl(url, title = "", sourcePlayer = null) {
   };
   const seekToRatio = (ratio) => {
     const playableAudio = getPlayableAudio();
-    if (!(playableAudio instanceof HTMLMediaElement)
-      || !Number.isFinite(playableAudio.duration)
-      || playableAudio.duration <= 0) {
+    if (
+      !(playableAudio instanceof HTMLMediaElement) ||
+      !Number.isFinite(playableAudio.duration) ||
+      playableAudio.duration <= 0
+    ) {
       return false;
     }
     playableAudio.currentTime = clampNumber(ratio, 0, 1, 0) * playableAudio.duration;
@@ -8377,11 +9347,12 @@ function createAudioPlayerFromUrl(url, title = "", sourcePlayer = null) {
     event.preventDefault();
     event.stopPropagation();
     const current = Number(progressTrack.getAttribute("aria-valuenow")) || 0;
-    const next = event.key === "Home"
-      ? 0
-      : event.key === "End"
-        ? 100
-        : current + (event.key === "ArrowRight" ? 5 : -5);
+    const next =
+      event.key === "Home"
+        ? 0
+        : event.key === "End"
+          ? 100
+          : current + (event.key === "ArrowRight" ? 5 : -5);
     seekToRatio(clampNumber(next, 0, 100, current) / 100);
   });
   audio.addEventListener("play", () => {
@@ -8448,7 +9419,7 @@ function isImageCarrierNode(node) {
   const haystack = [
     node.getAttribute?.("class"),
     node.getAttribute?.("id"),
-    ...[...node.attributes ?? []].map((attr) => attr.name)
+    ...[...(node.attributes ?? [])].map((attr) => attr.name)
   ].join(" ");
   return /\b(?:image|img|photo|picture|pic|thumb|upload|attachment|preview)\b/i.test(haystack);
 }
@@ -8457,7 +9428,7 @@ function isVideoCarrierNode(node) {
   const haystack = [
     node.getAttribute?.("class"),
     node.getAttribute?.("id"),
-    ...[...node.attributes ?? []].map((attr) => attr.name)
+    ...[...(node.attributes ?? [])].map((attr) => attr.name)
   ].join(" ");
   return /\b(?:video|player|dplayer|media)\b/i.test(haystack);
 }
@@ -8510,15 +9481,19 @@ function isNativeVideoPlayerContainer(node) {
   const haystack = [
     node.getAttribute?.("class"),
     node.getAttribute?.("id"),
-    ...[...node.attributes ?? []].map((attr) => attr.name),
-    ...[...node.attributes ?? []].map((attr) => attr.value)
+    ...[...(node.attributes ?? [])].map((attr) => attr.name),
+    ...[...(node.attributes ?? [])].map((attr) => attr.value)
   ].join(" ");
-  return /\b(?:dplayer|video|video-player|player|media)\b/i.test(haystack)
-    && !/(?:bilibili|bili|aplayer|audio)/i.test(haystack);
+  return (
+    /\b(?:dplayer|video|video-player|player|media)\b/i.test(haystack) &&
+    !/(?:bilibili|bili|aplayer|audio)/i.test(haystack)
+  );
 }
 
 function extractVideoUrlFromText(text) {
-  const match = String(text ?? "").match(/(?:https?:\/\/[^\s<>"']+|\/[^\s<>"']+)\.(?:mp4|webm|ogg|mov|m4v)(?:[?#][^\s<>"']*)?/i);
+  const match = String(text ?? "").match(
+    /(?:https?:\/\/[^\s<>"']+|\/[^\s<>"']+)\.(?:mp4|webm|ogg|mov|m4v)(?:[?#][^\s<>"']*)?/i
+  );
   return match ? makeAbsoluteCc98Url(match[0]) : "";
 }
 
@@ -8535,14 +9510,19 @@ function getVideoSourceFromElement(root) {
     return makeAbsoluteCc98Url(own);
   }
   const candidates = [
-    ...(root.matches("video, source, a[href], [data-src], [data-url], [data-file], [data-href]") ? [root] : []),
-    ...root.querySelectorAll("video, source, a[href], [data-src], [data-original], [data-url], [data-file], [data-href]")
+    ...(root.matches("video, source, a[href], [data-src], [data-url], [data-file], [data-href]")
+      ? [root]
+      : []),
+    ...root.querySelectorAll(
+      "video, source, a[href], [data-src], [data-original], [data-url], [data-file], [data-href]"
+    )
   ];
   for (const candidate of candidates) {
     if (!(candidate instanceof Element) || isAPlayerElement(candidate)) {
       continue;
     }
-    const src = getRuntimeMediaUrl(candidate) || getOwnMediaUrl(candidate) || getMediaUrl(candidate);
+    const src =
+      getRuntimeMediaUrl(candidate) || getOwnMediaUrl(candidate) || getMediaUrl(candidate);
     if (isUsableNativeVideoUrl(src)) {
       return makeAbsoluteCc98Url(src);
     }
@@ -8556,11 +9536,13 @@ function getNativeVideoReplacementTarget(node, boundary) {
     return null;
   }
   const carrier = node.closest?.(LEGACY_VIDEO_PLAYER_SELECTOR);
-  if (carrier instanceof Element
-    && carrier !== boundary
-    && !carrier.closest?.(".aplayer, .cc98-rebuild-audio-player")
-    && !/bilibili|bili/i.test(`${carrier.className || ""} ${carrier.id || ""}`)
-    && getVideoSourceFromElement(carrier)) {
+  if (
+    carrier instanceof Element &&
+    carrier !== boundary &&
+    !carrier.closest?.(".aplayer, .cc98-rebuild-audio-player") &&
+    !/bilibili|bili/i.test(`${carrier.className || ""} ${carrier.id || ""}`) &&
+    getVideoSourceFromElement(carrier)
+  ) {
     return carrier;
   }
   return node;
@@ -8568,19 +9550,23 @@ function getNativeVideoReplacementTarget(node, boundary) {
 
 function replaceNativeVideoPlayers(clone) {
   const targets = new Set();
-  clone.querySelectorAll(`${LEGACY_VIDEO_PLAYER_SELECTOR}, video, source, a[href], [data-src], [data-original], [data-url], [data-file], [data-href]`).forEach((node) => {
-    if (!(node instanceof Element) || isAPlayerElement(node)) {
-      return;
-    }
-    const src = getVideoSourceFromElement(node);
-    if (!src || !isUsableNativeVideoUrl(src)) {
-      return;
-    }
-    const target = getNativeVideoReplacementTarget(node, clone);
-    if (target instanceof Element) {
-      targets.add(target);
-    }
-  });
+  clone
+    .querySelectorAll(
+      `${LEGACY_VIDEO_PLAYER_SELECTOR}, video, source, a[href], [data-src], [data-original], [data-url], [data-file], [data-href]`
+    )
+    .forEach((node) => {
+      if (!(node instanceof Element) || isAPlayerElement(node)) {
+        return;
+      }
+      const src = getVideoSourceFromElement(node);
+      if (!src || !isUsableNativeVideoUrl(src)) {
+        return;
+      }
+      const target = getNativeVideoReplacementTarget(node, clone);
+      if (target instanceof Element) {
+        targets.add(target);
+      }
+    });
 
   [...targets]
     .filter((target) => target.isConnected)
@@ -8617,7 +9603,9 @@ function removeLegacyVideoPlayerChrome(root) {
     const nativeVideo = player.querySelector("video");
     if (nativeVideo instanceof HTMLVideoElement) {
       const nativeSrc = getVideoSourceFromElement(nativeVideo);
-      const replacement = nativeSrc ? createContentVideoFromUrl(nativeSrc) : nativeVideo.cloneNode(true);
+      const replacement = nativeSrc
+        ? createContentVideoFromUrl(nativeSrc)
+        : nativeVideo.cloneNode(true);
       normalizeContentVideoElement(replacement);
       player.replaceWith(replacement);
       return;
@@ -8651,7 +9639,10 @@ function normalizeContentVideoElement(video) {
     return null;
   }
   const source = video.querySelector("source[src]");
-  const src = getRuntimeMediaUrl(video) || getMediaUrl(video) || (source ? getRuntimeMediaUrl(source) || getMediaUrl(source) : "");
+  const src =
+    getRuntimeMediaUrl(video) ||
+    getMediaUrl(video) ||
+    (source ? getRuntimeMediaUrl(source) || getMediaUrl(source) : "");
   if (src) {
     video.src = makeAbsoluteCc98Url(src);
   }
@@ -8680,13 +9671,20 @@ function isEmojiImageUrl(url) {
   if (getLocalEmojiAssetUrlFromSrc(url)) {
     return true;
   }
-  const filename = decodeURIComponent(String(url ?? "").split(/[/?#]/).filter(Boolean).pop() || "");
-  return /^\d{1,6}\.png$/i.test(filename)
-    || /^[a-z]{4,6}\.png$/i.test(filename)
-    || /^[a-z]{4,7}\d+\.png$/i.test(filename)
-    || /^[a-z]{2,5}\d{2,5}\.png$/i.test(filename)
-    || /^[a-z]{2,5}\d{2,5}\.gif$/i.test(filename)
-    || /emoji|emoticon|face/i.test(String(url ?? ""));
+  const filename = decodeURIComponent(
+    String(url ?? "")
+      .split(/[/?#]/)
+      .filter(Boolean)
+      .pop() || ""
+  );
+  return (
+    /^\d{1,6}\.png$/i.test(filename) ||
+    /^[a-z]{4,6}\.png$/i.test(filename) ||
+    /^[a-z]{4,7}\d+\.png$/i.test(filename) ||
+    /^[a-z]{2,5}\d{2,5}\.png$/i.test(filename) ||
+    /^[a-z]{2,5}\d{2,5}\.gif$/i.test(filename) ||
+    /emoji|emoticon|face/i.test(String(url ?? ""))
+  );
 }
 
 function isTransparentAcEmojiUrl(url) {
@@ -8725,21 +9723,32 @@ function markInlineEmojiContainers(root) {
   root.querySelectorAll("img.cc98-rebuild-inline-emoji").forEach((image) => {
     if (isNativeMessageContentNode(image)) return;
     let parent = image.parentElement;
-    while (parent && parent !== root && parent.childElementCount === 1 && cleanupPostText(parent.textContent) === "") {
+    while (
+      parent &&
+      parent !== root &&
+      parent.childElementCount === 1 &&
+      cleanupPostText(parent.textContent) === ""
+    ) {
       if (!/^(DIV|SPAN|P)$/i.test(parent.tagName)) {
         break;
       }
-      if (parent.matches([
-        "[contenteditable='true']",
-        ".cc98-rebuild-dual-ubb-visual",
-        ".cc98-rebuild-profile-signature-wysiwyg",
-        ".cc98-rebuild-dual-ubb-visual-pane",
-        ".cc98-rebuild-profile-signature-preview-body"
-      ].join(","))) {
+      if (
+        parent.matches(
+          [
+            "[contenteditable='true']",
+            ".cc98-rebuild-dual-ubb-visual",
+            ".cc98-rebuild-profile-signature-wysiwyg",
+            ".cc98-rebuild-dual-ubb-visual-pane",
+            ".cc98-rebuild-profile-signature-preview-body"
+          ].join(",")
+        )
+      ) {
         break;
       }
-      if (parent.dataset.cc98UbbTag === "align"
-        || parent.classList.contains("cc98-rebuild-preview-align")) {
+      if (
+        parent.dataset.cc98UbbTag === "align" ||
+        parent.classList.contains("cc98-rebuild-preview-align")
+      ) {
         break;
       }
       parent.classList.add("cc98-rebuild-inline-emoji-wrap");
@@ -8830,15 +9839,19 @@ function isEmojiOnlyNode(node) {
 }
 
 function isEmojiOnlyParagraph(node) {
-  return node instanceof HTMLElement
-    && /^P$/i.test(node.tagName)
-    && Boolean(node.querySelector("img"))
-    && [...node.childNodes].every(isEmojiOnlyNode);
+  return (
+    node instanceof HTMLElement &&
+    /^P$/i.test(node.tagName) &&
+    Boolean(node.querySelector("img")) &&
+    [...node.childNodes].every(isEmojiOnlyNode)
+  );
 }
 
 function mergeEmojiOnlyParagraphRuns(root) {
   const articles = [
-    ...(root instanceof HTMLElement && root.matches("article, .cc98-rebuild-post-body article") ? [root] : []),
+    ...(root instanceof HTMLElement && root.matches("article, .cc98-rebuild-post-body article")
+      ? [root]
+      : []),
     ...(root.querySelectorAll?.(".cc98-rebuild-post-body article, article") ?? [])
   ];
   [...new Set(articles)].forEach((article) => {
@@ -8915,11 +9928,16 @@ function isInlineEmojiFlowNode(node, root) {
   if (isQuoteElement(node)) {
     return false;
   }
-  const styleDisplay = (node.getAttribute("style") || "").match(/display\s*:\s*([^;]+)/i)?.[1]?.trim().toLowerCase() || "";
-  const isInlineContainer = node === root
-    || /^(A|SPAN|B|I|U|S|DEL|EM|STRONG|SMALL|MARK|FONT)$/i.test(node.tagName)
-    || styleDisplay === "inline"
-    || isInlineEmojiOnlyElement(node);
+  const styleDisplay =
+    (node.getAttribute("style") || "")
+      .match(/display\s*:\s*([^;]+)/i)?.[1]
+      ?.trim()
+      .toLowerCase() || "";
+  const isInlineContainer =
+    node === root ||
+    /^(A|SPAN|B|I|U|S|DEL|EM|STRONG|SMALL|MARK|FONT)$/i.test(node.tagName) ||
+    styleDisplay === "inline" ||
+    isInlineEmojiOnlyElement(node);
   if (!isInlineContainer) {
     return false;
   }
@@ -8930,8 +9948,9 @@ function buildInlineEmojiFlowPostContent(root) {
   if (!(root instanceof Element) || !root.querySelector("img")) {
     return null;
   }
-  const hasEmoji = [...root.querySelectorAll("img")]
-    .some((image) => isEmojiImageUrl(getMediaUrl(image) || image.currentSrc || image.src || ""));
+  const hasEmoji = [...root.querySelectorAll("img")].some((image) =>
+    isEmojiImageUrl(getMediaUrl(image) || image.currentSrc || image.src || "")
+  );
   if (!hasEmoji || !isInlineEmojiFlowNode(root, root)) {
     return null;
   }
@@ -9005,47 +10024,54 @@ function isSkippablePostElement(node) {
   if (!(node instanceof Element)) {
     return false;
   }
-  return node.matches([
-    "script",
-    "style",
-    ".cc98-ascii-decoration",
-    "button",
-    "input",
-    "textarea",
-    "select",
-    '[role="button"]',
-    '[class*="signature"]',
-    '[class*="Signature"]',
-    ".awardInfo",
-    '[class*="awardInfo"]',
-    '[class*="AwardInfo"]',
-    '[class*="score"]',
-    '[class*="Score"]',
-    '[class*="rate"]',
-    '[class*="Rate"]',
-    '[class*="wealth"]',
-    '[class*="Wealth"]',
-    '[class*="follow"]',
-    '[class*="Follow"]',
-    '[class*="message"]',
-    '[class*="Message"]',
-    '[class*="operation"]',
-    '[class*="Operation"]',
-    '[class*="toolbar"]',
-    '[class*="Toolbar"]'
-  ].join(","));
+  return node.matches(
+    [
+      "script",
+      "style",
+      ".cc98-ascii-decoration",
+      "button",
+      "input",
+      "textarea",
+      "select",
+      '[role="button"]',
+      '[class*="signature"]',
+      '[class*="Signature"]',
+      ".awardInfo",
+      '[class*="awardInfo"]',
+      '[class*="AwardInfo"]',
+      '[class*="score"]',
+      '[class*="Score"]',
+      '[class*="rate"]',
+      '[class*="Rate"]',
+      '[class*="wealth"]',
+      '[class*="Wealth"]',
+      '[class*="follow"]',
+      '[class*="Follow"]',
+      '[class*="message"]',
+      '[class*="Message"]',
+      '[class*="operation"]',
+      '[class*="Operation"]',
+      '[class*="toolbar"]',
+      '[class*="Toolbar"]'
+    ].join(",")
+  );
 }
 
 function isJunkPostLine(line) {
-  return !line
-    || /^(帖数|粉丝|威望|最后登录)\s*\d*/.test(line)
-    || /^发表于\s+/.test(line)
-    || /^(关注|私信|评分|追踪|回复|举报|引用|编辑)$/.test(line)
-    || /^[+-]?\d+$/.test(line);
+  return (
+    !line ||
+    /^(帖数|粉丝|威望|最后登录)\s*\d*/.test(line) ||
+    /^发表于\s+/.test(line) ||
+    /^(关注|私信|评分|追踪|回复|举报|引用|编辑)$/.test(line) ||
+    /^[+-]?\d+$/.test(line)
+  );
 }
 
 function isBlockPostElement(node) {
-  return node instanceof Element && /^(ARTICLE|SECTION|DIV|P|BLOCKQUOTE|PRE|UL|OL|LI|TABLE|TR|BR|HR)$/i.test(node.tagName);
+  return (
+    node instanceof Element &&
+    /^(ARTICLE|SECTION|DIV|P|BLOCKQUOTE|PRE|UL|OL|LI|TABLE|TR|BR|HR)$/i.test(node.tagName)
+  );
 }
 
 function isQuoteElement(node) {
@@ -9054,15 +10080,19 @@ function isQuoteElement(node) {
   }
   const text = cleanupPostText(node.textContent);
   const style = node.getAttribute("style") || "";
-  return /^以下是引用\d+楼/.test(text)
-    || text.includes(">>查看原帖<<")
-    || (text.includes("以下是引用") && /background-color|border/i.test(style));
+  return (
+    /^以下是引用\d+楼/.test(text) ||
+    text.includes(">>查看原帖<<") ||
+    (text.includes("以下是引用") && /background-color|border/i.test(style))
+  );
 }
 
 function isDeferredPostImageControl(node) {
-  return node instanceof HTMLElement
-    && node.classList.contains("hiddenImage")
-    && cleanupPostText(node.textContent) === "\u70b9\u51fb\u67e5\u770b\u56fe\u7247";
+  return (
+    node instanceof HTMLElement &&
+    node.classList.contains("hiddenImage") &&
+    cleanupPostText(node.textContent) === "\u70b9\u51fb\u67e5\u770b\u56fe\u7247"
+  );
 }
 
 function getDeferredImageControls(root) {
@@ -9092,7 +10122,11 @@ function getDeferredImageCandidates(scope) {
 }
 
 function createDeferredImageProxy(sourceControl, sourceRoot) {
-  const button = createElement("button", "cc98-rebuild-hidden-image-button", "\u70b9\u51fb\u67e5\u770b\u56fe\u7247");
+  const button = createElement(
+    "button",
+    "cc98-rebuild-hidden-image-button",
+    "\u70b9\u51fb\u67e5\u770b\u56fe\u7247"
+  );
   button.type = "button";
   if (revealedPostImageControls.get(sourceControl) === getRoutePageKey()) {
     button.dataset.cc98ImageRevealed = "true";
@@ -9117,10 +10151,17 @@ function createDeferredImageProxy(sourceControl, sourceRoot) {
     }
 
     const sourceParent = sourceControl.parentElement;
-    const scopes = [...new Set([sourceParent, sourceRoot].filter((scope) => scope instanceof Element))];
-    const knownSources = new Set(scopes.flatMap(getDeferredImageCandidates)
-      .map((image) => normalizeMediaKey(getMediaUrl(image) || image.currentSrc || image.src || ""))
-      .filter(Boolean));
+    const scopes = [
+      ...new Set([sourceParent, sourceRoot].filter((scope) => scope instanceof Element))
+    ];
+    const knownSources = new Set(
+      scopes
+        .flatMap(getDeferredImageCandidates)
+        .map((image) =>
+          normalizeMediaKey(getMediaUrl(image) || image.currentSrc || image.src || "")
+        )
+        .filter(Boolean)
+    );
     let settled = false;
     let observer = null;
     const timers = [];
@@ -9166,8 +10207,10 @@ function createDeferredImageProxy(sourceControl, sourceRoot) {
       if (sourceControl.isConnected && isDeferredPostImageControl(sourceControl)) {
         return null;
       }
-      return getDeferredImageCandidates(sourceParent)
-        .find((image) => image.closest(".visibleImage")) || null;
+      return (
+        getDeferredImageCandidates(sourceParent).find((image) => image.closest(".visibleImage")) ||
+        null
+      );
     };
 
     const check = () => {
@@ -9223,13 +10266,19 @@ function normalizeRichContentNode(root, options = {}) {
   const clone = root.cloneNode(true);
   materializeCapturedLazySlots(clone);
   normalizeFragmentedMarkdownImages(clone);
-  clone.querySelectorAll("script, style, .cc98-ascii-decoration, button, input, textarea, select, [role='button'], .awardInfo, [class*='awardInfo'], [class*='AwardInfo']").forEach((node) => {
-    if (!isDeferredPostImageControl(node)) {
-      node.remove();
-    }
-  });
+  clone
+    .querySelectorAll(
+      "script, style, .cc98-ascii-decoration, button, input, textarea, select, [role='button'], .awardInfo, [class*='awardInfo'], [class*='AwardInfo']"
+    )
+    .forEach((node) => {
+      if (!isDeferredPostImageControl(node)) {
+        node.remove();
+      }
+    });
   if (!options.keepSignatureChildren) {
-    clone.querySelectorAll('[class*="signature"], [class*="Signature"]').forEach((node) => node.remove());
+    clone
+      .querySelectorAll('[class*="signature"], [class*="Signature"]')
+      .forEach((node) => node.remove());
   }
   clone.querySelectorAll("a[href]").forEach((link) => {
     const href = link.getAttribute("href") || link.href || "";
@@ -9281,10 +10330,14 @@ function getMahjongEmotionUrl(prefix, id) {
   }
   if (prefix === "c") {
     const gifIds = new Set([18, 49, 96]);
-    return getExtensionAssetUrl(`images/mahjong/carton2017/${code}.${gifIds.has(numericId) ? "gif" : "png"}`);
+    return getExtensionAssetUrl(
+      `images/mahjong/carton2017/${code}.${gifIds.has(numericId) ? "gif" : "png"}`
+    );
   }
   const faceGifIds = new Set([4, 9, 56, 61, 62, 87, 115, 120, 137, 168, 169, 175, 206]);
-  return getExtensionAssetUrl(`images/mahjong/face2017/${code}.${faceGifIds.has(numericId) ? "gif" : "png"}`);
+  return getExtensionAssetUrl(
+    `images/mahjong/face2017/${code}.${faceGifIds.has(numericId) ? "gif" : "png"}`
+  );
 }
 
 function getUbbEmotionImageUrl(tag) {
@@ -9349,7 +10402,11 @@ function createUbbMediaPreviewNode(tag, url, title = "") {
     return video;
   }
   if (normalizedTag === "bili" || normalizedTag === "bilibili") {
-    const link = createLink("cc98-rebuild-ubb-media-link", `Bilibili 视频：${src}`, makeAbsoluteCc98Url(src));
+    const link = createLink(
+      "cc98-rebuild-ubb-media-link",
+      `Bilibili 视频：${src}`,
+      makeAbsoluteCc98Url(src)
+    );
     link.target = "_blank";
     link.rel = "noreferrer";
     link.dataset.cc98UbbTag = normalizedTag;
@@ -9362,7 +10419,8 @@ function createUbbMediaPreviewNode(tag, url, title = "") {
 function appendInlineUbbText(target, text, options = {}) {
   const source = String(text ?? "");
   const preserveLineBreaks = options?.preserveLineBreaks === true;
-  const tokenPattern = /\[(cc98\d{2}|ac(?:\d{2}|\d{4})|[acf]:\d{3}|tb\d{2}|ms\d{2}|em\d{2})\]|\[(\/?)(b|i|u|s|del|url|color|size|align|audio|mp3|video|bili|bilibili)(?:=([^\]]+))?\]|\[img\]([\s\S]*?)\[\/img\]/ig;
+  const tokenPattern =
+    /\[(cc98\d{2}|ac(?:\d{2}|\d{4})|[acf]:\d{3}|tb\d{2}|ms\d{2}|em\d{2})\]|\[(\/?)(b|i|u|s|del|url|color|size|align|audio|mp3|video|bili|bilibili)(?:=([^\]]+))?\]|\[img\]([\s\S]*?)\[\/img\]/gi;
   const stack = [{ tag: "", node: target }];
   let lastIndex = 0;
 
@@ -9471,8 +10529,13 @@ function appendInlineUbbText(target, text, options = {}) {
         const closedNode = stack[index].node;
         if (normalizedTag === "url" && closedNode instanceof HTMLAnchorElement) {
           const textHref = (closedNode.textContent || "").trim();
-          if (closedNode.dataset.cc98UbbExplicitUrl !== "true" && /^(?:https?:)?\/\/|^\/|^www\./i.test(textHref)) {
-            closedNode.href = makeAbsoluteCc98Url(/^www\./i.test(textHref) ? `https://${textHref}` : textHref);
+          if (
+            closedNode.dataset.cc98UbbExplicitUrl !== "true" &&
+            /^(?:https?:)?\/\/|^\/|^www\./i.test(textHref)
+          ) {
+            closedNode.href = makeAbsoluteCc98Url(
+              /^www\./i.test(textHref) ? `https://${textHref}` : textHref
+            );
             if (!closedNode.href.startsWith(location.origin)) {
               closedNode.target = "_blank";
               closedNode.rel = "noreferrer";
@@ -9480,7 +10543,10 @@ function appendInlineUbbText(target, text, options = {}) {
           }
           delete closedNode.dataset.cc98UbbExplicitUrl;
         }
-        if (closedNode instanceof HTMLElement && /^(?:audio|mp3|video|bili|bilibili)$/i.test(normalizedTag)) {
+        if (
+          closedNode instanceof HTMLElement &&
+          /^(?:audio|mp3|video|bili|bilibili)$/i.test(normalizedTag)
+        ) {
           const media = createUbbMediaPreviewNode(
             closedNode.dataset.cc98UbbMediaTag || normalizedTag,
             closedNode.textContent || "",
@@ -9585,16 +10651,26 @@ function markInlineUbbStyleClasses(root) {
     if (tagName === "u" || /underline/i.test(textDecoration)) {
       node.classList.add("cc98-rebuild-preview-underline");
     }
-    if (tagName === "s" || tagName === "del" || tagName === "strike" || /line-through|text-decoration\s*:\s*.*(?:del|through)/i.test(textDecoration)) {
+    if (
+      tagName === "s" ||
+      tagName === "del" ||
+      tagName === "strike" ||
+      /line-through|text-decoration\s*:\s*.*(?:del|through)/i.test(textDecoration)
+    ) {
       node.classList.add("cc98-rebuild-preview-strike");
     }
-    if (tagName === "b" || tagName === "strong" || /font-weight\s*:\s*(?:bold|[6-9]00)/i.test(styleText)) {
+    if (
+      tagName === "b" ||
+      tagName === "strong" ||
+      /font-weight\s*:\s*(?:bold|[6-9]00)/i.test(styleText)
+    ) {
       node.classList.add("cc98-rebuild-preview-bold");
     }
     if (tagName === "i" || tagName === "em" || /font-style\s*:\s*italic/i.test(styleText)) {
       node.classList.add("cc98-rebuild-preview-italic");
     }
-    const textAlign = node.style.textAlign || styleText.match(/text-align\s*:\s*([^;]+)/i)?.[1]?.trim() || "";
+    const textAlign =
+      node.style.textAlign || styleText.match(/text-align\s*:\s*([^;]+)/i)?.[1]?.trim() || "";
     if (/^(left|center|right)$/i.test(textAlign)) {
       node.classList.add("cc98-rebuild-preview-align");
       node.style.setProperty("--cc98-preview-align", textAlign.toLowerCase());
@@ -9625,12 +10701,14 @@ function synchronizeInlineUbbDecorationColors(root) {
     return;
   }
 
-  const nodes = [root, ...(root.querySelectorAll?.("*") ?? [])]
-    .filter((node) => node instanceof HTMLElement);
-  const decorationNodes = nodes.filter((node) => (
-    node.classList.contains("cc98-rebuild-preview-underline")
-    || node.classList.contains("cc98-rebuild-preview-strike")
-  ));
+  const nodes = [root, ...(root.querySelectorAll?.("*") ?? [])].filter(
+    (node) => node instanceof HTMLElement
+  );
+  const decorationNodes = nodes.filter(
+    (node) =>
+      node.classList.contains("cc98-rebuild-preview-underline") ||
+      node.classList.contains("cc98-rebuild-preview-strike")
+  );
 
   decorationNodes.forEach((node) => {
     node.style.removeProperty("--cc98-preview-decoration-color");
@@ -9638,9 +10716,7 @@ function synchronizeInlineUbbDecorationColors(root) {
   });
 
   const decorationSet = new Set(decorationNodes);
-  const colorsByDecoration = new Map(
-    decorationNodes.map((node) => [node, new Map()])
-  );
+  const colorsByDecoration = new Map(decorationNodes.map((node) => [node, new Map()]));
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   while (walker.nextNode()) {
     const textNode = walker.currentNode;
@@ -9655,8 +10731,9 @@ function synchronizeInlineUbbDecorationColors(root) {
         ancestors.push(current);
       }
       if (!effectiveColor) {
-        effectiveColor = getExplicitTextColor(current)
-          || current.style.getPropertyValue("--cc98-preview-color").trim();
+        effectiveColor =
+          getExplicitTextColor(current) ||
+          current.style.getPropertyValue("--cc98-preview-color").trim();
       }
       if (current === root) {
         break;
@@ -9678,10 +10755,7 @@ function synchronizeInlineUbbDecorationColors(root) {
   colorsByDecoration.forEach((colors, decorationNode) => {
     if (colors.size === 1) {
       const color = colors.values().next().value;
-      decorationNode.style.setProperty(
-        "--cc98-preview-decoration-color",
-        color
-      );
+      decorationNode.style.setProperty("--cc98-preview-decoration-color", color);
       // The UBB underline node itself may carry an inline
       // `text-decoration: ... !important`; set the longhand in the same
       // inline style block so that the browser cannot fall back to the
@@ -9802,7 +10876,10 @@ function buildReadablePostContent(contentNode) {
         appendVideo(href);
         return;
       }
-      if ((isProbablyPostImageUrl(href) || isImageCarrierNode(node)) && !node.querySelector("img")) {
+      if (
+        (isProbablyPostImageUrl(href) || isImageCarrierNode(node)) &&
+        !node.querySelector("img")
+      ) {
         appendImage(href, cleanupPostText(node.textContent));
         return;
       }
@@ -9812,11 +10889,19 @@ function buildReadablePostContent(contentNode) {
     const hasChildImage = Boolean(node.querySelector("img"));
     const hasChildVideo = Boolean(node.querySelector("video, source"));
     const hasBackgroundImage = /url\(/i.test(node.getAttribute("style") || "");
-    if (!hasChildVideo && nodeMedia && (isProbablyPostVideoUrl(nodeMedia) || isVideoCarrierNode(node))) {
+    if (
+      !hasChildVideo &&
+      nodeMedia &&
+      (isProbablyPostVideoUrl(nodeMedia) || isVideoCarrierNode(node))
+    ) {
       appendVideo(nodeMedia);
       return;
     }
-    if (!hasChildImage && nodeMedia && (isProbablyPostImageUrl(nodeMedia) || isImageCarrierNode(node) || hasBackgroundImage)) {
+    if (
+      !hasChildImage &&
+      nodeMedia &&
+      (isProbablyPostImageUrl(nodeMedia) || isImageCarrierNode(node) || hasBackgroundImage)
+    ) {
       appendImage(nodeMedia, cleanupPostText(node.textContent));
       return;
     }
@@ -9839,7 +10924,9 @@ function decodeCapturedMediaText(value) {
     return text;
   }
   const parser = new DOMParser();
-  return parser.parseFromString(`<body>${text}</body>`, "text/html").body.textContent?.trim() || text;
+  return (
+    parser.parseFromString(`<body>${text}</body>`, "text/html").body.textContent?.trim() || text
+  );
 }
 
 function normalizeCapturedMediaUrl(value) {
@@ -9873,7 +10960,10 @@ function extractCapturedPostMediaSources(rawContent) {
   const ubbMediaPattern = /\[(img|video|upload)(?:=([^\]]*))?(?:\s+[^\]]*)?\]([\s\S]*?)\[\/\1\]/gi;
   while ((ubbMatch = ubbMediaPattern.exec(raw))) {
     const tag = ubbMatch[1].toLowerCase();
-    if (tag === "upload" && !/^(?:jpg|jpeg|png|gif|bmp|webp)(?:\s*,|$)/i.test((ubbMatch[2] || "").trim())) {
+    if (
+      tag === "upload" &&
+      !/^(?:jpg|jpeg|png|gif|bmp|webp)(?:\s*,|$)/i.test((ubbMatch[2] || "").trim())
+    ) {
       continue;
     }
     append(ubbMatch[3], tag === "video" ? "video" : "image");
@@ -9889,7 +10979,11 @@ function extractCapturedPostMediaSources(rawContent) {
     const template = document.createElement("template");
     template.innerHTML = raw;
     template.content.querySelectorAll("img[src], video[src], video source[src]").forEach((node) => {
-      append(node.getAttribute("src"), node.closest("video") ? "video" : "image", node.getAttribute("alt") || "");
+      append(
+        node.getAttribute("src"),
+        node.closest("video") ? "video" : "image",
+        node.getAttribute("alt") || ""
+      );
     });
   }
   return sources;
@@ -9934,7 +11028,9 @@ function hydrateCapturedLazyMediaSlots(clone, mediaSources) {
     return;
   }
 
-  const slots = [...clone.querySelectorAll(".lazyload-placeholder, .cc98-rebuild-hidden-image-button")];
+  const slots = [
+    ...clone.querySelectorAll(".lazyload-placeholder, .cc98-rebuild-hidden-image-button")
+  ];
   let sourceIndex = 0;
   slots.forEach((slot) => {
     const item = missing[sourceIndex];
@@ -9951,9 +11047,10 @@ function hydrateCapturedLazyMediaSlots(clone, mediaSources) {
       sourceIndex += 1;
       return;
     }
-    const media = item.kind === "video"
-      ? createContentVideoFromUrl(item.src)
-      : createContentImageFromUrl(item.src, item.alt);
+    const media =
+      item.kind === "video"
+        ? createContentVideoFromUrl(item.src)
+        : createContentImageFromUrl(item.src, item.alt);
     if (media instanceof HTMLImageElement) {
       media.classList.add("cc98-rebuild-content-image");
     }
@@ -9965,32 +11062,46 @@ function hydrateCapturedLazyMediaSlots(clone, mediaSources) {
 function collectPostMediaSources(root) {
   const sources = [];
   const seen = new Set();
-  root.querySelectorAll("img, video, source, a[href], [style*='url('], [data-cc98-lazy-src], [data-src], [data-original], [data-url], [data-img], [data-image], [data-full], [data-full-src], [data-file], [data-href]").forEach((node) => {
-    if (!(node instanceof Element) || node.closest('[class*="signature"], [class*="Signature"]')) {
-      return;
-    }
-    if (isAPlayerElement(node)) {
-      return;
-    }
-    const src = getMediaUrl(node);
-    const isVideoSource = node.tagName === "VIDEO"
-      || (node.tagName === "SOURCE" && Boolean(node.closest("video")))
-      || isProbablyPostVideoUrl(src)
-      || isVideoCarrierNode(node);
-    if (!src
-      || isDecorativeFrameImageUrl(src)
-      || isEmojiImageUrl(src)
-      || isDownloadFileUrl(src)
-      || (!isProbablyPostImageUrl(src) && !isImageCarrierNode(node) && !isVideoSource)) {
-      return;
-    }
-    const key = normalizeMediaKey(src);
-    if (!key || seen.has(key)) {
-      return;
-    }
-    seen.add(key);
-    sources.push({ src, alt: cleanupPostText(node.textContent), kind: isVideoSource ? "video" : "image" });
-  });
+  root
+    .querySelectorAll(
+      "img, video, source, a[href], [style*='url('], [data-cc98-lazy-src], [data-src], [data-original], [data-url], [data-img], [data-image], [data-full], [data-full-src], [data-file], [data-href]"
+    )
+    .forEach((node) => {
+      if (
+        !(node instanceof Element) ||
+        node.closest('[class*="signature"], [class*="Signature"]')
+      ) {
+        return;
+      }
+      if (isAPlayerElement(node)) {
+        return;
+      }
+      const src = getMediaUrl(node);
+      const isVideoSource =
+        node.tagName === "VIDEO" ||
+        (node.tagName === "SOURCE" && Boolean(node.closest("video"))) ||
+        isProbablyPostVideoUrl(src) ||
+        isVideoCarrierNode(node);
+      if (
+        !src ||
+        isDecorativeFrameImageUrl(src) ||
+        isEmojiImageUrl(src) ||
+        isDownloadFileUrl(src) ||
+        (!isProbablyPostImageUrl(src) && !isImageCarrierNode(node) && !isVideoSource)
+      ) {
+        return;
+      }
+      const key = normalizeMediaKey(src);
+      if (!key || seen.has(key)) {
+        return;
+      }
+      seen.add(key);
+      sources.push({
+        src,
+        alt: cleanupPostText(node.textContent),
+        kind: isVideoSource ? "video" : "image"
+      });
+    });
   return sources;
 }
 
@@ -9998,10 +11109,7 @@ function getAPlayerElements(root) {
   if (!(root instanceof Element)) {
     return [];
   }
-  return [
-    ...(root.matches(".aplayer") ? [root] : []),
-    ...root.querySelectorAll(".aplayer")
-  ];
+  return [...(root.matches(".aplayer") ? [root] : []), ...root.querySelectorAll(".aplayer")];
 }
 
 function materializeAudioPlayers(clone, sourceRoot = null) {
@@ -10020,9 +11128,10 @@ function materializeAudioPlayers(clone, sourceRoot = null) {
       return;
     }
     const source = audio.querySelector("source[src]");
-    const src = getRuntimeMediaUrl(audio)
-      || getMediaUrl(audio)
-      || (source ? getRuntimeMediaUrl(source) || getMediaUrl(source) : "");
+    const src =
+      getRuntimeMediaUrl(audio) ||
+      getMediaUrl(audio) ||
+      (source ? getRuntimeMediaUrl(source) || getMediaUrl(source) : "");
     if (!src) {
       return;
     }
@@ -10091,7 +11200,10 @@ function materializePostMedia(clone) {
     if (isAPlayerElement(node)) {
       return;
     }
-    if (node.matches("iframe, embed, object") || /bilibili|bili/i.test(`${node.className || ""} ${node.id || ""} ${getOwnMediaUrl(node)}`)) {
+    if (
+      node.matches("iframe, embed, object") ||
+      /bilibili|bili/i.test(`${node.className || ""} ${node.id || ""} ${getOwnMediaUrl(node)}`)
+    ) {
       return;
     }
     if (node.querySelector("img")) {
@@ -10099,11 +11211,19 @@ function materializePostMedia(clone) {
     }
     const src = getOwnMediaUrl(node);
     const hasBackgroundImage = /url\(/i.test(node.getAttribute("style") || "");
-    if (src && (isProbablyPostVideoUrl(src) || isVideoCarrierNode(node)) && !node.querySelector("video")) {
+    if (
+      src &&
+      (isProbablyPostVideoUrl(src) || isVideoCarrierNode(node)) &&
+      !node.querySelector("video")
+    ) {
       node.replaceChildren(createContentVideoFromUrl(src));
       return;
     }
-    if (!src || isDecorativeFrameImageUrl(src) || (!isProbablyPostImageUrl(src) && !isImageCarrierNode(node) && !hasBackgroundImage)) {
+    if (
+      !src ||
+      isDecorativeFrameImageUrl(src) ||
+      (!isProbablyPostImageUrl(src) && !isImageCarrierNode(node) && !hasBackgroundImage)
+    ) {
       return;
     }
     const image = createContentImageFromUrl(src, cleanupPostText(node.textContent));
@@ -10148,22 +11268,28 @@ function ensurePostMediaCoverage(clone, originalSources) {
   }
 
   const mediaKey = (src) => normalizeMediaKey(makeWebVpnCc98ResourceUrl(src));
-  const present = new Set([...clone.querySelectorAll("img, video, source, .cc98-rebuild-hidden-image-button[data-cc98-direct-image-src]")]
-    .map((node) => mediaKey(
-      node.dataset?.cc98DirectImageSrc || getMediaUrl(node) || node.src
-    ))
-    .filter(Boolean));
+  const present = new Set(
+    [
+      ...clone.querySelectorAll(
+        "img, video, source, .cc98-rebuild-hidden-image-button[data-cc98-direct-image-src]"
+      )
+    ]
+      .map((node) => mediaKey(node.dataset?.cc98DirectImageSrc || getMediaUrl(node) || node.src))
+      .filter(Boolean)
+  );
   const missing = originalSources.filter((item) => !present.has(mediaKey(item.src)));
-  const imageMissing = missing.filter((item) => (
-    !isDecorativeFrameImageUrl(item.src)
-    && !isDownloadFileUrl(item.src)
-    && (item.kind === "image" || isProbablyPostImageUrl(item.src))
-  ));
-  const videoMissing = missing.filter((item) => (
-    !isDecorativeFrameImageUrl(item.src)
-    && !isDownloadFileUrl(item.src)
-    && (item.kind === "video" || isProbablyPostVideoUrl(item.src))
-  ));
+  const imageMissing = missing.filter(
+    (item) =>
+      !isDecorativeFrameImageUrl(item.src) &&
+      !isDownloadFileUrl(item.src) &&
+      (item.kind === "image" || isProbablyPostImageUrl(item.src))
+  );
+  const videoMissing = missing.filter(
+    (item) =>
+      !isDecorativeFrameImageUrl(item.src) &&
+      !isDownloadFileUrl(item.src) &&
+      (item.kind === "video" || isProbablyPostVideoUrl(item.src))
+  );
   if (!imageMissing.length && !videoMissing.length) {
     return;
   }
@@ -10202,39 +11328,43 @@ function normalizeClonedPostNode(clone) {
 }
 
 function removePostChromeNodes(clone) {
-  clone.querySelectorAll([
-    "script",
-    "style",
-    ".cc98-ascii-decoration",
-    "button",
-    "input",
-    "textarea",
-    "select",
-    '[role="button"]',
-    '[class*="signature"]',
-    '[class*="Signature"]',
-    ".awardInfo",
-    '[class*="awardInfo"]',
-    '[class*="AwardInfo"]',
-    '[class*="score"]',
-    '[class*="Score"]',
-    '[class*="rate"]',
-    '[class*="Rate"]',
-    '[class*="wealth"]',
-    '[class*="Wealth"]',
-    '[class*="follow"]',
-    '[class*="Follow"]',
-    '[class*="message"]',
-    '[class*="Message"]',
-    '[class*="operation"]',
-    '[class*="Operation"]',
-    '[class*="toolbar"]',
-    '[class*="Toolbar"]'
-  ].join(",")).forEach((node) => {
-    if (!isDeferredPostImageControl(node)) {
-      node.remove();
-    }
-  });
+  clone
+    .querySelectorAll(
+      [
+        "script",
+        "style",
+        ".cc98-ascii-decoration",
+        "button",
+        "input",
+        "textarea",
+        "select",
+        '[role="button"]',
+        '[class*="signature"]',
+        '[class*="Signature"]',
+        ".awardInfo",
+        '[class*="awardInfo"]',
+        '[class*="AwardInfo"]',
+        '[class*="score"]',
+        '[class*="Score"]',
+        '[class*="rate"]',
+        '[class*="Rate"]',
+        '[class*="wealth"]',
+        '[class*="Wealth"]',
+        '[class*="follow"]',
+        '[class*="Follow"]',
+        '[class*="message"]',
+        '[class*="Message"]',
+        '[class*="operation"]',
+        '[class*="Operation"]',
+        '[class*="toolbar"]',
+        '[class*="Toolbar"]'
+      ].join(",")
+    )
+    .forEach((node) => {
+      if (!isDeferredPostImageControl(node)) {
+        node.remove();
+      }
+    });
 }
 
 function normalizeFragmentedMarkdownImages(root) {
@@ -10260,7 +11390,9 @@ function normalizeFragmentedMarkdownImages(root) {
     if (!(node instanceof Element)) {
       return;
     }
-    if (node.matches("pre, code, script, style, textarea, .ubb-code, .cc98-local-experimental-noubb")) {
+    if (
+      node.matches("pre, code, script, style, textarea, .ubb-code, .cc98-local-experimental-noubb")
+    ) {
       append("\ufffd");
       return;
     }
@@ -10271,26 +11403,41 @@ function normalizeFragmentedMarkdownImages(root) {
     } else if (node.matches("a[href], picture")) {
       const images = node.querySelectorAll("img");
       const label = (node.textContent || "").trim();
-      if (images.length === 1 && (!label || /^(?:点击下载文件|下载文件|download(?: file)?)$/i.test(label))) {
+      if (
+        images.length === 1 &&
+        (!label || /^(?:点击下载文件|下载文件|download(?: file)?)$/i.test(label))
+      ) {
         image = images[0];
       }
-      if (!images.length && node.matches("a[href]") && isProbablyPostImageUrl(node.getAttribute("href"))) {
+      if (
+        !images.length &&
+        node.matches("a[href]") &&
+        isProbablyPostImageUrl(node.getAttribute("href"))
+      ) {
         const href = node.getAttribute("href");
-        if (!label || label === href || label === node.href || /^(?:点击下载文件|下载文件)$/i.test(label)) {
+        if (
+          !label ||
+          label === href ||
+          label === node.href ||
+          /^(?:点击下载文件|下载文件)$/i.test(label)
+        ) {
           imageUrl = href;
         }
       }
     }
-    const hiddenImage = node.matches(".cc98-rebuild-hidden-image-button, .hiddenImage")
-      && (node.hasAttribute("data-cc98-direct-image-src") || isDeferredPostImageControl(node));
+    const hiddenImage =
+      node.matches(".cc98-rebuild-hidden-image-button, .hiddenImage") &&
+      (node.hasAttribute("data-cc98-direct-image-src") || isDeferredPostImageControl(node));
     if (image || imageUrl || hiddenImage) {
       media.set(text.length, { node, image, imageUrl });
       append("\ufffc");
       return;
     }
-    const boundary = node !== root && (node.matches("blockquote, p, li, td, th, br")
-      || node.classList.contains("cc98-rebuild-legacy-quote")
-      || isLegacyQuoteStyle(node.getAttribute("style"), ""));
+    const boundary =
+      node !== root &&
+      (node.matches("blockquote, p, li, td, th, br") ||
+        node.classList.contains("cc98-rebuild-legacy-quote") ||
+        isLegacyQuoteStyle(node.getAttribute("style"), ""));
     if (boundary) append("\ufffd");
     node.childNodes.forEach(walk);
     if (boundary) append("\ufffd");
@@ -10330,7 +11477,12 @@ function normalizeFragmentedMarkdownImages(root) {
       if (item.image && match[1]) {
         const alt = item.image.getAttribute("alt") || "";
         const href = item.node.getAttribute("href") || "";
-        if (!alt || alt === href || alt === item.node.href || /^(?:点击下载文件|下载文件)$/i.test(alt)) {
+        if (
+          !alt ||
+          alt === href ||
+          alt === item.node.href ||
+          /^(?:点击下载文件|下载文件)$/i.test(alt)
+        ) {
           item.image.alt = match[1];
         }
       }
@@ -10340,7 +11492,10 @@ function normalizeFragmentedMarkdownImages(root) {
     const original = node.nodeValue || "";
     const removed = new Uint8Array(original.length);
     ranges.forEach(([start, end]) => removed.fill(1, start, end));
-    node.nodeValue = original.split("").filter((_character, index) => !removed[index]).join("");
+    node.nodeValue = original
+      .split("")
+      .filter((_character, index) => !removed[index])
+      .join("");
     if (!node.nodeValue) node.remove();
   });
 }
@@ -10372,9 +11527,10 @@ function normalizePostContentClone(clone) {
     link.href = makeAbsoluteCc98Url(href);
     const normalizedHref = link.href || "";
     const linkText = cleanupPostText(link.textContent);
-    const isDownloadFile = link.classList.contains("download-file")
-      || /\/v4-upload\/d\//i.test(normalizedHref)
-      || /点击下载文件|下载文件|download/i.test(linkText);
+    const isDownloadFile =
+      link.classList.contains("download-file") ||
+      /\/v4-upload\/d\//i.test(normalizedHref) ||
+      /点击下载文件|下载文件|download/i.test(linkText);
     if (isDownloadFile && !isAudioUrl(normalizedHref)) {
       link.classList.add("cc98-rebuild-download-button");
       link.setAttribute("download", "");
@@ -10392,14 +11548,24 @@ function normalizePostContentClone(clone) {
 }
 
 function isLegacyQuoteStyle(style, text = "") {
-  const compactStyle = String(style || "").toLowerCase().replace(/\s+/g, "");
-  const hasLightQuoteBackground = /background(?:-color)?:rgb\(245,250,255\)/.test(compactStyle)
-    || /background(?:-color)?:rgba\(245,250,255,1\)/.test(compactStyle)
-    || /background(?:-color)?:#f5faff/.test(compactStyle);
+  const compactStyle = String(style || "")
+    .toLowerCase()
+    .replace(/\s+/g, "");
+  const hasLightQuoteBackground =
+    /background(?:-color)?:rgb\(245,250,255\)/.test(compactStyle) ||
+    /background(?:-color)?:rgba\(245,250,255,1\)/.test(compactStyle) ||
+    /background(?:-color)?:#f5faff/.test(compactStyle);
   const hasLegacyBorder = /border:1pxsolid(?:rgb\(204,204,204\)|#ccc|#cccccc)/.test(compactStyle);
-  const hasLegacyScrollBox = /max-height:800px/.test(compactStyle) && /overflow-y:auto/.test(compactStyle);
-  const hasQuoteText = /(?:\u4ee5\u4e0b\u662f\u5f15\u7528|\u67e5\u770b\u539f\u5e16)/.test(String(text || ""));
-  return hasLightQuoteBackground || (hasLegacyBorder && hasLegacyScrollBox) || (hasQuoteText && hasLegacyScrollBox);
+  const hasLegacyScrollBox =
+    /max-height:800px/.test(compactStyle) && /overflow-y:auto/.test(compactStyle);
+  const hasQuoteText = /(?:\u4ee5\u4e0b\u662f\u5f15\u7528|\u67e5\u770b\u539f\u5e16)/.test(
+    String(text || "")
+  );
+  return (
+    hasLightQuoteBackground ||
+    (hasLegacyBorder && hasLegacyScrollBox) ||
+    (hasQuoteText && hasLegacyScrollBox)
+  );
 }
 
 function forceLegacyQuoteStyle(node) {
@@ -10415,21 +11581,39 @@ function forceLegacyQuoteStyle(node) {
   node.style.setProperty("overflow-y", "auto", "important");
   node.style.setProperty("border-width", "var(--cc98-quote-border-width, 1px)", "important");
   node.style.setProperty("border-style", "var(--cc98-quote-border-style, solid)", "important");
-  node.style.setProperty("border-color", "var(--cc98-comfort-border, rgba(148, 163, 184, 0.35))", "important");
+  node.style.setProperty(
+    "border-color",
+    "var(--cc98-comfort-border, rgba(148, 163, 184, 0.35))",
+    "important"
+  );
   node.style.setProperty("border-left-width", "var(--cc98-quote-left-width, 3px)", "important");
   node.style.setProperty("border-left-style", "var(--cc98-quote-border-style, solid)", "important");
-  node.style.setProperty("border-left-color", "var(--cc98-comfort-secondary, rgb(126, 188, 224))", "important");
+  node.style.setProperty(
+    "border-left-color",
+    "var(--cc98-comfort-secondary, rgb(126, 188, 224))",
+    "important"
+  );
   node.style.setProperty("border-radius", "var(--cc98-quote-radius, 8px)", "important");
-  node.style.setProperty("background", "var(--cc98-rebuild-legacy-quote-bg, var(--cc98-comfort-surface-2, rgb(245, 250, 255)))", "important");
-  node.style.setProperty("background-color", "var(--cc98-rebuild-legacy-quote-bg, var(--cc98-comfort-surface-2, rgb(245, 250, 255)))", "important");
+  node.style.setProperty(
+    "background",
+    "var(--cc98-rebuild-legacy-quote-bg, var(--cc98-comfort-surface-2, rgb(245, 250, 255)))",
+    "important"
+  );
+  node.style.setProperty(
+    "background-color",
+    "var(--cc98-rebuild-legacy-quote-bg, var(--cc98-comfort-surface-2, rgb(245, 250, 255)))",
+    "important"
+  );
   node.style.setProperty("background-image", "none", "important");
   node.style.setProperty("color", "var(--cc98-comfort-text, rgb(229, 236, 242))", "important");
 }
 
 function isMarkdownPostNode(node) {
-  return node instanceof Element
-    && (node.classList.contains("cc98-rebuild-markdown-post")
-      || Boolean(node.closest(".cc98-rebuild-markdown-post")));
+  return (
+    node instanceof Element &&
+    (node.classList.contains("cc98-rebuild-markdown-post") ||
+      Boolean(node.closest(".cc98-rebuild-markdown-post")))
+  );
 }
 
 function markMarkdownPostContent(node) {
@@ -10459,8 +11643,10 @@ function isForcedLegacyQuoteNode(node) {
     return false;
   }
   const compactStyle = (node.getAttribute("style") || "").toLowerCase().replace(/\s+/g, "");
-  return /background(?:-color)?:var\(--cc98-rebuild-legacy-quote-bg/.test(compactStyle)
-    || /background(?:-color)?:rgb\(0,0,0\)/.test(compactStyle);
+  return (
+    /background(?:-color)?:var\(--cc98-rebuild-legacy-quote-bg/.test(compactStyle) ||
+    /background(?:-color)?:rgb\(0,0,0\)/.test(compactStyle)
+  );
 }
 
 function forceLegacyQuotesInRebuiltRoot(root = document) {
@@ -10472,7 +11658,10 @@ function forceLegacyQuotesInRebuiltRoot(root = document) {
     if (isMarkdownPostNode(scope)) {
       return;
     }
-    if (scope.matches(".cc98-rebuild-post-body") || Boolean(scope.closest(".cc98-rebuild-post-body"))) {
+    if (
+      scope.matches(".cc98-rebuild-post-body") ||
+      Boolean(scope.closest(".cc98-rebuild-post-body"))
+    ) {
       if (scope.matches("[style], .cc98-rebuild-legacy-quote")) {
         candidates.add(scope);
       }
@@ -10481,12 +11670,20 @@ function forceLegacyQuotesInRebuiltRoot(root = document) {
       });
       return;
     }
-    if (scope.matches(".cc98-rebuild-post-body [style], .cc98-rebuild-post-body .cc98-rebuild-legacy-quote")) {
+    if (
+      scope.matches(
+        ".cc98-rebuild-post-body [style], .cc98-rebuild-post-body .cc98-rebuild-legacy-quote"
+      )
+    ) {
       candidates.add(scope);
     }
-    scope.querySelectorAll?.(".cc98-rebuild-post-body [style], .cc98-rebuild-post-body .cc98-rebuild-legacy-quote").forEach((node) => {
-      candidates.add(node);
-    });
+    scope
+      .querySelectorAll?.(
+        ".cc98-rebuild-post-body [style], .cc98-rebuild-post-body .cc98-rebuild-legacy-quote"
+      )
+      .forEach((node) => {
+        candidates.add(node);
+      });
   };
   if (root instanceof Document) {
     document.querySelectorAll("#cc98-comfort-app").forEach(addCandidates);
@@ -10496,14 +11693,22 @@ function forceLegacyQuotesInRebuiltRoot(root = document) {
 
   let changed = 0;
   candidates.forEach((node) => {
-    if (!(node instanceof HTMLElement) || isForcedLegacyQuoteNode(node) || isMarkdownPostNode(node)) {
+    if (
+      !(node instanceof HTMLElement) ||
+      isForcedLegacyQuoteNode(node) ||
+      isMarkdownPostNode(node)
+    ) {
       return;
     }
     const style = node.getAttribute("style") || "";
     const text = cleanupPostText(node.textContent);
     const compactStyle = style.toLowerCase().replace(/\s+/g, "");
     const hasQuoteRgb = compactStyle.includes("245,250,255");
-    if (!hasQuoteRgb && !isLegacyQuoteStyle(style, text) && !node.classList.contains("cc98-rebuild-legacy-quote")) {
+    if (
+      !hasQuoteRgb &&
+      !isLegacyQuoteStyle(style, text) &&
+      !node.classList.contains("cc98-rebuild-legacy-quote")
+    ) {
       return;
     }
     forceLegacyQuoteStyle(node);
@@ -10541,12 +11746,13 @@ function rewriteLegacyQuoteInlineStyles(root) {
     }
     const style = node.getAttribute("style") || "";
     const text = cleanupPostText(node.textContent);
-    const isTarget = style.includes("background-color: rgb(245, 250, 255)")
-      || /background-color\s*:\s*rgb\(\s*245\s*,\s*250\s*,\s*255\s*\)/i.test(style)
-      || (/border\s*:\s*1px\s+solid\s+rgb\(\s*204\s*,\s*204\s*,\s*204\s*\)/i.test(style)
-        && /max-height\s*:\s*800px/i.test(style)
-        && /overflow-y\s*:\s*auto/i.test(style))
-      || (/以下是引用|查看原帖/.test(text) && /border\s*:|max-height\s*:\s*800px/i.test(style));
+    const isTarget =
+      style.includes("background-color: rgb(245, 250, 255)") ||
+      /background-color\s*:\s*rgb\(\s*245\s*,\s*250\s*,\s*255\s*\)/i.test(style) ||
+      (/border\s*:\s*1px\s+solid\s+rgb\(\s*204\s*,\s*204\s*,\s*204\s*\)/i.test(style) &&
+        /max-height\s*:\s*800px/i.test(style) &&
+        /overflow-y\s*:\s*auto/i.test(style)) ||
+      (/以下是引用|查看原帖/.test(text) && /border\s*:|max-height\s*:\s*800px/i.test(style));
     if (!isTarget && !isLegacyQuoteStyle(style, text)) {
       return;
     }
@@ -10567,9 +11773,15 @@ function stabilizePostQuoteBlocks(root) {
       forceLegacyQuoteStyle(node);
       return;
     }
-    const hasLegacyQuoteBackground = /background(?:-color)?\s*:\s*(?:rgb\(\s*245\s*,\s*250\s*,\s*255\s*\)|rgb\(\s*0\s*,\s*0\s*,\s*0\s*\)|#252c32)/i.test(nextStyle);
-    const hasLegacyQuoteShape = /border\s*:/i.test(nextStyle) && /max-height\s*:\s*800px/i.test(nextStyle);
-    const isLegacyQuote = hasLegacyQuoteBackground || (hasLegacyQuoteShape && /以下是引用|引用\d+楼|查看原帖/.test(text));
+    const hasLegacyQuoteBackground =
+      /background(?:-color)?\s*:\s*(?:rgb\(\s*245\s*,\s*250\s*,\s*255\s*\)|rgb\(\s*0\s*,\s*0\s*,\s*0\s*\)|#252c32)/i.test(
+        nextStyle
+      );
+    const hasLegacyQuoteShape =
+      /border\s*:/i.test(nextStyle) && /max-height\s*:\s*800px/i.test(nextStyle);
+    const isLegacyQuote =
+      hasLegacyQuoteBackground ||
+      (hasLegacyQuoteShape && /以下是引用|引用\d+楼|查看原帖/.test(text));
     if (!isLegacyQuote) {
       return;
     }
@@ -10578,8 +11790,13 @@ function stabilizePostQuoteBlocks(root) {
 }
 
 function isMeaningfulPostContent(root) {
-  return Boolean(root?.querySelector?.("img, video, audio, source, iframe, .aplayer, .cc98-rebuild-audio-player, .cc98-rebuild-content-video, a[href], blockquote, pre, code"))
-    || cleanupPostText(root?.textContent).length > 0;
+  return (
+    Boolean(
+      root?.querySelector?.(
+        "img, video, audio, source, iframe, .aplayer, .cc98-rebuild-audio-player, .cc98-rebuild-content-video, a[href], blockquote, pre, code"
+      )
+    ) || cleanupPostText(root?.textContent).length > 0
+  );
 }
 
 function sanitizeClonedPostContent(contentNode, options = {}) {
@@ -10618,7 +11835,9 @@ function getMarkdownPreviewContentNode(root) {
   if (root.matches(".mde-preview-content, .markdown-body, .markdown-preview")) {
     return root;
   }
-  return root.querySelector(".markdown-container .mde-preview-content, .mde-preview .mde-preview-content, .mde-preview-content, .markdown-body, .markdown-preview");
+  return root.querySelector(
+    ".markdown-container .mde-preview-content, .mde-preview .mde-preview-content, .mde-preview-content, .markdown-body, .markdown-preview"
+  );
 }
 
 function sanitizePostContent(contentNode, supplementalMediaSources = []) {
@@ -10685,7 +11904,8 @@ function getTopicPageNumberFromHref(href, topicId) {
 }
 
 function getTopicPageInfo() {
-  const currentRoute = getCc98RoutePathFromHref(location.href) || `${location.pathname}${location.search}`;
+  const currentRoute =
+    getCc98RoutePathFromHref(location.href) || `${location.pathname}${location.search}`;
   const match = currentRoute.match(/\/topic\/(\d+)(?:\/(\d+))?/i);
   if (!match) {
     return null;
@@ -10737,17 +11957,21 @@ function findPostContentNode(post) {
   if (post.matches?.("article") && !post.closest(".signature")) {
     return post;
   }
-  return post.querySelector(".reply-content .substance > article")
-    || post.querySelector(".reply-content .substance .markdown-container .mde-preview-content")
-    || post.querySelector(".reply-content .substance .mde-preview-content")
-    || post.querySelector(".reply-content .substance .markdown-container")
-    || post.querySelector(".substance > article")
-    || post.querySelector(".substance .markdown-container .mde-preview-content")
-    || post.querySelector(".substance .mde-preview-content")
-    || post.querySelector(".substance .markdown-container")
-    || post.querySelector(".markdown-container .mde-preview-content, .mde-preview .mde-preview-content, .mde-preview-content")
-    || [...post.querySelectorAll("article")].find((article) => !article.closest(".signature"))
-    || null;
+  return (
+    post.querySelector(".reply-content .substance > article") ||
+    post.querySelector(".reply-content .substance .markdown-container .mde-preview-content") ||
+    post.querySelector(".reply-content .substance .mde-preview-content") ||
+    post.querySelector(".reply-content .substance .markdown-container") ||
+    post.querySelector(".substance > article") ||
+    post.querySelector(".substance .markdown-container .mde-preview-content") ||
+    post.querySelector(".substance .mde-preview-content") ||
+    post.querySelector(".substance .markdown-container") ||
+    post.querySelector(
+      ".markdown-container .mde-preview-content, .mde-preview .mde-preview-content, .mde-preview-content"
+    ) ||
+    [...post.querySelectorAll("article")].find((article) => !article.closest(".signature")) ||
+    null
+  );
 }
 
 function findPostVoteContentNode(post) {
@@ -10755,8 +11979,8 @@ function findPostVoteContentNode(post) {
     return null;
   }
   const replyContent = post.querySelector(".reply-content");
-  const voteContent = replyContent?.querySelector(":scope > .vote-content")
-    || post.querySelector(".vote-content");
+  const voteContent =
+    replyContent?.querySelector(":scope > .vote-content") || post.querySelector(".vote-content");
   return voteContent instanceof HTMLElement && !voteContent.closest("#cc98-comfort-app")
     ? voteContent
     : null;
@@ -10766,17 +11990,22 @@ function findPostLotteryContentNode(post) {
   if (!(post instanceof Element)) {
     return null;
   }
-  return [...post.querySelectorAll(".reply-content .ant-card-body")]
-    .find((node) => !node.closest("#cc98-comfort-app")
-      && !node.closest(".substance, .signature")
-      && cleanupPostText(node.querySelector(":scope > p")?.textContent) === "该主题帖启用了抽奖功能") || null;
+  return (
+    [...post.querySelectorAll(".reply-content .ant-card-body")].find(
+      (node) =>
+        !node.closest("#cc98-comfort-app") &&
+        !node.closest(".substance, .signature") &&
+        cleanupPostText(node.querySelector(":scope > p")?.textContent) === "该主题帖启用了抽奖功能"
+    ) || null
+  );
 }
 
 function hasPostContentContainer(post) {
   // A rendered floor may have an empty UBB/Markdown body. Its author, floor
   // anchor, signature and native actions still belong in the reading view.
-  return Boolean(findPostContentNode(post)
-    || findPostVoteContentNode(post) || findPostLotteryContentNode(post));
+  return Boolean(
+    findPostContentNode(post) || findPostVoteContentNode(post) || findPostLotteryContentNode(post)
+  );
 }
 
 function getPostFloorNumber(post, index) {
@@ -10851,14 +12080,18 @@ function getPostFloorNumber(post, index) {
 
 function isHotPostNode(post) {
   const id = post?.id || post?.getAttribute?.("data-id") || "";
-  return /^hot[_-]\d+/i.test(id)
-    || [...post?.querySelectorAll?.("img[src]") || []].some((image) => {
+  return (
+    /^hot[_-]\d+/i.test(id) ||
+    [...(post?.querySelectorAll?.("img[src]") || [])].some((image) => {
       try {
-        return /\/hot\.(?:png|gif|svg)$/i.test(new URL(image.getAttribute("src"), location.href).pathname);
+        return /\/hot\.(?:png|gif|svg)$/i.test(
+          new URL(image.getAttribute("src"), location.href).pathname
+        );
       } catch {
         return false;
       }
-    });
+    })
+  );
 }
 
 function isLightDefaultAvatarUrl(src) {
@@ -10866,8 +12099,10 @@ function isLightDefaultAvatarUrl(src) {
   if (/\/static\/images\/default_avatar_(?:boy|girl)\.png/i.test(raw)) {
     return true;
   }
-  if (/%E5%BF%83%E7%81%B5%E5%A4%B4%E5%83%8F\.gif/i.test(raw)
-    || /\/static\/images\/心灵头像\.gif$/i.test(raw)) {
+  if (
+    /%E5%BF%83%E7%81%B5%E5%A4%B4%E5%83%8F\.gif/i.test(raw) ||
+    /\/static\/images\/心灵头像\.gif$/i.test(raw)
+  ) {
     return true;
   }
   let pathname = "";
@@ -10880,9 +12115,11 @@ function isLightDefaultAvatarUrl(src) {
       pathname = raw;
     }
   }
-  return /\/static\/images\/心灵头像\.gif$/i.test(pathname)
-    || (/\/static\/images\/.*\.(?:gif|png|webp)$/i.test(pathname)
-      && /(?:心灵头像|心灵|心|default|anonymous|avatar)/i.test(pathname));
+  return (
+    /\/static\/images\/心灵头像\.gif$/i.test(pathname) ||
+    (/\/static\/images\/.*\.(?:gif|png|webp)$/i.test(pathname) &&
+      /(?:心灵头像|心灵|心|default|anonymous|avatar)/i.test(pathname))
+  );
 }
 
 function getPostAvatar(post, userHref = "") {
@@ -10925,7 +12162,9 @@ function getPostAuthorCardInfo(post) {
   const genderClasses = genderIcon?.classList ? [...genderIcon.classList] : [];
   const gender = genderClasses.includes("fa-mars")
     ? "\u2642"
-    : (genderClasses.includes("fa-venus") ? "\u2640" : "");
+    : genderClasses.includes("fa-venus")
+      ? "\u2640"
+      : "";
   return { stats, gender };
 }
 
@@ -10939,10 +12178,14 @@ function getAnonymousPostCode(post) {
   };
 
   const scopedNodes = [
-    ...post.querySelectorAll(".userMessage-left, .userMessage, [class*='anonymous'], [class*='Anonymous'], [style*='font-weight']")
+    ...post.querySelectorAll(
+      ".userMessage-left, .userMessage, [class*='anonymous'], [class*='Anonymous'], [style*='font-weight']"
+    )
   ].filter((node) => {
-    return node instanceof HTMLElement
-      && !node.closest(".reply-content, .substance, .signature, .cc98-rebuild-post-body");
+    return (
+      node instanceof HTMLElement &&
+      !node.closest(".reply-content, .substance, .signature, .cc98-rebuild-post-body")
+    );
   });
 
   for (const node of scopedNodes) {
@@ -11007,9 +12250,7 @@ function getHotReplyFingerprintCacheKey(topicId) {
 }
 
 function normalizeHotReplyFingerprintText(value) {
-  return cleanupPostText(value)
-    .replace(/\s+/g, "")
-    .toLowerCase();
+  return cleanupPostText(value).replace(/\s+/g, "").toLowerCase();
 }
 
 function getContentMediaFingerprint(root) {
@@ -11018,9 +12259,10 @@ function getContentMediaFingerprint(root) {
   }
   return [...root.querySelectorAll("img, video, source, audio, a[href]")]
     .map((node) => {
-      const url = node instanceof HTMLAnchorElement
-        ? (node.getAttribute("href") || node.href || "")
-        : getMediaUrl(node);
+      const url =
+        node instanceof HTMLAnchorElement
+          ? node.getAttribute("href") || node.href || ""
+          : getMediaUrl(node);
       return normalizeMediaKey(makeAbsoluteCc98Url(url || ""));
     })
     .filter(Boolean)
@@ -11102,13 +12344,21 @@ function readCachedHotReplyFingerprints(topicId) {
 
 function writeCachedHotReplyFingerprints(topicId, fingerprints) {
   const key = getHotReplyFingerprintCacheKey(topicId);
-  const values = [...new Set((fingerprints || []).map(normalizeHotReplyFingerprintEntry).filter(Boolean))];
+  const values = [
+    ...new Set((fingerprints || []).map(normalizeHotReplyFingerprintEntry).filter(Boolean))
+  ];
   if (!key || !values.length) {
     return;
   }
   try {
-    const storedFingerprints = values.slice(0, 80).map((value) => splitHotReplyFingerprintKey(value)).filter(Boolean);
-    localStorage.setItem(key, JSON.stringify({ savedAt: Date.now(), fingerprints: storedFingerprints }));
+    const storedFingerprints = values
+      .slice(0, 80)
+      .map((value) => splitHotReplyFingerprintKey(value))
+      .filter(Boolean);
+    localStorage.setItem(
+      key,
+      JSON.stringify({ savedAt: Date.now(), fingerprints: storedFingerprints })
+    );
   } catch {
     // Hot reply cache is best-effort.
   }
@@ -11127,11 +12377,15 @@ function getHotReplyFingerprintsFromRoot(root) {
   if (!root?.querySelectorAll) {
     return [];
   }
-  return [...new Set([...root.querySelectorAll(".reply")]
-    .filter((node) => !node.closest("#cc98-comfort-app"))
-    .filter((node) => node instanceof HTMLElement && isHotPostNode(node))
-    .map(getHotReplyFingerprintKeyFromNode)
-    .filter(Boolean))];
+  return [
+    ...new Set(
+      [...root.querySelectorAll(".reply")]
+        .filter((node) => !node.closest("#cc98-comfort-app"))
+        .filter((node) => node instanceof HTMLElement && isHotPostNode(node))
+        .map(getHotReplyFingerprintKeyFromNode)
+        .filter(Boolean)
+    )
+  ];
 }
 
 function cacheHotReplyFingerprintsFromRoot(topicId, root) {
@@ -11145,13 +12399,21 @@ function cacheHotReplyFingerprintsFromRoot(topicId, root) {
 function getPostIdentityFromNode(post) {
   const user = getFirstLink(post, 'a[href*="/user/id/"], a[href*="/user/name/"]');
   const uidMatch = user?.href?.match(/\/user\/id\/(\d+)/);
-  const userHref = makeAbsoluteCc98Url(user?.href || (uidMatch?.[1] ? `/user/id/${uidMatch[1]}` : ""));
+  const userHref = makeAbsoluteCc98Url(
+    user?.href || (uidMatch?.[1] ? `/user/id/${uidMatch[1]}` : "")
+  );
   const anonymousCode = getAnonymousPostCode(post);
   return getPostAuthorIdentity({
     anonymousCode,
     uid: uidMatch?.[1] ?? "",
     userHref: anonymousCode ? "" : userHref,
-    user: anonymousCode ? "" : (user?.text || getFirstText(post, '[class*="userName"], [class*="UserName"], [class*="author"], [class*="Author"]'))
+    user: anonymousCode
+      ? ""
+      : user?.text ||
+        getFirstText(
+          post,
+          '[class*="userName"], [class*="UserName"], [class*="author"], [class*="Author"]'
+        )
   });
 }
 
@@ -11193,7 +12455,9 @@ async function fetchFirstPagePrewarmData(topicInfo, signal) {
   const htmlTimeout = window.setTimeout(abortHtml, 3000);
   try {
     const response = await fetch(buildTopicPageHref(topicInfo.topicId, 1), {
-      credentials: "include", cache: "no-store", signal: htmlController.signal
+      credentials: "include",
+      cache: "no-store",
+      signal: htmlController.signal
     });
     const responseInfo = getTopicRouteInfo(response.url);
     if (response.ok && responseInfo?.topicId === topicInfo.topicId && responseInfo.current === 1) {
@@ -11227,9 +12491,15 @@ function fetchFirstPagePrewarmDataFromRenderedPage(topicInfo, signal) {
     iframe.setAttribute("allow", "autoplay 'none'");
     iframe.title = "CC98 first page background prewarm";
     Object.assign(iframe.style, {
-      position: "fixed", left: "-10000px", top: "-10000px",
-      width: "1px", height: "1px", opacity: "0",
-      pointerEvents: "none", visibility: "hidden", border: "0"
+      position: "fixed",
+      left: "-10000px",
+      top: "-10000px",
+      width: "1px",
+      height: "1px",
+      opacity: "0",
+      pointerEvents: "none",
+      visibility: "hidden",
+      border: "0"
     });
     let settled = false;
     const finish = (data = null) => {
@@ -11263,8 +12533,12 @@ function fetchFirstPagePrewarmDataFromRenderedPage(topicInfo, signal) {
 
 function refreshFirstPagePostMarkers() {
   if (!lastSettings?.rebuildUi) return;
-  const cards = new Map([...document.querySelectorAll("#cc98-comfort-app .cc98-rebuild-post")]
-    .map((card) => [card.dataset.itemKey, card]));
+  const cards = new Map(
+    [...document.querySelectorAll("#cc98-comfort-app .cc98-rebuild-post")].map((card) => [
+      card.dataset.itemKey,
+      card
+    ])
+  );
   // Patch only markers. Rebuilding the page here would disturb selection,
   // focused editors, scroll position and open controls while the reader types.
   for (const item of getPostItems()) {
@@ -11282,10 +12556,12 @@ function refreshFirstPagePostMarkers() {
 }
 
 function scheduleOriginalPosterIdentityPrefetch(topicInfo) {
-  if (!isTopicFirstPagePrewarmEnabled(topicInfo)
-    || getTopicRouteInfo()?.topicId !== topicInfo.topicId
-    || hasFreshFirstPagePrevisit(topicInfo)
-    || originalPosterIdentityPrefetches.has(topicInfo.topicId)) {
+  if (
+    !isTopicFirstPagePrewarmEnabled(topicInfo) ||
+    getTopicRouteInfo()?.topicId !== topicInfo.topicId ||
+    hasFreshFirstPagePrevisit(topicInfo) ||
+    originalPosterIdentityPrefetches.has(topicInfo.topicId)
+  ) {
     return;
   }
   const task = { controller: new AbortController(), owner: getCurrentReadLaterUserId() };
@@ -11296,8 +12572,12 @@ function scheduleOriginalPosterIdentityPrefetch(topicInfo) {
       // Record attempts even on failure, so a topic with no hot replies or an
       // unavailable first page does not get re-requested on every DOM update.
       markFreshFirstPagePrevisit(topicInfo);
-      if (!data || !isTopicFirstPagePrewarmEnabled()
-        || getTopicRouteInfo()?.topicId !== topicInfo.topicId) return;
+      if (
+        !data ||
+        !isTopicFirstPagePrewarmEnabled() ||
+        getTopicRouteInfo()?.topicId !== topicInfo.topicId
+      )
+        return;
       if (data.identity) setCachedOriginalPosterIdentity(topicInfo.topicId, data.identity);
       mergeCachedHotReplyFingerprints(topicInfo.topicId, data.fingerprints);
       refreshFirstPagePostMarkers();
@@ -11366,7 +12646,10 @@ function markHotReplyItems(items) {
 }
 
 function getActionText(control) {
-  const title = control.querySelector?.("[title]")?.getAttribute("title") || control.getAttribute?.("title") || "";
+  const title =
+    control.querySelector?.("[title]")?.getAttribute("title") ||
+    control.getAttribute?.("title") ||
+    "";
   const text = cleanupPostText(control.textContent);
   if (/赞/.test(title) || control.classList?.contains("upup")) {
     const count = cleanupPostText(control.querySelector?.(".commentProp")?.textContent);
@@ -11382,32 +12665,36 @@ function getActionText(control) {
 function collectPostActions(post) {
   const nativePostId = getCapturedPostIdCandidates(post)[0] || "";
   const nativePostFloor = getPostFloorNumber(post, 0);
-  const controls = [
-    ...post.querySelectorAll(".upup, .downdown, .operation1, button, a")
-  ].filter((control) => {
-    if (!(control instanceof HTMLElement) || control.closest(".signature")) {
-      return false;
+  const controls = [...post.querySelectorAll(".upup, .downdown, .operation1, button, a")].filter(
+    (control) => {
+      if (!(control instanceof HTMLElement) || control.closest(".signature")) {
+        return false;
+      }
+      if (control.tagName !== "A" && control.closest("a[href]")) {
+        return false;
+      }
+      if (control.classList.contains("operation1") && control.querySelector("a[href]")) {
+        return false;
+      }
+      return true;
     }
-    if (control.tagName !== "A" && control.closest("a[href]")) {
-      return false;
-    }
-    if (control.classList.contains("operation1") && control.querySelector("a[href]")) {
-      return false;
-    }
-    return true;
-  });
+  );
 
   const seen = new Set();
   const actions = [];
   controls.forEach((control) => {
     const text = getActionText(control);
-    const href = control instanceof HTMLAnchorElement ? makeAbsoluteCc98Url(control.href || control.getAttribute("href") || "") : "";
+    const href =
+      control instanceof HTMLAnchorElement
+        ? makeAbsoluteCc98Url(control.href || control.getAttribute("href") || "")
+        : "";
     const normalized = text.replace(/\s+\d+$/, "");
     if (!/^(赞|踩|关注|取关|取消关注|私信|评分|引用|追踪|编辑)$/.test(normalized)) {
       return;
     }
     const stableKind = /^(关注|取关|取消关注)$/.test(normalized) ? "关注" : normalized;
-    const key = stableKind === "私信" ? "私信" : `${stableKind}:${href || control.id || actions.length}`;
+    const key =
+      stableKind === "私信" ? "私信" : `${stableKind}:${href || control.id || actions.length}`;
     if (seen.has(key)) {
       return;
     }
@@ -11437,11 +12724,21 @@ function collectPostActions(post) {
       }
     });
   }
-  const quoteIndex = actions.findIndex((action) => cleanupPostText(action.text).replace(/\s+\d+$/, "") === "引用");
-  const scoreIndex = actions.findIndex((action) => cleanupPostText(action.text).replace(/\s+\d+$/, "").includes("评分"));
+  const quoteIndex = actions.findIndex(
+    (action) => cleanupPostText(action.text).replace(/\s+\d+$/, "") === "引用"
+  );
+  const scoreIndex = actions.findIndex((action) =>
+    cleanupPostText(action.text)
+      .replace(/\s+\d+$/, "")
+      .includes("评分")
+  );
   if (quoteIndex >= 0 && scoreIndex >= 0 && quoteIndex !== scoreIndex + 1) {
     const [quoteAction] = actions.splice(quoteIndex, 1);
-    const nextScoreIndex = actions.findIndex((action) => cleanupPostText(action.text).replace(/\s+\d+$/, "").includes("评分"));
+    const nextScoreIndex = actions.findIndex((action) =>
+      cleanupPostText(action.text)
+        .replace(/\s+\d+$/, "")
+        .includes("评分")
+    );
     actions.splice(nextScoreIndex + 1, 0, quoteAction);
   }
   return actions.slice(0, 10);
@@ -11453,8 +12750,10 @@ function isFollowPostAction(action) {
 }
 
 function isPrivateMessagePostAction(action) {
-  const text = cleanupPostText(action?.text || action?.control?.textContent || "")
-    .replace(/\s+\d+\s*$/, "");
+  const text = cleanupPostText(action?.text || action?.control?.textContent || "").replace(
+    /\s+\d+\s*$/,
+    ""
+  );
   return text === "\u79c1\u4fe1";
 }
 
@@ -11467,7 +12766,8 @@ function isCurrentWebUserPostItem(item) {
 }
 
 const nativeLockRow = ".center > .column > .row";
-const lockContentExclusions = "#cc98-comfort-app, .reply, .reply-content, .substance, .signature, article, blockquote, form, [contenteditable]";
+const lockContentExclusions =
+  "#cc98-comfort-app, .reply, .reply-content, .substance, .signature, article, blockquote, form, [contenteditable]";
 const nativeRedTip = ':is(div,p,span):is([style*="color: red" i],[style*="color:red" i])';
 
 // null = no notice; an empty string is the original, reasonless lock notice.
@@ -11477,7 +12777,10 @@ function readTopicLockReason(node) {
   if (!prefix) return null;
   let tail = text.slice(prefix[0].length).trim();
   if (!tail) return "";
-  if ((tail.startsWith("（") && tail.endsWith("）")) || (tail.startsWith("(") && tail.endsWith(")"))) {
+  if (
+    (tail.startsWith("（") && tail.endsWith("）")) ||
+    (tail.startsWith("(") && tail.endsWith(")"))
+  ) {
     tail = tail.slice(1, -1).trim();
   }
   const reason = /^[，,。；;：:\s]*锁定原因\s*[:：]\s*([\s\S]*)$/.exec(tail);
@@ -11488,48 +12791,73 @@ function findTopicLockScope(breadcrumb) {
   const root = document.querySelector("#root") || document.body;
   // The native Topic component places its optional tip immediately after the
   // category/pager row. Observe that small column even before the tip arrives.
-  const column = breadcrumb?.closest(".center > .column")
-    || [...root.querySelectorAll(nativeLockRow)].find(row => !row.closest(lockContentExclusions))?.parentElement;
+  const column =
+    breadcrumb?.closest(".center > .column") ||
+    [...root.querySelectorAll(nativeLockRow)].find((row) => !row.closest(lockContentExclusions))
+      ?.parentElement;
   if (column) return column;
-  return [...root.querySelectorAll(nativeRedTip)].find(node => !node.closest(lockContentExclusions) && readTopicLockReason(node) !== null) || null;
+  return (
+    [...root.querySelectorAll(nativeRedTip)].find(
+      (node) => !node.closest(lockContentExclusions) && readTopicLockReason(node) !== null
+    ) || null
+  );
 }
 
 function syncTopicLockCard(app, scope) {
   const feed = app.querySelector(':scope > [data-feed-kind="post"]');
   if (!feed) return;
-  const source = scope?.matches(".column") ? scope.querySelector(":scope > .row + :is(div,p,span)") : scope;
-  const reason = source && !source.matches(".reply, .topicInfo-info") ? readTopicLockReason(source) : null;
+  const source = scope?.matches(".column")
+    ? scope.querySelector(":scope > .row + :is(div,p,span)")
+    : scope;
+  const reason =
+    source && !source.matches(".reply, .topicInfo-info") ? readTopicLockReason(source) : null;
   let card = app.querySelector(":scope > .cc98-rebuild-topic-locked-card");
-  if (reason == null) { card?.remove(); return; }
+  if (reason == null) {
+    card?.remove();
+    return;
+  }
   if (!card) {
     card = createElement("section", "cc98-rebuild-topic-locked-card", "🔒 本帖已被锁定");
     feed.before(card);
   }
   const detail = card.querySelector(".cc98-rebuild-topic-lock-reason");
-  if (!reason) { detail?.remove(); return; }
+  if (!reason) {
+    detail?.remove();
+    return;
+  }
   const label = `锁定原因：${reason}`;
   if (!detail) card.append(createElement("div", "cc98-rebuild-topic-lock-reason", label));
   else if (detail.textContent !== label) detail.textContent = label;
 }
 
 function isRenderableSignatureCandidate(node) {
-  return node instanceof HTMLElement
-    && (Boolean(cleanupPostText(node.textContent))
-      || Boolean(node.querySelector("img, video, audio, source, .aplayer, a[href], [style*='url('], .lazyload-placeholder, .hiddenImage")));
+  return (
+    node instanceof HTMLElement &&
+    (Boolean(cleanupPostText(node.textContent)) ||
+      Boolean(
+        node.querySelector(
+          "img, video, audio, source, .aplayer, a[href], [style*='url('], .lazyload-placeholder, .hiddenImage"
+        )
+      ))
+  );
 }
 
 function isSignatureNoticeTag(tag) {
-  return tag instanceof HTMLElement
-    && cleanupPostText(tag.textContent).includes("通知本主题所有回复用户");
+  return (
+    tag instanceof HTMLElement &&
+    cleanupPostText(tag.textContent).includes("通知本主题所有回复用户")
+  );
 }
 
 function normalizeSignatureLayout(signature) {
   if (!(signature instanceof HTMLElement)) {
     return;
   }
-  ["align-self", "margin", "margin-top", "margin-bottom", "margin-left", "margin-right"].forEach((prop) => {
-    signature.style.removeProperty(prop);
-  });
+  ["align-self", "margin", "margin-top", "margin-bottom", "margin-left", "margin-right"].forEach(
+    (prop) => {
+      signature.style.removeProperty(prop);
+    }
+  );
   signature.querySelectorAll(".ant-tag").forEach((tag) => {
     if (!isSignatureNoticeTag(tag)) {
       return;
@@ -11538,7 +12866,14 @@ function normalizeSignatureLayout(signature) {
     const holder = tag.closest("div, p, section, article");
     if (holder instanceof HTMLElement && signature.contains(holder)) {
       holder.classList.add("cc98-rebuild-signature-notice");
-      ["align-self", "margin", "margin-top", "margin-bottom", "margin-left", "margin-right"].forEach((prop) => {
+      [
+        "align-self",
+        "margin",
+        "margin-top",
+        "margin-bottom",
+        "margin-left",
+        "margin-right"
+      ].forEach((prop) => {
         holder.style.removeProperty(prop);
       });
     }
@@ -11549,9 +12884,11 @@ function appendSignatureNoticeTags(signature, post, signatureSource) {
   if (!(signature instanceof HTMLElement) || !(post instanceof Element)) {
     return;
   }
-  const existingTexts = new Set([...signature.querySelectorAll(".ant-tag")]
-    .map((tag) => cleanupPostText(tag.textContent))
-    .filter(Boolean));
+  const existingTexts = new Set(
+    [...signature.querySelectorAll(".ant-tag")]
+      .map((tag) => cleanupPostText(tag.textContent))
+      .filter(Boolean)
+  );
   [...post.querySelectorAll(".ant-tag")].forEach((tag) => {
     if (!isSignatureNoticeTag(tag) || tag.closest("#cc98-comfort-app")) {
       return;
@@ -11560,7 +12897,9 @@ function appendSignatureNoticeTags(signature, post, signatureSource) {
     if (!text || existingTexts.has(text)) {
       return;
     }
-    const source = tag.closest(".cc98-rebuild-signature-content, .signature, [class*='signature'], div, p") || tag;
+    const source =
+      tag.closest(".cc98-rebuild-signature-content, .signature, [class*='signature'], div, p") ||
+      tag;
     if (signatureSource instanceof Element && signatureSource.contains(source)) {
       return;
     }
@@ -11596,18 +12935,20 @@ function getPostSignatureContent(post, supplementalMediaSources = []) {
   const fallbackSignatureSelectors = [
     ".reply-content > div:not(.substance):not(.vote-content)"
   ].join(",");
-  const baseCandidateFilter = (node) => node instanceof HTMLElement
-    && !node.closest("#cc98-comfort-app")
-    && node !== post
-    && !node.matches(".vote-content")
-    && !node.closest(".vote-content")
-    && !(lotteryContent && node.contains(lotteryContent))
-    && !node.closest(".reply-content .substance, .substance")
-    && isRenderableSignatureCandidate(node);
-  const signatureSource = [...post.querySelectorAll(primarySignatureSelectors)]
-    .filter((node) => node instanceof HTMLElement)
-    .filter(baseCandidateFilter)[0]
-    || [...post.querySelectorAll(fallbackSignatureSelectors)]
+  const baseCandidateFilter = (node) =>
+    node instanceof HTMLElement &&
+    !node.closest("#cc98-comfort-app") &&
+    node !== post &&
+    !node.matches(".vote-content") &&
+    !node.closest(".vote-content") &&
+    !(lotteryContent && node.contains(lotteryContent)) &&
+    !node.closest(".reply-content .substance, .substance") &&
+    isRenderableSignatureCandidate(node);
+  const signatureSource =
+    [...post.querySelectorAll(primarySignatureSelectors)]
+      .filter((node) => node instanceof HTMLElement)
+      .filter(baseCandidateFilter)[0] ||
+    [...post.querySelectorAll(fallbackSignatureSelectors)]
       .filter((node) => node instanceof HTMLElement)
       .filter(baseCandidateFilter)[0];
   if (!signatureSource) {
@@ -11615,7 +12956,7 @@ function getPostSignatureContent(post, supplementalMediaSources = []) {
   }
   const signaturePayload = signatureSource.matches("article")
     ? signatureSource
-    : (signatureSource.querySelector("article") || signatureSource);
+    : signatureSource.querySelector("article") || signatureSource;
   const signature = normalizeRichContentNode(signaturePayload, { keepSignatureChildren: true });
   hydrateCapturedLazyMediaSlots(signature, supplementalMediaSources);
   ensurePostMediaCoverage(signature, supplementalMediaSources);
@@ -11644,12 +12985,14 @@ function getPostAwardRows(post) {
   const rowNodes = rows.length
     ? rows
     : [...awardInfo.children].filter((node) => node.matches?.(".good, .bad"));
-  return rowNodes.map((row) => {
-    const user = cleanupPostText(row.querySelector?.(".userName")?.textContent);
-    const operation = cleanupPostText(row.querySelector?.(".grades")?.textContent);
-    const reason = cleanupPostText(row.querySelector?.(".credit")?.textContent);
-    return { user, operation, reason };
-  }).filter((row) => row.user || row.operation || row.reason);
+  return rowNodes
+    .map((row) => {
+      const user = cleanupPostText(row.querySelector?.(".userName")?.textContent);
+      const operation = cleanupPostText(row.querySelector?.(".grades")?.textContent);
+      const reason = cleanupPostText(row.querySelector?.(".credit")?.textContent);
+      return { user, operation, reason };
+    })
+    .filter((row) => row.user || row.operation || row.reason);
 }
 
 function getPostAwardState(post) {
@@ -11663,9 +13006,12 @@ function getPostAwardState(post) {
     };
   }
   const awardInfo = post.querySelector(".awardInfo, [class*='awardInfo'], [class*='AwardInfo']");
-  const toggleControl = awardInfo instanceof Element
-    ? [...awardInfo.querySelectorAll("button")].find((button) => /^(?:\u663e\u793a\u5168\u90e8|\u6536\u8d77)$/.test(cleanupPostText(button.textContent))) || null
-    : null;
+  const toggleControl =
+    awardInfo instanceof Element
+      ? [...awardInfo.querySelectorAll("button")].find((button) =>
+          /^(?:\u663e\u793a\u5168\u90e8|\u6536\u8d77)$/.test(cleanupPostText(button.textContent))
+        ) || null
+      : null;
   const toggleText = cleanupPostText(toggleControl?.textContent);
   return {
     rows: getPostAwardRows(post),
@@ -11700,7 +13046,11 @@ function populatePostAwardTableBody(tbody, rows) {
   const fragment = document.createDocumentFragment();
   (rows || []).forEach((row) => {
     const tr = document.createElement("tr");
-    const operationClass = /-\s*\d/.test(row.operation) ? "cc98-rebuild-award-negative" : (/\+\s*\d/.test(row.operation) ? "cc98-rebuild-award-positive" : "");
+    const operationClass = /-\s*\d/.test(row.operation)
+      ? "cc98-rebuild-award-negative"
+      : /\+\s*\d/.test(row.operation)
+        ? "cc98-rebuild-award-positive"
+        : "";
     tr.append(createElement("td", "", row.user || "-"));
     tr.append(createElement("td", operationClass, row.operation || "-"));
     tr.append(createElement("td", "", row.reason || "-"));
@@ -11716,7 +13066,10 @@ function syncAwardDeltaActions(actions, rows, awardKey = "") {
   }
   applyAwardDeltaValueToActions(actions, delta);
   (actions || []).forEach((action) => {
-    if (getPostActionKind(action.control, action.text) === "score" && action.proxyButton instanceof HTMLElement) {
+    if (
+      getPostActionKind(action.control, action.text) === "score" &&
+      action.proxyButton instanceof HTMLElement
+    ) {
       syncProxyControlDisplay(action.proxyButton, action);
     }
   });
@@ -11741,10 +13094,16 @@ function renderPostAwardTable(rows, options = {}) {
   // Collapsed native tables contain only a subset of the award records.
   // Use a previously known full total until all rows have been read.
   const cachedDelta = postAwardDeltaCache.get(options.awardKey);
-  const actionDelta = (options.actions || []).find((action) => getActionVoteKind(action) === "score"
-    && Number.isFinite(action.awardDelta))?.awardDelta;
-  updateTotal(options.expanded || !options.collapsible ? getAwardReputationDelta(rows)
-    : Number.isFinite(cachedDelta) ? cachedDelta : actionDelta);
+  const actionDelta = (options.actions || []).find(
+    (action) => getActionVoteKind(action) === "score" && Number.isFinite(action.awardDelta)
+  )?.awardDelta;
+  updateTotal(
+    options.expanded || !options.collapsible
+      ? getAwardReputationDelta(rows)
+      : Number.isFinite(cachedDelta)
+        ? cachedDelta
+        : actionDelta
+  );
   title.append(total);
   headerRow.append(title);
   let toggleButton = null;
@@ -11769,7 +13128,9 @@ function renderPostAwardTable(rows, options = {}) {
             return;
           }
           populatePostAwardTableBody(tbody, nextState.rows);
-          toggleButton.textContent = nextState.toggleText || (nextState.expanded ? "\u6536\u8d77" : "\u663e\u793a\u5168\u90e8");
+          toggleButton.textContent =
+            nextState.toggleText ||
+            (nextState.expanded ? "\u6536\u8d77" : "\u663e\u793a\u5168\u90e8");
           toggleButton.setAttribute("aria-expanded", String(nextState.expanded));
           if (nextState.toggleText && nextState.toggleText !== previousToggleText) {
             toggleButton.disabled = false;
@@ -11842,7 +13203,9 @@ function applyAwardDeltaValueToActions(actions, delta) {
 
 function getPostEditInfo(post) {
   const text = cleanupPostText(post?.innerText || "");
-  const match = text.match(/该帖最后由\s*(.*?)\s*在\s*(\d{4}[-/]\d{1,2}[-/]\d{1,2}\s+\d{1,2}:\d{2}(?::\d{2})?)\s*编辑/);
+  const match = text.match(
+    /该帖最后由\s*(.*?)\s*在\s*(\d{4}[-/]\d{1,2}[-/]\d{1,2}\s+\d{1,2}:\d{2}(?::\d{2})?)\s*编辑/
+  );
   if (!match) {
     return { editor: "", editedAt: "" };
   }
@@ -11861,9 +13224,10 @@ function applyAwardDeltaToActions(actions, rows) {
 
 function getTopicMetricCount(metricId, anchor = null) {
   const selector = `#${metricId} .timeProp.tagSize`;
-  const localRoot = anchor instanceof Element
-    ? anchor.closest(".topicInfo-info, .topicInfo-title, #essayProp")
-    : null;
+  const localRoot =
+    anchor instanceof Element
+      ? anchor.closest(".topicInfo-info, .topicInfo-title, #essayProp")
+      : null;
   const candidates = [
     localRoot?.querySelector?.(selector),
     ...document.querySelectorAll(selector)
@@ -11881,21 +13245,31 @@ function getTopicMetricCount(metricId, anchor = null) {
 function getTopicBreadcrumbItems(source) {
   const topicId = getTopicRouteInfo()?.topicId;
   if (!topicId || !(source instanceof Element)) return [];
-  const items = [...source.querySelectorAll(":scope > a[href]")].map(link => ({
+  const items = [...source.querySelectorAll(":scope > a[href]")].map((link) => ({
     text: cleanupPostText(link.textContent),
     href: link.getAttribute("href"),
     path: getCc98RoutePathFromHref(link.getAttribute("href")).split(/[?#]/)[0]
   }));
-  if (items.length !== 4 || items.some(item => !item.text)
-    || items[0].path !== "/" || !/^\/boardlist\/?$/i.test(items[1].path)
-    || !/^\/board\/\d+\/?$/i.test(items[2].path)
-    || !new RegExp(`^/topic/${topicId}(?:/\\d+)?/?$`, "i").test(items[3].path)) return [];
+  if (
+    items.length !== 4 ||
+    items.some((item) => !item.text) ||
+    items[0].path !== "/" ||
+    !/^\/boardlist\/?$/i.test(items[1].path) ||
+    !/^\/board\/\d+\/?$/i.test(items[2].path) ||
+    !new RegExp(`^/topic/${topicId}(?:/\\d+)?/?$`, "i").test(items[3].path)
+  )
+    return [];
   return items;
 }
 
 function getTopicBreadcrumbSource() {
   for (const link of document.querySelectorAll('a[href*="/boardlist" i]')) {
-    if (link.closest("#cc98-comfort-app, .reply, .post, article, .substance, .mde-preview-content, .signature")) continue;
+    if (
+      link.closest(
+        "#cc98-comfort-app, .reply, .post, article, .substance, .mde-preview-content, .signature"
+      )
+    )
+      continue;
     const row = link.closest(".row");
     if (getTopicBreadcrumbItems(row).length) return row;
   }
@@ -11906,7 +13280,10 @@ function syncTopicContextRow(hero, source = getTopicBreadcrumbSource()) {
   const items = getTopicBreadcrumbItems(source);
   const views = getTopicMetricCount("viewtimes");
   let row = hero.querySelector(":scope > .cc98-rebuild-topic-context");
-  if (!items.length && views === "") { row?.remove(); return; }
+  if (!items.length && views === "") {
+    row?.remove();
+    return;
+  }
   if (!row) {
     row = createElement("div", "cc98-rebuild-topic-context");
     hero.append(row);
@@ -11936,20 +13313,32 @@ function syncTopicContextRow(hero, source = getTopicBreadcrumbSource()) {
   if (views === "") current?.remove();
   else {
     const text = `浏览 ${views}`;
-    if (current) { if (current.textContent !== text) current.textContent = text; }
-    else row.append(createElement("p", "cc98-rebuild-topic-views", text));
+    if (current) {
+      if (current.textContent !== text) current.textContent = text;
+    } else row.append(createElement("p", "cc98-rebuild-topic-views", text));
   }
 }
 
 function syncTopicViewCount() {
   const app = document.querySelector("#cc98-comfort-app");
-  const active = lastSettings?.enabled && lastSettings.rebuildUi
-    && app?.dataset.pageKind === "post" && app.dataset.routeKey === getRoutePageKey()
-    && app.dataset.cc98ContentPending !== "true";
-  const source = active ? [...document.querySelectorAll("#viewtimes")].find(node => !node.closest("#cc98-comfort-app")) || null : null;
+  const active =
+    lastSettings?.enabled &&
+    lastSettings.rebuildUi &&
+    app?.dataset.pageKind === "post" &&
+    app.dataset.routeKey === getRoutePageKey() &&
+    app.dataset.cc98ContentPending !== "true";
+  const source = active
+    ? [...document.querySelectorAll("#viewtimes")].find(
+        (node) => !node.closest("#cc98-comfort-app")
+      ) || null
+    : null;
   const breadcrumb = active ? getTopicBreadcrumbSource() : null;
   const lockScope = active ? findTopicLockScope(breadcrumb) : null;
-  if (source !== topicViewCountSource || breadcrumb !== topicBreadcrumbSource || lockScope !== topicLockScope) {
+  if (
+    source !== topicViewCountSource ||
+    breadcrumb !== topicBreadcrumbSource ||
+    lockScope !== topicLockScope
+  ) {
     topicViewCountObserver?.disconnect();
     topicViewCountObserver = null;
     topicViewCountSource = source;
@@ -11958,7 +13347,13 @@ function syncTopicViewCount() {
     if (source || breadcrumb || lockScope) {
       topicViewCountObserver = new MutationObserver(syncTopicViewCount);
       for (const node of [source, breadcrumb, lockScope].filter(Boolean)) {
-        topicViewCountObserver.observe(node, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["href"] });
+        topicViewCountObserver.observe(node, {
+          childList: true,
+          subtree: true,
+          characterData: true,
+          attributes: true,
+          attributeFilter: ["href"]
+        });
       }
     }
   }
@@ -11973,7 +13368,10 @@ function getTopicFavoriteDisplayText(action) {
   if (action?.scope !== "topic" || !(action.control instanceof HTMLElement)) {
     return "";
   }
-  const label = cleanupPostText(getActionText(action.control) || action.text).replace(/\s+\d+\s*$/, "");
+  const label = cleanupPostText(getActionText(action.control) || action.text).replace(
+    /\s+\d+\s*$/,
+    ""
+  );
   if (!/^(?:\u6536\u85cf|\u53d6\u6d88\u6536\u85cf|\u5df2\u6536\u85cf)$/.test(label)) {
     return "";
   }
@@ -11991,11 +13389,7 @@ function getCapturedPostIdCandidates(post) {
     post.getAttribute("data-post-id"),
     ...[...post.querySelectorAll("[id], [data-id], [data-post-id]")]
       .slice(0, 80)
-      .flatMap((node) => [
-        node.id,
-        node.getAttribute("data-id"),
-        node.getAttribute("data-post-id")
-      ])
+      .flatMap((node) => [node.id, node.getAttribute("data-id"), node.getAttribute("data-post-id")])
   ];
   const ids = new Set();
   values.forEach((value) => {
@@ -12042,11 +13436,12 @@ function getPostItems() {
     '[class*="reply"]',
     '[class*="Reply"]'
   ].join(",");
-  const candidates = directReplies.length > 0
-    ? directReplies
-    : [...document.querySelectorAll(selectors)]
-      .filter((node) => !node.closest("#cc98-comfort-app"))
-      .filter(hasPostContentContainer);
+  const candidates =
+    directReplies.length > 0
+      ? directReplies
+      : [...document.querySelectorAll(selectors)]
+          .filter((node) => !node.closest("#cc98-comfort-app"))
+          .filter(hasPostContentContainer);
 
   const compact = [];
   candidates.forEach((candidate) => {
@@ -12063,81 +13458,96 @@ function getPostItems() {
 
   const topicId = getTopicPageInfo()?.topicId || location.pathname;
   const currentAccountId = getCc98AccountId(getStoredCc98UserInfo());
-  const items = compact.map((post, index) => {
-    const contentNode = findPostContentNode(post);
-    const voteContent = findPostVoteContentNode(post);
-    const lotteryContent = findPostLotteryContentNode(post);
-    if (!contentNode && !voteContent && !lotteryContent) {
-      return null;
-    }
-    const floorNumber = getPostFloorNumber(post, index);
-    const capturedPost = findCapturedTopicPostSnapshot(post, floorNumber);
-    const capturedMediaSources = extractCapturedPostMediaSources(capturedPost?.content || "");
-    const capturedSignatureMediaSources = extractCapturedPostMediaSources(capturedPost?.signatureCode || "");
-    const user = getFirstLink(post, 'a[href*="/user/id/"], a[href*="/user/name/"]');
-    const uidMatch = user?.href?.match(/\/user\/id\/(\d+)/);
-    const userHref = makeAbsoluteCc98Url(user?.href || (uidMatch?.[1] ? `/user/id/${uidMatch[1]}` : ""));
-    const anonymousCode = getAnonymousPostCode(post);
-    const avatar = getPostAvatar(post, userHref);
-    const authorCard = anonymousCode ? null : getPostAuthorCardInfo(post);
-    const content = contentNode ? sanitizePostContent(contentNode, capturedMediaSources) : null;
-    const signature = getPostSignatureContent(post, capturedSignatureMediaSources);
-    let awardState = getPostAwardState(post);
-    const awardAutoExpanding = ensurePostAwardExpanded(post, awardState);
-    if (awardAutoExpanding) {
-      awardState = getPostAwardState(post);
-    }
-    const awards = awardState.rows;
-    const text = cleanupPostText(content?.innerText || "");
-    const publishedAt = cleanupPostText(post.innerText).match(/发表于\s+([0-9:-]+\s+[0-9:]+)/)?.[1] ?? "";
-    const editInfo = getPostEditInfo(post);
-    const actions = collectPostActions(post);
-    const followAction = actions.find(isFollowPostAction) || null;
-    const messageAction = actions.find(isPrivateMessagePostAction) || null;
-    const visibleActions = actions.filter((action) => !isFollowPostAction(action));
-    const isHot = isHotPostNode(post);
-    const id = post.id || post.getAttribute("data-id") || `floor-${floorNumber}-${text.slice(0, 24)}`;
-    const awardKey = `${topicId}:${id}`;
-    const cachedAwardDelta = postAwardDeltaCache.get(awardKey);
-    if (awardState.expanded || !awardState.collapsible) {
-      const delta = getAwardReputationDelta(awards);
-      postAwardDeltaCache.set(awardKey, delta);
-      applyAwardDeltaValueToActions(actions, delta);
-    } else if (Number.isFinite(cachedAwardDelta)) {
-      applyAwardDeltaValueToActions(actions, cachedAwardDelta);
-    }
-    applyPrewarmedPostSnapshot(content, findPrewarmedPostSnapshot(id, floorNumber));
-    return {
-      type: "post",
-      id,
-      index: floorNumber,
-      metrics: globalThis.CC98RebornContentFilter?.metrics(post),
-      user: anonymousCode ? "CC98 \u7528\u6237" : (user?.text || getFirstText(post, '[class*="userName"], [class*="UserName"], [class*="author"], [class*="Author"]') || "CC98 \u7528\u6237"),
-      userHref: anonymousCode ? "" : userHref,
-      uid: uidMatch?.[1] ?? "",
-      anonymousCode,
-      avatar,
-      authorCard,
-      text,
-      content,
-      voteContent,
-      lotteryContent,
-      signature,
-      awards,
-      awardSourcePost: post,
-      awardCollapsible: awardState.collapsible,
-      awardExpanded: awardState.expanded,
-      awardKey,
-      publishedAt,
-      editedAt: editInfo.editedAt,
-      editedBy: editInfo.editor,
-      actions: visibleActions,
-      followAction,
-      messageAction,
-      isCurrentUser: Boolean(uidMatch?.[1] && uidMatch[1] === currentAccountId),
-      isHot
-    };
-  }).filter(Boolean);
+  const items = compact
+    .map((post, index) => {
+      const contentNode = findPostContentNode(post);
+      const voteContent = findPostVoteContentNode(post);
+      const lotteryContent = findPostLotteryContentNode(post);
+      if (!contentNode && !voteContent && !lotteryContent) {
+        return null;
+      }
+      const floorNumber = getPostFloorNumber(post, index);
+      const capturedPost = findCapturedTopicPostSnapshot(post, floorNumber);
+      const capturedMediaSources = extractCapturedPostMediaSources(capturedPost?.content || "");
+      const capturedSignatureMediaSources = extractCapturedPostMediaSources(
+        capturedPost?.signatureCode || ""
+      );
+      const user = getFirstLink(post, 'a[href*="/user/id/"], a[href*="/user/name/"]');
+      const uidMatch = user?.href?.match(/\/user\/id\/(\d+)/);
+      const userHref = makeAbsoluteCc98Url(
+        user?.href || (uidMatch?.[1] ? `/user/id/${uidMatch[1]}` : "")
+      );
+      const anonymousCode = getAnonymousPostCode(post);
+      const avatar = getPostAvatar(post, userHref);
+      const authorCard = anonymousCode ? null : getPostAuthorCardInfo(post);
+      const content = contentNode ? sanitizePostContent(contentNode, capturedMediaSources) : null;
+      const signature = getPostSignatureContent(post, capturedSignatureMediaSources);
+      let awardState = getPostAwardState(post);
+      const awardAutoExpanding = ensurePostAwardExpanded(post, awardState);
+      if (awardAutoExpanding) {
+        awardState = getPostAwardState(post);
+      }
+      const awards = awardState.rows;
+      const text = cleanupPostText(content?.innerText || "");
+      const publishedAt =
+        cleanupPostText(post.innerText).match(/发表于\s+([0-9:-]+\s+[0-9:]+)/)?.[1] ?? "";
+      const editInfo = getPostEditInfo(post);
+      const actions = collectPostActions(post);
+      const followAction = actions.find(isFollowPostAction) || null;
+      const messageAction = actions.find(isPrivateMessagePostAction) || null;
+      const visibleActions = actions.filter((action) => !isFollowPostAction(action));
+      const isHot = isHotPostNode(post);
+      const id =
+        post.id || post.getAttribute("data-id") || `floor-${floorNumber}-${text.slice(0, 24)}`;
+      const awardKey = `${topicId}:${id}`;
+      const cachedAwardDelta = postAwardDeltaCache.get(awardKey);
+      if (awardState.expanded || !awardState.collapsible) {
+        const delta = getAwardReputationDelta(awards);
+        postAwardDeltaCache.set(awardKey, delta);
+        applyAwardDeltaValueToActions(actions, delta);
+      } else if (Number.isFinite(cachedAwardDelta)) {
+        applyAwardDeltaValueToActions(actions, cachedAwardDelta);
+      }
+      applyPrewarmedPostSnapshot(content, findPrewarmedPostSnapshot(id, floorNumber));
+      return {
+        type: "post",
+        id,
+        index: floorNumber,
+        metrics: globalThis.CC98RebornContentFilter?.metrics(post),
+        user: anonymousCode
+          ? "CC98 \u7528\u6237"
+          : user?.text ||
+            getFirstText(
+              post,
+              '[class*="userName"], [class*="UserName"], [class*="author"], [class*="Author"]'
+            ) ||
+            "CC98 \u7528\u6237",
+        userHref: anonymousCode ? "" : userHref,
+        uid: uidMatch?.[1] ?? "",
+        anonymousCode,
+        avatar,
+        authorCard,
+        text,
+        content,
+        voteContent,
+        lotteryContent,
+        signature,
+        awards,
+        awardSourcePost: post,
+        awardCollapsible: awardState.collapsible,
+        awardExpanded: awardState.expanded,
+        awardKey,
+        publishedAt,
+        editedAt: editInfo.editedAt,
+        editedBy: editInfo.editor,
+        actions: visibleActions,
+        followAction,
+        messageAction,
+        isCurrentUser: Boolean(uidMatch?.[1] && uidMatch[1] === currentAccountId),
+        isHot
+      };
+    })
+    .filter(Boolean);
   const viewCount = getTopicMetricCount("viewtimes");
   const firstRegularItem = items.find((item) => !item.isHot) || items[0];
   if (firstRegularItem && viewCount !== "") {
@@ -12152,28 +13562,35 @@ function getPostItems() {
 
   const article = document.querySelector("#root article");
   const text = cleanupPostText(article?.innerText);
-  return text ? [{
-    type: "post",
-    id: "article",
-    index: 1,
-    user: "CC98",
-    uid: "",
-    avatar: "",
-    text,
-    content: sanitizePostContent(article),
-    voteContent: null,
-    lotteryContent: null,
-    signature: null,
-    awards: [],
-    publishedAt: "",
-    viewCount: getTopicMetricCount("viewtimes"),
-    actions: []
-  }] : [];
+  return text
+    ? [
+        {
+          type: "post",
+          id: "article",
+          index: 1,
+          user: "CC98",
+          uid: "",
+          avatar: "",
+          text,
+          content: sanitizePostContent(article),
+          voteContent: null,
+          lotteryContent: null,
+          signature: null,
+          awards: [],
+          publishedAt: "",
+          viewCount: getTopicMetricCount("viewtimes"),
+          actions: []
+        }
+      ]
+    : [];
 }
 
 function getTopicToolbarActions() {
-  const controls = [...document.querySelectorAll(".topicInfo-info .followTopic, .topicInfo-title .followTopic, .topicInfo-info [class~='followTopic'], .topicInfo-title [class~='followTopic']")]
-    .filter((control) => control instanceof HTMLElement && !control.closest("#cc98-comfort-app"));
+  const controls = [
+    ...document.querySelectorAll(
+      ".topicInfo-info .followTopic, .topicInfo-title .followTopic, .topicInfo-info [class~='followTopic'], .topicInfo-title [class~='followTopic']"
+    )
+  ].filter((control) => control instanceof HTMLElement && !control.closest("#cc98-comfort-app"));
   const makeAction = (control, fallbackText) => {
     if (!(control instanceof HTMLElement)) {
       return null;
@@ -12185,8 +13602,12 @@ function getTopicToolbarActions() {
       scope: "topic"
     };
   };
-  const favoriteControl = controls.find((control) => /^(?:收藏|取消收藏|已收藏)$/.test(cleanupPostText(control.textContent)));
-  const shareControl = controls.find((control) => cleanupPostText(control.textContent).includes("分享帖子链接"));
+  const favoriteControl = controls.find((control) =>
+    /^(?:收藏|取消收藏|已收藏)$/.test(cleanupPostText(control.textContent))
+  );
+  const shareControl = controls.find((control) =>
+    cleanupPostText(control.textContent).includes("分享帖子链接")
+  );
   return {
     favorite: makeAction(favoriteControl, "收藏"),
     share: makeAction(shareControl, "分享帖子链接")
@@ -12201,12 +13622,14 @@ function collectAnnouncementDomLines(root) {
   const lines = [{ text: "", links: [] }];
   const current = () => lines[lines.length - 1];
   const pushText = (text) => {
-    String(text ?? "").split(/\n/).forEach((part, index) => {
-      if (index > 0) {
-        lines.push({ text: "", links: [] });
-      }
-      current().text += part;
-    });
+    String(text ?? "")
+      .split(/\n/)
+      .forEach((part, index) => {
+        if (index > 0) {
+          lines.push({ text: "", links: [] });
+        }
+        current().text += part;
+      });
   };
   const pushLink = (link) => {
     const href = normalizeHref(link.getAttribute("href") || link.href || "");
@@ -12260,22 +13683,28 @@ function collectHomeAnnouncementItems(root) {
   if (!domLines.length) {
     return (root.innerText || "")
       .split("\n")
-      .map((line) => cleanupPostText(line).replace(/详情请戳|詳情請戳/g, "").trim())
+      .map((line) =>
+        cleanupPostText(line)
+          .replace(/详情请戳|詳情請戳/g, "")
+          .trim()
+      )
       .filter(Boolean)
       .map((title) => ({ title, href: "" }));
   }
-  return domLines.map((line) => {
-    const detailLink = line.links.find((link) => isHomeAnnouncementDetailText(link.text));
-    const fallbackLink = line.links.find((link) => !isHomeAnnouncementDetailText(link.text));
-    const title = line.text
-      .replace(/详情请戳|詳情請戳/g, "")
-      .replace(/\s{2,}/g, " ")
-      .trim();
-    return {
-      title: title || cleanupPostText(fallbackLink?.text || detailLink?.text || ""),
-      href: detailLink?.href || fallbackLink?.href || ""
-    };
-  }).filter((item) => item.title);
+  return domLines
+    .map((line) => {
+      const detailLink = line.links.find((link) => isHomeAnnouncementDetailText(link.text));
+      const fallbackLink = line.links.find((link) => !isHomeAnnouncementDetailText(link.text));
+      const title = line.text
+        .replace(/详情请戳|詳情請戳/g, "")
+        .replace(/\s{2,}/g, " ")
+        .trim();
+      return {
+        title: title || cleanupPostText(fallbackLink?.text || detailLink?.text || ""),
+        href: detailLink?.href || fallbackLink?.href || ""
+      };
+    })
+    .filter((item) => item.title);
 }
 
 function getHomeSections() {
@@ -12292,25 +13721,27 @@ function getHomeSections() {
 
   document.querySelectorAll(".mainPageList").forEach((section) => {
     const title = getFirstText(section, ".mainPageTitleText") || "主题";
-    const items = [...section.querySelectorAll(".mainPageListRow")].map((row) => {
-      const titleLink = getFirstLink(row, ".mainPageListTitle a");
-      const boardLink = getFirstLink(row, '.mainPageListBoardName a[href*="/board/"]');
-      const userLink = getFirstLink(row, 'a[href*="/user/id/"]');
-      const uidMatch = userLink?.href?.match(/\/user\/id\/(\d+)/i);
-      const parsedMeta = parseTopicMetaText(row.textContent);
-      return {
-        type: "topic",
-        title: titleLink?.text ?? row.textContent.trim(),
-        href: titleLink?.href ?? "",
-        board: boardLink?.text?.replace(/[【】[\]]/g, "") ?? "",
-        boardHref: boardLink?.href ?? "",
-        user: userLink?.text || (parsedMeta.hasDetails ? parsedMeta.author : ""),
-        uid: uidMatch?.[1] ?? "",
-        meta: parsedMeta.hasDetails ? parsedMeta.meta : "",
-        hoverMeta: parsedMeta.hasDetails ? parsedMeta.hoverMeta : "",
-        replyCount: parsedMeta.hasDetails ? parsedMeta.replyCount : ""
-      };
-    }).filter((item) => item.title);
+    const items = [...section.querySelectorAll(".mainPageListRow")]
+      .map((row) => {
+        const titleLink = getFirstLink(row, ".mainPageListTitle a");
+        const boardLink = getFirstLink(row, '.mainPageListBoardName a[href*="/board/"]');
+        const userLink = getFirstLink(row, 'a[href*="/user/id/"]');
+        const uidMatch = userLink?.href?.match(/\/user\/id\/(\d+)/i);
+        const parsedMeta = parseTopicMetaText(row.textContent);
+        return {
+          type: "topic",
+          title: titleLink?.text ?? row.textContent.trim(),
+          href: titleLink?.href ?? "",
+          board: boardLink?.text?.replace(/[【】[\]]/g, "") ?? "",
+          boardHref: boardLink?.href ?? "",
+          user: userLink?.text || (parsedMeta.hasDetails ? parsedMeta.author : ""),
+          uid: uidMatch?.[1] ?? "",
+          meta: parsedMeta.hasDetails ? parsedMeta.meta : "",
+          hoverMeta: parsedMeta.hasDetails ? parsedMeta.hoverMeta : "",
+          replyCount: parsedMeta.hasDetails ? parsedMeta.replyCount : ""
+        };
+      })
+      .filter((item) => item.title);
     if (items.length > 0) {
       sections.push({ title, kind: "topics", items });
     }
@@ -12320,8 +13751,10 @@ function getHomeSections() {
 
 function isHotHomeSection(section) {
   const title = normalizeText(section?.title || "");
-  return title.includes(normalizeText("\u70ed\u95e8\u8bdd\u9898"))
-    || title.includes(normalizeText("\u70ed\u95e8"));
+  return (
+    title.includes(normalizeText("\u70ed\u95e8\u8bdd\u9898")) ||
+    title.includes(normalizeText("\u70ed\u95e8"))
+  );
 }
 
 function getHomeHotRankCacheKey(section) {
@@ -12341,12 +13774,15 @@ function getHomeHotRankItemKey(item) {
 }
 
 function makeHomeHotRankEntries(items) {
-  return (items || []).slice(0, 10).map((item, index) => ({
-    key: getHomeHotRankItemKey(item),
-    title: item.title || "",
-    href: item.href || "",
-    rank: index + 1
-  })).filter((entry) => entry.key && entry.key !== "title:");
+  return (items || [])
+    .slice(0, 10)
+    .map((item, index) => ({
+      key: getHomeHotRankItemKey(item),
+      title: item.title || "",
+      href: item.href || "",
+      rank: index + 1
+    }))
+    .filter((entry) => entry.key && entry.key !== "title:");
 }
 
 function readHomeHotRankCache(section) {
@@ -12361,10 +13797,13 @@ function readHomeHotRankCache(section) {
 
 function writeHomeHotRankCache(section, entries) {
   try {
-    localStorage.setItem(getHomeHotRankCacheKey(section), JSON.stringify({
-      savedAt: Date.now(),
-      entries
-    }));
+    localStorage.setItem(
+      getHomeHotRankCacheKey(section),
+      JSON.stringify({
+        savedAt: Date.now(),
+        entries
+      })
+    );
   } catch {
     // Ranking movement is cosmetic; ignore storage failures.
   }
@@ -12422,21 +13861,25 @@ function getHomeHotItemsWithRankMovement(section) {
 }
 
 function getBoardSections() {
-  return [...document.querySelectorAll(".anArea")].map((area) => {
-    const title = area.id || getFirstText(area, ".areaName") || "版面";
-    const boards = [...area.querySelectorAll(".boardContent, .noImgBoardContent")].map((board) => {
-      const link = getFirstLink(board, 'a[href*="/board/"]');
-      const image = board.querySelector("img")?.src ?? "";
-      const info = getFirstText(board, ".boardInfo").replace(/\s+/g, " ");
-      return {
-        title: getFirstText(board, ".boardName2") || link?.text || "版面",
-        href: link?.href ?? "",
-        image,
-        meta: info
-      };
-    }).filter((board) => board.title);
-    return { title, boards };
-  }).filter((section) => section.boards.length > 0);
+  return [...document.querySelectorAll(".anArea")]
+    .map((area) => {
+      const title = area.id || getFirstText(area, ".areaName") || "版面";
+      const boards = [...area.querySelectorAll(".boardContent, .noImgBoardContent")]
+        .map((board) => {
+          const link = getFirstLink(board, 'a[href*="/board/"]');
+          const image = board.querySelector("img")?.src ?? "";
+          const info = getFirstText(board, ".boardInfo").replace(/\s+/g, " ");
+          return {
+            title: getFirstText(board, ".boardName2") || link?.text || "版面",
+            href: link?.href ?? "",
+            image,
+            meta: info
+          };
+        })
+        .filter((board) => board.title);
+      return { title, boards };
+    })
+    .filter((section) => section.boards.length > 0);
 }
 
 function normalizePinnedBoardHref(href) {
@@ -12502,48 +13945,67 @@ function togglePinnedBoard(board) {
 }
 
 function getBoardPageStats(head) {
-  return [...head.querySelectorAll(".board-head-information")].map((valueNode) => {
-    const row = valueNode.closest(".row") ?? valueNode.parentElement;
-    const labelNode = row?.querySelector(".ant-tag-has-color, span:first-child");
-    return {
-      label: labelNode?.textContent?.trim() ?? "",
-      value: valueNode.textContent?.trim() ?? ""
-    };
-  }).filter((item) => item.label || item.value);
+  return [...head.querySelectorAll(".board-head-information")]
+    .map((valueNode) => {
+      const row = valueNode.closest(".row") ?? valueNode.parentElement;
+      const labelNode = row?.querySelector(".ant-tag-has-color, span:first-child");
+      return {
+        label: labelNode?.textContent?.trim() ?? "",
+        value: valueNode.textContent?.trim() ?? ""
+      };
+    })
+    .filter((item) => item.label || item.value);
 }
 
 function getBoardPageData() {
   const root = document.querySelector(".board-body");
   const head = root?.querySelector(".board-head-body") ?? document;
-  const name = getFirstText(head, ".board-head-name") || document.title.replace(" - CC98论坛", "") || "版面";
+  const name =
+    getFirstText(head, ".board-head-name") || document.title.replace(" - CC98论坛", "") || "版面";
   const avatar = head.querySelector(".board-avatar")?.src ?? "";
-  const intro = [...head.querySelectorAll("div")]
-    .map((node) => node.childNodes.length <= 1 ? node.textContent?.replace(/\s+/g, " ").trim() ?? "" : "")
-    .find((text) => text.startsWith("版面简介"))
-    ?.replace(/^版面简介[:：]\s*/, "") ?? "";
+  const intro =
+    [...head.querySelectorAll("div")]
+      .map((node) =>
+        node.childNodes.length <= 1 ? (node.textContent?.replace(/\s+/g, " ").trim() ?? "") : ""
+      )
+      .find((text) => text.startsWith("版面简介"))
+      ?.replace(/^版面简介[:：]\s*/, "") ?? "";
   const moderators = [...head.querySelectorAll('a[href*="/user/name/"], a[href*="/user/id/"]')]
     .map((link) => ({ text: link.textContent?.trim() ?? "", href: link.href }))
     .filter((item) => item.text);
   const noticeNode = head.querySelector(".ant-collapse-content article");
   const notice = noticeNode ? sanitizePostContent(noticeNode) : null;
-  const followButton = [...head.querySelectorAll("button")]
-    .find((button) => button.textContent?.includes("关注"));
-  const postTopicLink = getFirstLink(root ?? document, '.board-head-bar a[href*="/editor/postTopic/"]');
-  const voteTopicLink = getFirstLink(root ?? document, '.board-head-bar a[href*="/editor/postVoteTopic/"]');
-  const composeButtons = [...(root ?? document).querySelectorAll(".board-head-bar button, .board-head-body button.board-head-button")]
-    .filter(control => !control.closest("#cc98-comfort-app"));
+  const followButton = [...head.querySelectorAll("button")].find((button) =>
+    button.textContent?.includes("关注")
+  );
+  const postTopicLink = getFirstLink(
+    root ?? document,
+    '.board-head-bar a[href*="/editor/postTopic/"]'
+  );
+  const voteTopicLink = getFirstLink(
+    root ?? document,
+    '.board-head-bar a[href*="/editor/postVoteTopic/"]'
+  );
+  const composeButtons = [
+    ...(root ?? document).querySelectorAll(
+      ".board-head-bar button, .board-head-body button.board-head-button"
+    )
+  ].filter((control) => !control.closest("#cc98-comfort-app"));
   const nativeComposeAction = (text) => {
-    const control = composeButtons.find(button => cleanupPostText(button.textContent) === text);
+    const control = composeButtons.find((button) => cleanupPostText(button.textContent) === text);
     return control ? { text, control } : null;
   };
-  const adAnchor = [...(root ?? document).querySelectorAll(".board-head-bar a[href]")]
-    .find((link) => link.querySelector("img"));
+  const adAnchor = [...(root ?? document).querySelectorAll(".board-head-bar a[href]")].find(
+    (link) => link.querySelector("img")
+  );
   const adLink = adAnchor ? { href: adAnchor.href } : null;
   const adImage = root?.querySelector(".board-head-bar img")?.src ?? "";
   const filters = [...document.querySelectorAll(".board-postItem-head-option")]
     .map((control) => ({ text: control.textContent?.trim() ?? "", control }))
     .filter((item) => item.text);
-  const footerActions = [...document.querySelectorAll(".board-body > .row button, .board-body button")]
+  const footerActions = [
+    ...document.querySelectorAll(".board-body > .row button, .board-body button")
+  ]
     .filter((button) => !button.closest(".board-head-body") && !button.closest(".board-head-bar"))
     .map((control) => ({ text: control.textContent?.trim() ?? "", control }))
     .filter((item) => item.text);
@@ -12554,7 +14016,9 @@ function getBoardPageData() {
     moderators,
     stats: getBoardPageStats(head),
     notice,
-    followAction: followButton ? { text: followButton.textContent?.trim() || "关注", control: followButton } : null,
+    followAction: followButton
+      ? { text: followButton.textContent?.trim() || "关注", control: followButton }
+      : null,
     postTopic: postTopicLink || nativeComposeAction("发主题"),
     postVoteTopic: voteTopicLink || nativeComposeAction("发投票"),
     ad: adImage ? { image: adImage, href: adLink?.href || "" } : null,
@@ -12575,12 +14039,19 @@ function getBoardTopicItems() {
         .slice(1)
         .map((link) => ({ text: link.textContent?.trim() ?? "", href: link.href }))
         .filter((item) => item.text);
-      const userLink = getFirstLink(row, '.board-postItem-userName[href*="/user/"], .board-postItem-userName a[href*="/user/"]');
+      const userLink = getFirstLink(
+        row,
+        '.board-postItem-userName[href*="/user/"], .board-postItem-userName a[href*="/user/"]'
+      );
       const userText = userLink?.text || getFirstText(row, ".board-postItem-userName");
       const uidMatch = userLink?.href?.match(/\/user\/id\/(\d+)/i);
-      const tags = [...row.querySelectorAll(".board-postItem-tags .ant-tag")].map((tag) => tag.textContent?.trim() ?? "").filter(Boolean);
-      const lastReplyLink = row.querySelector('.board-postItem-lastReply')?.closest("a");
-      const lastReplySpans = [...row.querySelectorAll(".board-postItem-lastReply span")].map((span) => span.textContent?.trim() ?? "").filter(Boolean);
+      const tags = [...row.querySelectorAll(".board-postItem-tags .ant-tag")]
+        .map((tag) => tag.textContent?.trim() ?? "")
+        .filter(Boolean);
+      const lastReplyLink = row.querySelector(".board-postItem-lastReply")?.closest("a");
+      const lastReplySpans = [...row.querySelectorAll(".board-postItem-lastReply span")]
+        .map((span) => span.textContent?.trim() ?? "")
+        .filter(Boolean);
       const iconNode = row.querySelector(".board-postItem-icon img");
       const icon = iconNode?.currentSrc || iconNode?.src || iconNode?.getAttribute("src") || "";
       const iconHint = `${iconNode?.getAttribute("src") || ""} ${icon}`;
@@ -12610,11 +14081,14 @@ function getBoardTopicItems() {
 }
 
 function getUserCenterData() {
-  const navItems = [...document.querySelectorAll(".user-center-navigation a")].map((link) => ({
-    title: link.textContent.trim(),
-    href: link.href
-  })).filter((item) => item.title);
-  const heading = getFirstText(document, ".user-theme-info h2, .user-center-head p, h2") || "个人中心";
+  const navItems = [...document.querySelectorAll(".user-center-navigation a")]
+    .map((link) => ({
+      title: link.textContent.trim(),
+      href: link.href
+    }))
+    .filter((item) => item.title);
+  const heading =
+    getFirstText(document, ".user-theme-info h2, .user-center-head p, h2") || "个人中心";
   const summary = [...document.querySelectorAll(".user-center-router p, .user-center-router label")]
     .map((node) => node.textContent.trim().replace(/\s+/g, " "))
     .filter(Boolean)
@@ -12633,48 +14107,63 @@ function getNativeTopbar() {
   if (rootedTopbar instanceof HTMLElement) {
     return rootedTopbar;
   }
-  return [...document.querySelectorAll(selector)]
-    .find((node) => node instanceof HTMLElement && !node.closest("#cc98-comfort-app"))
-    || null;
+  return (
+    [...document.querySelectorAll(selector)].find(
+      (node) => node instanceof HTMLElement && !node.closest("#cc98-comfort-app")
+    ) || null
+  );
 }
 
 function getNativeUserEntry() {
   const topbar = getNativeTopbar();
   const source = topbar || document;
-  const findOutsideRebuild = (selector) => [...source.querySelectorAll(selector)]
-    .find((node) => node instanceof HTMLElement && !node.closest("#cc98-comfort-app"))
-    || null;
+  const findOutsideRebuild = (selector) =>
+    [...source.querySelectorAll(selector)].find(
+      (node) => node instanceof HTMLElement && !node.closest("#cc98-comfort-app")
+    ) || null;
   const topbarRight = findOutsideRebuild(".topBarRight");
   if (topbarRight instanceof HTMLElement) {
     return topbarRight;
   }
-  const direct = findOutsideRebuild([
-    ".topBarUser",
-    ".topBarUserInfo",
-    ".topBarUserImg",
-    ".topbar-user",
-    ".top-bar-user",
-    "[class*='topBarUser']",
-    "[class*='userInfo']"
-  ].join(","));
+  const direct = findOutsideRebuild(
+    [
+      ".topBarUser",
+      ".topBarUserInfo",
+      ".topBarUserImg",
+      ".topbar-user",
+      ".top-bar-user",
+      "[class*='topBarUser']",
+      "[class*='userInfo']"
+    ].join(",")
+  );
   if (direct instanceof HTMLElement) {
-    return direct.closest("a, button, [role='button'], .topBarUser, .topBarUserInfo, .topBarUserImg, [class*='topBarUser'], [class*='userInfo']") || direct;
+    return (
+      direct.closest(
+        "a, button, [role='button'], .topBarUser, .topBarUserInfo, .topBarUserImg, [class*='topBarUser'], [class*='userInfo']"
+      ) || direct
+    );
   }
-  const userImage = findOutsideRebuild("a[href*='/user/'] img, img[class*='avatar'], img[class*='portrait'], img[src*='avatar'], img[src*='portrait']");
+  const userImage = findOutsideRebuild(
+    "a[href*='/user/'] img, img[class*='avatar'], img[class*='portrait'], img[src*='avatar'], img[src*='portrait']"
+  );
   if (userImage instanceof HTMLElement) {
     return userImage.closest("a, button, [role='button'], div, span") || userImage;
   }
-  const userLink = findOutsideRebuild("a[href*='/user/'], a[href*='userCenter'], a[href*='usercenter']");
+  const userLink = findOutsideRebuild(
+    "a[href*='/user/'], a[href*='userCenter'], a[href*='usercenter']"
+  );
   return userLink instanceof HTMLElement ? userLink : null;
 }
 
 function attachHomeTopbarMessageIfMissing(nativeEntry) {
   const routePath = getCurrentCc98RoutePath().replace(/\/+$/, "") || "/";
   const isHomePage = routePath === "/" || Boolean(document.querySelector(".mainPage"));
-  if (!(nativeEntry instanceof HTMLElement)
-    || nativeEntry.classList.contains("cc98-rebuild-guest-user-entry")
-    || !isHomePage
-    || nativeEntry.querySelector(".topBarMessage, .messageTopBar, .topBarBell")) {
+  if (
+    !(nativeEntry instanceof HTMLElement) ||
+    nativeEntry.classList.contains("cc98-rebuild-guest-user-entry") ||
+    !isHomePage ||
+    nativeEntry.querySelector(".topBarMessage, .messageTopBar, .topBarBell")
+  ) {
     return;
   }
   const target = nativeEntry.querySelector(".topBarUserInfo") || nativeEntry;
@@ -12691,19 +14180,34 @@ function attachHomeTopbarMessageIfMissing(nativeEntry) {
       }
     });
   });
-  const message = candidates.find((node) => node instanceof HTMLElement
-    && !node.closest("#cc98-comfort-app")
-    && !nativeEntry.contains(node)
-    && !node.closest(".topBarUserCenter, .topBarUserCenter-mainPage, .topBarMessageDetails, .topBarMessageDetails-mainPage")
-    && Boolean(node.querySelector?.(".topBarBell") || node.matches?.(".topBarBell")));
+  const message = candidates.find(
+    (node) =>
+      node instanceof HTMLElement &&
+      !node.closest("#cc98-comfort-app") &&
+      !nativeEntry.contains(node) &&
+      !node.closest(
+        ".topBarUserCenter, .topBarUserCenter-mainPage, .topBarMessageDetails, .topBarMessageDetails-mainPage"
+      ) &&
+      Boolean(node.querySelector?.(".topBarBell") || node.matches?.(".topBarBell"))
+  );
   if (!(message instanceof HTMLElement)) {
     return;
   }
-  const beforeSource = target.querySelector(".topBarUserImg, .topBarUserName, .cc98-rebuild-native-user-name-link, img");
-  const before = beforeSource instanceof HTMLElement
-    ? (beforeSource.parentElement === target ? beforeSource : beforeSource.closest(".topBarUserImg, .topBarUserName, .cc98-rebuild-native-user-name-link"))
-    : null;
-  target.insertBefore(message, before instanceof HTMLElement && before.parentElement === target ? before : target.firstChild);
+  const beforeSource = target.querySelector(
+    ".topBarUserImg, .topBarUserName, .cc98-rebuild-native-user-name-link, img"
+  );
+  const before =
+    beforeSource instanceof HTMLElement
+      ? beforeSource.parentElement === target
+        ? beforeSource
+        : beforeSource.closest(
+            ".topBarUserImg, .topBarUserName, .cc98-rebuild-native-user-name-link"
+          )
+      : null;
+  target.insertBefore(
+    message,
+    before instanceof HTMLElement && before.parentElement === target ? before : target.firstChild
+  );
 }
 
 function attachNativeTopbarDropdowns(nativeEntry) {
@@ -12721,21 +14225,27 @@ function attachNativeTopbarDropdowns(nativeEntry) {
       node.classList.add("topBarMessageDetails");
     }
   };
-  nativeEntry.querySelectorAll(".topBarUserCenter-mainPage, .topBarMessageDetails-mainPage").forEach(normalizeDropdown);
+  nativeEntry
+    .querySelectorAll(".topBarUserCenter-mainPage, .topBarMessageDetails-mainPage")
+    .forEach(normalizeDropdown);
   [
     [".topBarUserCenter, .topBarUserCenter-mainPage", "topBarUserCenter"],
     [".topBarMessageDetails, .topBarMessageDetails-mainPage", "topBarMessageDetails"]
   ].forEach(([selector, baseClass]) => {
     const existingDropdown = nativeEntry.querySelector(selector);
-    if (existingDropdown && !existingDropdown.classList.contains("cc98-rebuild-forced-topbar-menu")) {
+    if (
+      existingDropdown &&
+      !existingDropdown.classList.contains("cc98-rebuild-forced-topbar-menu")
+    ) {
       normalizeDropdown(existingDropdown);
       if (baseClass === "topBarUserCenter") {
         augmentTopbarUserMenu(existingDropdown);
       }
       return;
     }
-    const dropdown = [...document.querySelectorAll(selector)]
-      .find((node) => node instanceof HTMLElement && !node.closest("#cc98-comfort-app"));
+    const dropdown = [...document.querySelectorAll(selector)].find(
+      (node) => node instanceof HTMLElement && !node.closest("#cc98-comfort-app")
+    );
     if (dropdown instanceof HTMLElement) {
       rememberReparentedNativeNode(dropdown);
       dropdown.classList.add(baseClass);
@@ -12778,8 +14288,9 @@ function augmentTopbarUserMenu(menu) {
 
 function createForcedTopbarUserMenu() {
   const menu = createElement("div", "topBarUserCenter cc98-rebuild-forced-topbar-menu");
-  const source = [...document.querySelectorAll(".topBarUserCenter, .topBarUserCenter-mainPage")]
-    .find((node) => node instanceof HTMLElement && !node.closest("#cc98-comfort-app"));
+  const source = [
+    ...document.querySelectorAll(".topBarUserCenter, .topBarUserCenter-mainPage")
+  ].find((node) => node instanceof HTMLElement && !node.closest("#cc98-comfort-app"));
   if (source instanceof HTMLElement) {
     rememberReparentedNativeNode(source);
     source.classList.add("topBarUserCenter");
@@ -12808,15 +14319,31 @@ function createForcedTopbarUserMenu() {
 }
 
 function getTopbarMenuTextByHref(fragment, fallback) {
-  const link = [...document.querySelectorAll(".topBarUserCenter a[href], .topBarUserCenter-mainPage a[href], .topBarMessageDetails a[href], .topBarMessageDetails-mainPage a[href]")]
-    .find((node) => node instanceof HTMLAnchorElement && (node.getAttribute("href") || node.href || "").includes(fragment));
-  const text = cleanupPostText(link?.textContent || "").replace(/\d+$/, "").trim();
+  const link = [
+    ...document.querySelectorAll(
+      ".topBarUserCenter a[href], .topBarUserCenter-mainPage a[href], .topBarMessageDetails a[href], .topBarMessageDetails-mainPage a[href]"
+    )
+  ].find(
+    (node) =>
+      node instanceof HTMLAnchorElement &&
+      (node.getAttribute("href") || node.href || "").includes(fragment)
+  );
+  const text = cleanupPostText(link?.textContent || "")
+    .replace(/\d+$/, "")
+    .trim();
   return text || fallback;
 }
 
 function getTopbarMessageCountByHref(fragment) {
-  const link = [...document.querySelectorAll(".topBarMessageDetails a[href], .topBarMessageDetails-mainPage a[href]")]
-    .find((node) => node instanceof HTMLAnchorElement && (node.getAttribute("href") || node.href || "").includes(fragment));
+  const link = [
+    ...document.querySelectorAll(
+      ".topBarMessageDetails a[href], .topBarMessageDetails-mainPage a[href]"
+    )
+  ].find(
+    (node) =>
+      node instanceof HTMLAnchorElement &&
+      (node.getAttribute("href") || node.href || "").includes(fragment)
+  );
   const text = cleanupPostText(link?.querySelector?.(".message-counterLi")?.textContent || "");
   return /^\d+$/.test(text) ? text : "";
 }
@@ -12843,18 +14370,26 @@ function createSideTopbarMergedButton(label, dataset = {}) {
 }
 
 function getTopbarMergedProfile(nativeEntry) {
-  const avatarNode = nativeEntry?.querySelector?.(".topBarUserImg img, .topBarUserInfo img, img[class*='avatar' i], img[class*='portrait' i]");
-  const avatar = makeWebVpnCc98ResourceUrl(
-    getPreferredHomeAvatarUrl(avatarNode)
-      || lastKnownTopbarAvatarUrl
-      || getStoredCc98UserAvatar()
-      || ""
+  const avatarNode = nativeEntry?.querySelector?.(
+    ".topBarUserImg img, .topBarUserInfo img, img[class*='avatar' i], img[class*='portrait' i]"
   );
-  const visibleName = cleanupPostText(nativeEntry?.querySelector?.(
-    ".topBarUserName, .cc98-rebuild-native-user-name-link, [class*='UserName'], [class*='userName']"
-  )?.textContent || "");
-  const candidateName = isLikelyGuestAccountName(visibleName) ? getStoredCc98UserName() : visibleName;
-  const name = isLikelyGuestAccountName(candidateName) ? "CC98 用户" : cleanupPostText(candidateName);
+  const avatar = makeWebVpnCc98ResourceUrl(
+    getPreferredHomeAvatarUrl(avatarNode) ||
+      lastKnownTopbarAvatarUrl ||
+      getStoredCc98UserAvatar() ||
+      ""
+  );
+  const visibleName = cleanupPostText(
+    nativeEntry?.querySelector?.(
+      ".topBarUserName, .cc98-rebuild-native-user-name-link, [class*='UserName'], [class*='userName']"
+    )?.textContent || ""
+  );
+  const candidateName = isLikelyGuestAccountName(visibleName)
+    ? getStoredCc98UserName()
+    : visibleName;
+  const name = isLikelyGuestAccountName(candidateName)
+    ? "CC98 用户"
+    : cleanupPostText(candidateName);
   return {
     avatar,
     name: name || "CC98 用户"
@@ -12874,7 +14409,10 @@ function createSideTopbarMergedProfile(nativeEntry, profile) {
   } else {
     avatar.textContent = profile.name.slice(0, 1).toUpperCase();
   }
-  link.append(avatar, createElement("strong", "cc98-rebuild-side-topbar-profile-name", profile.name));
+  link.append(
+    avatar,
+    createElement("strong", "cc98-rebuild-side-topbar-profile-name", profile.name)
+  );
   return link;
 }
 
@@ -12913,11 +14451,14 @@ function bindSideTopbarMergedMenuHover(nativeEntry, menu) {
     }
   };
   const setMenusHidden = (hidden) => {
-    nativeEntry.querySelectorAll(".cc98-rebuild-side-topbar-menu, .cc98-rebuild-side-rail-menu").forEach((node) => {
-      node.setAttribute("aria-hidden", hidden ? "true" : "false");
-    });
+    nativeEntry
+      .querySelectorAll(".cc98-rebuild-side-topbar-menu, .cc98-rebuild-side-rail-menu")
+      .forEach((node) => {
+        node.setAttribute("aria-hidden", hidden ? "true" : "false");
+      });
   };
-  const trigger = nativeEntry.querySelector(":scope > .topBarUserInfo, .topBarUserInfo") || nativeEntry;
+  const trigger =
+    nativeEntry.querySelector(":scope > .topBarUserInfo, .topBarUserInfo") || nativeEntry;
   const isPointerInside = () => {
     return nativeEntry.matches(":hover");
   };
@@ -12979,7 +14520,9 @@ function ensureSideTopbarMergedMenu(nativeEntry) {
   if (!(nativeEntry instanceof HTMLElement)) {
     return;
   }
-  const sourceMenus = nativeEntry.querySelectorAll(".topBarUserCenter, .topBarUserCenter-mainPage, .topBarMessageDetails, .topBarMessageDetails-mainPage");
+  const sourceMenus = nativeEntry.querySelectorAll(
+    ".topBarUserCenter, .topBarUserCenter-mainPage, .topBarMessageDetails, .topBarMessageDetails-mainPage"
+  );
   const existing = nativeEntry.querySelector(".cc98-rebuild-side-topbar-menu");
   const existingSideRail = nativeEntry.querySelector(".cc98-rebuild-side-rail-menu");
   if (nativeEntry.classList.contains("cc98-rebuild-guest-user-entry")) {
@@ -12992,17 +14535,35 @@ function ensureSideTopbarMergedMenu(nativeEntry) {
 
   sourceMenus.forEach((node) => node.classList?.add("cc98-rebuild-side-topbar-source"));
   nativeEntry.classList.add("cc98-rebuild-side-menu-ready");
-  const menu = existing instanceof HTMLElement
-    ? existing
-    : createElement("div", "cc98-rebuild-side-topbar-menu");
-  const sideRailMenu = existingSideRail instanceof HTMLElement
-    ? existingSideRail
-    : createElement("div", "cc98-rebuild-side-rail-menu");
+  const menu =
+    existing instanceof HTMLElement
+      ? existing
+      : createElement("div", "cc98-rebuild-side-topbar-menu");
+  const sideRailMenu =
+    existingSideRail instanceof HTMLElement
+      ? existingSideRail
+      : createElement("div", "cc98-rebuild-side-rail-menu");
   const messageItems = [
-    ["/message/response", getTopbarMenuTextByHref("/message/response", "\u56de\u590d\u6211\u7684"), getTopbarMessageCountByHref("/message/response")],
-    ["/message/attme", getTopbarMenuTextByHref("/message/attme", "@ \u6211\u7684"), getTopbarMessageCountByHref("/message/attme")],
-    ["/message/system", getTopbarMenuTextByHref("/message/system", "\u7cfb\u7edf\u901a\u77e5"), getTopbarMessageCountByHref("/message/system")],
-    ["/message/message", getTopbarMenuTextByHref("/message/message", "\u6211\u7684\u79c1\u4fe1"), getTopbarMessageCountByHref("/message/message")]
+    [
+      "/message/response",
+      getTopbarMenuTextByHref("/message/response", "\u56de\u590d\u6211\u7684"),
+      getTopbarMessageCountByHref("/message/response")
+    ],
+    [
+      "/message/attme",
+      getTopbarMenuTextByHref("/message/attme", "@ \u6211\u7684"),
+      getTopbarMessageCountByHref("/message/attme")
+    ],
+    [
+      "/message/system",
+      getTopbarMenuTextByHref("/message/system", "\u7cfb\u7edf\u901a\u77e5"),
+      getTopbarMessageCountByHref("/message/system")
+    ],
+    [
+      "/message/message",
+      getTopbarMenuTextByHref("/message/message", "\u6211\u7684\u79c1\u4fe1"),
+      getTopbarMessageCountByHref("/message/message")
+    ]
   ];
   const userItems = [
     ["/usercenter", getTopbarMenuTextByHref("/usercenter", "\u4e2a\u4eba\u4e2d\u5fc3")],
@@ -13021,7 +14582,9 @@ function ensureSideTopbarMergedMenu(nativeEntry) {
     userItems.forEach(([href, label]) => {
       itemGrid.append(createSideTopbarMergedLink({ href, label, kind: "user" }));
     });
-    const logout = createSideTopbarMergedButton("\u9000\u51fa\u767b\u5f55", { cc98ForcedLogout: "true" });
+    const logout = createSideTopbarMergedButton("\u9000\u51fa\u767b\u5f55", {
+      cc98ForcedLogout: "true"
+    });
     logout.classList.add("cc98-rebuild-side-topbar-menu-logout");
     menu.replaceChildren(profileHeader, itemGrid, logout);
     menu.dataset.cc98MergedMenuSignature = signature;
@@ -13039,7 +14602,9 @@ function ensureSideTopbarMergedMenu(nativeEntry) {
       link.classList.add("cc98-rebuild-side-rail-menu-item");
       itemList.append(link);
     });
-    const logout = createSideTopbarMergedButton("\u9000\u51fa\u767b\u5f55", { cc98ForcedLogout: "true" });
+    const logout = createSideTopbarMergedButton("\u9000\u51fa\u767b\u5f55", {
+      cc98ForcedLogout: "true"
+    });
     logout.classList.add("cc98-rebuild-side-rail-menu-item", "cc98-rebuild-side-rail-menu-logout");
     sideRailMenu.replaceChildren(profileHeader, itemList, logout);
     sideRailMenu.dataset.cc98MergedMenuSignature = signature;
@@ -13060,11 +14625,17 @@ function isLogoutMenuText(text) {
 }
 
 function findNativeLogoutControl() {
-  return [...document.querySelectorAll(".topBarUserCenter li, .topBarUserCenter-mainPage li, .topBarUserCenter a, .topBarUserCenter-mainPage a")]
-    .find((node) => node instanceof HTMLElement
-      && !node.closest(".cc98-rebuild-side-topbar-menu")
-      && !node.closest("[data-cc98-forced-logout='true']")
-      && isLogoutMenuText(node.textContent));
+  return [
+    ...document.querySelectorAll(
+      ".topBarUserCenter li, .topBarUserCenter-mainPage li, .topBarUserCenter a, .topBarUserCenter-mainPage a"
+    )
+  ].find(
+    (node) =>
+      node instanceof HTMLElement &&
+      !node.closest(".cc98-rebuild-side-topbar-menu") &&
+      !node.closest("[data-cc98-forced-logout='true']") &&
+      isLogoutMenuText(node.textContent)
+  );
 }
 
 function forceTopbarAuthNavigation(authLink, event) {
@@ -13073,7 +14644,11 @@ function forceTopbarAuthNavigation(authLink, event) {
   }
   const href = authLink.getAttribute("href") || authLink.href || "";
   const text = cleanupPostText(authLink.textContent);
-  if (/\/logon\/?$/i.test(href) || /\/logon(?:[?#/]|$)/i.test(href) || text.includes("\u767b\u5f55")) {
+  if (
+    /\/logon\/?$/i.test(href) ||
+    /\/logon(?:[?#/]|$)/i.test(href) ||
+    text.includes("\u767b\u5f55")
+  ) {
     event.preventDefault();
     event.stopPropagation();
     event.stopImmediatePropagation?.();
@@ -13095,20 +14670,28 @@ function bindGlobalTopbarAuthRedirects() {
     return;
   }
   topbarAuthRedirectBound = true;
-  document.addEventListener("click", (event) => {
-    const target = event.target;
-    if (!(target instanceof Element)) {
-      return;
-    }
-    const authLink = target.closest(".topBarUserInfo .topBarText a[href], .topBarText a[href], .cc98-rebuild-guest-user-entry a[href]");
-    if (forceTopbarAuthNavigation(authLink, event)) {
-      return;
-    }
-    const logoutControl = target.closest(".topBarUserCenter li, .topBarUserCenter-mainPage li, .topBarUserCenter a, .topBarUserCenter-mainPage a, [data-cc98-forced-logout='true']");
-    if (logoutControl instanceof HTMLElement && isLogoutMenuText(logoutControl.textContent)) {
-      scheduleLogoutRedirect();
-    }
-  }, true);
+  document.addEventListener(
+    "click",
+    (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const authLink = target.closest(
+        ".topBarUserInfo .topBarText a[href], .topBarText a[href], .cc98-rebuild-guest-user-entry a[href]"
+      );
+      if (forceTopbarAuthNavigation(authLink, event)) {
+        return;
+      }
+      const logoutControl = target.closest(
+        ".topBarUserCenter li, .topBarUserCenter-mainPage li, .topBarUserCenter a, .topBarUserCenter-mainPage a, [data-cc98-forced-logout='true']"
+      );
+      if (logoutControl instanceof HTMLElement && isLogoutMenuText(logoutControl.textContent)) {
+        scheduleLogoutRedirect();
+      }
+    },
+    true
+  );
 }
 
 function parseStoredJsonLoose(value) {
@@ -13116,7 +14699,9 @@ function parseStoredJsonLoose(value) {
   if (!raw) {
     return null;
   }
-  const starts = [...new Set([0, 2, 4, raw.indexOf("{"), raw.indexOf("[")].filter((index) => index >= 0))];
+  const starts = [
+    ...new Set([0, 2, 4, raw.indexOf("{"), raw.indexOf("[")].filter((index) => index >= 0))
+  ];
   for (const start of starts) {
     try {
       let parsed = JSON.parse(raw.slice(start));
@@ -13189,9 +14774,33 @@ function getStoredCc98UserInfo() {
   try {
     const candidates = collectStoredCc98UserCandidates();
     for (const parsed of candidates) {
-      const profile = parsed?.user || parsed?.currentUser || parsed?.profile || parsed?.data || parsed?.me || parsed;
-      const id = readFirstObjectValueDeep(profile, ["id", "userId", "uid", "userID", "user_id", "cc98Id", "cc98UserId", "cc98_user_id", "sub"]);
-      const name = readFirstObjectValueDeep(profile, ["name", "userName", "username", "nickName", "nickname", "displayName", "preferred_username"]);
+      const profile =
+        parsed?.user ||
+        parsed?.currentUser ||
+        parsed?.profile ||
+        parsed?.data ||
+        parsed?.me ||
+        parsed;
+      const id = readFirstObjectValueDeep(profile, [
+        "id",
+        "userId",
+        "uid",
+        "userID",
+        "user_id",
+        "cc98Id",
+        "cc98UserId",
+        "cc98_user_id",
+        "sub"
+      ]);
+      const name = readFirstObjectValueDeep(profile, [
+        "name",
+        "userName",
+        "username",
+        "nickName",
+        "nickname",
+        "displayName",
+        "preferred_username"
+      ]);
       if (id || name) {
         return profile;
       }
@@ -13216,7 +14825,9 @@ function readFirstObjectValue(source, keys) {
 }
 
 function normalizeObjectKey(key) {
-  return String(key || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  return String(key || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
 }
 
 function readFirstObjectValueDeep(source, keys, depth = 0, seen = new Set()) {
@@ -13226,11 +14837,25 @@ function readFirstObjectValueDeep(source, keys, depth = 0, seen = new Set()) {
   seen.add(source);
   const normalizedKeys = new Set(keys.map(normalizeObjectKey));
   for (const [key, value] of Object.entries(source)) {
-    if (normalizedKeys.has(normalizeObjectKey(key)) && value !== undefined && value !== null && String(value).trim()) {
+    if (
+      normalizedKeys.has(normalizeObjectKey(key)) &&
+      value !== undefined &&
+      value !== null &&
+      String(value).trim()
+    ) {
       return String(value).trim();
     }
   }
-  for (const key of ["user", "currentUser", "current_user", "profile", "data", "me", "result", "value"]) {
+  for (const key of [
+    "user",
+    "currentUser",
+    "current_user",
+    "profile",
+    "data",
+    "me",
+    "result",
+    "value"
+  ]) {
     const value = readFirstObjectValueDeep(source[key], keys, depth + 1, seen);
     if (value) {
       return value;
@@ -13259,40 +14884,82 @@ function normalizeCc98AccountId(value) {
 }
 
 function normalizeCc98AccountName(value) {
-  return String(value ?? "").trim().toLowerCase();
+  return String(value ?? "")
+    .trim()
+    .toLowerCase();
 }
 
 function isLikelyGuestAccountName(value) {
   const text = cleanupPostText(value);
-  return !text
-    || text === "\u4e2a\u4eba"
-    || text === "\u4e2a\u4eba\u4e2d\u5fc3"
-    || text === "\u767b\u5f55"
-    || text === "\u6ce8\u518c";
+  return (
+    !text ||
+    text === "\u4e2a\u4eba" ||
+    text === "\u4e2a\u4eba\u4e2d\u5fc3" ||
+    text === "\u767b\u5f55" ||
+    text === "\u6ce8\u518c"
+  );
 }
 
 function accountsReferToSameCc98User(left, right) {
   if (!left || !right) {
     return false;
   }
-  const leftId = normalizeCc98AccountId(left.userId ?? left.id ?? left.uid ?? left.userID ?? left.cc98Id ?? left.cc98UserId ?? left.sub);
-  const rightId = normalizeCc98AccountId(right.userId ?? right.id ?? right.uid ?? right.userID ?? right.cc98Id ?? right.cc98UserId ?? right.sub);
+  const leftId = normalizeCc98AccountId(
+    left.userId ?? left.id ?? left.uid ?? left.userID ?? left.cc98Id ?? left.cc98UserId ?? left.sub
+  );
+  const rightId = normalizeCc98AccountId(
+    right.userId ??
+      right.id ??
+      right.uid ??
+      right.userID ??
+      right.cc98Id ??
+      right.cc98UserId ??
+      right.sub
+  );
   if (leftId && rightId) {
     return leftId === rightId;
   }
-  const leftName = normalizeCc98AccountName(left.userName ?? left.name ?? left.username ?? left.nickName ?? left.displayName);
-  const rightName = normalizeCc98AccountName(right.userName ?? right.name ?? right.username ?? right.nickName ?? right.displayName);
+  const leftName = normalizeCc98AccountName(
+    left.userName ?? left.name ?? left.username ?? left.nickName ?? left.displayName
+  );
+  const rightName = normalizeCc98AccountName(
+    right.userName ?? right.name ?? right.username ?? right.nickName ?? right.displayName
+  );
   return Boolean(leftName && rightName && leftName === rightName);
 }
 
 function accountsHaveSameCc98UserId(left, right) {
-  const leftId = normalizeCc98AccountId(left?.userId ?? left?.id ?? left?.uid ?? left?.userID ?? left?.cc98Id ?? left?.cc98UserId ?? left?.sub);
-  const rightId = normalizeCc98AccountId(right?.userId ?? right?.id ?? right?.uid ?? right?.userID ?? right?.cc98Id ?? right?.cc98UserId ?? right?.sub);
+  const leftId = normalizeCc98AccountId(
+    left?.userId ??
+      left?.id ??
+      left?.uid ??
+      left?.userID ??
+      left?.cc98Id ??
+      left?.cc98UserId ??
+      left?.sub
+  );
+  const rightId = normalizeCc98AccountId(
+    right?.userId ??
+      right?.id ??
+      right?.uid ??
+      right?.userID ??
+      right?.cc98Id ??
+      right?.cc98UserId ??
+      right?.sub
+  );
   return Boolean(leftId && rightId && leftId === rightId);
 }
 
 function getCc98AccountId(source) {
-  return normalizeCc98AccountId(source?.userId ?? source?.id ?? source?.uid ?? source?.userID ?? source?.cc98Id ?? source?.cc98UserId ?? source?.sub);
+  return normalizeCc98AccountId(
+    source?.userId ??
+      source?.id ??
+      source?.uid ??
+      source?.userID ??
+      source?.cc98Id ??
+      source?.cc98UserId ??
+      source?.sub
+  );
 }
 
 function bindingMatchesOrIsIndeterminate(binding, account) {
@@ -13318,16 +14985,38 @@ function bindingClearlyMismatchesWebAccount(binding, account) {
 
 function getCurrentCc98WebAccount() {
   const info = getStoredCc98UserInfo();
-  const storedUserId = readFirstObjectValueDeep(info, ["id", "userId", "uid", "userID", "user_id", "cc98Id", "cc98UserId", "cc98_user_id", "sub"]);
-  const storedUserName = readFirstObjectValueDeep(info, ["name", "userName", "username", "nickName", "nickname", "displayName", "preferred_username"]);
-  const topbarName = cleanupPostText(document.querySelector(
-    ".topBarUserName, .cc98-rebuild-native-user-name-link, .topBarUserInfo [class*='UserName'], .topBarUserInfo [class*='userName']"
-  )?.textContent || "");
+  const storedUserId = readFirstObjectValueDeep(info, [
+    "id",
+    "userId",
+    "uid",
+    "userID",
+    "user_id",
+    "cc98Id",
+    "cc98UserId",
+    "cc98_user_id",
+    "sub"
+  ]);
+  const storedUserName = readFirstObjectValueDeep(info, [
+    "name",
+    "userName",
+    "username",
+    "nickName",
+    "nickname",
+    "displayName",
+    "preferred_username"
+  ]);
+  const topbarName = cleanupPostText(
+    document.querySelector(
+      ".topBarUserName, .cc98-rebuild-native-user-name-link, .topBarUserInfo [class*='UserName'], .topBarUserInfo [class*='userName']"
+    )?.textContent || ""
+  );
   const userId = normalizeCc98AccountId(storedUserId);
   const userName = cleanupPostText(storedUserName || topbarName);
-  const hasGuestLink = Boolean(document.querySelector(
-    ".topBarUserInfo a[href*='/logOn'], .topBarUserInfo a[href*='/logon'], .cc98-rebuild-guest-user-entry a[href*='/logOn'], .cc98-rebuild-guest-user-entry a[href*='/logon']"
-  ));
+  const hasGuestLink = Boolean(
+    document.querySelector(
+      ".topBarUserInfo a[href*='/logOn'], .topBarUserInfo a[href*='/logon'], .cc98-rebuild-guest-user-entry a[href*='/logOn'], .cc98-rebuild-guest-user-entry a[href*='/logon']"
+    )
+  );
   if (hasGuestLink && !userId && isLikelyGuestAccountName(userName)) {
     return null;
   }
@@ -13344,9 +15033,11 @@ function getCurrentCc98WebAccount() {
 }
 
 function hasVisibleCc98GuestLoginEntry() {
-  return [...document.querySelectorAll(
-    ".topBarUserInfo a[href*='/logOn'], .topBarUserInfo a[href*='/logon'], .topBarText a[href*='/logOn'], .topBarText a[href*='/logon'], .cc98-rebuild-guest-user-entry a[href*='/logOn'], .cc98-rebuild-guest-user-entry a[href*='/logon']"
-  )].some((node) => node instanceof HTMLElement && getComputedStyle(node).display !== "none");
+  return [
+    ...document.querySelectorAll(
+      ".topBarUserInfo a[href*='/logOn'], .topBarUserInfo a[href*='/logon'], .topBarText a[href*='/logOn'], .topBarText a[href*='/logon'], .cc98-rebuild-guest-user-entry a[href*='/logOn'], .cc98-rebuild-guest-user-entry a[href*='/logon']"
+    )
+  ].some((node) => node instanceof HTMLElement && getComputedStyle(node).display !== "none");
 }
 
 function readOpenIdBindingStateFromStorage() {
@@ -13394,7 +15085,10 @@ async function clearOpenIdBindingForCc98Logout() {
   clearCachedSecurityWatermarkIdentity();
   stopSecurityWatermark();
   try {
-    const result = await sendExtensionMessage({ type: "CC98_REBORN_OPENID_LOGOUT", reason: "cc98-web-logout" });
+    const result = await sendExtensionMessage({
+      type: "CC98_REBORN_OPENID_LOGOUT",
+      reason: "cc98-web-logout"
+    });
     if (result?.ok) {
       return;
     }
@@ -13418,7 +15112,10 @@ function markOpenIdBindPromptAfterLogin() {
 
 function consumeOpenIdBindPromptMark() {
   try {
-    const markedAt = Number.parseInt(sessionStorage.getItem(OPENID_BIND_PROMPT_AFTER_LOGIN_KEY) || "", 10);
+    const markedAt = Number.parseInt(
+      sessionStorage.getItem(OPENID_BIND_PROMPT_AFTER_LOGIN_KEY) || "",
+      10
+    );
     if (!Number.isFinite(markedAt) || Date.now() - markedAt > 120000) {
       sessionStorage.removeItem(OPENID_BIND_PROMPT_AFTER_LOGIN_KEY);
       return false;
@@ -13502,11 +15199,13 @@ async function exitCurrentCc98AccountFromOpenIdPrompt(prompt) {
   await clearOpenIdBindingForCc98Logout();
   const nativeLogout = findNativeLogoutControl();
   if (nativeLogout instanceof HTMLElement) {
-    nativeLogout.dispatchEvent(new MouseEvent("click", {
-      bubbles: true,
-      cancelable: true,
-      view: window
-    }));
+    nativeLogout.dispatchEvent(
+      new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+        view: window
+      })
+    );
   }
   scheduleLogoutRedirect();
 }
@@ -13539,36 +15238,55 @@ async function maybeShowOpenIdBindPromptAfterLogin() {
   dialog.setAttribute("aria-modal", "true");
   dialog.setAttribute("aria-label", "\u7ed1\u5b9a CC98 OpenID");
   const title = createElement("h2", "", "\u7ed1\u5b9a CC98 OpenID");
-  const accountLabel = account.userName || (account.userId ? `UID ${account.userId}` : "\u5f53\u524d\u8d26\u53f7");
-  const message = createElement("p", "", `\u5f53\u524d\u7f51\u9875\u8d26\u53f7\uff1a${accountLabel}\u3002\u6839\u636e\u8bba\u575b\u5236\u5ea6\uff0c\u8bf7\u4f7f\u7528\u540c\u4e00\u4e2a CC98 \u8d26\u53f7\u5b8c\u6210 OpenID \u6388\u6743\uff1b\u6269\u5c55\u4f1a\u4ee5 UID \u6821\u9a8c\u8d26\u53f7\u4e00\u81f4\u6027\u3002`);
+  const accountLabel =
+    account.userName || (account.userId ? `UID ${account.userId}` : "\u5f53\u524d\u8d26\u53f7");
+  const message = createElement(
+    "p",
+    "",
+    `\u5f53\u524d\u7f51\u9875\u8d26\u53f7\uff1a${accountLabel}\u3002\u6839\u636e\u8bba\u575b\u5236\u5ea6\uff0c\u8bf7\u4f7f\u7528\u540c\u4e00\u4e2a CC98 \u8d26\u53f7\u5b8c\u6210 OpenID \u6388\u6743\uff1b\u6269\u5c55\u4f1a\u4ee5 UID \u6821\u9a8c\u8d26\u53f7\u4e00\u81f4\u6027\u3002`
+  );
   const status = createElement("p", "cc98-rebuild-openid-bind-status", "");
   const actions = createElement("div", "cc98-rebuild-openid-bind-actions");
-  const bindButton = createButton("cc98-rebuild-openid-bind-primary", "\u7ed1\u5b9a\u540c\u4e00\u8d26\u53f7", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    bindOpenIdForCurrentWebAccount(overlay, account);
-  });
-  const refreshButton = createButton("cc98-rebuild-openid-bind-refresh", "\u5237\u65b0", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    actions.querySelectorAll("button").forEach((button) => {
-      button.disabled = true;
-    });
-    status.textContent = "\u6b63\u5728\u5237\u65b0\u9875\u9762\u4e0e\u7ed1\u5b9a\u72b6\u6001...";
-    status.dataset.state = "pending";
-    window.location.reload();
-  });
-  const exitButton = createButton("cc98-rebuild-openid-bind-exit", "\u9000\u51fa\u6b64\u8d26\u53f7", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    exitCurrentCc98AccountFromOpenIdPrompt(overlay);
-  });
+  const bindButton = createButton(
+    "cc98-rebuild-openid-bind-primary",
+    "\u7ed1\u5b9a\u540c\u4e00\u8d26\u53f7",
+    (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      bindOpenIdForCurrentWebAccount(overlay, account);
+    }
+  );
+  const refreshButton = createButton(
+    "cc98-rebuild-openid-bind-refresh",
+    "\u5237\u65b0",
+    (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      actions.querySelectorAll("button").forEach((button) => {
+        button.disabled = true;
+      });
+      status.textContent = "\u6b63\u5728\u5237\u65b0\u9875\u9762\u4e0e\u7ed1\u5b9a\u72b6\u6001...";
+      status.dataset.state = "pending";
+      window.location.reload();
+    }
+  );
+  const exitButton = createButton(
+    "cc98-rebuild-openid-bind-exit",
+    "\u9000\u51fa\u6b64\u8d26\u53f7",
+    (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      exitCurrentCc98AccountFromOpenIdPrompt(overlay);
+    }
+  );
   if (!account.userId) {
     bindButton.disabled = true;
-    status.textContent = "\u5f53\u524d\u9875\u9762\u672a\u80fd\u8bfb\u53d6\u5230 UID\uff0c\u8bf7\u5237\u65b0 CC98 \u9875\u9762\u540e\u518d\u7ed1\u5b9a\u3002";
+    status.textContent =
+      "\u5f53\u524d\u9875\u9762\u672a\u80fd\u8bfb\u53d6\u5230 UID\uff0c\u8bf7\u5237\u65b0 CC98 \u9875\u9762\u540e\u518d\u7ed1\u5b9a\u3002";
     status.dataset.state = "error";
   } else if (!hadPromptMark) {
-    status.textContent = "\u672a\u5b8c\u6210\u7ed1\u5b9a\u524d\uff0c\u9875\u9762\u4f1a\u4fdd\u6301\u906e\u7f69\u72b6\u6001\u3002";
+    status.textContent =
+      "\u672a\u5b8c\u6210\u7ed1\u5b9a\u524d\uff0c\u9875\u9762\u4f1a\u4fdd\u6301\u906e\u7f69\u72b6\u6001\u3002";
   }
   actions.append(refreshButton, exitButton, bindButton);
   dialog.append(title, message, status, actions);
@@ -13590,17 +15308,39 @@ function scheduleOpenIdBindPromptAfterLogin() {
 
 function getStoredCc98UserName() {
   const info = getStoredCc98UserInfo();
-  return readFirstObjectValueDeep(info, ["name", "userName", "username", "nickName", "nickname", "displayName", "preferred_username"]) || "\u4e2a\u4eba\u4e2d\u5fc3";
+  return (
+    readFirstObjectValueDeep(info, [
+      "name",
+      "userName",
+      "username",
+      "nickName",
+      "nickname",
+      "displayName",
+      "preferred_username"
+    ]) || "\u4e2a\u4eba\u4e2d\u5fc3"
+  );
 }
 
 function getStoredCc98UserAvatar() {
   const info = getStoredCc98UserInfo();
-  const avatar = readFirstObjectValueDeep(info, ["portraitUrl", "portrait", "avatarUrl", "avatar", "photoUrl", "faceUrl", "face", "picture"]);
+  const avatar = readFirstObjectValueDeep(info, [
+    "portraitUrl",
+    "portrait",
+    "avatarUrl",
+    "avatar",
+    "photoUrl",
+    "faceUrl",
+    "face",
+    "picture"
+  ]);
   return avatar ? makeWebVpnCc98ResourceUrl(avatar) : "";
 }
 
 function createForcedTopbarUserEntry() {
-  const entry = createElement("div", "cc98-rebuild-native-user-entry cc98-rebuild-forced-user-entry");
+  const entry = createElement(
+    "div",
+    "cc98-rebuild-native-user-entry cc98-rebuild-forced-user-entry"
+  );
   entry.tabIndex = 0;
   const userInfo = createElement("div", "topBarUserInfo cc98-rebuild-forced-user-info");
   const avatarUrl = lastKnownTopbarAvatarUrl || getStoredCc98UserAvatar();
@@ -13612,7 +15352,11 @@ function createForcedTopbarUserEntry() {
     avatarWrap.append(avatar);
     userInfo.append(avatarWrap);
   }
-  const label = createElement("span", "topBarUserName cc98-rebuild-native-user-name-link", getStoredCc98UserName());
+  const label = createElement(
+    "span",
+    "topBarUserName cc98-rebuild-native-user-name-link",
+    getStoredCc98UserName()
+  );
   label.setAttribute("role", "link");
   label.tabIndex = 0;
   userInfo.append(label);
@@ -13628,14 +15372,23 @@ function createPublicProfileTopbarSnapshot() {
   if (!(source instanceof HTMLElement) || source.closest("#cc98-comfort-app")) {
     return null;
   }
-  const isGuestSource = Boolean(source.querySelector('a[href*="/logOn"], a[href*="/logon"], a[href*="account.cc98.org"]'));
+  const isGuestSource = Boolean(
+    source.querySelector('a[href*="/logOn"], a[href*="/logon"], a[href*="account.cc98.org"]')
+  );
   const sourceAvatar = source.querySelector(".topBarUserImg > img, .topBarUserInfo img");
-  const sourceName = source.querySelector(".topBarUserName, [class*='UserName'], [class*='userName']");
-  if (!isGuestSource && (!(sourceAvatar instanceof HTMLImageElement) || !cleanupPostText(sourceName?.textContent))) {
+  const sourceName = source.querySelector(
+    ".topBarUserName, [class*='UserName'], [class*='userName']"
+  );
+  if (
+    !isGuestSource &&
+    (!(sourceAvatar instanceof HTMLImageElement) || !cleanupPostText(sourceName?.textContent))
+  ) {
     return null;
   }
   const snapshot = source.cloneNode(true);
-  snapshot.querySelectorAll(".cc98-rebuild-side-topbar-menu, .cc98-rebuild-side-rail-menu").forEach((node) => node.remove());
+  snapshot
+    .querySelectorAll(".cc98-rebuild-side-topbar-menu, .cc98-rebuild-side-rail-menu")
+    .forEach((node) => node.remove());
   [snapshot, ...snapshot.querySelectorAll("*")].forEach((node) => {
     if (!(node instanceof Element)) {
       return;
@@ -13686,7 +15439,8 @@ function syncRebuiltTopbarAvatar(app = document.querySelector("#cc98-comfort-app
     return;
   }
 
-  const userInfo = nativeEntry.querySelector(":scope > .topBarUserInfo, .topBarUserInfo") || nativeEntry;
+  const userInfo =
+    nativeEntry.querySelector(":scope > .topBarUserInfo, .topBarUserInfo") || nativeEntry;
   let avatar = userInfo.querySelector(":scope > .topBarUserImg > img, .topBarUserImg > img");
   if (!(avatar instanceof HTMLImageElement)) {
     const avatarWrap = createElement("div", "topBarUserImg");
@@ -13712,7 +15466,9 @@ function prepareNativeTopbarUserEntry(nativeEntry) {
     rememberReparentedNativeNode(nativeEntry);
   }
   nativeEntry.classList.add("cc98-rebuild-native-user-entry");
-  const isGuestEntry = Boolean(nativeEntry.querySelector('a[href*="/logOn"], a[href*="/logon"], a[href*="account.cc98.org"]'));
+  const isGuestEntry = Boolean(
+    nativeEntry.querySelector('a[href*="/logOn"], a[href*="/logon"], a[href*="account.cc98.org"]')
+  );
   nativeEntry.classList.toggle("cc98-rebuild-guest-user-entry", isGuestEntry);
   if (isGuestEntry) {
     lastKnownTopbarAvatarUrl = "";
@@ -13736,58 +15492,71 @@ function prepareNativeTopbarUserEntry(nativeEntry) {
 
   if (!nativeTopbarUserStabilizers.has(nativeEntry)) {
     nativeTopbarUserStabilizers.add(nativeEntry);
-    nativeEntry.addEventListener("click", (event) => {
-      const authLink = event.target?.closest?.(".topBarUserInfo a[href], .topBarText a[href], .cc98-rebuild-guest-user-entry a[href]");
-      if (forceTopbarAuthNavigation(authLink, event)) {
-        return;
-      }
-      if (authLink instanceof HTMLAnchorElement) {
-        const href = authLink.getAttribute("href") || authLink.href || "";
-        const text = cleanupPostText(authLink.textContent);
-        if (/logon|logOn/i.test(href) || text.includes("登录")) {
-          event.preventDefault();
-          event.stopPropagation();
-          location.href = buildCc98RouteHref("/logOn");
+    nativeEntry.addEventListener(
+      "click",
+      (event) => {
+        const authLink = event.target?.closest?.(
+          ".topBarUserInfo a[href], .topBarText a[href], .cc98-rebuild-guest-user-entry a[href]"
+        );
+        if (forceTopbarAuthNavigation(authLink, event)) {
           return;
         }
-        if (/account\.cc98\.org/i.test(href) || text.includes("注册")) {
-          event.preventDefault();
-          event.stopPropagation();
-          location.href = makeAbsoluteCc98Url(href);
-          return;
-        }
-      }
-      const link = event.target?.closest?.(".messageTopBar[href], .topBarMessage a[href], .topBarUserCenter a[href], .topBarUserCenter-mainPage a[href], .topBarMessageDetails a[href], .topBarMessageDetails-mainPage a[href], .cc98-rebuild-side-topbar-menu a[href], .cc98-rebuild-side-rail-menu a[href]");
-      const menuItem = event.target?.closest?.(".topBarUserCenter li, .topBarUserCenter-mainPage li, .topBarUserCenter a, .topBarUserCenter-mainPage a, .cc98-rebuild-side-topbar-menu li, .cc98-rebuild-side-topbar-menu a, .cc98-rebuild-side-topbar-menu button, .cc98-rebuild-side-rail-menu a, .cc98-rebuild-side-rail-menu button");
-      const forcedLogout = event.target?.closest?.("[data-cc98-forced-logout='true']");
-      const isLogoutAction = Boolean(forcedLogout)
-        || (menuItem instanceof HTMLElement && isLogoutMenuText(menuItem.textContent));
-      if (isLogoutAction) {
-        if (forcedLogout) {
-          const sourceLogout = findNativeLogoutControl();
-          if (sourceLogout instanceof HTMLElement) {
-            triggerOriginalControl(sourceLogout);
+        if (authLink instanceof HTMLAnchorElement) {
+          const href = authLink.getAttribute("href") || authLink.href || "";
+          const text = cleanupPostText(authLink.textContent);
+          if (/logon|logOn/i.test(href) || text.includes("登录")) {
+            event.preventDefault();
+            event.stopPropagation();
+            location.href = buildCc98RouteHref("/logOn");
+            return;
           }
+          if (/account\.cc98\.org/i.test(href) || text.includes("注册")) {
+            event.preventDefault();
+            event.stopPropagation();
+            location.href = makeAbsoluteCc98Url(href);
+            return;
+          }
+        }
+        const link = event.target?.closest?.(
+          ".messageTopBar[href], .topBarMessage a[href], .topBarUserCenter a[href], .topBarUserCenter-mainPage a[href], .topBarMessageDetails a[href], .topBarMessageDetails-mainPage a[href], .cc98-rebuild-side-topbar-menu a[href], .cc98-rebuild-side-rail-menu a[href]"
+        );
+        const menuItem = event.target?.closest?.(
+          ".topBarUserCenter li, .topBarUserCenter-mainPage li, .topBarUserCenter a, .topBarUserCenter-mainPage a, .cc98-rebuild-side-topbar-menu li, .cc98-rebuild-side-topbar-menu a, .cc98-rebuild-side-topbar-menu button, .cc98-rebuild-side-rail-menu a, .cc98-rebuild-side-rail-menu button"
+        );
+        const forcedLogout = event.target?.closest?.("[data-cc98-forced-logout='true']");
+        const isLogoutAction =
+          Boolean(forcedLogout) ||
+          (menuItem instanceof HTMLElement && isLogoutMenuText(menuItem.textContent));
+        if (isLogoutAction) {
+          if (forcedLogout) {
+            const sourceLogout = findNativeLogoutControl();
+            if (sourceLogout instanceof HTMLElement) {
+              triggerOriginalControl(sourceLogout);
+            }
+            event.preventDefault();
+            event.stopPropagation();
+          }
+          scheduleLogoutRedirect();
+        }
+        if (!(link instanceof HTMLAnchorElement)) {
+          return;
+        }
+        if (isLogoutAction) {
           event.preventDefault();
           event.stopPropagation();
+          return;
         }
-        scheduleLogoutRedirect();
-      }
-      if (!(link instanceof HTMLAnchorElement)) {
-        return;
-      }
-      if (isLogoutAction) {
         event.preventDefault();
         event.stopPropagation();
-        return;
-      }
-      event.preventDefault();
-      event.stopPropagation();
-      navigateToRebuiltHref(link.getAttribute("href") || link.href);
-    }, true);
+        navigateToRebuiltHref(link.getAttribute("href") || link.href);
+      },
+      true
+    );
   }
 
-  const userName = nativeEntry.querySelector(".topBarUserName, [class*='UserName'], [class*='userName']");
+  const userName = nativeEntry.querySelector(
+    ".topBarUserName, [class*='UserName'], [class*='userName']"
+  );
   if (userName instanceof HTMLElement && userName.dataset.cc98TopbarUserBound !== "true") {
     userName.dataset.cc98TopbarUserBound = "true";
     userName.classList.add("cc98-rebuild-native-user-name-link");
@@ -13833,14 +15602,19 @@ function stabilizeTopbarUserEntry(app = document.querySelector("#cc98-comfort-ap
     }
   }
   const existing = actions.querySelector(".cc98-rebuild-native-user-entry");
-  if (existing instanceof HTMLElement && !existing.classList.contains("cc98-rebuild-forced-user-entry")) {
+  if (
+    existing instanceof HTMLElement &&
+    !existing.classList.contains("cc98-rebuild-forced-user-entry")
+  ) {
     prepareNativeTopbarUserEntry(existing);
     return;
   }
 
   const nativeEntry = prepareNativeTopbarUserEntry(getNativeUserEntry());
   if (nativeEntry) {
-    const fallback = actions.querySelector(".cc98-rebuild-user-fallback, .cc98-rebuild-forced-user-entry");
+    const fallback = actions.querySelector(
+      ".cc98-rebuild-user-fallback, .cc98-rebuild-forced-user-entry"
+    );
     if (fallback && fallback !== nativeEntry) {
       fallback.replaceWith(nativeEntry);
     } else {
@@ -13852,7 +15626,9 @@ function stabilizeTopbarUserEntry(app = document.querySelector("#cc98-comfort-ap
   if (app?.dataset?.pageKind === "home" || getPageKind() === "home") {
     const forcedEntry = createForcedTopbarUserEntry();
     if (forcedEntry) {
-      const fallback = actions.querySelector(".cc98-rebuild-user-fallback, .cc98-rebuild-forced-user-entry");
+      const fallback = actions.querySelector(
+        ".cc98-rebuild-user-fallback, .cc98-rebuild-forced-user-entry"
+      );
       if (fallback) {
         fallback.replaceWith(forcedEntry);
       } else {
@@ -13870,14 +15646,16 @@ function clearTopbarStabilizeTimers() {
 function scheduleTopbarStabilization(app) {
   clearTopbarStabilizeTimers();
   const delays = [120, 480, 1200, 2400, 4200, 6500];
-  topbarStabilizeTimers = delays.map((delay, index) => window.setTimeout(() => {
-    if (app?.isConnected && document.querySelector("#cc98-comfort-app") === app) {
-      stabilizeTopbarUserEntry(app);
-    }
-    if (index === delays.length - 1) {
-      topbarStabilizeTimers = [];
-    }
-  }, delay));
+  topbarStabilizeTimers = delays.map((delay, index) =>
+    window.setTimeout(() => {
+      if (app?.isConnected && document.querySelector("#cc98-comfort-app") === app) {
+        stabilizeTopbarUserEntry(app);
+      }
+      if (index === delays.length - 1) {
+        topbarStabilizeTimers = [];
+      }
+    }, delay)
+  );
 }
 
 function renderTopbarUserEntry() {
@@ -13892,15 +15670,22 @@ function renderTopbarUserEntry() {
   if (hasFreshCc98LoginSession()) {
     return createForcedTopbarUserEntry();
   }
-  const fallback = createLink("cc98-rebuild-user-fallback cc98-rebuild-user-fallback-nav", "个人中心", buildCc98RouteHref("/usercenter"));
+  const fallback = createLink(
+    "cc98-rebuild-user-fallback cc98-rebuild-user-fallback-nav",
+    "个人中心",
+    buildCc98RouteHref("/usercenter")
+  );
   fallback.setAttribute("aria-label", "个人中心");
   return fallback;
 }
 
 function getTitleBlockReason(title, settings = lastSettings) {
   if (typeof title !== "string" || !title) return "";
-  if (globalThis.CC98RebornContentFilter?.titleReason) return globalThis.CC98RebornContentFilter.titleReason(title);
-  const keyword = getBlacklistRules(settings).titleKeywords.find(rule => !rule.startsWith("/") && title.toLowerCase().includes(rule.toLowerCase()));
+  if (globalThis.CC98RebornContentFilter?.titleReason)
+    return globalThis.CC98RebornContentFilter.titleReason(title);
+  const keyword = getBlacklistRules(settings).titleKeywords.find(
+    (rule) => !rule.startsWith("/") && title.toLowerCase().includes(rule.toLowerCase())
+  );
   return keyword ? `关键词：${keyword}` : "";
 }
 
@@ -13910,33 +15695,51 @@ function shouldBlockRebuiltItem(item) {
   }
 
   const { boards: blockedBoards, userIds: blockedUserIds } = getBlacklistRules(lastSettings);
-  const matchedBoard = blockedBoards.find((rule) => item.board && normalizeText(item.board).includes(normalizeText(rule)));
+  const matchedBoard = blockedBoards.find(
+    (rule) => item.board && normalizeText(item.board).includes(normalizeText(rule))
+  );
   if (matchedBoard) {
     return `版面：${matchedBoard}`;
   }
   const titleReason = getTitleBlockReason(item.title);
   if (titleReason) return titleReason;
-  const matchedUserRule = blockedUserIds.find((rule) => userRuleMatchesIdentity(rule, {
-    id: item.user,
-    user: item.user,
-    uid: item.uid
-  }));
+  const matchedUserRule = blockedUserIds.find((rule) =>
+    userRuleMatchesIdentity(rule, {
+      id: item.user,
+      user: item.user,
+      uid: item.uid
+    })
+  );
   if (matchedUserRule) {
-    return normalizeBlockedUid(matchedUserRule) ? `UID：${matchedUserRule}` : `用户 ID：${matchedUserRule}`;
+    return normalizeBlockedUid(matchedUserRule)
+      ? `UID：${matchedUserRule}`
+      : `用户 ID：${matchedUserRule}`;
   }
-  return globalThis.CC98RebornContentFilter?.reason(item) || globalThis.CC98RebornSemanticFilter?.reason(item) || "";
+  return (
+    globalThis.CC98RebornContentFilter?.reason(item) ||
+    globalThis.CC98RebornSemanticFilter?.reason(item) ||
+    ""
+  );
 }
 
 function renderBlockedPlaceholder(reason, options = {}) {
   const placeholder = createElement("article", "cc98-rebuild-card cc98-rebuild-blocked");
-  placeholder.append(createElement("div", "cc98-rebuild-card-title", `${lastSettings.placeholderText} · ${reason}`));
+  placeholder.append(
+    createElement("div", "cc98-rebuild-card-title", `${lastSettings.placeholderText} · ${reason}`)
+  );
   if (typeof options.onReveal === "function") {
     const actions = createElement("div", "cc98-rebuild-blocked-actions");
-    actions.append(createButton("cc98-rebuild-mini-action", reason.startsWith("语义规则") ? "展开原文" : "显示", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      options.onReveal();
-    }));
+    actions.append(
+      createButton(
+        "cc98-rebuild-mini-action",
+        reason.startsWith("语义规则") ? "展开原文" : "显示",
+        (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          options.onReveal();
+        }
+      )
+    );
     placeholder.append(actions);
   }
   return placeholder;
@@ -13960,31 +15763,35 @@ function createReadLaterCardButton(item) {
     return null;
   }
   const saved = isReadLaterSaved(readLaterItem.href);
-  const button = createButton(`cc98-rebuild-read-later-button${saved ? " is-saved" : ""}`, "\ud83d\udd57", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const currentItem = getReadLaterItemFromTopicItem(button.cc98TopicItem) || readLaterItem;
-    if (isReadLaterSaved(currentItem.href)) {
-      removeReadLaterItem(currentItem.key);
-      showRebuiltTransientToast(button, "\u5df2\u79fb\u51fa\u7a0d\u540e\u518d\u770b");
-    } else {
-      upsertReadLaterItem(currentItem);
-      showRebuiltTransientToast(button, "\u5df2\u52a0\u5165\u7a0d\u540e\u518d\u770b");
+  const button = createButton(
+    `cc98-rebuild-read-later-button${saved ? " is-saved" : ""}`,
+    "\ud83d\udd57",
+    (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const currentItem = getReadLaterItemFromTopicItem(button.cc98TopicItem) || readLaterItem;
+      if (isReadLaterSaved(currentItem.href)) {
+        removeReadLaterItem(currentItem.key);
+        showRebuiltTransientToast(button, "\u5df2\u79fb\u51fa\u7a0d\u540e\u518d\u770b");
+      } else {
+        upsertReadLaterItem(currentItem);
+        showRebuiltTransientToast(button, "\u5df2\u52a0\u5165\u7a0d\u540e\u518d\u770b");
+      }
     }
-  });
+  );
   button.cc98TopicItem = item;
   button.type = "button";
   button.dataset.readLaterKey = readLaterItem.key;
   button.dataset.readLaterTitle = readLaterItem.title;
-  button.title = saved ? "\u79fb\u51fa\u7a0d\u540e\u518d\u770b" : "\u52a0\u5165\u7a0d\u540e\u518d\u770b";
+  button.title = saved
+    ? "\u79fb\u51fa\u7a0d\u540e\u518d\u770b"
+    : "\u52a0\u5165\u7a0d\u540e\u518d\u770b";
   button.setAttribute("aria-label", `${button.title}: ${readLaterItem.title}`);
   return button;
 }
 
 function renderTopicCardMedia(item) {
-  const mediaItems = Array.isArray(item?.media)
-    ? item.media.filter((media) => media?.src)
-    : [];
+  const mediaItems = Array.isArray(item?.media) ? item.media.filter((media) => media?.src) : [];
   if (!mediaItems.length) {
     return null;
   }
@@ -14008,12 +15815,29 @@ function getTopicCardRenderState(item, reason, saved) {
   // WebVPN URL resolution can change independently of the source item.
   if (isWebVpnHost()) return "";
   return JSON.stringify([
-    item.title, item.href, item.board, item.boardHref, item.user, item.uid,
-    item.meta, item.hoverMeta, item.replyCount, item.viewMode,
-    (Array.isArray(item.media) ? item.media : []).filter((media) => media?.src).slice(0, 6).map((media) => [media.src, media.alt]),
-    item.rank, item.rankMovement, item.rankDelta, item.rankMovementAnimated,
-    reason, isBlacklistItemRevealed(item), saved,
-    lastSettings?.placeholderText, Boolean(lastSettings?.openLinksInNewTab)
+    item.title,
+    item.href,
+    item.board,
+    item.boardHref,
+    item.user,
+    item.uid,
+    item.meta,
+    item.hoverMeta,
+    item.replyCount,
+    item.viewMode,
+    (Array.isArray(item.media) ? item.media : [])
+      .filter((media) => media?.src)
+      .slice(0, 6)
+      .map((media) => [media.src, media.alt]),
+    item.rank,
+    item.rankMovement,
+    item.rankDelta,
+    item.rankMovementAnimated,
+    reason,
+    isBlacklistItemRevealed(item),
+    saved,
+    lastSettings?.placeholderText,
+    Boolean(lastSettings?.openLinksInNewTab)
   ]);
 }
 
@@ -14025,12 +15849,14 @@ function renderTopicCard(item) {
     return card;
   };
   if (reason && !isBlacklistItemRevealed(item)) {
-    return remember(renderBlockedPlaceholder(reason, {
-      onReveal: () => {
-        revealBlacklistItem(item);
-        scheduleRebuild();
-      }
-    }));
+    return remember(
+      renderBlockedPlaceholder(reason, {
+        onReveal: () => {
+          revealBlacklistItem(item);
+          scheduleRebuild();
+        }
+      })
+    );
   }
 
   const card = createElement("article", "cc98-rebuild-card");
@@ -14051,7 +15877,11 @@ function renderTopicCard(item) {
     top.append(createLink("cc98-rebuild-chip", item.board, item.boardHref));
   }
   if (item.user) {
-    const user = createElement("span", "cc98-rebuild-muted", item.uid ? `${item.user} · ${item.uid}` : item.user);
+    const user = createElement(
+      "span",
+      "cc98-rebuild-muted",
+      item.uid ? `${item.user} · ${item.uid}` : item.user
+    );
     top.append(user);
   }
   card.append(top);
@@ -14082,20 +15912,28 @@ function renderTopicCard(item) {
     card.append(rank);
     if (item.rankMovement) {
       card.classList.add(`cc98-rebuild-rank-${item.rankMovement}`);
-      const motionText = item.rankMovement === "new"
-        ? "\u65b0"
-        : `${item.rankMovement === "up" ? "\u25b2" : "\u25bc"}${item.rankDelta || ""}`;
+      const motionText =
+        item.rankMovement === "new"
+          ? "\u65b0"
+          : `${item.rankMovement === "up" ? "\u25b2" : "\u25bc"}${item.rankDelta || ""}`;
       const motionClass = [
         "cc98-rebuild-rank-motion",
         `cc98-rebuild-rank-motion-${item.rankMovement}`,
         item.rankMovementAnimated ? "is-animated" : ""
-      ].filter(Boolean).join(" ");
+      ]
+        .filter(Boolean)
+        .join(" ");
       const motion = createElement("span", motionClass, motionText);
-      motion.dataset.cc98AsciiRankLabel = item.rankMovement === "new"
-        ? "[NEW]" : `[${item.rankMovement === "up" ? "+" : "-"}${item.rankDelta || 0}]`;
-      const motionLabel = item.rankMovement === "up"
-        ? `\u6392\u540d\u4e0a\u5347 ${item.rankDelta || 0}`
-        : (item.rankMovement === "down" ? `\u6392\u540d\u4e0b\u964d ${item.rankDelta || 0}` : "\u65b0\u589e\u70ed\u95e8");
+      motion.dataset.cc98AsciiRankLabel =
+        item.rankMovement === "new"
+          ? "[NEW]"
+          : `[${item.rankMovement === "up" ? "+" : "-"}${item.rankDelta || 0}]`;
+      const motionLabel =
+        item.rankMovement === "up"
+          ? `\u6392\u540d\u4e0a\u5347 ${item.rankDelta || 0}`
+          : item.rankMovement === "down"
+            ? `\u6392\u540d\u4e0b\u964d ${item.rankDelta || 0}`
+            : "\u65b0\u589e\u70ed\u95e8";
       motion.setAttribute("aria-label", motionLabel);
       card.append(motion);
     }
@@ -14111,8 +15949,11 @@ function highlightElementTerms(element, terms) {
   if (!element || !terms?.length) {
     return;
   }
-  const normalizedTerms = [...new Set(terms.map((term) => normalizeSuggestionText(term)).filter((term) => term.length >= 2))]
-    .sort((a, b) => b.length - a.length);
+  const normalizedTerms = [
+    ...new Set(
+      terms.map((term) => normalizeSuggestionText(term)).filter((term) => term.length >= 2)
+    )
+  ].sort((a, b) => b.length - a.length);
   if (!normalizedTerms.length) {
     return;
   }
@@ -14181,9 +16022,12 @@ function renderPostLotteryContent(lotteryContent) {
     if (!text) {
       return;
     }
-    const className = index === 0
-      ? "cc98-rebuild-post-lottery-title"
-      : index === 1 ? "cc98-rebuild-post-lottery-notice" : "cc98-rebuild-post-lottery-detail";
+    const className =
+      index === 0
+        ? "cc98-rebuild-post-lottery-title"
+        : index === 1
+          ? "cc98-rebuild-post-lottery-notice"
+          : "cc98-rebuild-post-lottery-detail";
     card.append(createElement("p", className, text));
   });
   return card.children.length ? card : null;
@@ -14210,7 +16054,10 @@ function renderPostAuthorFollowAction(action) {
     lastActivatedAt = now;
     const control = resolveCurrentProxyAction(action);
     if (!(control instanceof HTMLElement)) {
-      showRebuiltTransientToast(button, "\u5173\u6ce8\u63a7\u4ef6\u5df2\u66f4\u65b0\uff0c\u8bf7\u518d\u8bd5\u4e00\u6b21");
+      showRebuiltTransientToast(
+        button,
+        "\u5173\u6ce8\u63a7\u4ef6\u5df2\u66f4\u65b0\uff0c\u8bf7\u518d\u8bd5\u4e00\u6b21"
+      );
       scheduleRebuild();
       return;
     }
@@ -14243,11 +16090,7 @@ function renderPostAuthorFollowAction(action) {
 
 function renderPostAuthorMessageAction(action) {
   if (action?.href && action.href !== "#") {
-    return createLink(
-      "cc98-rebuild-post-author-action is-message",
-      "\u79c1\u4fe1",
-      action.href
-    );
+    return createLink("cc98-rebuild-post-author-action is-message", "\u79c1\u4fe1", action.href);
   }
   return createButton("cc98-rebuild-post-author-action is-message", "\u79c1\u4fe1", (event) => {
     event.preventDefault();
@@ -14263,7 +16106,10 @@ function renderPostAuthorCard(item) {
   }
   const card = createElement("aside", "cc98-rebuild-post-author-card");
   card.setAttribute("role", "group");
-  card.setAttribute("aria-label", `${item.user || "CC98 \u7528\u6237"}\u7684\u7528\u6237\u4fe1\u606f`);
+  card.setAttribute(
+    "aria-label",
+    `${item.user || "CC98 \u7528\u6237"}\u7684\u7528\u6237\u4fe1\u606f`
+  );
 
   const profile = createElement("div", "cc98-rebuild-post-author-card-profile");
   const avatarUrl = makeWebVpnCc98ResourceUrl(item.avatar) || item.avatar;
@@ -14297,14 +16143,14 @@ function renderPostAuthorCard(item) {
     : createElement("strong", "cc98-rebuild-post-author-card-name", item.user);
   identity.append(name);
   globalThis.CC98RebornUserNotes?.decorateAuthor(identity, {
-    uid: item.uid, name: item.user, anonymous: Boolean(item.anonymousCode)
+    uid: item.uid,
+    name: item.user,
+    anonymous: Boolean(item.anonymousCode)
   });
   if (item.authorCard.gender) {
-    identity.append(createElement(
-      "span",
-      "cc98-rebuild-post-author-card-gender",
-      item.authorCard.gender
-    ));
+    identity.append(
+      createElement("span", "cc98-rebuild-post-author-card-gender", item.authorCard.gender)
+    );
   }
   profile.append(avatarNode, identity);
   card.append(profile);
@@ -14352,9 +16198,12 @@ function renderPostBody(item) {
   if (item.content) {
     body.append(item.content);
   } else {
-    item.text.split("\n").filter(Boolean).forEach((line) => {
-      body.append(createElement("p", "", line));
-    });
+    item.text
+      .split("\n")
+      .filter(Boolean)
+      .forEach((line) => {
+        body.append(createElement("p", "", line));
+      });
   }
   filterBlacklistedQuotes(body);
   rewriteLegacyQuoteInlineStyles(body);
@@ -14427,14 +16276,18 @@ function renderPostCard(item) {
   }
   const byline = createElement("div", "");
   const userLine = createElement("div", "cc98-rebuild-post-user-line");
-  const displayUser = item.anonymousCode ? `${item.user || "CC98 \u7528\u6237"} \u00b7 ${item.anonymousCode}` : item.user;
+  const displayUser = item.anonymousCode
+    ? `${item.user || "CC98 \u7528\u6237"} \u00b7 ${item.anonymousCode}`
+    : item.user;
   if (item.userHref) {
     userLine.append(createLink("cc98-rebuild-post-user", displayUser, item.userHref));
   } else {
     userLine.append(createElement("span", "cc98-rebuild-post-user", displayUser));
   }
   globalThis.CC98RebornUserNotes?.decorateAuthor(userLine, {
-    uid: item.uid, name: item.user, anonymous: Boolean(item.anonymousCode)
+    uid: item.uid,
+    name: item.user,
+    anonymous: Boolean(item.anonymousCode)
   });
   if (item.isOriginalPoster) {
     userLine.append(createElement("span", "cc98-rebuild-op-badge", "\u697c\u4e3b"));
@@ -14450,7 +16303,13 @@ function renderPostCard(item) {
   if (item.isHot) {
     byline.append(createElement("div", "cc98-rebuild-muted cc98-rebuild-hot-label", "🔥热评"));
   } else {
-    byline.append(createElement("div", "cc98-rebuild-muted", item.uid ? `#${item.index} · UID ${item.uid}` : `#${item.index}`));
+    byline.append(
+      createElement(
+        "div",
+        "cc98-rebuild-muted",
+        item.uid ? `#${item.index} · UID ${item.uid}` : `#${item.index}`
+      )
+    );
   }
   header.append(byline);
   card.append(header);
@@ -14474,8 +16333,12 @@ function renderPostCard(item) {
     card.append(signatureWrap);
   }
 
-  const canViewConversation = !item.liveSnapshot && !item.isHot && Number.isFinite(floor) && floor > 0
-    && Boolean(globalThis.CC98RebornConversation && getTopicPageInfo());
+  const canViewConversation =
+    !item.liveSnapshot &&
+    !item.isHot &&
+    Number.isFinite(floor) &&
+    floor > 0 &&
+    Boolean(globalThis.CC98RebornConversation && getTopicPageInfo());
   if (item.publishedAt || item.editedAt || item.actions?.length || canViewConversation) {
     const footer = createElement("div", "cc98-rebuild-post-footer");
     if (item.publishedAt || item.editedAt) {
@@ -14485,7 +16348,11 @@ function renderPostCard(item) {
         meta.append(document.createTextNode(`发表于 ${item.publishedAt}`));
       }
       if (item.editedAt) {
-        const edited = createElement("span", `cc98-rebuild-post-edited${item.publishedAt ? " has-published-at" : ""}`, `${item.editedBy ? `最后由 ${item.editedBy} ` : ""}编辑于 ${item.editedAt}`);
+        const edited = createElement(
+          "span",
+          `cc98-rebuild-post-edited${item.publishedAt ? " has-published-at" : ""}`,
+          `${item.editedBy ? `最后由 ${item.editedBy} ` : ""}编辑于 ${item.editedAt}`
+        );
         meta.append(edited);
       }
       metaRow.append(meta);
@@ -14511,10 +16378,16 @@ function renderPostCard(item) {
         }
       });
       if (canViewConversation) {
-        const conversation = createElement("button", "cc98-rebuild-mini-action cc98-rebuild-conversation-action", "查看对话");
+        const conversation = createElement(
+          "button",
+          "cc98-rebuild-mini-action cc98-rebuild-conversation-action",
+          "查看对话"
+        );
         conversation.type = "button";
         setPostFooterActionIcon(conversation, "查看对话");
-        conversation.addEventListener("click", () => globalThis.CC98RebornConversation.open(item, conversation));
+        conversation.addEventListener("click", () =>
+          globalThis.CC98RebornConversation.open(item, conversation)
+        );
         actionWrap.append(conversation);
       }
       (item.actions || []).forEach(enforceVoteGroupMutualExclusion);
@@ -14536,7 +16409,9 @@ function renderPostPager() {
   pager.setAttribute("aria-label", "帖子页码");
 
   const appendPageLink = (label, page, className = "") => {
-    const href = stripUrlHash(pageInfo.pages.get(page) || buildTopicPageHref(pageInfo.topicId, page));
+    const href = stripUrlHash(
+      pageInfo.pages.get(page) || buildTopicPageHref(pageInfo.topicId, page)
+    );
     const link = createLink(`cc98-rebuild-page-link ${className}`.trim(), label, href);
     if (page === pageInfo.current) {
       link.classList.add("is-current");
@@ -14549,7 +16424,13 @@ function renderPostPager() {
     appendPageLink("上一页", pageInfo.current - 1, "cc98-rebuild-page-prev");
   }
 
-  const pageNumbers = new Set([1, pageInfo.current - 2, pageInfo.current - 1, pageInfo.current, pageInfo.maxKnown]);
+  const pageNumbers = new Set([
+    1,
+    pageInfo.current - 2,
+    pageInfo.current - 1,
+    pageInfo.current,
+    pageInfo.maxKnown
+  ]);
   if (pageInfo.canGoNext) {
     pageNumbers.add(pageInfo.current + 1);
   }
@@ -14601,11 +16482,15 @@ function renderPostPager() {
     pager.append(shareButton);
   }
   if (globalThis.CC98RebornTopicLive?.available()) {
-    const live = createButton("cc98-rebuild-pager-action cc98-topic-live-entry", "跟帖", event => {
-      event.preventDefault();
-      const info = getTopicPageInfo();
-      if (info?.topicId === live.dataset.topicId) globalThis.CC98RebornTopicLive.toggle(info);
-    });
+    const live = createButton(
+      "cc98-rebuild-pager-action cc98-topic-live-entry",
+      "跟帖",
+      (event) => {
+        event.preventDefault();
+        const info = getTopicPageInfo();
+        if (info?.topicId === live.dataset.topicId) globalThis.CC98RebornTopicLive.toggle(info);
+      }
+    );
     live.dataset.topicId = pageInfo.topicId;
     live.title = "跟帖（实验性）：后台检查并展开新回复";
     live.setAttribute("aria-pressed", "false");
@@ -14613,25 +16498,33 @@ function renderPostPager() {
   }
   const favoriteAction = topicActions.favorite;
   if (globalThis.CC98RebornTopicSearch) {
-    const search = createButton("cc98-rebuild-pager-action cc98-topic-search-entry", "全文搜索", event => {
-      event.preventDefault();
-      const info = getTopicPageInfo();
-      if (!info || info.topicId !== search.dataset.topicId) {
-        showRebuiltTransientToast(search, "当前页面仍在加载，请稍后搜索。");
-        return;
+    const search = createButton(
+      "cc98-rebuild-pager-action cc98-topic-search-entry",
+      "全文搜索",
+      (event) => {
+        event.preventDefault();
+        const info = getTopicPageInfo();
+        if (!info || info.topicId !== search.dataset.topicId) {
+          showRebuiltTransientToast(search, "当前页面仍在加载，请稍后搜索。");
+          return;
+        }
+        globalThis.CC98RebornTopicSearch.open(info, search);
       }
-      globalThis.CC98RebornTopicSearch.open(info, search);
-    });
+    );
     search.dataset.topicId = pageInfo.topicId;
     pager.append(search);
   }
   if (globalThis.CC98RebornTopicArchive) {
-    const archive = createButton("cc98-rebuild-pager-action cc98-topic-archive-entry", "存档本帖", event => {
-      event.preventDefault();
-      const info = getTopicPageInfo();
-      if (info?.topicId !== archive.dataset.topicId) return;
-      globalThis.CC98RebornTopicArchive.open(info, archive);
-    });
+    const archive = createButton(
+      "cc98-rebuild-pager-action cc98-topic-archive-entry",
+      "存档本帖",
+      (event) => {
+        event.preventDefault();
+        const info = getTopicPageInfo();
+        if (info?.topicId !== archive.dataset.topicId) return;
+        globalThis.CC98RebornTopicArchive.open(info, archive);
+      }
+    );
     archive.dataset.topicId = pageInfo.topicId;
     archive.title = "存档本帖快照到本地";
     pager.append(archive);
@@ -14678,10 +16571,33 @@ function renderBoardPager(position = "top") {
       form.addEventListener("submit", (event) => {
         event.preventDefault();
         quickInput.value = input.value;
-        ["input", "change"].forEach((type) => quickInput.dispatchEvent(new Event(type, { bubbles: true })));
-        quickInput.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", code: "Enter", bubbles: true, cancelable: true }));
-        quickInput.dispatchEvent(new KeyboardEvent("keypress", { key: "Enter", code: "Enter", bubbles: true, cancelable: true }));
-        quickInput.dispatchEvent(new KeyboardEvent("keyup", { key: "Enter", code: "Enter", bubbles: true, cancelable: true }));
+        ["input", "change"].forEach((type) =>
+          quickInput.dispatchEvent(new Event(type, { bubbles: true }))
+        );
+        quickInput.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            key: "Enter",
+            code: "Enter",
+            bubbles: true,
+            cancelable: true
+          })
+        );
+        quickInput.dispatchEvent(
+          new KeyboardEvent("keypress", {
+            key: "Enter",
+            code: "Enter",
+            bubbles: true,
+            cancelable: true
+          })
+        );
+        quickInput.dispatchEvent(
+          new KeyboardEvent("keyup", {
+            key: "Enter",
+            code: "Enter",
+            bubbles: true,
+            cancelable: true
+          })
+        );
         const fallbackHref = getBoardPageHref(input.value);
         if (fallbackHref) {
           window.setTimeout(() => {
@@ -14703,9 +16619,10 @@ function renderBoardPager(position = "top") {
     const isDisabled = item.classList.contains("ant-pagination-disabled");
     const isCurrent = item.classList.contains("ant-pagination-item-active");
     const sourceLink = item.querySelector("a[href]");
-    const sourceHref = sourceLink instanceof HTMLAnchorElement
-      ? (sourceLink.getAttribute("href") || sourceLink.href || "")
-      : "";
+    const sourceHref =
+      sourceLink instanceof HTMLAnchorElement
+        ? sourceLink.getAttribute("href") || sourceLink.href || ""
+        : "";
     const button = createButton("cc98-rebuild-page-link", label, () => {
       if (isDisabled || isCurrent) {
         return;
@@ -14747,22 +16664,30 @@ function renderBoardTopicCard(item) {
   if (item.isLocked) {
     card.classList.add("is-locked");
   }
-  const marker = createElement("span", "cc98-rebuild-board-topic-marker", item.isPinned ? "置顶" : "主题");
+  const marker = createElement(
+    "span",
+    "cc98-rebuild-board-topic-marker",
+    item.isPinned ? "置顶" : "主题"
+  );
   const main = createElement("div", "cc98-rebuild-board-topic-main");
   const titleRow = createElement("div", "cc98-rebuild-board-topic-title-row");
-  const title = item.isLocked && !/^🔒\s*/u.test(item.title)
-    ? `🔒 ${item.title}`
-    : item.title;
+  const title = item.isLocked && !/^🔒\s*/u.test(item.title) ? `🔒 ${item.title}` : item.title;
   titleRow.append(createLink("cc98-rebuild-card-title", title, item.href));
   if (item.pageLinks?.length) {
     const pages = createElement("div", "cc98-rebuild-board-topic-pages");
-    item.pageLinks.slice(0, 8).forEach((page) => pages.append(createLink("cc98-rebuild-chip", page.text, page.href)));
+    item.pageLinks
+      .slice(0, 8)
+      .forEach((page) => pages.append(createLink("cc98-rebuild-chip", page.text, page.href)));
     titleRow.append(pages);
   }
   main.append(titleRow);
   const meta = createElement("div", "cc98-rebuild-board-topic-meta");
   if (item.user) {
-    meta.append(item.userHref ? createLink("cc98-rebuild-muted", `作者: ${item.user}`, item.userHref) : createElement("span", "cc98-rebuild-muted", `作者: ${item.user}`));
+    meta.append(
+      item.userHref
+        ? createLink("cc98-rebuild-muted", `作者: ${item.user}`, item.userHref)
+        : createElement("span", "cc98-rebuild-muted", `作者: ${item.user}`)
+    );
   }
   if (item.viewCount) {
     meta.append(createElement("span", "cc98-rebuild-muted", `点击: ${item.viewCount}`));
@@ -14772,7 +16697,11 @@ function renderBoardTopicCard(item) {
   }
   if (item.lastReplyUser || item.lastReplyAt) {
     const lastText = `最后回复: ${[item.lastReplyUser, item.lastReplyAt].filter(Boolean).join(" / ")}`;
-    meta.append(item.lastReplyHref ? createLink("cc98-rebuild-muted", lastText, item.lastReplyHref) : createElement("span", "cc98-rebuild-muted", lastText));
+    meta.append(
+      item.lastReplyHref
+        ? createLink("cc98-rebuild-muted", lastText, item.lastReplyHref)
+        : createElement("span", "cc98-rebuild-muted", lastText)
+    );
   }
   main.append(meta);
   card.append(marker, main);
@@ -14800,7 +16729,9 @@ function renderBoardPage(app) {
   if (data.moderators.length) {
     const mods = createElement("div", "cc98-rebuild-board-mods");
     mods.append(createElement("span", "cc98-rebuild-muted", "版主"));
-    data.moderators.slice(0, 12).forEach((mod) => mods.append(createLink("cc98-rebuild-chip", mod.text, mod.href)));
+    data.moderators
+      .slice(0, 12)
+      .forEach((mod) => mods.append(createLink("cc98-rebuild-chip", mod.text, mod.href)));
     body.append(mods);
   }
   summary.append(body);
@@ -14838,7 +16769,10 @@ function renderBoardPage(app) {
     if (!action) continue;
     const control = action.href ? createLink("", label, action.href) : renderProxyControl(action);
     control.classList.add("cc98-rebuild-action", className);
-    if (control instanceof HTMLButtonElement) control.disabled = Boolean(action.control?.matches(":disabled, [disabled], [aria-disabled='true']"));
+    if (control instanceof HTMLButtonElement)
+      control.disabled = Boolean(
+        action.control?.matches(":disabled, [disabled], [aria-disabled='true']")
+      );
     toolbar.append(control);
   }
   data.filters.forEach((filter) => toolbar.append(renderProxyControl(filter)));
@@ -14884,7 +16818,10 @@ function restoreNativeNode(node) {
   if (!node) {
     return;
   }
-  if (node.dataset?.cc98EmbeddedBlacklistHidden === "true" || node.dataset?.cc98EmbeddedSettingsHidden === "true") {
+  if (
+    node.dataset?.cc98EmbeddedBlacklistHidden === "true" ||
+    node.dataset?.cc98EmbeddedSettingsHidden === "true"
+  ) {
     node.hidden = false;
     delete node.dataset.cc98EmbeddedBlacklistHidden;
     delete node.dataset.cc98EmbeddedSettingsHidden;
@@ -14907,20 +16844,30 @@ function restoreNativeNode(node) {
   }
   if (node.classList?.contains("cc98-dm-reading")) {
     node.classList.remove("cc98-dm-reading");
-    node.querySelectorAll(".cc98-dm-contacts-button, .cc98-dm-chat-button").forEach(button => button.remove());
-    node.querySelectorAll("[data-cc98-dm-contact]").forEach(row => {
-      row.removeAttribute("tabindex"); row.removeAttribute("role"); row.removeAttribute("data-cc98-dm-contact");
+    node
+      .querySelectorAll(".cc98-dm-contacts-button, .cc98-dm-chat-button")
+      .forEach((button) => button.remove());
+    node.querySelectorAll("[data-cc98-dm-contact]").forEach((row) => {
+      row.removeAttribute("tabindex");
+      row.removeAttribute("role");
+      row.removeAttribute("data-cc98-dm-contact");
     });
   }
   if (node.classList?.contains("cc98-rebuild-native-user-nav")) {
     delete node.dataset.cc98SettingsOpen;
-    node.querySelectorAll?.(".cc98-rebuild-blacklist-nav-entry, .cc98-rebuild-settings-nav-entry").forEach((entry) => {
-      const parent = entry.parentElement;
-      entry.remove();
-      if (parent instanceof HTMLLIElement && !cleanupPostText(parent.textContent) && !parent.children.length) {
-        parent.remove();
-      }
-    });
+    node
+      .querySelectorAll?.(".cc98-rebuild-blacklist-nav-entry, .cc98-rebuild-settings-nav-entry")
+      .forEach((entry) => {
+        const parent = entry.parentElement;
+        entry.remove();
+        if (
+          parent instanceof HTMLLIElement &&
+          !cleanupPostText(parent.textContent) &&
+          !parent.children.length
+        ) {
+          parent.remove();
+        }
+      });
   }
   node.classList.remove(
     "cc98-rebuild-native-editor",
@@ -14936,11 +16883,17 @@ function restoreNativeNode(node) {
   );
   const previous = reparentedNativeNodes.get(node);
   if (previous?.parent?.isConnected) {
-    previous.parent.insertBefore(node, previous.nextSibling?.parentNode === previous.parent ? previous.nextSibling : null);
+    previous.parent.insertBefore(
+      node,
+      previous.nextSibling?.parentNode === previous.parent ? previous.nextSibling : null
+    );
     reparentedNativeNodes.delete(node);
     return;
   }
-  const main = document.querySelector("#root .main-container") ?? document.querySelector("#root") ?? document.body;
+  const main =
+    document.querySelector("#root .main-container") ??
+    document.querySelector("#root") ??
+    document.body;
   const footer = main.querySelector?.(".footer");
   if (footer?.parentElement === main) {
     main.insertBefore(node, footer);
@@ -14951,7 +16904,10 @@ function restoreNativeNode(node) {
 }
 
 function restoreReparentedNativeNodes(app) {
-  app?.querySelectorAll?.(".createTopic.cc98-rebuild-native-editor, #sendTopicInfo.cc98-rebuild-native-reply, .user-center-navigation.cc98-rebuild-native-user-nav, .user-center-router.cc98-rebuild-native-user-router, .cc98-rebuild-native-user-entry, .cc98-rebuild-native-message, .cc98-rebuild-native-signin, .cc98-rebuild-native-login, .cc98-rebuild-native-login-announcement, .vote-content.cc98-rebuild-native-vote, .cc98-rebuild-native-post-follow-action")
+  app
+    ?.querySelectorAll?.(
+      ".createTopic.cc98-rebuild-native-editor, #sendTopicInfo.cc98-rebuild-native-reply, .user-center-navigation.cc98-rebuild-native-user-nav, .user-center-router.cc98-rebuild-native-user-router, .cc98-rebuild-native-user-entry, .cc98-rebuild-native-message, .cc98-rebuild-native-signin, .cc98-rebuild-native-login, .cc98-rebuild-native-login-announcement, .vote-content.cc98-rebuild-native-vote, .cc98-rebuild-native-post-follow-action"
+    )
     .forEach((node) => restoreNativeNode(node));
 }
 
@@ -14965,9 +16921,10 @@ function releaseReparentedNativeNodesForNavigation() {
 }
 
 function releaseReparentedNativeEditorForSubmit(kind) {
-  const editor = String(kind || "").toLowerCase() === "reply"
-    ? document.querySelector("#sendTopicInfo")
-    : document.querySelector(".createTopic");
+  const editor =
+    String(kind || "").toLowerCase() === "reply"
+      ? document.querySelector("#sendTopicInfo")
+      : document.querySelector(".createTopic");
   if (!(editor instanceof HTMLElement) || !editor.closest("#cc98-comfort-app")) {
     return false;
   }
@@ -14980,18 +16937,31 @@ function isEditorAuxiliarySubmitControl(control) {
   if (!(control instanceof HTMLElement)) {
     return true;
   }
-  if (control.matches("#post-topic-changeMode, .changeEditor, .cc98-rebuild-markdown-entry")
-    || control.matches("[data-cc98-vote-action]")
-    || Boolean(control.closest(".react-mde"))) {
+  if (
+    control.matches("#post-topic-changeMode, .changeEditor, .cc98-rebuild-markdown-entry") ||
+    control.matches("[data-cc98-vote-action]") ||
+    Boolean(control.closest(".react-mde"))
+  ) {
     return true;
   }
-  if (control.matches("button.fa-check, button.fa-remove, button.fa-times, button[class*='fa-check'], button[class*='fa-remove'], button[class*='fa-times'], button[data-cc98-editor-label]")) {
+  if (
+    control.matches(
+      "button.fa-check, button.fa-remove, button.fa-times, button[class*='fa-check'], button[class*='fa-remove'], button[class*='fa-times'], button[data-cc98-editor-label]"
+    )
+  ) {
     return true;
   }
-  if (control.closest(".cc98-rebuild-color-popover, .cc98-rebuild-font-size-popover, .cc98-rebuild-editor-draftbar, .ubb-emoji, .ubb-extend")) {
+  if (
+    control.closest(
+      ".cc98-rebuild-color-popover, .cc98-rebuild-font-size-popover, .cc98-rebuild-editor-draftbar, .ubb-emoji, .ubb-extend"
+    )
+  ) {
     return true;
   }
-  if (control.closest(".ubb-editor") && !control.matches('[id^="post-topic-button"], .button.blue')) {
+  if (
+    control.closest(".ubb-editor") &&
+    !control.matches('[id^="post-topic-button"], .button.blue')
+  ) {
     return true;
   }
   return false;
@@ -15006,12 +16976,21 @@ function isEditorAuxiliarySubmitEvent(event, editor) {
   if (!(source instanceof Element) || source === editor) {
     return false;
   }
-  return Boolean(source.closest(".ubb-extend, .ubb-emoji, .cc98-rebuild-color-popover, .cc98-rebuild-font-size-popover, .cc98-rebuild-editor-draftbar"))
-    || (Boolean(source.closest(".ubb-editor")) && !source.matches('[id^="post-topic-button"], .button.blue'));
+  return (
+    Boolean(
+      source.closest(
+        ".ubb-extend, .ubb-emoji, .cc98-rebuild-color-popover, .cc98-rebuild-font-size-popover, .cc98-rebuild-editor-draftbar"
+      )
+    ) ||
+    (Boolean(source.closest(".ubb-editor")) &&
+      !source.matches('[id^="post-topic-button"], .button.blue'))
+  );
 }
 
 function isLikelyEditorSubmitControl(target) {
-  const control = target?.closest?.("#post-topic-button, button, input[type='button'], input[type='submit'], .button, .ant-btn, [role='button']");
+  const control = target?.closest?.(
+    "#post-topic-button, button, input[type='button'], input[type='submit'], .button, .ant-btn, [role='button']"
+  );
   if (!(control instanceof HTMLElement) || isEditorAuxiliarySubmitControl(control)) {
     return false;
   }
@@ -15022,8 +17001,12 @@ function isLikelyEditorSubmitControl(target) {
     control.getAttribute("title"),
     control.getAttribute("aria-label"),
     control.textContent
-  ].filter(Boolean).join(" ");
-  return /post-topic-button|submit|\u53d1\u8868|\u53d1\u5e16|\u56de\u590d|\u63d0\u4ea4|\u7f16\u8f91|\u4fdd\u5b58|\u66f4\u65b0|\u53d1\u5e03|\u786e\u5b9a/i.test(signature);
+  ]
+    .filter(Boolean)
+    .join(" ");
+  return /post-topic-button|submit|\u53d1\u8868|\u53d1\u5e16|\u56de\u590d|\u63d0\u4ea4|\u7f16\u8f91|\u4fdd\u5b58|\u66f4\u65b0|\u53d1\u5e03|\u786e\u5b9a/i.test(
+    signature
+  );
 }
 
 function getNativeEditorSubmitContext(options = {}) {
@@ -15041,15 +17024,27 @@ function findNativeEditorSubmitControl(editor, preferred) {
   if (!(editor instanceof HTMLElement)) {
     return null;
   }
-  if (preferred instanceof HTMLElement && editor.contains(preferred) && !isEditorAuxiliarySubmitControl(preferred)) {
+  if (
+    preferred instanceof HTMLElement &&
+    editor.contains(preferred) &&
+    !isEditorAuxiliarySubmitControl(preferred)
+  ) {
     return preferred;
   }
-  const primary = editor.querySelector("#post-topic-button, .button.blue, button[type='submit'], input[type='submit']");
+  const primary = editor.querySelector(
+    "#post-topic-button, .button.blue, button[type='submit'], input[type='submit']"
+  );
   if (primary instanceof HTMLElement && !isEditorAuxiliarySubmitControl(primary)) {
     return primary;
   }
-  return [...editor.querySelectorAll("button, input[type='button'], input[type='submit'], .button, .ant-btn, [role='button']")]
-    .find((control) => control instanceof HTMLElement && isLikelyEditorSubmitControl(control)) || null;
+  return (
+    [
+      ...editor.querySelectorAll(
+        "button, input[type='button'], input[type='submit'], .button, .ant-btn, [role='button']"
+      )
+    ].find((control) => control instanceof HTMLElement && isLikelyEditorSubmitControl(control)) ||
+    null
+  );
 }
 
 function isNativePostSubmitEditor(editor) {
@@ -15059,9 +17054,11 @@ function isNativePostSubmitEditor(editor) {
   if (editor.matches(".sign-in") || editor.closest(".sign-in")) {
     return false;
   }
-  return editor.matches(".createTopic, #sendTopicInfo")
-    || Boolean(editor.closest(".createTopic, #sendTopicInfo"))
-    || Boolean(editor.querySelector("#post-topic-button"));
+  return (
+    editor.matches(".createTopic, #sendTopicInfo") ||
+    Boolean(editor.closest(".createTopic, #sendTopicInfo")) ||
+    Boolean(editor.querySelector("#post-topic-button"))
+  );
 }
 
 function beginNativeEditorSubmitTransaction(editor, control, context = {}) {
@@ -15073,9 +17070,11 @@ function beginNativeEditorSubmitTransaction(editor, control, context = {}) {
     return false;
   }
   const startedAt = Number(editor.dataset.cc98SubmitTransactionStartedAt || 0);
-  if (editor.dataset.cc98SubmitTransactionActive === "true"
-    && startedAt
-    && Date.now() - startedAt < 2500) {
+  if (
+    editor.dataset.cc98SubmitTransactionActive === "true" &&
+    startedAt &&
+    Date.now() - startedAt < 2500
+  ) {
     return false;
   }
   const payload = getNativeEditorSubmitContext(context);
@@ -15100,15 +17099,19 @@ function ensurePendingNativeEditorSubmitRecovery(editor) {
   if (!(editor instanceof HTMLElement) || !isNativePostSubmitEditor(editor)) {
     return;
   }
-  const pendingControl = [...editor.querySelectorAll(
-    "#post-topic-button, [id^='post-topic-button-'], button, input[type='button'], input[type='submit']"
-  )].find((control) => {
+  const pendingControl = [
+    ...editor.querySelectorAll(
+      "#post-topic-button, [id^='post-topic-button-'], button, input[type='button'], input[type='submit']"
+    )
+  ].find((control) => {
     if (!(control instanceof HTMLElement) || isEditorAuxiliarySubmitControl(control)) {
       return false;
     }
     const label = cleanupPostText(
       control instanceof HTMLInputElement ? control.value : control.textContent
-    ).replace(/\*/g, "").trim();
+    )
+      .replace(/\*/g, "")
+      .trim();
     return label === "...";
   });
   if (!pendingControl || hasRecentEditorSubmitIntent(90000)) {
@@ -15133,7 +17136,9 @@ function isAnonymousReplySubmitControl(control) {
     control.getAttribute("title"),
     control.getAttribute("aria-label"),
     control.textContent
-  ].filter(Boolean).join(" ");
+  ]
+    .filter(Boolean)
+    .join(" ");
   return /anonymous|\u533f\u540d/i.test(signature);
 }
 
@@ -15141,10 +17146,13 @@ function isAnonymousOnlyReplyEditor(editor) {
   if (!(editor instanceof HTMLElement)) {
     return false;
   }
-  const submitControls = [...editor.querySelectorAll('[id^="post-topic-button"]')]
-    .filter((control) => control instanceof HTMLElement);
-  return submitControls.some((control) => isAnonymousReplySubmitControl(control))
-    && !submitControls.some((control) => !isAnonymousReplySubmitControl(control));
+  const submitControls = [...editor.querySelectorAll('[id^="post-topic-button"]')].filter(
+    (control) => control instanceof HTMLElement
+  );
+  return (
+    submitControls.some((control) => isAnonymousReplySubmitControl(control)) &&
+    !submitControls.some((control) => !isAnonymousReplySubmitControl(control))
+  );
 }
 
 function isSoulBoardReplyContext() {
@@ -15153,8 +17161,12 @@ function isSoulBoardReplyContext() {
     ...document.querySelectorAll('#root a[href*="/board/"]')
   ];
   return boardNodes.some((node) => {
-    if (!(node instanceof HTMLElement)
-      || node.closest("#cc98-comfort-app, .reply, .reply-content, .substance, .signature, .focus-topic, .card-topic")) {
+    if (
+      !(node instanceof HTMLElement) ||
+      node.closest(
+        "#cc98-comfort-app, .reply, .reply-content, .substance, .signature, .focus-topic, .card-topic"
+      )
+    ) {
       return false;
     }
     return normalizeText(node.textContent) === "\u5fc3\u7075\u4e4b\u7ea6";
@@ -15191,9 +17203,11 @@ function appendRebornReplyTailIfNeeded(editor, submitControl = null) {
     return false;
   }
   const value = String(textarea.value || "");
-  if (isAnonymousReplySubmitControl(submitControl)
-    || isAnonymousOnlyReplyEditor(editor)
-    || isSoulBoardReplyContext()) {
+  if (
+    isAnonymousReplySubmitControl(submitControl) ||
+    isAnonymousOnlyReplyEditor(editor) ||
+    isSoulBoardReplyContext()
+  ) {
     const strippedValue = stripRebornReplyTail(value);
     if (strippedValue !== value) {
       setNativeMessageInputValue(textarea, strippedValue);
@@ -15223,7 +17237,9 @@ function appendRebornReplyTailIfNeeded(editor, submitControl = null) {
 }
 
 function getRebornReplyTailEditorFromTarget(target) {
-  const control = target?.closest?.("#post-topic-button, button, input[type='button'], input[type='submit'], .button, .ant-btn, [role='button']");
+  const control = target?.closest?.(
+    "#post-topic-button, button, input[type='button'], input[type='submit'], .button, .ant-btn, [role='button']"
+  );
   if (!(control instanceof HTMLElement) || !isLikelyEditorSubmitControl(control)) {
     return null;
   }
@@ -15237,7 +17253,9 @@ function ensureRebornReplyTailSubmitGuard() {
   }
   rebornReplyTailSubmitGuardBound = true;
   const handleSubmitPointer = (event) => {
-    const submitControl = event.target?.closest?.("#post-topic-button, button, input[type='button'], input[type='submit'], .button, .ant-btn, [role='button']");
+    const submitControl = event.target?.closest?.(
+      "#post-topic-button, button, input[type='button'], input[type='submit'], .button, .ant-btn, [role='button']"
+    );
     const editor = getRebornReplyTailEditorFromTarget(event.target);
     if (editor) {
       appendRebornReplyTailIfNeeded(editor, submitControl);
@@ -15245,12 +17263,16 @@ function ensureRebornReplyTailSubmitGuard() {
   };
   document.addEventListener("pointerdown", handleSubmitPointer, true);
   document.addEventListener("click", handleSubmitPointer, true);
-  document.addEventListener("submit", (event) => {
-    const editor = event.target?.closest?.("#sendTopicInfo");
-    if (editor instanceof HTMLElement) {
-      appendRebornReplyTailIfNeeded(editor, event.submitter);
-    }
-  }, true);
+  document.addEventListener(
+    "submit",
+    (event) => {
+      const editor = event.target?.closest?.("#sendTopicInfo");
+      if (editor instanceof HTMLElement) {
+        appendRebornReplyTailIfNeeded(editor, event.submitter);
+      }
+    },
+    true
+  );
 }
 
 function isNativeEditorInsideReactRoot(editor) {
@@ -15259,27 +17281,41 @@ function isNativeEditorInsideReactRoot(editor) {
 
 function getEditorPageData() {
   const editor = document.querySelector(".createTopic");
-  const isVote = /\/editor\/postVoteTopic\/\d+/i.test(getCurrentCc98RoutePath())
-    || Boolean(editor?.querySelector('input[name="voteItem"]'));
-  const isEdit = !isVote && (/\/editor\/edit\/\d+/i.test(location.pathname)
-    || Boolean(editor && /编辑/.test(cleanupPostText(editor.textContent))));
-  const breadcrumbLinks = [...(editor?.querySelectorAll(".row:first-child a[href], .cc98-rebuild-editor-breadcrumb a[href]") ?? [])]
+  const isVote =
+    /\/editor\/postVoteTopic\/\d+/i.test(getCurrentCc98RoutePath()) ||
+    Boolean(editor?.querySelector('input[name="voteItem"]'));
+  const isEdit =
+    !isVote &&
+    (/\/editor\/edit\/\d+/i.test(location.pathname) ||
+      Boolean(editor && /编辑/.test(cleanupPostText(editor.textContent))));
+  const breadcrumbLinks = [
+    ...(editor?.querySelectorAll(
+      ".row:first-child a[href], .cc98-rebuild-editor-breadcrumb a[href]"
+    ) ?? [])
+  ]
     .map((link) => ({ text: link.textContent?.trim() ?? "", href: link.href }))
     .filter((item) => item.text);
   const board = [...breadcrumbLinks].reverse().find((item) => /\/board\/\d+/i.test(item.href));
   const titleInput = editor?.querySelector(".createTopicTitle input");
-  const editorHeading = [...(editor?.querySelectorAll(".row:first-child div, .cc98-rebuild-editor-breadcrumb div") ?? [])]
+  const editorHeading = [
+    ...(editor?.querySelectorAll(".row:first-child div, .cc98-rebuild-editor-breadcrumb div") ?? [])
+  ]
     .map((node) => cleanupPostText(node.textContent))
     .reverse()
     .find((text) => /编辑|发表|回复/.test(text));
-  const submitLabel = cleanupPostText(editor?.querySelector("#post-topic-button, .button.blue")?.textContent);
+  const submitLabel = cleanupPostText(
+    editor?.querySelector("#post-topic-button, .button.blue")?.textContent
+  );
   return {
     editor,
     board,
     isEdit,
-    pageTitle: isVote ? "发表投票主题" : isEdit ? (editorHeading || "编辑帖子") : "发表主题",
+    pageTitle: isVote ? "发表投票主题" : isEdit ? editorHeading || "编辑帖子" : "发表主题",
     modeLabel: isVote ? "Poll" : isEdit ? "Edit" : "Compose",
-    titlePlaceholder: titleInput?.getAttribute("placeholder") || titleInput?.value || (isEdit ? "正在编辑已有内容" : "请输入标题"),
+    titlePlaceholder:
+      titleInput?.getAttribute("placeholder") ||
+      titleInput?.value ||
+      (isEdit ? "正在编辑已有内容" : "请输入标题"),
     submitLabel
   };
 }
@@ -15306,7 +17342,10 @@ function labelEditorToolbarButtons(editor) {
     ["切换预览", "预"]
   ]);
   editor.querySelectorAll(".ubb-button").forEach((control) => {
-    const title = control.getAttribute("title") || control.querySelector?.("[title]")?.getAttribute("title") || "";
+    const title =
+      control.getAttribute("title") ||
+      control.querySelector?.("[title]")?.getAttribute("title") ||
+      "";
     const label = labels.get(title);
     if (label && !control.textContent.trim()) {
       control.dataset.cc98ToolbarLabel = label;
@@ -15343,7 +17382,9 @@ function labelEditorToolbarButtonsWithUnicode(editor) {
       control.getAttribute("aria-label"),
       control.querySelector?.("[title]")?.getAttribute("title"),
       control.className
-    ].filter(Boolean).join(" ");
+    ]
+      .filter(Boolean)
+      .join(" ");
     const label = labelRules.find(([pattern]) => pattern.test(title))?.[1];
     if (label) {
       control.dataset.cc98ToolbarLabel = label;
@@ -15354,9 +17395,13 @@ function labelEditorToolbarButtonsWithUnicode(editor) {
   editor.querySelectorAll("button.fa-check, button[class*='fa-check']").forEach((button) => {
     button.dataset.cc98EditorLabel = "✓";
   });
-  editor.querySelectorAll("button.fa-remove, button.fa-times, button[class*='fa-remove'], button[class*='fa-times']").forEach((button) => {
-    button.dataset.cc98EditorLabel = "×";
-  });
+  editor
+    .querySelectorAll(
+      "button.fa-remove, button.fa-times, button[class*='fa-remove'], button[class*='fa-times']"
+    )
+    .forEach((button) => {
+      button.dataset.cc98EditorLabel = "×";
+    });
 }
 
 function stabilizeMarkdownEditor(editor) {
@@ -15369,50 +17414,62 @@ function stabilizeMarkdownEditor(editor) {
   }
   editor.classList.toggle("cc98-rebuild-markdown-editor-active", Boolean(markdownEditor));
   editor.dataset.cc98EditorMode = markdownEditor ? "markdown" : "ubb";
-  editor.querySelectorAll("#post-topic-changeMode, .changeEditor, .cc98-rebuild-markdown-entry").forEach((control) => {
-    if (!(control instanceof HTMLElement)) {
-      return;
-    }
-    const signature = [
-      control.id,
-      control.className,
-      control.getAttribute?.("title"),
-      control.getAttribute?.("aria-label"),
-      control.textContent
-    ].filter(Boolean).join(" ");
-    if (!/(?:post-topic-changeMode|changeEditor|markdown|切换.*编辑|切换.*模式)/i.test(signature)) {
-      return;
-    }
-    control.classList.add("cc98-rebuild-markdown-entry");
-    control.hidden = false;
-    control.style.removeProperty("display");
-    control.setAttribute("role", "button");
-    control.tabIndex = 0;
-    const label = cleanupPostText(control.textContent) || (markdownEditor ? "切换到UBB编辑器" : "切换到Markdown编辑器");
-    control.setAttribute("aria-label", label);
-    control.title = label;
-    control.dataset.cc98EditorTargetMode = /ubb/i.test(label) ? "ubb" : "markdown";
-    const parent = control.parentElement;
-    const contentHeading = control.closest(".createTopicContent");
-    if (contentHeading instanceof HTMLElement) {
-      const hint = [...contentHeading.children].find((child) => {
-        if (!(child instanceof HTMLElement)
-          || child === control
-          || child.classList.contains("createTopicListName")
-          || child.classList.contains("ubb-editor")) {
-          return false;
-        }
-        return /\u63d0\u793a|CC98|\u5fae\u4fe1\u5c0f\u7a0b\u5e8f|\u89c6\u9891/i.test(cleanupPostText(child.textContent));
-      });
-      if (hint instanceof HTMLElement) {
-        contentHeading.classList.add("cc98-rebuild-editor-heading-with-switch");
-        hint.classList.add("cc98-rebuild-editor-heading-hint");
+  editor
+    .querySelectorAll("#post-topic-changeMode, .changeEditor, .cc98-rebuild-markdown-entry")
+    .forEach((control) => {
+      if (!(control instanceof HTMLElement)) {
+        return;
       }
-    }
-    if (parent instanceof HTMLElement && parent.classList.contains("row")) {
-      parent.classList.add("cc98-rebuild-editor-mode-switch-row");
-    }
-  });
+      const signature = [
+        control.id,
+        control.className,
+        control.getAttribute?.("title"),
+        control.getAttribute?.("aria-label"),
+        control.textContent
+      ]
+        .filter(Boolean)
+        .join(" ");
+      if (
+        !/(?:post-topic-changeMode|changeEditor|markdown|切换.*编辑|切换.*模式)/i.test(signature)
+      ) {
+        return;
+      }
+      control.classList.add("cc98-rebuild-markdown-entry");
+      control.hidden = false;
+      control.style.removeProperty("display");
+      control.setAttribute("role", "button");
+      control.tabIndex = 0;
+      const label =
+        cleanupPostText(control.textContent) ||
+        (markdownEditor ? "切换到UBB编辑器" : "切换到Markdown编辑器");
+      control.setAttribute("aria-label", label);
+      control.title = label;
+      control.dataset.cc98EditorTargetMode = /ubb/i.test(label) ? "ubb" : "markdown";
+      const parent = control.parentElement;
+      const contentHeading = control.closest(".createTopicContent");
+      if (contentHeading instanceof HTMLElement) {
+        const hint = [...contentHeading.children].find((child) => {
+          if (
+            !(child instanceof HTMLElement) ||
+            child === control ||
+            child.classList.contains("createTopicListName") ||
+            child.classList.contains("ubb-editor")
+          ) {
+            return false;
+          }
+          return /\u63d0\u793a|CC98|\u5fae\u4fe1\u5c0f\u7a0b\u5e8f|\u89c6\u9891/i.test(
+            cleanupPostText(child.textContent)
+          );
+        });
+        if (hint instanceof HTMLElement) {
+          contentHeading.classList.add("cc98-rebuild-editor-heading-with-switch");
+          hint.classList.add("cc98-rebuild-editor-heading-hint");
+        }
+      }
+      if (parent instanceof HTMLElement && parent.classList.contains("row")) {
+        parent.classList.add("cc98-rebuild-editor-mode-switch-row");
+      }
+    });
 }
 
 function getMarkdownEditorInputState(editor) {
@@ -15433,7 +17490,10 @@ function isMarkdownEditorTextEvent(event) {
 }
 
 function bindMarkdownEditorInputTracking(editor) {
-  if (!(editor instanceof HTMLElement) || editor.dataset.cc98MarkdownInputTrackingBound === "true") {
+  if (
+    !(editor instanceof HTMLElement) ||
+    editor.dataset.cc98MarkdownInputTrackingBound === "true"
+  ) {
     return;
   }
   editor.dataset.cc98MarkdownInputTrackingBound = "true";
@@ -15453,23 +17513,31 @@ function bindMarkdownEditorInputTracking(editor) {
   editor.addEventListener("compositionupdate", (event) => markActivity(event, true), true);
   editor.addEventListener("compositionend", (event) => markActivity(event, false), true);
   editor.addEventListener("beforeinput", (event) => markActivity(event), true);
-  editor.addEventListener("input", (event) => markActivity(event, Boolean(event.isComposing)), true);
-  editor.addEventListener("focusout", (event) => {
-    if (!isMarkdownEditorTextEvent(event)) {
-      return;
-    }
-    const state = getMarkdownEditorInputState(editor);
-    if (state.composing) {
-      state.lastActivityAt = Date.now();
-      window.setTimeout(() => {
-        const active = document.activeElement;
-        if (!(active instanceof Element) || !active.closest(".react-mde .mde-text")) {
-          state.composing = false;
-          state.lastActivityAt = Date.now();
-        }
-      }, 0);
-    }
-  }, true);
+  editor.addEventListener(
+    "input",
+    (event) => markActivity(event, Boolean(event.isComposing)),
+    true
+  );
+  editor.addEventListener(
+    "focusout",
+    (event) => {
+      if (!isMarkdownEditorTextEvent(event)) {
+        return;
+      }
+      const state = getMarkdownEditorInputState(editor);
+      if (state.composing) {
+        state.lastActivityAt = Date.now();
+        window.setTimeout(() => {
+          const active = document.activeElement;
+          if (!(active instanceof Element) || !active.closest(".react-mde .mde-text")) {
+            state.composing = false;
+            state.lastActivityAt = Date.now();
+          }
+        }, 0);
+      }
+    },
+    true
+  );
 }
 
 function waitForMarkdownEditorInputToSettle(editor, options = {}) {
@@ -15496,17 +17564,22 @@ function getMarkdownEditorVisibleText(editor) {
   if (!(content instanceof HTMLElement)) {
     return "";
   }
-  const blocks = [...content.querySelectorAll("[data-block='true']")]
-    .filter((block) => block instanceof HTMLElement);
+  const blocks = [...content.querySelectorAll("[data-block='true']")].filter(
+    (block) => block instanceof HTMLElement
+  );
   const text = blocks.length
     ? blocks.map((block) => block.innerText || block.textContent || "").join("\n")
     : content.innerText || content.textContent || "";
-  return text.replace(/\u200b/g, "").replace(/\u00a0/g, " ").replace(/\r\n?/g, "\n");
+  return text
+    .replace(/\u200b/g, "")
+    .replace(/\u00a0/g, " ")
+    .replace(/\r\n?/g, "\n");
 }
 
 function appendLocalMarkdownInline(target, source) {
   const text = String(source ?? "");
-  const pattern = /(`([^`\n]+)`|\*\*([^*\n]+)\*\*|__([^_\n]+)__|~~([^~\n]+)~~|\[([^\]\n]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)|\*([^*\n]+)\*|_([^_\n]+)_)/g;
+  const pattern =
+    /(`([^`\n]+)`|\*\*([^*\n]+)\*\*|__([^_\n]+)__|~~([^~\n]+)~~|\[([^\]\n]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)|\*([^*\n]+)\*|_([^_\n]+)_)/g;
   let cursor = 0;
   let match;
   const appendText = (value) => {
@@ -15614,7 +17687,13 @@ function buildLocalMarkdownPreview(text) {
     if (list) {
       flushParagraph();
       const node = createElement("div", "cc98-rebuild-markdown-local-list-line");
-      node.append(createElement("span", "cc98-rebuild-markdown-local-list-marker", list[1] ? `${list[1]}.` : "•"));
+      node.append(
+        createElement(
+          "span",
+          "cc98-rebuild-markdown-local-list-marker",
+          list[1] ? `${list[1]}.` : "•"
+        )
+      );
       const value = createElement("span");
       appendLocalMarkdownInline(value, list[2]);
       node.append(value);
@@ -15717,9 +17796,11 @@ function blurMarkdownEditorBeforePreview(editor, target) {
 
 function deferMarkdownPreviewUntilInputSettles(editor, event) {
   const control = getMarkdownPreviewTabControl(event?.target);
-  if (!(control instanceof HTMLButtonElement)
-    || control.classList.contains("selected")
-    || control.dataset.cc98PreviewInputSettled === "true") {
+  if (
+    !(control instanceof HTMLButtonElement) ||
+    control.classList.contains("selected") ||
+    control.dataset.cc98PreviewInputSettled === "true"
+  ) {
     return false;
   }
   event.preventDefault();
@@ -15750,11 +17831,17 @@ function getNativeEditorPassthroughControl(target) {
   if (!(target instanceof Element)) {
     return null;
   }
-  const control = target.closest(".cc98-rebuild-native-editor .ubb-buttons .ubb-button, .cc98-rebuild-native-editor .ubb-buttons label[for='ubbFileUpload']");
+  const control = target.closest(
+    ".cc98-rebuild-native-editor .ubb-buttons .ubb-button, .cc98-rebuild-native-editor .ubb-buttons label[for='ubbFileUpload']"
+  );
   if (!(control instanceof HTMLElement)) {
     return null;
   }
-  if (control.closest(".ubb-button-fontSize, .ubb-button-color, .cc98-rebuild-font-size-button, .cc98-rebuild-color-button")) {
+  if (
+    control.closest(
+      ".ubb-button-fontSize, .ubb-button-color, .cc98-rebuild-font-size-button, .cc98-rebuild-color-button"
+    )
+  ) {
     return null;
   }
   const signature = [
@@ -15764,8 +17851,12 @@ function getNativeEditorPassthroughControl(target) {
     control.getAttribute("for"),
     control.dataset.cc98ToolbarLabel,
     control.textContent
-  ].filter(Boolean).join(" ");
-  return /(?:fa-link|fa-picture-o|fa-film|fa-video|fa-video-camera|fa-play|fa-youtube-play|fa-music|fa-file|bilibili|bili|url|link|image|picture|video|audio|file|upload|ubbFileUpload|插入(?:url|链接|图片|视频|音频)|上传文件|链|图|影|▶|音|文|🔗|♪)/i.test(signature)
+  ]
+    .filter(Boolean)
+    .join(" ");
+  return /(?:fa-link|fa-picture-o|fa-film|fa-video|fa-video-camera|fa-play|fa-youtube-play|fa-music|fa-file|bilibili|bili|url|link|image|picture|video|audio|file|upload|ubbFileUpload|插入(?:url|链接|图片|视频|音频)|上传文件|链|图|影|▶|音|文|🔗|♪)/i.test(
+    signature
+  )
     ? control
     : null;
 }
@@ -15781,7 +17872,9 @@ function getNativeEditorToolbarControlSignature(control) {
     control.getAttribute("for"),
     control.dataset.cc98ToolbarLabel,
     control.textContent
-  ].filter(Boolean).join(" ");
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
 function getNativeEditorInsertControlKind(control) {
@@ -15811,8 +17904,9 @@ function getNativeEditorUploadInput(editor, control = null) {
   if (control instanceof HTMLLabelElement) {
     const forId = control.getAttribute("for");
     if (forId) {
-      const input = control.ownerDocument?.getElementById(forId)
-        || editor?.querySelector?.(`#${CSS.escape(forId)}`);
+      const input =
+        control.ownerDocument?.getElementById(forId) ||
+        editor?.querySelector?.(`#${CSS.escape(forId)}`);
       if (input instanceof HTMLInputElement && input.type === "file") {
         return input;
       }
@@ -15899,25 +17993,37 @@ function handleNativeEditorInsertControl(editor, target, event) {
 function getNativeEditorTextarea(editor) {
   const boundTextarea = editor?.querySelector?.("textarea[data-cc98-dual-ubb-native='true']");
   if (
-    boundTextarea instanceof HTMLTextAreaElement
-    && !editor?.classList?.contains("cc98-rebuild-markdown-editor-active")
+    boundTextarea instanceof HTMLTextAreaElement &&
+    !editor?.classList?.contains("cc98-rebuild-markdown-editor-active")
   ) {
     return boundTextarea;
   }
-  const textareas = [...editor.querySelectorAll("textarea")]
-    .filter((textarea) => textarea instanceof HTMLTextAreaElement);
-  return textareas.find((textarea) => {
-    const rect = textarea.getBoundingClientRect();
-    const style = window.getComputedStyle(textarea);
-    return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
-  }) || textareas[0] || null;
+  const textareas = [...editor.querySelectorAll("textarea")].filter(
+    (textarea) => textarea instanceof HTMLTextAreaElement
+  );
+  return (
+    textareas.find((textarea) => {
+      const rect = textarea.getBoundingClientRect();
+      const style = window.getComputedStyle(textarea);
+      return (
+        style.display !== "none" &&
+        style.visibility !== "hidden" &&
+        rect.width > 0 &&
+        rect.height > 0
+      );
+    }) ||
+    textareas[0] ||
+    null
+  );
 }
 
 function getNativeEditorTitleInput(editor) {
   if (!(editor instanceof HTMLElement)) {
     return null;
   }
-  return editor.querySelector(".createTopicTitle input, input[name='title'], input[placeholder*='标题']");
+  return editor.querySelector(
+    ".createTopicTitle input, input[name='title'], input[placeholder*='标题']"
+  );
 }
 
 function normalizeEditorDraftKeyPart(value) {
@@ -15946,13 +18052,17 @@ function getNativeEditorDraftKey(editor) {
     const raw = localStorage.getItem("cc98RebornDraftScope:v1");
     if (raw === null) return pageKey;
     const scope = JSON.parse(raw);
-    const validUid = value => /^[1-9]\d*$/.test(String(value)) && Number.isSafeInteger(Number(value));
+    const validUid = (value) =>
+      /^[1-9]\d*$/.test(String(value)) && Number.isSafeInteger(Number(value));
     if (scope?.version !== 1 || !validUid(scope.legacyOwner)) return "";
     const userInfo = localStorage.getItem("userInfo") || "";
     const user = userInfo.startsWith("obj-") ? JSON.parse(userInfo.slice(4)) : null;
     return user && !Array.isArray(user) && validUid(user.id)
-      ? `${EDITOR_DRAFT_STORAGE_PREFIX}uid:${user.id}:${pageKey.slice(EDITOR_DRAFT_STORAGE_PREFIX.length)}` : "";
-  } catch { return ""; }
+      ? `${EDITOR_DRAFT_STORAGE_PREFIX}uid:${user.id}:${pageKey.slice(EDITOR_DRAFT_STORAGE_PREFIX.length)}`
+      : "";
+  } catch {
+    return "";
+  }
 }
 
 function getNativeEditorDraftPageKey(editor) {
@@ -15962,18 +18072,25 @@ function getNativeEditorDraftPageKey(editor) {
   const kind = getNativeEditorDraftKind(editor);
   if (kind === "edit") {
     const postId = getEditorEditPostId();
-    return postId ? `${EDITOR_DRAFT_STORAGE_PREFIX}edit:${normalizeEditorDraftKeyPart(postId)}` : "";
+    return postId
+      ? `${EDITOR_DRAFT_STORAGE_PREFIX}edit:${normalizeEditorDraftKeyPart(postId)}`
+      : "";
   }
   if (kind === "reply") {
-    const topicId = getTopicRouteInfo()?.topicId
-      || location.pathname.match(/\/topic\/(\d+)/i)?.[1]
-      || "";
+    const topicId =
+      getTopicRouteInfo()?.topicId || location.pathname.match(/\/topic\/(\d+)/i)?.[1] || "";
     return `${EDITOR_DRAFT_STORAGE_PREFIX}reply:${normalizeEditorDraftKeyPart(topicId || getRoutePageKey())}`;
   }
-  const boardId = getCurrentCc98RoutePath().match(/\/editor\/(?:postTopic|postVoteTopic)\/(\d+)/i)?.[1]
-    || editor.querySelector('a[href*="/board/"]')?.getAttribute("href")?.match(/\/board\/(\d+)/i)?.[1]
-    || "";
-  const isVote = /\/editor\/postVoteTopic\//i.test(getCurrentCc98RoutePath()) || Boolean(editor.querySelector('input[name="voteItem"]'));
+  const boardId =
+    getCurrentCc98RoutePath().match(/\/editor\/(?:postTopic|postVoteTopic)\/(\d+)/i)?.[1] ||
+    editor
+      .querySelector('a[href*="/board/"]')
+      ?.getAttribute("href")
+      ?.match(/\/board\/(\d+)/i)?.[1] ||
+    "";
+  const isVote =
+    /\/editor\/postVoteTopic\//i.test(getCurrentCc98RoutePath()) ||
+    Boolean(editor.querySelector('input[name="voteItem"]'));
   return `${EDITOR_DRAFT_STORAGE_PREFIX}${isVote ? "vote" : "post"}:${normalizeEditorDraftKeyPart(boardId || getRoutePageKey())}`;
 }
 
@@ -16064,9 +18181,8 @@ function updateNativeEditorDraftStatus(editor, text = "") {
   }
   const draft = readNativeEditorDraft(editor);
   const time = formatEditorDraftTime(draft?.updatedAt);
-  status.textContent = draft && hasNativeEditorDraftContent(draft)
-    ? `有草稿 · ${time || "刚刚"}`
-    : "本地草稿";
+  status.textContent =
+    draft && hasNativeEditorDraftContent(draft) ? `有草稿 · ${time || "刚刚"}` : "本地草稿";
 }
 
 function saveNativeEditorDraft(editor, options = {}) {
@@ -16081,7 +18197,10 @@ function saveNativeEditorDraft(editor, options = {}) {
   }
   try {
     localStorage.setItem(draft.key, JSON.stringify(draft));
-    updateNativeEditorDraftStatus(editor, `${options.manual ? "已保存" : "自动保存"} · ${formatEditorDraftTime(draft.updatedAt)}`);
+    updateNativeEditorDraftStatus(
+      editor,
+      `${options.manual ? "已保存" : "自动保存"} · ${formatEditorDraftTime(draft.updatedAt)}`
+    );
     return true;
   } catch {
     updateNativeEditorDraftStatus(editor, "草稿保存失败");
@@ -16121,7 +18240,10 @@ function restoreNativeEditorDraft(editor, anchor = editor) {
     const caret = textarea.value.length;
     textarea.setSelectionRange(caret, caret);
   }
-  updateNativeEditorDraftStatus(editor, `已恢复 · ${formatEditorDraftTime(draft.updatedAt) || "本地草稿"}`);
+  updateNativeEditorDraftStatus(
+    editor,
+    `已恢复 · ${formatEditorDraftTime(draft.updatedAt) || "本地草稿"}`
+  );
   showRebuiltTransientToast(anchor, "已恢复草稿");
   return true;
 }
@@ -16138,7 +18260,10 @@ function ensureNativeEditorDraftControls(editor) {
     editor.dataset.cc98DraftAutosaveBound = "true";
     const handleInput = (event) => {
       const target = event.target;
-      if (target === getNativeEditorTextarea(editor) || target === getNativeEditorTitleInput(editor)) {
+      if (
+        target === getNativeEditorTextarea(editor) ||
+        target === getNativeEditorTitleInput(editor)
+      ) {
         scheduleNativeEditorDraftSave(editor);
       }
     };
@@ -16161,13 +18286,17 @@ function ensureNativeEditorDraftControls(editor) {
       event.stopPropagation();
       restoreNativeEditorDraft(editor, restore);
     });
-    const clear = createButton("cc98-rebuild-editor-draft-button cc98-rebuild-editor-draft-clear", "清除草稿", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      clearNativeEditorDraft(editor);
-      updateNativeEditorDraftStatus(editor, "草稿已清除");
-      showRebuiltTransientToast(clear, "草稿已清除");
-    });
+    const clear = createButton(
+      "cc98-rebuild-editor-draft-button cc98-rebuild-editor-draft-clear",
+      "清除草稿",
+      (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        clearNativeEditorDraft(editor);
+        updateNativeEditorDraftStatus(editor, "草稿已清除");
+        showRebuiltTransientToast(clear, "草稿已清除");
+      }
+    );
     actions.append(save, restore, clear);
     bar.append(status, actions);
     const first = editor.firstElementChild;
@@ -16177,9 +18306,18 @@ function ensureNativeEditorDraftControls(editor) {
 }
 
 const EDITOR_COLOR_PRESETS = [
-  "#000000", "#666666", "#ffffff", "#ff0000",
-  "#ff7a00", "#f2c200", "#00a65a", "#00a1d6",
-  "#1677ff", "#722ed1", "#eb2f96", "#8b5a2b"
+  "#000000",
+  "#666666",
+  "#ffffff",
+  "#ff0000",
+  "#ff7a00",
+  "#f2c200",
+  "#00a65a",
+  "#00a1d6",
+  "#1677ff",
+  "#722ed1",
+  "#eb2f96",
+  "#8b5a2b"
 ];
 
 const EDITOR_GRADIENT_PRESETS = [
@@ -16195,51 +18333,66 @@ const EDITOR_FONT_SIZE_VALUES = ["1", "2", "3", "4", "5", "6", "7"];
 const EDITOR_TYPOGRAPHY_RESET_VALUE = "__cc98_reset__";
 
 const EDITOR_FONT_FAMILY_GROUPS = [
-  ["常用中文", [
-    ["SimSun", "宋体"],
-    ["SimHei", "黑体"],
-    ["Microsoft YaHei", "微软雅黑"],
-    ["Microsoft JhengHei", "微软正黑体"],
-    ["NSimSun", "新宋体"],
-    ["FangSong", "仿宋"],
-    ["KaiTi", "楷体"],
-    ["FangSong_GB2312", "仿宋_GB2312"],
-    ["KaiTi_GB2312", "楷体_GB2312"]
-  ]],
-  ["Windows / Office", [
-    ["PMingLiU", "新细明体"],
-    ["MingLiU", "细明体"],
-    ["DFKai-SB", "标楷体"],
-    ["LiSu", "隶书"],
-    ["YouYuan", "幼圆"],
-    ["FZShuTi", "方正舒体"],
-    ["FZYaoti", "方正姚体"]
-  ]],
-  ["华文字体", [
-    ["STHeiti Light", "华文细黑（Light）"],
-    ["STXihei", "华文细黑"],
-    ["STHeiti", "华文黑体"],
-    ["STKaiti", "华文楷体"],
-    ["STSong", "华文宋体"],
-    ["STZhongsong", "华文中宋"],
-    ["STFangsong", "华文仿宋"],
-    ["STCaiyun", "华文彩云"],
-    ["STHupo", "华文琥珀"],
-    ["STLiti", "华文隶书"],
-    ["STXingkai", "华文行楷"],
-    ["STXinwei", "华文新魏"]
-  ]],
-  ["繁体 / macOS", [
-    ["BiauKai", "标楷体（繁）"],
-    ["LiHei Pro Medium", "俪黑 Pro"],
-    ["LiSong Pro Light", "俪宋 Pro"],
-    ["Apple LiGothic Medium", "苹果俪中黑"],
-    ["Apple LiSung Light", "苹果俪细宋"]
-  ]],
-  ["西文 / 等宽", [
-    ["Arial", "Arial"],
-    ["Consolas", "Consolas"]
-  ]]
+  [
+    "常用中文",
+    [
+      ["SimSun", "宋体"],
+      ["SimHei", "黑体"],
+      ["Microsoft YaHei", "微软雅黑"],
+      ["Microsoft JhengHei", "微软正黑体"],
+      ["NSimSun", "新宋体"],
+      ["FangSong", "仿宋"],
+      ["KaiTi", "楷体"],
+      ["FangSong_GB2312", "仿宋_GB2312"],
+      ["KaiTi_GB2312", "楷体_GB2312"]
+    ]
+  ],
+  [
+    "Windows / Office",
+    [
+      ["PMingLiU", "新细明体"],
+      ["MingLiU", "细明体"],
+      ["DFKai-SB", "标楷体"],
+      ["LiSu", "隶书"],
+      ["YouYuan", "幼圆"],
+      ["FZShuTi", "方正舒体"],
+      ["FZYaoti", "方正姚体"]
+    ]
+  ],
+  [
+    "华文字体",
+    [
+      ["STHeiti Light", "华文细黑（Light）"],
+      ["STXihei", "华文细黑"],
+      ["STHeiti", "华文黑体"],
+      ["STKaiti", "华文楷体"],
+      ["STSong", "华文宋体"],
+      ["STZhongsong", "华文中宋"],
+      ["STFangsong", "华文仿宋"],
+      ["STCaiyun", "华文彩云"],
+      ["STHupo", "华文琥珀"],
+      ["STLiti", "华文隶书"],
+      ["STXingkai", "华文行楷"],
+      ["STXinwei", "华文新魏"]
+    ]
+  ],
+  [
+    "繁体 / macOS",
+    [
+      ["BiauKai", "标楷体（繁）"],
+      ["LiHei Pro Medium", "俪黑 Pro"],
+      ["LiSong Pro Light", "俪宋 Pro"],
+      ["Apple LiGothic Medium", "苹果俪中黑"],
+      ["Apple LiSung Light", "苹果俪细宋"]
+    ]
+  ],
+  [
+    "西文 / 等宽",
+    [
+      ["Arial", "Arial"],
+      ["Consolas", "Consolas"]
+    ]
+  ]
 ];
 
 const EDITOR_FONT_FAMILY_VALUES = new Set(
@@ -16287,12 +18440,18 @@ function applyEditorFontFamily(editor, fontFamily, select = null) {
   const storedEnd = Number(select?.dataset?.cc98FontSelectionEnd);
   const start = Number.isFinite(storedStart)
     ? Math.max(0, Math.min(textarea.value.length, storedStart))
-    : (Number.isFinite(textarea.selectionStart) ? textarea.selectionStart : textarea.value.length);
+    : Number.isFinite(textarea.selectionStart)
+      ? textarea.selectionStart
+      : textarea.value.length;
   const end = Number.isFinite(storedEnd)
     ? Math.max(start, Math.min(textarea.value.length, storedEnd))
-    : (Number.isFinite(textarea.selectionEnd) ? textarea.selectionEnd : start);
+    : Number.isFinite(textarea.selectionEnd)
+      ? textarea.selectionEnd
+      : start;
   const result = window.CC98RebornExtendedUbbCore?.applyFontToSource(
-    textarea.value, { start, end }, normalized
+    textarea.value,
+    { start, end },
+    normalized
   );
   if (!result) {
     return false;
@@ -16341,7 +18500,10 @@ function createEditorFontFamilySelect(editor, extraClassName = "") {
       editor.__cc98CurrentFontFamily = fontFamily;
       applyEditorFontFamily(editor, fontFamily, select);
     }
-    select.closest(".cc98-rebuild-font-family-control")?.querySelector(".cc98-rebuild-font-family-apply")?.toggleAttribute("disabled", !fontFamily);
+    select
+      .closest(".cc98-rebuild-font-family-control")
+      ?.querySelector(".cc98-rebuild-font-family-apply")
+      ?.toggleAttribute("disabled", !fontFamily);
   });
   return select;
 }
@@ -16363,7 +18525,9 @@ function createEditorFontFamilyControl(editor, extraClassName = "") {
   const select = createEditorFontFamilySelect(editor, extraClassName);
   const apply = createButton("cc98-rebuild-font-family-apply", "字", (event) => {
     event.preventDefault();
-    const fontFamily = normalizeEditorFontFamilyValue(select.value || editor.__cc98CurrentFontFamily);
+    const fontFamily = normalizeEditorFontFamilyValue(
+      select.value || editor.__cc98CurrentFontFamily
+    );
     if (fontFamily) {
       applyEditorFontFamily(editor, fontFamily, select);
     }
@@ -16379,7 +18543,10 @@ function createEditorFontFamilyControl(editor, extraClassName = "") {
   const reset = createButton("cc98-rebuild-font-family-reset", "取消字体", (event) => {
     event.preventDefault();
     const textarea = getNativeEditorTextarea(editor);
-    const selection = textarea instanceof HTMLTextAreaElement ? getStoredEditorFontFamilySelection(select, textarea) : null;
+    const selection =
+      textarea instanceof HTMLTextAreaElement
+        ? getStoredEditorFontFamilySelection(select, textarea)
+        : null;
     clearEditorTypography(editor, "font", selection);
     editor.__cc98CurrentFontFamily = "";
     select.value = "";
@@ -16397,7 +18564,8 @@ function createEditorFontFamilyControl(editor, extraClassName = "") {
 }
 
 function clearEditorTypography(editor, tag, selection = null) {
-  const clear = tag === "font" ? editor?.__cc98WysiwygClearFontFamily : editor?.__cc98WysiwygClearFontSize;
+  const clear =
+    tag === "font" ? editor?.__cc98WysiwygClearFontFamily : editor?.__cc98WysiwygClearFontSize;
   if (typeof clear === "function") {
     return clear();
   }
@@ -16408,7 +18576,8 @@ function clearEditorTypography(editor, tag, selection = null) {
   const result = window.CC98RebornExtendedUbbCore?.applyTypographyToSource(
     textarea.value,
     selection || { start: textarea.selectionStart, end: textarea.selectionEnd },
-    tag, null
+    tag,
+    null
   );
   if (!result) {
     return false;
@@ -16425,14 +18594,24 @@ function normalizeHexColor(value, fallback = "#ff0000") {
   const text = String(value ?? "").trim();
   const shortHex = text.match(/^#([0-9a-f])([0-9a-f])([0-9a-f])$/i);
   if (shortHex) {
-    return `#${shortHex.slice(1).map((part) => part + part).join("")}`.toLowerCase();
+    return `#${shortHex
+      .slice(1)
+      .map((part) => part + part)
+      .join("")}`.toLowerCase();
   }
   if (/^#[0-9a-f]{6}$/i.test(text)) {
     return text.toLowerCase();
   }
   const rgb = text.match(/rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})/i);
   if (rgb) {
-    return `#${rgb.slice(1, 4).map((part) => Math.max(0, Math.min(255, Number(part))).toString(16).padStart(2, "0")).join("")}`;
+    return `#${rgb
+      .slice(1, 4)
+      .map((part) =>
+        Math.max(0, Math.min(255, Number(part)))
+          .toString(16)
+          .padStart(2, "0")
+      )
+      .join("")}`;
   }
   return fallback;
 }
@@ -16448,7 +18627,11 @@ function hexToRgb(color) {
 
 function rgbToHex(r, g, b) {
   return `#${[r, g, b]
-    .map((value) => Math.round(Math.max(0, Math.min(255, Number(value) || 0))).toString(16).padStart(2, "0"))
+    .map((value) =>
+      Math.round(Math.max(0, Math.min(255, Number(value) || 0)))
+        .toString(16)
+        .padStart(2, "0")
+    )
     .join("")}`;
 }
 
@@ -16479,10 +18662,7 @@ function normalizeEditorGradientStops(stops, fallbackColor = "#ff0000") {
   if (normalized.length >= 2) {
     return normalized;
   }
-  return [
-    createEditorGradientStop(fallbackColor, 0),
-    createEditorGradientStop("#1677ff", 100)
-  ];
+  return [createEditorGradientStop(fallbackColor, 0), createEditorGradientStop("#1677ff", 100)];
 }
 
 function interpolateEditorGradientColor(startColor, endColor, amount) {
@@ -16513,7 +18693,11 @@ function getEditorGradientColorAt(stops, progress) {
       continue;
     }
     const width = Math.max(1, next.position - previous.position);
-    return interpolateEditorGradientColor(previous.color, next.color, (position - previous.position) / width);
+    return interpolateEditorGradientColor(
+      previous.color,
+      next.color,
+      (position - previous.position) / width
+    );
   }
   return last.color;
 }
@@ -16540,7 +18724,8 @@ function normalizeEditorGradientDensity(value) {
 function buildEditorGradientUbb(source, stops, density = 1) {
   const text = String(source ?? "");
   const step = normalizeEditorGradientDensity(density);
-  const protectedPattern = /\[(?:img|audio|mp3|video|bili|bilibili)(?:=[^\]]+)?\][\s\S]*?\[\/(?:img|audio|mp3|video|bili|bilibili)\]|\[[^\]\r\n]{1,100}\]/ig;
+  const protectedPattern =
+    /\[(?:img|audio|mp3|video|bili|bilibili)(?:=[^\]]+)?\][\s\S]*?\[\/(?:img|audio|mp3|video|bili|bilibili)\]|\[[^\]\r\n]{1,100}\]/gi;
   const parts = [];
   let lastIndex = 0;
   let match = null;
@@ -16555,11 +18740,11 @@ function buildEditorGradientUbb(source, stops, density = 1) {
     parts.push({ protected: false, value: text.slice(lastIndex) });
   }
 
-  const visibleSegments = parts.flatMap((part) => (
+  const visibleSegments = parts.flatMap((part) =>
     part.protected
       ? []
       : segmentEditorGradientText(part.value).filter((segment) => !/^\s+$/u.test(segment))
-  ));
+  );
   const totalColorSteps = Math.max(1, Math.ceil(visibleSegments.length / step));
   let visibleIndex = 0;
   let currentColor = "";
@@ -16649,7 +18834,9 @@ function getEditorColorTriggerButton(target) {
   if (direct instanceof HTMLElement) {
     return direct;
   }
-  const legacy = target.closest(".sp-replacer, .sp-preview, .sp-dd, .ubb-color-picker, [class*='ubb-button-color']");
+  const legacy = target.closest(
+    ".sp-replacer, .sp-preview, .sp-dd, .ubb-color-picker, [class*='ubb-button-color']"
+  );
   if (!(legacy instanceof HTMLElement)) {
     return null;
   }
@@ -16657,34 +18844,41 @@ function getEditorColorTriggerButton(target) {
 }
 
 function getEditorColorPanels(button) {
-  return [...document.querySelectorAll(".cc98-rebuild-color-popover")]
-    .filter((panel) => panel instanceof HTMLElement && (panel.__cc98ColorButton === button || button?.contains?.(panel)));
+  return [...document.querySelectorAll(".cc98-rebuild-color-popover")].filter(
+    (panel) =>
+      panel instanceof HTMLElement &&
+      (panel.__cc98ColorButton === button || button?.contains?.(panel))
+  );
 }
 
 function suppressLegacyEditorColorPickers(scope = document) {
   ensureLegacyColorPickerKillStyle();
-  document.querySelectorAll(".sp-container, .sp-picker-container, .sp-palette-container").forEach((node) => {
-    if (node instanceof HTMLElement) {
-      node.classList.add("cc98-rebuild-legacy-color-picker-hidden");
-      node.hidden = true;
-      node.style.setProperty("display", "none", "important");
-      node.style.setProperty("visibility", "hidden", "important");
-      node.style.setProperty("pointer-events", "none", "important");
-    }
-  });
-  scope?.querySelectorAll?.("input[type='color'], input.cc98-rebuild-native-color-input").forEach((input) => {
-    if (input instanceof HTMLInputElement) {
-      try {
-        input.type = "hidden";
-      } catch {
-        input.style.setProperty("display", "none", "important");
+  document
+    .querySelectorAll(".sp-container, .sp-picker-container, .sp-palette-container")
+    .forEach((node) => {
+      if (node instanceof HTMLElement) {
+        node.classList.add("cc98-rebuild-legacy-color-picker-hidden");
+        node.hidden = true;
+        node.style.setProperty("display", "none", "important");
+        node.style.setProperty("visibility", "hidden", "important");
+        node.style.setProperty("pointer-events", "none", "important");
       }
-      input.hidden = true;
-      input.tabIndex = -1;
-      input.style.setProperty("display", "none", "important");
-      input.style.setProperty("pointer-events", "none", "important");
-    }
-  });
+    });
+  scope
+    ?.querySelectorAll?.("input[type='color'], input.cc98-rebuild-native-color-input")
+    .forEach((input) => {
+      if (input instanceof HTMLInputElement) {
+        try {
+          input.type = "hidden";
+        } catch {
+          input.style.setProperty("display", "none", "important");
+        }
+        input.hidden = true;
+        input.tabIndex = -1;
+        input.style.setProperty("display", "none", "important");
+        input.style.setProperty("pointer-events", "none", "important");
+      }
+    });
 }
 
 function ensureLegacyColorPickerSuppressor() {
@@ -16694,9 +18888,16 @@ function ensureLegacyColorPickerSuppressor() {
     legacyColorPickerObserver = new MutationObserver((records) => {
       const shouldSuppress = records.some((record) => {
         return [...record.addedNodes].some((node) => {
-          return node instanceof Element && (
-            node.matches?.(".sp-container, .sp-picker-container, .sp-palette-container, .sp-replacer, .ubb-button-color, .ubb-color-picker")
-            || Boolean(node.querySelector?.(".sp-container, .sp-picker-container, .sp-palette-container, .sp-replacer, .ubb-button-color, .ubb-color-picker"))
+          return (
+            node instanceof Element &&
+            (node.matches?.(
+              ".sp-container, .sp-picker-container, .sp-palette-container, .sp-replacer, .ubb-button-color, .ubb-color-picker"
+            ) ||
+              Boolean(
+                node.querySelector?.(
+                  ".sp-container, .sp-picker-container, .sp-palette-container, .sp-replacer, .ubb-button-color, .ubb-color-picker"
+                )
+              ))
           );
         });
       });
@@ -16704,13 +18905,18 @@ function ensureLegacyColorPickerSuppressor() {
         window.setTimeout(() => suppressLegacyEditorColorPickers(document), 0);
       }
     });
-    legacyColorPickerObserver.observe(document.documentElement || document, { childList: true, subtree: true });
+    legacyColorPickerObserver.observe(document.documentElement || document, {
+      childList: true,
+      subtree: true
+    });
   }
   if (!legacyColorPickerInterval) {
     legacyColorPickerInterval = window.setInterval(() => {
-      if (document.visibilityState === "hidden"
-        || !lastSettings?.enabled
-        || !document.querySelector(LEGACY_COLOR_PICKER_SELECTOR)) {
+      if (
+        document.visibilityState === "hidden" ||
+        !lastSettings?.enabled ||
+        !document.querySelector(LEGACY_COLOR_PICKER_SELECTOR)
+      ) {
         return;
       }
       suppressLegacyEditorColorPickers(document);
@@ -16719,11 +18925,17 @@ function ensureLegacyColorPickerSuppressor() {
 }
 
 function findEditorForColorButton(button) {
-  return button?.__cc98ColorEditor
-    || button?.closest?.(".cc98-rebuild-profile-signature-editor, .cc98-rebuild-message-editor, .cc98-rebuild-native-editor")
-    || button?.closest?.(".createTopic, #sendTopicInfo, .sendTopicInfo, .reply-input, .ubb-editor, form")
-    || document.querySelector(".cc98-rebuild-native-editor, .createTopic, #sendTopicInfo")
-    || null;
+  return (
+    button?.__cc98ColorEditor ||
+    button?.closest?.(
+      ".cc98-rebuild-profile-signature-editor, .cc98-rebuild-message-editor, .cc98-rebuild-native-editor"
+    ) ||
+    button?.closest?.(
+      ".createTopic, #sendTopicInfo, .sendTopicInfo, .reply-input, .ubb-editor, form"
+    ) ||
+    document.querySelector(".cc98-rebuild-native-editor, .createTopic, #sendTopicInfo") ||
+    null
+  );
 }
 
 function positionEditorColorPopover(button, panel) {
@@ -16738,9 +18950,8 @@ function positionEditorColorPopover(button, panel) {
   const panelHeight = panel.offsetHeight || 252;
   const belowTop = rect.bottom + 10;
   const aboveTop = rect.top - panelHeight - 10;
-  const top = belowTop + panelHeight + margin <= window.innerHeight
-    ? belowTop
-    : Math.max(margin, aboveTop);
+  const top =
+    belowTop + panelHeight + margin <= window.innerHeight ? belowTop : Math.max(margin, aboveTop);
   const left = Math.max(margin, Math.min(window.innerWidth - width - margin, rect.left));
   panel.style.setProperty("top", `${top}px`, "important");
   panel.style.setProperty("left", `${left}px`, "important");
@@ -16756,9 +18967,8 @@ function positionEditorFontSizePopover(button, panel) {
   const panelHeight = panel.offsetHeight || 252;
   const belowTop = rect.bottom + 8;
   const aboveTop = rect.top - panelHeight - 8;
-  const top = belowTop + panelHeight + margin <= window.innerHeight
-    ? belowTop
-    : Math.max(margin, aboveTop);
+  const top =
+    belowTop + panelHeight + margin <= window.innerHeight ? belowTop : Math.max(margin, aboveTop);
   const left = Math.max(margin, Math.min(window.innerWidth - width - margin, rect.left));
   panel.style.setProperty("top", `${top}px`, "important");
   panel.style.setProperty("left", `${left}px`, "important");
@@ -16766,13 +18976,18 @@ function positionEditorFontSizePopover(button, panel) {
 
 function copyEditorColorChoice(choice) {
   const color = normalizeHexColor(choice?.color);
-  const stops = normalizeEditorGradientStops((choice?.stops || []).map((stop) => ({ ...stop })), color);
+  const stops = normalizeEditorGradientStops(
+    (choice?.stops || []).map((stop) => ({ ...stop })),
+    color
+  );
   return {
     mode: ["solid", "transparent", "gradient"].includes(choice?.mode) ? choice.mode : "solid",
     color,
     stops,
     density: normalizeEditorGradientDensity(choice?.density),
-    selectedStopId: stops.some((stop) => stop.id === choice?.selectedStopId) ? choice.selectedStopId : stops[0].id
+    selectedStopId: stops.some((stop) => stop.id === choice?.selectedStopId)
+      ? choice.selectedStopId
+      : stops[0].id
   };
 }
 
@@ -16782,7 +18997,8 @@ function getEditorColorState(button) {
   if (!state) {
     const legacy = button.querySelector(".sp-preview-inner, .sp-preview");
     const color = button.classList.contains("cc98-rebuild-message-editor-color")
-      ? "#ff6666" : normalizeHexColor(legacy?.style.backgroundColor, "#ff0000");
+      ? "#ff6666"
+      : normalizeHexColor(legacy?.style.backgroundColor, "#ff0000");
     state = { committed: copyEditorColorChoice({ color }) };
   }
   button.__cc98ColorState = state;
@@ -16798,15 +19014,27 @@ function renderEditorColorSwatch(swatch, choice) {
   }
   // Set all background components together so transparency cannot leave tiled gradients behind.
   const transparent = choice.mode === "transparent";
-  swatch.style.setProperty("background-color", transparent ? "transparent" : choice.color, "important");
-  swatch.style.setProperty("background-image", transparent
-    ? "conic-gradient(#c6cbd0 25%, #fff 0 50%, #c6cbd0 0 75%, #fff 0)"
-    : choice.mode === "gradient" ? getEditorGradientCss(choice.stops) : "none", "important");
+  swatch.style.setProperty(
+    "background-color",
+    transparent ? "transparent" : choice.color,
+    "important"
+  );
+  swatch.style.setProperty(
+    "background-image",
+    transparent
+      ? "conic-gradient(#c6cbd0 25%, #fff 0 50%, #c6cbd0 0 75%, #fff 0)"
+      : choice.mode === "gradient"
+        ? getEditorGradientCss(choice.stops)
+        : "none",
+    "important"
+  );
   swatch.style.setProperty("background-size", transparent ? "8px 8px" : "100% 100%", "important");
 }
 
 function renderEditorColorButton(button, choice = getEditorColorState(button).committed) {
-  button.querySelectorAll(".cc98-rebuild-color-swatch").forEach((swatch) => renderEditorColorSwatch(swatch, choice));
+  button
+    .querySelectorAll(".cc98-rebuild-color-swatch")
+    .forEach((swatch) => renderEditorColorSwatch(swatch, choice));
   const input = button.querySelector(":scope > .cc98-rebuild-native-color-input");
   if (input instanceof HTMLInputElement) {
     input.value = getEditorColorState(button).committed.color;
@@ -16816,7 +19044,11 @@ function renderEditorColorButton(button, choice = getEditorColorState(button).co
 function applyEditorColorChoice(editor, choice, selection) {
   return choice.mode === "gradient"
     ? applyEditorGradient(editor, choice.stops, selection, choice.density)
-    : applyEditorColor(editor, choice.mode === "transparent" ? "transparent" : choice.color, selection);
+    : applyEditorColor(
+        editor,
+        choice.mode === "transparent" ? "transparent" : choice.color,
+        selection
+      );
 }
 
 function getStoredEditorSelection(button, textarea) {
@@ -16845,10 +19077,10 @@ function getEditorColorSelectionMarkerRange(snapshot) {
   const startMarker = snapshot.startMarker;
   const endMarker = snapshot.endMarker;
   if (
-    !(snapshot.wysiwyg instanceof HTMLElement)
-    || !(startMarker instanceof HTMLElement)
-    || !startMarker.isConnected
-    || !snapshot.wysiwyg.contains(startMarker)
+    !(snapshot.wysiwyg instanceof HTMLElement) ||
+    !(startMarker instanceof HTMLElement) ||
+    !startMarker.isConnected ||
+    !snapshot.wysiwyg.contains(startMarker)
   ) {
     return null;
   }
@@ -16863,9 +19095,9 @@ function getEditorColorSelectionMarkerRange(snapshot) {
     }
   }
   if (
-    !(endMarker instanceof HTMLElement)
-    || !endMarker.isConnected
-    || !snapshot.wysiwyg.contains(endMarker)
+    !(endMarker instanceof HTMLElement) ||
+    !endMarker.isConnected ||
+    !snapshot.wysiwyg.contains(endMarker)
   ) {
     return null;
   }
@@ -16958,9 +19190,9 @@ function getEditorVisualNodeAtPath(root, path) {
 
 function buildEditorColorVisualLogicalSelection(editor, wysiwyg, range) {
   if (
-    !(editor instanceof HTMLElement)
-    || !(wysiwyg instanceof HTMLElement)
-    || !(range instanceof Range)
+    !(editor instanceof HTMLElement) ||
+    !(wysiwyg instanceof HTMLElement) ||
+    !(range instanceof Range)
   ) {
     return null;
   }
@@ -16983,12 +19215,24 @@ function buildEditorColorVisualLogicalSelection(editor, wysiwyg, range) {
   let markedRange;
   try {
     markedRange = document.createRange();
-    markedRange.setStart(cloneStart, Math.min(range.startOffset, cloneStart.nodeType === Node.TEXT_NODE
-      ? cloneStart.nodeValue.length
-      : cloneStart.childNodes.length));
-    markedRange.setEnd(cloneEnd, Math.min(range.endOffset, cloneEnd.nodeType === Node.TEXT_NODE
-      ? cloneEnd.nodeValue.length
-      : cloneEnd.childNodes.length));
+    markedRange.setStart(
+      cloneStart,
+      Math.min(
+        range.startOffset,
+        cloneStart.nodeType === Node.TEXT_NODE
+          ? cloneStart.nodeValue.length
+          : cloneStart.childNodes.length
+      )
+    );
+    markedRange.setEnd(
+      cloneEnd,
+      Math.min(
+        range.endOffset,
+        cloneEnd.nodeType === Node.TEXT_NODE
+          ? cloneEnd.nodeValue.length
+          : cloneEnd.childNodes.length
+      )
+    );
   } catch {
     return null;
   }
@@ -17034,28 +19278,36 @@ function buildEditorColorVisualLogicalSelection(editor, wysiwyg, range) {
     return null;
   }
 
-  const markedSource = serializeProfileSignatureWysiwygChildren(clone)
-    .replace(/\r\n?/g, "\n");
+  const markedSource = serializeProfileSignatureWysiwygChildren(clone).replace(/\r\n?/g, "\n");
   const withoutMarkers = markedSource
-    .split(startToken).join("")
-    .split(endToken).join("")
+    .split(startToken)
+    .join("")
+    .split(endToken)
+    .join("")
     .replace(/[\u200b\uFEFF]/g, "");
   const startIndex = markedSource.indexOf(startToken);
   const endIndex = collapsed ? startIndex : markedSource.indexOf(endToken);
-  const sourceStart = startIndex >= 0
-    ? markedSource.slice(0, startIndex)
-      .split(startToken).join("")
-      .split(endToken).join("")
-      .replace(/[\u200b\uFEFF]/g, "").length
-    : 0;
+  const sourceStart =
+    startIndex >= 0
+      ? markedSource
+          .slice(0, startIndex)
+          .split(startToken)
+          .join("")
+          .split(endToken)
+          .join("")
+          .replace(/[\u200b\uFEFF]/g, "").length
+      : 0;
   const sourceEnd = collapsed
     ? sourceStart
-    : (endIndex >= 0
-      ? markedSource.slice(0, endIndex)
-        .split(startToken).join("")
-        .split(endToken).join("")
-        .replace(/[\u200b\uFEFF]/g, "").length
-      : sourceStart);
+    : endIndex >= 0
+      ? markedSource
+          .slice(0, endIndex)
+          .split(startToken)
+          .join("")
+          .split(endToken)
+          .join("")
+          .replace(/[\u200b\uFEFF]/g, "").length
+      : sourceStart;
   const start = Math.max(0, Math.min(sourceValue.length, sourceStart));
   const end = Math.max(start, Math.min(sourceValue.length, sourceEnd));
   return {
@@ -17085,11 +19337,7 @@ function rememberEditorColorVisualLogicalSelection(editor, wysiwyg, range) {
 
 function promoteEditorColorLogicalSelection(editor, wysiwyg, sourceValue) {
   const logical = editor?.__cc98WysiwygLogicalSelection;
-  if (
-    !logical
-    || logical.surface !== "visual"
-    || logical.wysiwyg !== wysiwyg
-  ) {
+  if (!logical || logical.surface !== "visual" || logical.wysiwyg !== wysiwyg) {
     return null;
   }
   const value = String(sourceValue ?? "").replace(/[\u200b\uFEFF]/g, "");
@@ -17097,8 +19345,10 @@ function promoteEditorColorLogicalSelection(editor, wysiwyg, sourceValue) {
   if (!sourceSelection) {
     return null;
   }
-  if (!isUsableEditorColorSourceSelection(logical, value, sourceSelection)
-    && getEditorColorSelectionExpectedSourceText(logical)) {
+  if (
+    !isUsableEditorColorSourceSelection(logical, value, sourceSelection) &&
+    getEditorColorSelectionExpectedSourceText(logical)
+  ) {
     return null;
   }
   const promoted = {
@@ -17160,28 +19410,36 @@ function captureEditorColorVisualSelection(editor, wysiwyg, range) {
     startRange.insertNode(startMarker);
   }
 
-  const markedSource = serializeProfileSignatureWysiwygChildren(wysiwyg)
-    .replace(/\r\n?/g, "\n");
+  const markedSource = serializeProfileSignatureWysiwygChildren(wysiwyg).replace(/\r\n?/g, "\n");
   const startIndex = markedSource.indexOf(startToken);
   const endIndex = collapsed ? startIndex : markedSource.indexOf(endToken);
   const withoutMarkers = markedSource
-    .split(startToken).join("")
-    .split(endToken).join("")
+    .split(startToken)
+    .join("")
+    .split(endToken)
+    .join("")
     .replace(/[\u200b\uFEFF]/g, "");
-  const sourceStart = startIndex >= 0
-    ? markedSource.slice(0, startIndex)
-      .split(startToken).join("")
-      .split(endToken).join("")
-      .replace(/[\u200b\uFEFF]/g, "").length
-    : 0;
+  const sourceStart =
+    startIndex >= 0
+      ? markedSource
+          .slice(0, startIndex)
+          .split(startToken)
+          .join("")
+          .split(endToken)
+          .join("")
+          .replace(/[\u200b\uFEFF]/g, "").length
+      : 0;
   const sourceEnd = collapsed
     ? sourceStart
-    : (endIndex >= 0
-      ? markedSource.slice(0, endIndex)
-        .split(startToken).join("")
-        .split(endToken).join("")
-        .replace(/[\u200b\uFEFF]/g, "").length
-      : sourceStart);
+    : endIndex >= 0
+      ? markedSource
+          .slice(0, endIndex)
+          .split(startToken)
+          .join("")
+          .split(endToken)
+          .join("")
+          .replace(/[\u200b\uFEFF]/g, "").length
+      : sourceStart;
   const snapshot = {
     surface: "visual",
     wysiwyg,
@@ -17192,7 +19450,8 @@ function captureEditorColorVisualSelection(editor, wysiwyg, range) {
     start: sourceStart,
     end: Math.max(sourceStart, sourceEnd),
     sourceSelectedText: withoutMarkers.slice(sourceStart, Math.max(sourceStart, sourceEnd)),
-    selectedText: visibleSelectionText || withoutMarkers.slice(sourceStart, Math.max(sourceStart, sourceEnd)),
+    selectedText:
+      visibleSelectionText || withoutMarkers.slice(sourceStart, Math.max(sourceStart, sourceEnd)),
     locked: true,
     logical: true
   };
@@ -17215,8 +19474,7 @@ function captureEditorColorVisualSelection(editor, wysiwyg, range) {
 }
 
 function getStoredEditorColorSelection(editor, button, panel = null) {
-  const snapshot = panel?.__cc98ColorSelectionSnapshot
-    || editor?.__cc98ColorSelectionSnapshot;
+  const snapshot = panel?.__cc98ColorSelectionSnapshot || editor?.__cc98ColorSelectionSnapshot;
   if (snapshot) {
     return snapshot;
   }
@@ -17234,7 +19492,10 @@ function normalizeEditorColorSourceSelection(selection, sourceValue) {
   const max = value.length;
   let start = Number(selection.start);
   let end = Number(selection.end);
-  if (selection.surface === "visual" && String(selection.sourceValue ?? "").replace(/[\u200b\uFEFF]/g, "") !== value) {
+  if (
+    selection.surface === "visual" &&
+    String(selection.sourceValue ?? "").replace(/[\u200b\uFEFF]/g, "") !== value
+  ) {
     const selectedText = getEditorColorSelectionExpectedSourceText(selection);
     if (selectedText) {
       const hintedStart = Math.max(0, Math.min(max, Number(selection.start) || 0));
@@ -17290,9 +19551,7 @@ function getEditorColorSourceSelectionForApply(selection, sourceValue) {
   if (!expected) {
     return candidate;
   }
-  const actual = normalizeEditorColorSelectionText(
-    value.slice(candidate.start, candidate.end)
-  );
+  const actual = normalizeEditorColorSelectionText(value.slice(candidate.start, candidate.end));
   if (actual === expected) {
     return candidate;
   }
@@ -17309,9 +19568,7 @@ function getEditorColorSourceSelectionForApply(selection, sourceValue) {
     }
     cursor = value.indexOf(expected, cursor + Math.max(1, expected.length));
   }
-  return found >= 0
-    ? { start: found, end: found + expected.length }
-    : null;
+  return found >= 0 ? { start: found, end: found + expected.length } : null;
 }
 
 function isUsableEditorColorSourceSelection(selection, sourceValue, sourceSelection) {
@@ -17353,36 +19610,36 @@ function rememberEditorSelection(editor, button, options = {}) {
       );
       let range = getProfileSignatureWysiwygRange(visual);
       const storedRange = editor.__cc98WysiwygRange;
-      const storedRangeIsValid = storedRange instanceof Range
-        && storedRange.startContainer?.isConnected
-        && storedRange.endContainer?.isConnected
-        && (
-          storedRange.commonAncestorContainer === visual
-          || visual?.contains?.(storedRange.commonAncestorContainer)
-        );
+      const storedRangeIsValid =
+        storedRange instanceof Range &&
+        storedRange.startContainer?.isConnected &&
+        storedRange.endContainer?.isConnected &&
+        (storedRange.commonAncestorContainer === visual ||
+          visual?.contains?.(storedRange.commonAncestorContainer));
       if (
-        options.preserveNonCollapsed
-        && storedRangeIsValid
-        && hasMeaningfulProfileSignatureWysiwygRange(storedRange)
-        && (!range || !hasMeaningfulProfileSignatureWysiwygRange(range))
+        options.preserveNonCollapsed &&
+        storedRangeIsValid &&
+        hasMeaningfulProfileSignatureWysiwygRange(storedRange) &&
+        (!range || !hasMeaningfulProfileSignatureWysiwygRange(range))
       ) {
         range = storedRange;
       }
       const logicalSelection = editor.__cc98WysiwygLogicalSelection;
       const logicalSelectionHasContent = Boolean(
-        logicalSelection
-        && logicalSelection.surface === "visual"
-        && logicalSelection.wysiwyg === visual
-        && (
-          normalizeEditorColorSelectionText(logicalSelection.selectedText).replace(/\s/g, "")
-          || normalizeEditorColorSelectionText(logicalSelection.sourceSelectedText).replace(/\s|\[[^\]]+\]/g, "")
-        )
+        logicalSelection &&
+        logicalSelection.surface === "visual" &&
+        logicalSelection.wysiwyg === visual &&
+        (normalizeEditorColorSelectionText(logicalSelection.selectedText).replace(/\s/g, "") ||
+          normalizeEditorColorSelectionText(logicalSelection.sourceSelectedText).replace(
+            /\s|\[[^\]]+\]/g,
+            ""
+          ))
       );
       if (
-        options.preserveNonCollapsed
-        && logicalSelectionHasContent
-        && (!range || !hasMeaningfulProfileSignatureWysiwygRange(range))
-        && !(storedRangeIsValid && hasMeaningfulProfileSignatureWysiwygRange(storedRange))
+        options.preserveNonCollapsed &&
+        logicalSelectionHasContent &&
+        (!range || !hasMeaningfulProfileSignatureWysiwygRange(range)) &&
+        !(storedRangeIsValid && hasMeaningfulProfileSignatureWysiwygRange(storedRange))
       ) {
         // The current Range can point at a newly rendered caret.  Leave the
         // range empty here so the stable source snapshot is promoted below.
@@ -17404,7 +19661,9 @@ function rememberEditorSelection(editor, button, options = {}) {
   if (!(textarea instanceof HTMLTextAreaElement)) {
     return null;
   }
-  const start = Number.isFinite(textarea.selectionStart) ? textarea.selectionStart : textarea.value.length;
+  const start = Number.isFinite(textarea.selectionStart)
+    ? textarea.selectionStart
+    : textarea.value.length;
   const end = Number.isFinite(textarea.selectionEnd) ? textarea.selectionEnd : start;
   button.dataset.cc98ColorSelectionStart = String(start);
   button.dataset.cc98ColorSelectionEnd = String(end);
@@ -17416,25 +19675,32 @@ function applyEditorColor(editor, color, selection = null) {
     return editor.__cc98WysiwygApplyColor(color, selection);
   }
   const textarea = getNativeEditorTextarea(editor);
-  const normalizedColor = String(color ?? "").trim().toLowerCase();
+  const normalizedColor = String(color ?? "")
+    .trim()
+    .toLowerCase();
   if (
-    !(textarea instanceof HTMLTextAreaElement)
-    || (normalizedColor !== "transparent" && !/^#[0-9a-f]{6}$/i.test(normalizedColor))
+    !(textarea instanceof HTMLTextAreaElement) ||
+    (normalizedColor !== "transparent" && !/^#[0-9a-f]{6}$/i.test(normalizedColor))
   ) {
     return false;
   }
   const sourceValue = String(textarea.value || "").replace(/[\u200b\uFEFF]/g, "");
-  const sourceSelection = getEditorColorSourceSelectionForApply(selection, sourceValue)
-    || normalizeEditorColorSourceSelection(selection, sourceValue);
+  const sourceSelection =
+    getEditorColorSourceSelectionForApply(selection, sourceValue) ||
+    normalizeEditorColorSourceSelection(selection, sourceValue);
   const start = Number.isFinite(sourceSelection?.start)
     ? sourceSelection.start
-    : (Number.isFinite(textarea.selectionStart) ? textarea.selectionStart : textarea.value.length);
+    : Number.isFinite(textarea.selectionStart)
+      ? textarea.selectionStart
+      : textarea.value.length;
   const end = Number.isFinite(sourceSelection?.end)
     ? sourceSelection.end
-    : (Number.isFinite(textarea.selectionEnd) ? textarea.selectionEnd : start);
+    : Number.isFinite(textarea.selectionEnd)
+      ? textarea.selectionEnd
+      : start;
   if (
-    start === end
-    && normalizeEditorColorSelectionText(selection?.selectedText || "").replace(/\s/g, "")
+    start === end &&
+    normalizeEditorColorSelectionText(selection?.selectedText || "").replace(/\s/g, "")
   ) {
     return false;
   }
@@ -17454,7 +19720,7 @@ function applyEditorColor(editor, color, selection = null) {
 
 function collectEditorColorTagIntervals(source) {
   const value = String(source ?? "");
-  const pattern = /\[color(?:=([^\]]+))?\]|\[\/color\]/ig;
+  const pattern = /\[color(?:=([^\]]+))?\]|\[\/color\]/gi;
   const stack = [];
   const intervals = [];
   let match;
@@ -17521,8 +19787,9 @@ function removeEditorColorTagsFromSource(source, start, end) {
     const contentIntersects = intersects(contentStart, contentEnd);
     if (!contentIntersects) {
       const openTokenIntersects = intersects(interval.openStart, interval.openEnd);
-      const closeTokenIntersects = interval.closeEnd > interval.closeStart
-        && intersects(interval.closeStart, interval.closeEnd);
+      const closeTokenIntersects =
+        interval.closeEnd > interval.closeStart &&
+        intersects(interval.closeStart, interval.closeEnd);
       if (openTokenIntersects || closeTokenIntersects) {
         addEdit(interval.openStart, interval.openEnd);
         if (interval.closeEnd > interval.closeStart) {
@@ -17559,7 +19826,7 @@ function removeEditorColorTagsFromSource(source, start, end) {
     }
   });
 
-  const colorTokenPattern = /\[\/?color(?:=[^\]]+)?\]/ig;
+  const colorTokenPattern = /\[\/?color(?:=[^\]]+)?\]/gi;
   let tokenMatch;
   while ((tokenMatch = colorTokenPattern.exec(value))) {
     const tokenStart = tokenMatch.index;
@@ -17572,19 +19839,23 @@ function removeEditorColorTagsFromSource(source, start, end) {
     return { value, start: from, end: to, changed: false };
   }
 
-  edits.sort((left, right) => right.start - left.start || right.end - left.end || left.order - right.order);
+  edits.sort(
+    (left, right) => right.start - left.start || right.end - left.end || left.order - right.order
+  );
   let nextValue = value;
   edits.forEach((edit) => {
     nextValue = `${nextValue.slice(0, edit.start)}${edit.replacement}${nextValue.slice(edit.end)}`;
   });
-  const shiftAt = (position, includeAtPosition) => edits.reduce((shift, edit) => {
-    const affectsPosition = edit.end < position
-      || (edit.end === position && (edit.start !== edit.end || includeAtPosition));
-    if (affectsPosition) {
-      return shift + edit.replacement.length - (edit.end - edit.start);
-    }
-    return shift;
-  }, 0);
+  const shiftAt = (position, includeAtPosition) =>
+    edits.reduce((shift, edit) => {
+      const affectsPosition =
+        edit.end < position ||
+        (edit.end === position && (edit.start !== edit.end || includeAtPosition));
+      if (affectsPosition) {
+        return shift + edit.replacement.length - (edit.end - edit.start);
+      }
+      return shift;
+    }, 0);
   return {
     value: nextValue,
     start: Math.max(0, from + shiftAt(from, true)),
@@ -17605,10 +19876,14 @@ function clearEditorColor(editor, selection = null) {
   const sourceSelection = normalizeEditorColorSourceSelection(selection, sourceValue);
   const rawStart = Number.isFinite(sourceSelection?.start)
     ? sourceSelection.start
-    : (Number.isFinite(textarea.selectionStart) ? textarea.selectionStart : sourceValue.length);
+    : Number.isFinite(textarea.selectionStart)
+      ? textarea.selectionStart
+      : sourceValue.length;
   const rawEnd = Number.isFinite(sourceSelection?.end)
     ? sourceSelection.end
-    : (Number.isFinite(textarea.selectionEnd) ? textarea.selectionEnd : rawStart);
+    : Number.isFinite(textarea.selectionEnd)
+      ? textarea.selectionEnd
+      : rawStart;
   const start = Math.max(0, Math.min(sourceValue.length, rawStart));
   const end = Math.max(start, Math.min(sourceValue.length, rawEnd));
   const result = removeEditorColorTagsFromSource(sourceValue, start, end);
@@ -17632,10 +19907,14 @@ function applyEditorGradient(editor, stops, selection = null, density = 1) {
   }
   const start = Number.isFinite(selection?.start)
     ? selection.start
-    : (Number.isFinite(textarea.selectionStart) ? textarea.selectionStart : textarea.value.length);
+    : Number.isFinite(textarea.selectionStart)
+      ? textarea.selectionStart
+      : textarea.value.length;
   const end = Number.isFinite(selection?.end)
     ? selection.end
-    : (Number.isFinite(textarea.selectionEnd) ? textarea.selectionEnd : start);
+    : Number.isFinite(textarea.selectionEnd)
+      ? textarea.selectionEnd
+      : start;
   const selected = textarea.value.slice(start, end);
   if (!selected) {
     return false;
@@ -17687,8 +19966,12 @@ function rememberEditorFontSizeSelection(editor, button) {
   if (!(textarea instanceof HTMLTextAreaElement)) {
     return;
   }
-  button.dataset.cc98FontSizeSelectionStart = String(Number.isFinite(textarea.selectionStart) ? textarea.selectionStart : textarea.value.length);
-  button.dataset.cc98FontSizeSelectionEnd = String(Number.isFinite(textarea.selectionEnd) ? textarea.selectionEnd : textarea.selectionStart);
+  button.dataset.cc98FontSizeSelectionStart = String(
+    Number.isFinite(textarea.selectionStart) ? textarea.selectionStart : textarea.value.length
+  );
+  button.dataset.cc98FontSizeSelectionEnd = String(
+    Number.isFinite(textarea.selectionEnd) ? textarea.selectionEnd : textarea.selectionStart
+  );
 }
 
 function applyEditorFontSize(editor, size, selection = null) {
@@ -17702,12 +19985,19 @@ function applyEditorFontSize(editor, size, selection = null) {
   }
   const start = Number.isFinite(selection?.start)
     ? selection.start
-    : (Number.isFinite(textarea.selectionStart) ? textarea.selectionStart : textarea.value.length);
+    : Number.isFinite(textarea.selectionStart)
+      ? textarea.selectionStart
+      : textarea.value.length;
   const end = Number.isFinite(selection?.end)
     ? selection.end
-    : (Number.isFinite(textarea.selectionEnd) ? textarea.selectionEnd : start);
+    : Number.isFinite(textarea.selectionEnd)
+      ? textarea.selectionEnd
+      : start;
   const result = window.CC98RebornExtendedUbbCore?.applyTypographyToSource(
-    textarea.value, { start, end }, "size", normalized
+    textarea.value,
+    { start, end },
+    "size",
+    normalized
   );
   if (!result) {
     return false;
@@ -17800,7 +20090,9 @@ function updateEditorFontSizePreview(button, size) {
   }
   button?.querySelectorAll?.(".cc98-rebuild-font-size-trigger").forEach((trigger) => {
     if (trigger instanceof HTMLElement) {
-      trigger.querySelector(".cc98-rebuild-split-value")?.replaceChildren(document.createTextNode(normalized || "字号"));
+      trigger
+        .querySelector(".cc98-rebuild-split-value")
+        ?.replaceChildren(document.createTextNode(normalized || "字号"));
     }
   });
   document.querySelectorAll(".cc98-rebuild-font-size-popover").forEach((panel) => {
@@ -17842,7 +20134,10 @@ function ensureEditorFontSizePopover(editor, button) {
     option.addEventListener("pointerdown", (event) => event.preventDefault());
     option.addEventListener("click", () => {
       const textarea = getNativeEditorTextarea(editor);
-      const selection = textarea instanceof HTMLTextAreaElement ? getStoredEditorFontSizeSelection(button, textarea) : null;
+      const selection =
+        textarea instanceof HTMLTextAreaElement
+          ? getStoredEditorFontSizeSelection(button, textarea)
+          : null;
       updateEditorFontSizePreview(button, size);
       applyEditorFontSize(editor, size, selection);
       panel.hidden = true;
@@ -17853,7 +20148,10 @@ function ensureEditorFontSizePopover(editor, button) {
   const reset = createButton("cc98-rebuild-font-size-reset", "取消字号", (event) => {
     event.preventDefault();
     const textarea = getNativeEditorTextarea(editor);
-    const selection = textarea instanceof HTMLTextAreaElement ? getStoredEditorFontSizeSelection(button, textarea) : null;
+    const selection =
+      textarea instanceof HTMLTextAreaElement
+        ? getStoredEditorFontSizeSelection(button, textarea)
+        : null;
     if (clearEditorTypography(editor, "size", selection)) {
       updateEditorFontSizePreview(button, "");
     }
@@ -17872,7 +20170,9 @@ function ensureEditorFontSizePopover(editor, button) {
 }
 
 function ensureEditorColorPopover(editor, button) {
-  button.querySelectorAll(":scope > .cc98-rebuild-color-popover").forEach((oldPanel) => oldPanel.remove());
+  button
+    .querySelectorAll(":scope > .cc98-rebuild-color-popover")
+    .forEach((oldPanel) => oldPanel.remove());
   if (!button.dataset.cc98ColorPopoverId) {
     editorColorPopoverSequence += 1;
     button.dataset.cc98ColorPopoverId = `cc98-rebuild-color-popover-${editorColorPopoverSequence}`;
@@ -17881,17 +20181,17 @@ function ensureEditorColorPopover(editor, button) {
   if (panel instanceof HTMLElement) {
     const existingInput = panel.querySelector(".cc98-rebuild-color-popover-input");
     if (
-      panel.__cc98ColorButton === button
-      && panel.__cc98Editor === editor
-      && typeof panel.__cc98RenderColor === "function"
-      && panel.querySelector(".cc98-rebuild-color-popover-channels")
-      && panel.querySelector(".cc98-rebuild-color-presets")
-      && panel.querySelector(".cc98-rebuild-color-transparent")
-      && panel.querySelector(".cc98-rebuild-gradient-editor")
-      && panel.querySelector(".cc98-rebuild-gradient-density-input")
-      && panel.querySelector(".cc98-rebuild-color-clear")
-      && existingInput instanceof HTMLInputElement
-      && existingInput.type !== "color"
+      panel.__cc98ColorButton === button &&
+      panel.__cc98Editor === editor &&
+      typeof panel.__cc98RenderColor === "function" &&
+      panel.querySelector(".cc98-rebuild-color-popover-channels") &&
+      panel.querySelector(".cc98-rebuild-color-presets") &&
+      panel.querySelector(".cc98-rebuild-color-transparent") &&
+      panel.querySelector(".cc98-rebuild-gradient-editor") &&
+      panel.querySelector(".cc98-rebuild-gradient-density-input") &&
+      panel.querySelector(".cc98-rebuild-color-clear") &&
+      existingInput instanceof HTMLInputElement &&
+      existingInput.type !== "color"
     ) {
       panel.__cc98Editor = editor;
       panel.__cc98ColorButton = button;
@@ -17911,7 +20211,11 @@ function ensureEditorColorPopover(editor, button) {
   panel.hidden = true;
 
   const mode = createElement("div", "cc98-rebuild-color-mode");
-  const solidMode = createElement("button", "cc98-rebuild-color-mode-button is-active", "\u5355\u8272");
+  const solidMode = createElement(
+    "button",
+    "cc98-rebuild-color-mode-button is-active",
+    "\u5355\u8272"
+  );
   const gradientMode = createElement("button", "cc98-rebuild-color-mode-button", "\u6e10\u53d8");
   solidMode.type = "button";
   gradientMode.type = "button";
@@ -17930,7 +20234,11 @@ function ensureEditorColorPopover(editor, button) {
   input.inputMode = "text";
   input.autocomplete = "off";
   input.setAttribute("aria-label", "color");
-  const clearColor = createElement("button", "cc98-rebuild-color-clear", "\u53d6\u6d88\u989c\u8272");
+  const clearColor = createElement(
+    "button",
+    "cc98-rebuild-color-clear",
+    "\u53d6\u6d88\u989c\u8272"
+  );
   clearColor.type = "button";
   clearColor.title = "\u79fb\u9664\u9009\u4e2d\u5185\u5bb9\u7684\u989c\u8272\u683c\u5f0f";
   clearColor.setAttribute("aria-label", "\u53d6\u6d88\u989c\u8272");
@@ -17965,7 +20273,11 @@ function ensureEditorColorPopover(editor, button) {
   gradientPreview.append(gradientStops);
   const gradientTools = createElement("div", "cc98-rebuild-gradient-tools");
   const addStop = createElement("button", "cc98-rebuild-gradient-tool", "\u6dfb\u52a0\u8272\u6807");
-  const removeStop = createElement("button", "cc98-rebuild-gradient-tool", "\u5220\u9664\u8272\u6807");
+  const removeStop = createElement(
+    "button",
+    "cc98-rebuild-gradient-tool",
+    "\u5220\u9664\u8272\u6807"
+  );
   addStop.type = "button";
   removeStop.type = "button";
   gradientTools.append(addStop, removeStop);
@@ -17986,12 +20298,25 @@ function ensureEditorColorPopover(editor, button) {
     const preset = createElement("button", "cc98-rebuild-gradient-preset");
     preset.type = "button";
     preset.title = "\u5feb\u901f\u6e10\u53d8";
-    preset.style.setProperty("--cc98-gradient-preset", `linear-gradient(90deg, ${colors.join(", ")})`);
+    preset.style.setProperty(
+      "--cc98-gradient-preset",
+      `linear-gradient(90deg, ${colors.join(", ")})`
+    );
     preset.__cc98GradientColors = colors;
     gradientPresets.append(preset);
   });
-  const gradientHint = createElement("p", "cc98-rebuild-gradient-hint", "\u62d6\u52a8\u8272\u6807\u8c03\u6574\u4f4d\u7f6e\uff0c\u53cc\u51fb\u6e10\u53d8\u6761\u4e5f\u53ef\u6dfb\u52a0\u8272\u6807\u3002");
-  gradientEditor.append(gradientPreview, gradientTools, gradientDensity, gradientPresets, gradientHint);
+  const gradientHint = createElement(
+    "p",
+    "cc98-rebuild-gradient-hint",
+    "\u62d6\u52a8\u8272\u6807\u8c03\u6574\u4f4d\u7f6e\uff0c\u53cc\u51fb\u6e10\u53d8\u6761\u4e5f\u53ef\u6dfb\u52a0\u8272\u6807\u3002"
+  );
+  gradientEditor.append(
+    gradientPreview,
+    gradientTools,
+    gradientDensity,
+    gradientPresets,
+    gradientHint
+  );
 
   const channels = createElement("div", "cc98-rebuild-color-popover-channels");
   ["r", "g", "b"].forEach((channel) => {
@@ -18024,9 +20349,12 @@ function ensureEditorColorPopover(editor, button) {
   panel.append(mode, row, presets, transparent, gradientEditor, channels, status, actions);
 
   const handles = new Map();
-  const getDraft = () => !panel.hidden && !panel.__cc98ColorCommitting ? panel.__cc98ColorDraft : null;
-  const selectedStop = (choice) => choice.stops.find((stop) => stop.id === choice.selectedStopId) || choice.stops[0];
-  const editableColor = (choice) => choice.mode === "gradient" ? selectedStop(choice).color : choice.color;
+  const getDraft = () =>
+    !panel.hidden && !panel.__cc98ColorCommitting ? panel.__cc98ColorDraft : null;
+  const selectedStop = (choice) =>
+    choice.stops.find((stop) => stop.id === choice.selectedStopId) || choice.stops[0];
+  const editableColor = (choice) =>
+    choice.mode === "gradient" ? selectedStop(choice).color : choice.color;
 
   const render = ({ preserveHexInput = false } = {}) => {
     const choice = panel.__cc98ColorDraft || getEditorColorState(button).committed;
@@ -18047,7 +20375,10 @@ function ensureEditorColorPopover(editor, button) {
       control.value = String(rgb[control.dataset.cc98ColorChannel]);
     });
     presets.querySelectorAll(".cc98-rebuild-color-preset").forEach((preset) => {
-      preset.classList.toggle("is-active", choice.mode === "solid" && preset.dataset.cc98ColorPreset === color);
+      preset.classList.toggle(
+        "is-active",
+        choice.mode === "solid" && preset.dataset.cc98ColorPreset === color
+      );
     });
     gradientDensityInput.value = String(choice.density);
     renderEditorColorSwatch(swatch, choice);
@@ -18084,7 +20415,10 @@ function ensureEditorColorPopover(editor, button) {
             const currentStop = draft?.stops.find((item) => item.id === id);
             if (!currentStop) return;
             const rect = gradientTrack.getBoundingClientRect();
-            currentStop.position = Math.max(0, Math.min(100, (moveEvent.clientX - rect.left) / Math.max(1, rect.width) * 100));
+            currentStop.position = Math.max(
+              0,
+              Math.min(100, ((moveEvent.clientX - rect.left) / Math.max(1, rect.width)) * 100)
+            );
             draft.stops.sort((left, right) => left.position - right.position);
             render();
           };
@@ -18197,7 +20531,10 @@ function ensureEditorColorPopover(editor, button) {
   const addGradientStop = (position) => {
     const draft = getDraft();
     if (!draft) return;
-    const stop = createEditorGradientStop(getEditorGradientColorAt(draft.stops, position / 100), position);
+    const stop = createEditorGradientStop(
+      getEditorGradientColorAt(draft.stops, position / 100),
+      position
+    );
     draft.stops.push(stop);
     draft.stops.sort((left, right) => left.position - right.position);
     draft.selectedStopId = stop.id;
@@ -18209,7 +20546,10 @@ function ensureEditorColorPopover(editor, button) {
     let start = draft.stops[0];
     let end = draft.stops[1];
     for (let index = 1; index < draft.stops.length; index++) {
-      if (draft.stops[index].position - draft.stops[index - 1].position > end.position - start.position) {
+      if (
+        draft.stops[index].position - draft.stops[index - 1].position >
+        end.position - start.position
+      ) {
         start = draft.stops[index - 1];
         end = draft.stops[index];
       }
@@ -18226,14 +20566,18 @@ function ensureEditorColorPopover(editor, button) {
   });
   gradientTrack.addEventListener("dblclick", (event) => {
     const rect = gradientTrack.getBoundingClientRect();
-    addGradientStop(Math.max(0, Math.min(100, (event.clientX - rect.left) / Math.max(1, rect.width) * 100)));
+    addGradientStop(
+      Math.max(0, Math.min(100, ((event.clientX - rect.left) / Math.max(1, rect.width)) * 100))
+    );
   });
   gradientPresets.querySelectorAll(".cc98-rebuild-gradient-preset").forEach((preset) => {
     preset.addEventListener("click", () => {
       const draft = getDraft();
       if (!draft) return;
       const colors = preset.__cc98GradientColors;
-      draft.stops = colors.map((color, index) => createEditorGradientStop(color, index / (colors.length - 1) * 100));
+      draft.stops = colors.map((color, index) =>
+        createEditorGradientStop(color, (index / (colors.length - 1)) * 100)
+      );
       draft.selectedStopId = draft.stops[0].id;
       render();
     });
@@ -18270,9 +20614,10 @@ function ensureEditorColorPopover(editor, button) {
       panel.__cc98ColorCommitting = false;
     }
     if (!applied) {
-      status.textContent = choice.mode === "gradient"
-        ? "请先在编辑器中选中要应用渐变的文字。"
-        : "选区已失效，请重新选择文字后再试。";
+      status.textContent =
+        choice.mode === "gradient"
+          ? "请先在编辑器中选中要应用渐变的文字。"
+          : "选区已失效，请重新选择文字后再试。";
       status.hidden = false;
       positionEditorColorPopover(button, panel);
       return;
@@ -18329,7 +20674,10 @@ function stabilizeEditorColorButton(editor) {
     }
     ensureNativeColorInput(editor, button);
     const panel = ensureEditorColorPopover(editor, button);
-    renderEditorColorButton(button, panel.hidden ? getEditorColorState(button).committed : panel.__cc98ColorDraft);
+    renderEditorColorButton(
+      button,
+      panel.hidden ? getEditorColorState(button).committed : panel.__cc98ColorDraft
+    );
     const replacer = button.querySelector(".sp-replacer");
     if (replacer) {
       replacer.style.setProperty("pointer-events", "none", "important");
@@ -18346,7 +20694,10 @@ function stabilizeEditorColorButton(editor) {
   });
 }
 
-function openEditorFontSizePicker(button, editor = button?.closest?.(".cc98-rebuild-native-editor")) {
+function openEditorFontSizePicker(
+  button,
+  editor = button?.closest?.(".cc98-rebuild-native-editor")
+) {
   if (!(button instanceof HTMLElement) || !(editor instanceof HTMLElement)) {
     return false;
   }
@@ -18384,8 +20735,10 @@ function bindGlobalEditorFontSizeInterceptor() {
       }
       return;
     }
-    const editor = button.closest(".cc98-rebuild-native-editor, .createTopic, #sendTopicInfo, .sendTopicInfo, .reply-input")
-      || button.closest(".ubb-editor, form");
+    const editor =
+      button.closest(
+        ".cc98-rebuild-native-editor, .createTopic, #sendTopicInfo, .sendTopicInfo, .reply-input"
+      ) || button.closest(".ubb-editor, form");
     if (!(editor instanceof HTMLElement)) {
       return;
     }
@@ -18398,7 +20751,10 @@ function bindGlobalEditorFontSizeInterceptor() {
     }
     if (target.closest(".cc98-rebuild-font-size-apply")) {
       const textarea = getNativeEditorTextarea(editor);
-      const selection = textarea instanceof HTMLTextAreaElement ? getStoredEditorFontSizeSelection(button, textarea) : null;
+      const selection =
+        textarea instanceof HTMLTextAreaElement
+          ? getStoredEditorFontSizeSelection(button, textarea)
+          : null;
       applyEditorFontSize(editor, getEditorFontSizeValue(button) || "3", selection);
       closeEditorFontSizePopovers();
     } else {
@@ -18409,13 +20765,19 @@ function bindGlobalEditorFontSizeInterceptor() {
     document.addEventListener(type, handleFontSizeEvent, true);
   });
   ["scroll", "resize"].forEach((type) => {
-    window.addEventListener(type, () => {
-      document.querySelectorAll(".cc98-rebuild-font-size-popover:not([hidden])").forEach((panel) => {
-        if (panel instanceof HTMLElement) {
-          positionEditorFontSizePopover(panel.__cc98FontSizeButton, panel);
-        }
-      });
-    }, true);
+    window.addEventListener(
+      type,
+      () => {
+        document
+          .querySelectorAll(".cc98-rebuild-font-size-popover:not([hidden])")
+          .forEach((panel) => {
+            if (panel instanceof HTMLElement) {
+              positionEditorFontSizePopover(panel.__cc98FontSizeButton, panel);
+            }
+          });
+      },
+      true
+    );
   });
 }
 
@@ -18447,7 +20809,10 @@ function stabilizeEditorFontSizeButton(editor) {
       trigger = document.createElement("button");
       trigger.type = "button";
       trigger.className = "cc98-rebuild-font-size-trigger";
-      trigger.append(createElement("span", "cc98-rebuild-split-value", "字号"), createElement("span", "cc98-rebuild-chooser-caret", "▾"));
+      trigger.append(
+        createElement("span", "cc98-rebuild-split-value", "字号"),
+        createElement("span", "cc98-rebuild-chooser-caret", "▾")
+      );
       trigger.title = "选择字号";
       trigger.setAttribute("aria-label", trigger.title);
       button.append(trigger);
@@ -18482,7 +20847,9 @@ function isEditorEmojiButtonTarget(target) {
     control.getAttribute("aria-label"),
     control.dataset.cc98ToolbarLabel,
     control.textContent
-  ].filter(Boolean).join(" ");
+  ]
+    .filter(Boolean)
+    .join(" ");
   return /(?:表情|emoji|emoticon|smile|fa-smile|fa-meh|☺)/i.test(signature);
 }
 
@@ -18491,7 +20858,10 @@ function hideNativeEditorLegacyEmojiPanel(editor) {
     return;
   }
   editor.querySelectorAll(".ubb-editor > .ubb-emoji").forEach((panel) => {
-    if (!(panel instanceof HTMLElement) || panel.classList.contains("cc98-rebuild-message-emoji-panel")) {
+    if (
+      !(panel instanceof HTMLElement) ||
+      panel.classList.contains("cc98-rebuild-message-emoji-panel")
+    ) {
       return;
     }
     panel.style.setProperty("display", "none", "important");
@@ -18577,14 +20947,16 @@ function setEditorEmojiPanelOpen(editor, open) {
 function dispatchMouseSequence(target) {
   ["pointerdown", "mousedown", "mouseup", "click"].forEach((type) => {
     const EventClass = type.startsWith("pointer") ? PointerEvent : MouseEvent;
-    target.dispatchEvent(new EventClass(type, {
-      bubbles: true,
-      cancelable: true,
-      view: window,
-      pointerId: 1,
-      pointerType: "mouse",
-      isPrimary: true
-    }));
+    target.dispatchEvent(
+      new EventClass(type, {
+        bubbles: true,
+        cancelable: true,
+        view: window,
+        pointerId: 1,
+        pointerType: "mouse",
+        isPrimary: true
+      })
+    );
   });
 }
 
@@ -18623,7 +20995,10 @@ function openEditorColorPicker(colorButton, editor = findEditorForColorButton(co
 
 function applyCurrentEditorColor(editor, button) {
   if (!editor.__cc98ColorSelectionSnapshot) {
-    rememberEditorSelection(editor, button, { preserveNonCollapsed: true, captureColorSelection: true });
+    rememberEditorSelection(editor, button, {
+      preserveNonCollapsed: true,
+      captureColorSelection: true
+    });
   }
   const selection = getStoredEditorColorSelection(editor, button);
   const panel = getEditorColorPanels(button).find((item) => !item.hidden);
@@ -18671,12 +21046,21 @@ function bindGlobalEditorColorInterceptor() {
     }
     stopEditorColorEvent(event);
     suppressLegacyEditorColorPickers(editor);
-    const isApply = Boolean(target.closest(".cc98-rebuild-color-apply, .cc98-rebuild-message-editor-color"));
+    const isApply = Boolean(
+      target.closest(".cc98-rebuild-color-apply, .cc98-rebuild-message-editor-color")
+    );
     if (event.type !== "click") {
-      if (event.type === "pointerdown" || event.type === "touchstart" || event.type === "mousedown") {
+      if (
+        event.type === "pointerdown" ||
+        event.type === "touchstart" ||
+        event.type === "mousedown"
+      ) {
         if (isApply) {
           if (!editor.__cc98ColorSelectionSnapshot) {
-            rememberEditorSelection(editor, colorButton, { preserveNonCollapsed: true, captureColorSelection: true });
+            rememberEditorSelection(editor, colorButton, {
+              preserveNonCollapsed: true,
+              captureColorSelection: true
+            });
           }
         } else {
           rememberEditorSelection(editor, colorButton, { preserveNonCollapsed: true });
@@ -18694,14 +21078,18 @@ function bindGlobalEditorColorInterceptor() {
     document.addEventListener(type, handleColorEvent, true);
   });
   ["scroll", "resize"].forEach((type) => {
-    window.addEventListener(type, () => {
-      suppressLegacyEditorColorPickers();
-      document.querySelectorAll(".cc98-rebuild-color-popover:not([hidden])").forEach((panel) => {
-        if (panel instanceof HTMLElement) {
-          positionEditorColorPopover(panel.__cc98ColorButton, panel);
-        }
-      });
-    }, true);
+    window.addEventListener(
+      type,
+      () => {
+        suppressLegacyEditorColorPickers();
+        document.querySelectorAll(".cc98-rebuild-color-popover:not([hidden])").forEach((panel) => {
+          if (panel instanceof HTMLElement) {
+            positionEditorColorPopover(panel.__cc98ColorButton, panel);
+          }
+        });
+      },
+      true
+    );
   });
 }
 
@@ -18722,7 +21110,9 @@ function getExplicitTextColor(node) {
 }
 
 function hasInlineUbbFormatting(text) {
-  return /\[(?:(?:\/?)(?:b|i|u|s|del|color|size|font|align|img|audio|mp3|video|bili|bilibili)(?:=[^\]]+)?|cc98\d{2}|ac(?:\d{2}|\d{4})|[acf]:\d{3}|tb\d{2}|ms\d{2}|em\d{2})\]/i.test(String(text ?? ""));
+  return /\[(?:(?:\/?)(?:b|i|u|s|del|color|size|font|align|img|audio|mp3|video|bili|bilibili)(?:=[^\]]+)?|cc98\d{2}|ac(?:\d{2}|\d{4})|[acf]:\d{3}|tb\d{2}|ms\d{2}|em\d{2})\]/i.test(
+    String(text ?? "")
+  );
 }
 
 function buildNativeEditorUbbPreview(source) {
@@ -18748,7 +21138,10 @@ function appendEditorFontSizeSplitSelect(editor, toolbar, select) {
   const apply = createButton("cc98-rebuild-font-size-apply", "T↕", (event) => {
     event.preventDefault();
     const textarea = getNativeEditorTextarea(editor);
-    const selection = textarea instanceof HTMLTextAreaElement ? getStoredEditorFontSizeSelection(select, textarea) : null;
+    const selection =
+      textarea instanceof HTMLTextAreaElement
+        ? getStoredEditorFontSizeSelection(select, textarea)
+        : null;
     applyEditorFontSize(editor, getEditorFontSizeValue(split) || "3", selection);
   });
   apply.type = "button";
@@ -18772,19 +21165,27 @@ function appendEditorFontSizeSplitSelect(editor, toolbar, select) {
 
 function appendEditorColorSplitButton(editor, toolbar) {
   const group = createElement("span", "cc98-rebuild-color-split");
-  const colorButton = createButton("cc98-rebuild-message-editor-button cc98-rebuild-message-editor-color cc98-rebuild-color-button cc98-rebuild-color-apply", "", (event) => {
-    event.preventDefault();
-    applyCurrentEditorColor(editor, colorButton);
-  });
+  const colorButton = createButton(
+    "cc98-rebuild-message-editor-button cc98-rebuild-message-editor-color cc98-rebuild-color-button cc98-rebuild-color-apply",
+    "",
+    (event) => {
+      event.preventDefault();
+      applyCurrentEditorColor(editor, colorButton);
+    }
+  );
   colorButton.type = "button";
   colorButton.title = "应用当前颜色";
   colorButton.setAttribute("aria-label", colorButton.title);
   colorButton.append(createElement("span", "cc98-rebuild-message-editor-color-label", "色"));
   colorButton.append(createElement("span", "sp-preview cc98-rebuild-color-swatch"));
-  const chooser = createButton("cc98-rebuild-message-editor-button cc98-rebuild-color-chooser", "", (event) => {
-    event.preventDefault();
-    openEditorColorPicker(colorButton, editor);
-  });
+  const chooser = createButton(
+    "cc98-rebuild-message-editor-button cc98-rebuild-color-chooser",
+    "",
+    (event) => {
+      event.preventDefault();
+      openEditorColorPicker(colorButton, editor);
+    }
+  );
   chooser.type = "button";
   chooser.title = "选择颜色";
   chooser.setAttribute("aria-label", chooser.title);
@@ -18819,15 +21220,11 @@ function createLegacy031UbbPreviewPanel() {
     "cc98-rebuild-legacy-ubb-preview-title",
     "旧版 UBB 预览（0.3.1）"
   );
-  const closeButton = createButton(
-    "cc98-rebuild-legacy-ubb-preview-close",
-    "×",
-    (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      panel.dispatchEvent(new CustomEvent("cc98:legacy-preview-close", { bubbles: true }));
-    }
-  );
+  const closeButton = createButton("cc98-rebuild-legacy-ubb-preview-close", "×", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    panel.dispatchEvent(new CustomEvent("cc98:legacy-preview-close", { bubbles: true }));
+  });
   closeButton.title = "关闭旧版预览";
   closeButton.setAttribute("aria-label", "关闭旧版预览");
   header.append(title, closeButton);
@@ -18875,11 +21272,19 @@ function stabilizeEditorPreviewFormatting(editor) {
   ].join(",");
   const sourceText = getEditorSourceText(editor);
   const shouldRenderUbbPreview = hasInlineUbbFormatting(sourceText);
-  const sourceHash = shouldRenderUbbPreview ? String(sourceText.length) + ":" + sourceText.slice(0, 96) + ":" + sourceText.slice(-96) : "";
+  const sourceHash = shouldRenderUbbPreview
+    ? String(sourceText.length) + ":" + sourceText.slice(0, 96) + ":" + sourceText.slice(-96)
+    : "";
   editor.querySelectorAll(previewSelectors).forEach((preview) => {
-    const isMarkdownPreview = preview.matches?.(".mde-preview-content, .markdown-preview")
-      || Boolean(preview.closest?.(".react-mde, .markdown-editor"));
-    if (!isMarkdownPreview && shouldRenderUbbPreview && preview instanceof HTMLElement && preview.dataset.cc98UbbPreviewSource !== sourceHash) {
+    const isMarkdownPreview =
+      preview.matches?.(".mde-preview-content, .markdown-preview") ||
+      Boolean(preview.closest?.(".react-mde, .markdown-editor"));
+    if (
+      !isMarkdownPreview &&
+      shouldRenderUbbPreview &&
+      preview instanceof HTMLElement &&
+      preview.dataset.cc98UbbPreviewSource !== sourceHash
+    ) {
       preview.dataset.cc98UbbPreviewSource = sourceHash;
       preview.replaceChildren(buildNativeEditorUbbPreview(sourceText));
     }
@@ -18912,18 +21317,33 @@ function stabilizeEditorPreviewFormatting(editor) {
       if (tagName === "u" || /underline/i.test(textDecoration)) {
         spreadClass(node, "cc98-rebuild-preview-underline");
       }
-      if (tagName === "s" || tagName === "del" || tagName === "strike" || /line-through|text-decoration\s*:\s*.*(?:del|through)/i.test(textDecoration)) {
+      if (
+        tagName === "s" ||
+        tagName === "del" ||
+        tagName === "strike" ||
+        /line-through|text-decoration\s*:\s*.*(?:del|through)/i.test(textDecoration)
+      ) {
         spreadClass(node, "cc98-rebuild-preview-strike");
       }
-      if (tagName === "b" || tagName === "strong" || /font-weight\s*:\s*(?:bold|[6-9]00)/i.test(styleText)) {
+      if (
+        tagName === "b" ||
+        tagName === "strong" ||
+        /font-weight\s*:\s*(?:bold|[6-9]00)/i.test(styleText)
+      ) {
         spreadClass(node, "cc98-rebuild-preview-bold");
       }
       if (tagName === "i" || tagName === "em" || /font-style\s*:\s*italic/i.test(styleText)) {
         spreadClass(node, "cc98-rebuild-preview-italic");
       }
-      const textAlign = node.style.textAlign || styleText.match(/text-align\s*:\s*([^;]+)/i)?.[1]?.trim() || "";
+      const textAlign =
+        node.style.textAlign || styleText.match(/text-align\s*:\s*([^;]+)/i)?.[1]?.trim() || "";
       if (/^(left|center|right)$/i.test(textAlign)) {
-        spreadVariable(node, "cc98-rebuild-preview-align", "--cc98-preview-align", textAlign.toLowerCase());
+        spreadVariable(
+          node,
+          "cc98-rebuild-preview-align",
+          "--cc98-preview-align",
+          textAlign.toLowerCase()
+        );
       }
       const fontSize = node.style.fontSize || node.getAttribute("size") || "";
       if (fontSize) {
@@ -18951,96 +21371,131 @@ function setEditorTagDropdownOpen(row, open) {
   row.classList.toggle("is-open", Boolean(open));
   const display = open ? "block" : "none";
   if (list.style.display !== display) list.style.display = display;
-  if (select?.getAttribute("aria-expanded") !== String(Boolean(open))) select?.setAttribute("aria-expanded", String(Boolean(open)));
+  if (select?.getAttribute("aria-expanded") !== String(Boolean(open)))
+    select?.setAttribute("aria-expanded", String(Boolean(open)));
 }
 
 function stabilizeEditorTagDropdown(editor) {
   if (!(editor instanceof HTMLElement)) return;
-  editor.querySelectorAll(".createTopicTitle").forEach(title => {
-    title.classList.toggle("cc98-rebuild-tagged-title", Boolean(title.querySelector(".tagBoxSelect, .tagBoxSelect1")));
+  editor.querySelectorAll(".createTopicTitle").forEach((title) => {
+    title.classList.toggle(
+      "cc98-rebuild-tagged-title",
+      Boolean(title.querySelector(".tagBoxSelect, .tagBoxSelect1"))
+    );
   });
   if (!stabilizeEditorTagDropdown.dismissBound) {
     stabilizeEditorTagDropdown.dismissBound = true;
-    document.addEventListener("click", event => {
-      if (!event.target?.closest?.(".cc98-rebuild-tag-dropdown")) closeEditorTagDropdowns(document);
-    }, true);
-    document.addEventListener("keydown", event => {
+    document.addEventListener(
+      "click",
+      (event) => {
+        if (!event.target?.closest?.(".cc98-rebuild-tag-dropdown"))
+          closeEditorTagDropdowns(document);
+      },
+      true
+    );
+    document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") closeEditorTagDropdowns(document);
     });
   }
-  editor.querySelectorAll(".createTopicTitle .tagBoxSelect, .createTopicTitle .tagBoxSelect1").forEach((select) => {
-    const row = select.parentElement;
-    const list = row?.querySelector(":scope > .tagBoxSub, :scope > .tagBoxSub1");
-    if (!(row instanceof HTMLElement) || !(list instanceof HTMLElement)) return;
-    const title = row.closest(".createTopicTitle");
-    if (row.parentElement !== title) row.parentElement.classList.add("cc98-rebuild-tag-group");
-    row.classList.add("cc98-rebuild-tag-dropdown");
-    const attributes = { role: "button", tabindex: "0", "aria-haspopup": "listbox", "aria-label": select.classList.contains("tagBoxSelect1") ? "主题子标签" : "主题标签" };
-    for (const [name, value] of Object.entries(attributes)) if (select.getAttribute(name) !== value) select.setAttribute(name, value);
-    if (list.getAttribute("role") !== "listbox") list.setAttribute("role", "listbox");
-    const value = cleanupPostText(select.textContent);
-    list.querySelectorAll("li").forEach(option => {
-      const selected = Boolean(value) && cleanupPostText(option.textContent) === value;
-      option.classList.toggle("is-active", selected);
-      if (option.getAttribute("role") !== "option") option.setAttribute("role", "option");
-      if (option.getAttribute("tabindex") !== "-1") option.tabIndex = -1;
-      if (option.getAttribute("aria-selected") !== String(selected)) option.setAttribute("aria-selected", String(selected));
+  editor
+    .querySelectorAll(".createTopicTitle .tagBoxSelect, .createTopicTitle .tagBoxSelect1")
+    .forEach((select) => {
+      const row = select.parentElement;
+      const list = row?.querySelector(":scope > .tagBoxSub, :scope > .tagBoxSub1");
+      if (!(row instanceof HTMLElement) || !(list instanceof HTMLElement)) return;
+      const title = row.closest(".createTopicTitle");
+      if (row.parentElement !== title) row.parentElement.classList.add("cc98-rebuild-tag-group");
+      row.classList.add("cc98-rebuild-tag-dropdown");
+      const attributes = {
+        role: "button",
+        tabindex: "0",
+        "aria-haspopup": "listbox",
+        "aria-label": select.classList.contains("tagBoxSelect1") ? "主题子标签" : "主题标签"
+      };
+      for (const [name, value] of Object.entries(attributes))
+        if (select.getAttribute(name) !== value) select.setAttribute(name, value);
+      if (list.getAttribute("role") !== "listbox") list.setAttribute("role", "listbox");
+      const value = cleanupPostText(select.textContent);
+      list.querySelectorAll("li").forEach((option) => {
+        const selected = Boolean(value) && cleanupPostText(option.textContent) === value;
+        option.classList.toggle("is-active", selected);
+        if (option.getAttribute("role") !== "option") option.setAttribute("role", "option");
+        if (option.getAttribute("tabindex") !== "-1") option.tabIndex = -1;
+        if (option.getAttribute("aria-selected") !== String(selected))
+          option.setAttribute("aria-selected", String(selected));
+      });
+      setEditorTagDropdownOpen(row, row.classList.contains("is-open"));
+      if (row.dataset.cc98TagDropdownBound === "true") return;
+      row.dataset.cc98TagDropdownBound = "true";
+      row.addEventListener(
+        "click",
+        (event) => {
+          const target = event.target;
+          if (!(target instanceof Element)) return;
+          const item = target.closest(".tagBoxSub li, .tagBoxSub1 li");
+          if (item instanceof HTMLElement && row.contains(item)) {
+            // Native React updates tag1/tag2 and rebuilds dependent sub-tags here.
+            // Let that click reach React; changing only the displayed text loses
+            // the submitted values. Close after the native event has completed.
+            queueMicrotask(() => {
+              closeEditorTagDropdowns(editor);
+              if (editor.isConnected) stabilizeEditorTagDropdown(editor);
+            });
+            return;
+          }
+          if (target.closest(".tagBoxSelect, .tagBoxSelect1, .downArrow, .downArrow1")) {
+            event.preventDefault();
+            event.stopPropagation();
+            const shouldOpen = !row.classList.contains("is-open");
+            closeEditorTagDropdowns(editor, row);
+            setEditorTagDropdownOpen(row, shouldOpen);
+          }
+        },
+        true
+      );
+      row.addEventListener("keydown", (event) => {
+        const options = [
+          ...row.querySelectorAll(":scope > .tagBoxSub > li, :scope > .tagBoxSub1 > li")
+        ];
+        const index = options.indexOf(event.target);
+        if (event.key === "Escape") {
+          event.preventDefault();
+          event.stopPropagation();
+          setEditorTagDropdownOpen(row, false);
+          select.focus({ preventScroll: true });
+        } else if (["ArrowDown", "ArrowUp"].includes(event.key)) {
+          event.preventDefault();
+          event.stopPropagation();
+          closeEditorTagDropdowns(editor, row);
+          setEditorTagDropdownOpen(row, true);
+          const next =
+            index < 0
+              ? event.key === "ArrowDown"
+                ? 0
+                : options.length - 1
+              : (index + (event.key === "ArrowDown" ? 1 : -1) + options.length) % options.length;
+          options[next]?.focus({ preventScroll: true });
+        } else if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          event.stopPropagation();
+          (index >= 0 ? options[index] : select).click();
+          if (index >= 0) select.focus({ preventScroll: true });
+        }
+      });
+      row.addEventListener("focusout", (event) => {
+        if (event.relatedTarget && !row.contains(event.relatedTarget))
+          setEditorTagDropdownOpen(row, false);
+      });
     });
-    setEditorTagDropdownOpen(row, row.classList.contains("is-open"));
-    if (row.dataset.cc98TagDropdownBound === "true") return;
-    row.dataset.cc98TagDropdownBound = "true";
-    row.addEventListener("click", (event) => {
-      const target = event.target;
-      if (!(target instanceof Element)) return;
-      const item = target.closest(".tagBoxSub li, .tagBoxSub1 li");
-      if (item instanceof HTMLElement && row.contains(item)) {
-        // Native React updates tag1/tag2 and rebuilds dependent sub-tags here.
-        // Let that click reach React; changing only the displayed text loses
-        // the submitted values. Close after the native event has completed.
-        queueMicrotask(() => {
-          closeEditorTagDropdowns(editor);
-          if (editor.isConnected) stabilizeEditorTagDropdown(editor);
-        });
-        return;
-      }
-      if (target.closest(".tagBoxSelect, .tagBoxSelect1, .downArrow, .downArrow1")) {
-        event.preventDefault();
-        event.stopPropagation();
-        const shouldOpen = !row.classList.contains("is-open");
-        closeEditorTagDropdowns(editor, row);
-        setEditorTagDropdownOpen(row, shouldOpen);
-      }
-    }, true);
-    row.addEventListener("keydown", event => {
-      const options = [...row.querySelectorAll(":scope > .tagBoxSub > li, :scope > .tagBoxSub1 > li")];
-      const index = options.indexOf(event.target);
-      if (event.key === "Escape") {
-        event.preventDefault(); event.stopPropagation();
-        setEditorTagDropdownOpen(row, false); select.focus({ preventScroll: true });
-      } else if (["ArrowDown", "ArrowUp"].includes(event.key)) {
-        event.preventDefault(); event.stopPropagation();
-        closeEditorTagDropdowns(editor, row); setEditorTagDropdownOpen(row, true);
-        const next = index < 0 ? (event.key === "ArrowDown" ? 0 : options.length - 1) : (index + (event.key === "ArrowDown" ? 1 : -1) + options.length) % options.length;
-        options[next]?.focus({ preventScroll: true });
-      } else if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault(); event.stopPropagation();
-        (index >= 0 ? options[index] : select).click();
-        if (index >= 0) select.focus({ preventScroll: true });
-      }
-    });
-    row.addEventListener("focusout", event => {
-      if (event.relatedTarget && !row.contains(event.relatedTarget)) setEditorTagDropdownOpen(row, false);
-    });
-  });
 }
 
 function bindDualUbbPaneDivider(workspace, upperPane, lowerPane, divider) {
   if (
-    !(workspace instanceof HTMLElement)
-    || !(upperPane instanceof HTMLElement)
-    || !(lowerPane instanceof HTMLElement)
-    || !(divider instanceof HTMLElement)
-    || divider.dataset.cc98DualDividerBound === "true"
+    !(workspace instanceof HTMLElement) ||
+    !(upperPane instanceof HTMLElement) ||
+    !(lowerPane instanceof HTMLElement) ||
+    !(divider instanceof HTMLElement) ||
+    divider.dataset.cc98DualDividerBound === "true"
   ) {
     return;
   }
@@ -19049,15 +21504,10 @@ function bindDualUbbPaneDivider(workspace, upperPane, lowerPane, divider) {
     const value = Number.parseFloat(window.getComputedStyle(element).getPropertyValue(property));
     return Number.isFinite(value) ? Math.max(0, value) : fallback;
   };
-  const getMinimumPaneHeight = (pane, fallback) => Math.max(
-    fallback,
-    readCssPixelValue(pane, "min-height", fallback)
-  );
-  const getDividerHeight = () => Math.max(
-    1,
-    divider.getBoundingClientRect().height,
-    readCssPixelValue(divider, "height", 10)
-  );
+  const getMinimumPaneHeight = (pane, fallback) =>
+    Math.max(fallback, readCssPixelValue(pane, "min-height", fallback));
+  const getDividerHeight = () =>
+    Math.max(1, divider.getBoundingClientRect().height, readCssPixelValue(divider, "height", 10));
   const readPaneHeight = (pane) => {
     const value = pane.getBoundingClientRect().height;
     return Number.isFinite(value) ? Math.max(0, value) : 0;
@@ -19074,7 +21524,10 @@ function bindDualUbbPaneDivider(workspace, upperPane, lowerPane, divider) {
     // larger content-based minimum height.
     workspace.style.setProperty("--cc98-dual-upper-height", `${upper}px`);
     workspace.style.setProperty("--cc98-dual-lower-height", `${lower}px`);
-    workspace.style.setProperty("--cc98-dual-divider-height", `${Math.round(getDividerHeight())}px`);
+    workspace.style.setProperty(
+      "--cc98-dual-divider-height",
+      `${Math.round(getDividerHeight())}px`
+    );
     lastObservedUpperHeight = upper;
     lastObservedLowerHeight = lower;
   };
@@ -19198,21 +21651,52 @@ function getNativeDualUbbToolbarCommand(control) {
   const rules = [
     { label: "B", pattern: /(?:fa-bold|\b加粗\b|\bbold\b)/i, tag: "b", command: "bold" },
     { label: "I", pattern: /(?:fa-italic|\b斜体\b|\bitalic\b)/i, tag: "i", command: "italic" },
-    { label: "U", pattern: /(?:fa-underline|\b下划线\b|\bunderline\b)/i, tag: "u", command: "underline" },
-    { label: "S", pattern: /(?:fa-strikethrough|\b删除线\b|\bstrike\b)/i, tag: "del", command: "strikeThrough" },
-    { label: "左", pattern: /(?:fa-align-left|左对齐|align.*left)/i, tag: "align", value: "left", command: "justifyLeft" },
-    { label: "中", pattern: /(?:fa-align-center|居中|align.*center)/i, tag: "align", value: "center", command: "justifyCenter" },
-    { label: "右", pattern: /(?:fa-align-right|右对齐|align.*right)/i, tag: "align", value: "right", command: "justifyRight" },
-    { label: "隐", pattern: /(?:fa-eye-slash|回复后可见|replyview)/i, tag: "replyview", command: "" }
+    {
+      label: "U",
+      pattern: /(?:fa-underline|\b下划线\b|\bunderline\b)/i,
+      tag: "u",
+      command: "underline"
+    },
+    {
+      label: "S",
+      pattern: /(?:fa-strikethrough|\b删除线\b|\bstrike\b)/i,
+      tag: "del",
+      command: "strikeThrough"
+    },
+    {
+      label: "左",
+      pattern: /(?:fa-align-left|左对齐|align.*left)/i,
+      tag: "align",
+      value: "left",
+      command: "justifyLeft"
+    },
+    {
+      label: "中",
+      pattern: /(?:fa-align-center|居中|align.*center)/i,
+      tag: "align",
+      value: "center",
+      command: "justifyCenter"
+    },
+    {
+      label: "右",
+      pattern: /(?:fa-align-right|右对齐|align.*right)/i,
+      tag: "align",
+      value: "right",
+      command: "justifyRight"
+    },
+    {
+      label: "隐",
+      pattern: /(?:fa-eye-slash|回复后可见|replyview)/i,
+      tag: "replyview",
+      command: ""
+    }
   ];
   return rules.find((rule) => label === rule.label || rule.pattern.test(signature)) || null;
 }
 
 function isNativeDualUbbSourceActive(state) {
   return Boolean(
-    state
-    && state.activeSurface === "source"
-    && state.sourceEditor instanceof HTMLElement
+    state && state.activeSurface === "source" && state.sourceEditor instanceof HTMLElement
   );
 }
 
@@ -19314,13 +21798,15 @@ function openNativeMarkupConversionDialog(editor, state) {
   let hasWarnings = false;
   const updateApply = () => {
     const invalidMarkdownBlock = currentDirection === "ubb" && /\[\/md\]/i.test(output.value);
-    apply.disabled = blocked || invalidMarkdownBlock || !output.value || (hasWarnings && !reviewCheckbox.checked);
+    apply.disabled =
+      blocked || invalidMarkdownBlock || !output.value || (hasWarnings && !reviewCheckbox.checked);
     if (invalidMarkdownBlock) status.textContent = "结果含 [/md]，无法安全嵌入 UBB 编辑器";
   };
   const convert = () => {
-    const result = currentDirection === "ubb"
-      ? converter.convertUbbToMarkdown(input.value)
-      : converter.convertMarkdownToUbb(input.value);
+    const result =
+      currentDirection === "ubb"
+        ? converter.convertUbbToMarkdown(input.value)
+        : converter.convertMarkdownToUbb(input.value);
     output.value = result.output;
     blocked = result.blocked;
     hasWarnings = result.warnings.length > 0;
@@ -19340,7 +21826,8 @@ function openNativeMarkupConversionDialog(editor, state) {
     ubbToMarkdown.setAttribute("aria-pressed", String(value === "ubb"));
     markdownToUbb.setAttribute("aria-pressed", String(value === "markdown"));
     inputLabel.textContent = value === "ubb" ? "UBB 输入" : "Markdown 输入";
-    outputLabel.textContent = value === "ubb" ? "Markdown 结果（将以 [md] 块写入）" : "UBB 结果（可修改）";
+    outputLabel.textContent =
+      value === "ubb" ? "Markdown 结果（将以 [md] 块写入）" : "UBB 结果（可修改）";
     apply.textContent = value === "ubb" ? "替换为 Markdown 块" : "替换为 UBB";
     convert();
   };
@@ -19371,18 +21858,22 @@ function ensureNativeDualUbbToolbarControls(editor, state = editor?.__cc98DualUb
   if (!(editor instanceof HTMLElement) || !state || !(state.ubbEditor instanceof HTMLElement)) {
     return;
   }
-  const toolbar = state.ubbEditor.querySelector(":scope > .ubb-buttons, :scope > .ubb-toolbar")
-    || state.ubbEditor.querySelector(".ubb-buttons, .ubb-toolbar");
+  const toolbar =
+    state.ubbEditor.querySelector(":scope > .ubb-buttons, :scope > .ubb-toolbar") ||
+    state.ubbEditor.querySelector(".ubb-buttons, .ubb-toolbar");
   if (!(toolbar instanceof HTMLElement)) {
     return;
   }
-  let fontFamilySelect = toolbar.querySelector(":scope > .cc98-rebuild-font-family-control > .cc98-rebuild-editor-font-select");
+  let fontFamilySelect = toolbar.querySelector(
+    ":scope > .cc98-rebuild-font-family-control > .cc98-rebuild-editor-font-select"
+  );
   if (!(fontFamilySelect instanceof HTMLSelectElement)) {
-    toolbar.querySelector(":scope > .cc98-rebuild-typography-group:has(> .cc98-rebuild-editor-font-select)")?.remove();
-    const fontControl = createEditorFontFamilyControl(
-      editor,
-      "cc98-rebuild-dual-ubb-font-select"
-    );
+    toolbar
+      .querySelector(
+        ":scope > .cc98-rebuild-typography-group:has(> .cc98-rebuild-editor-font-select)"
+      )
+      ?.remove();
+    const fontControl = createEditorFontFamilyControl(editor, "cc98-rebuild-dual-ubb-font-select");
     fontFamilySelect = fontControl.querySelector(".cc98-rebuild-editor-font-select");
   }
   const fontSizeControl = toolbar.querySelector(
@@ -19409,10 +21900,16 @@ function ensureNativeDualUbbToolbarControls(editor, state = editor?.__cc98DualUb
   };
   const existing = toolbar.querySelector(":scope > .cc98-rebuild-dual-ubb-toolbar-actions");
   if (existing instanceof HTMLElement) {
-    const legacyPreviewButton = existing.querySelector("[data-cc98-dual-ubb-action='legacy-preview']");
+    const legacyPreviewButton = existing.querySelector(
+      "[data-cc98-dual-ubb-action='legacy-preview']"
+    );
     const syncButton = existing.querySelector("[data-cc98-dual-ubb-action='sync']");
     const convertButton = existing.querySelector("[data-cc98-dual-ubb-action='convert']");
-    if (legacyPreviewButton instanceof HTMLElement && syncButton instanceof HTMLElement && convertButton instanceof HTMLElement) {
+    if (
+      legacyPreviewButton instanceof HTMLElement &&
+      syncButton instanceof HTMLElement &&
+      convertButton instanceof HTMLElement
+    ) {
       ensureConvertBadge(convertButton);
       state.toolbarActions = existing;
       state.legacyPreviewButton = legacyPreviewButton;
@@ -19455,20 +21952,12 @@ function ensureNativeDualUbbToolbarControls(editor, state = editor?.__cc98DualUb
     "legacy-preview",
     () => state.toggleLegacyPreview?.()
   );
-  const syncButton = addAction(
-    "同步",
-    "同步上下编辑区并重新渲染",
-    "sync",
-    (button) => {
-      state.forceSynchronize?.();
-      showRebuiltTransientToast(button, "上下编辑区已同步");
-    }
-  );
-  const convertButton = addAction(
-    "互转",
-    "UBB 与 Markdown 互转（预览后再替换）",
-    "convert",
-    () => openNativeMarkupConversionDialog(editor, state)
+  const syncButton = addAction("同步", "同步上下编辑区并重新渲染", "sync", (button) => {
+    state.forceSynchronize?.();
+    showRebuiltTransientToast(button, "上下编辑区已同步");
+  });
+  const convertButton = addAction("互转", "UBB 与 Markdown 互转（预览后再替换）", "convert", () =>
+    openNativeMarkupConversionDialog(editor, state)
   );
   ensureConvertBadge(convertButton);
   toolbar.append(actions);
@@ -19487,7 +21976,9 @@ function teardownNativeDualUbbEditor(editor) {
   state.gutterResizeObserver?.disconnect?.();
   state.workspace?.__cc98DualPaneResizeFrame?.();
   state.workspace?.__cc98DualPaneResizeObserver?.disconnect?.();
-  (state.fontFamilySelect?.closest(".cc98-rebuild-font-family-control") || state.fontFamilySelect)?.remove?.();
+  (
+    state.fontFamilySelect?.closest(".cc98-rebuild-font-family-control") || state.fontFamilySelect
+  )?.remove?.();
   editor.querySelectorAll(".cc98-rebuild-typography-reset").forEach((button) => button.remove());
   state.toolbarActions?.remove?.();
   state.workspace?.remove();
@@ -19644,12 +22135,13 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
     if (currentSourceSelection) {
       state.activeSurface = "source";
       const previousSourceSelection = state.sourceSelection;
-      const effectiveSourceSelection = (
-        options.preserveNonCollapsed
-        && previousSourceSelection
-        && previousSourceSelection.start !== previousSourceSelection.end
-        && currentSourceSelection.start === currentSourceSelection.end
-      ) ? previousSourceSelection : currentSourceSelection;
+      const effectiveSourceSelection =
+        options.preserveNonCollapsed &&
+        previousSourceSelection &&
+        previousSourceSelection.start !== previousSourceSelection.end &&
+        currentSourceSelection.start === currentSourceSelection.end
+          ? previousSourceSelection
+          : currentSourceSelection;
       state.sourceSelection = effectiveSourceSelection;
       if (options.captureColorSelection) {
         captureEditorColorSourceSelection(editor, textarea, effectiveSourceSelection);
@@ -19694,16 +22186,18 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
     renderProfileSignatureWysiwygFromUbb(visual, nextValue);
     editor.__cc98WysiwygRange = null;
     updateVisualMeta();
-    state.sourceSelection = getProfileSignatureSourceSelection(sourceEditor) || state.sourceSelection;
+    state.sourceSelection =
+      getProfileSignatureSourceSelection(sourceEditor) || state.sourceSelection;
     if (rehighlight) {
       scheduleSourceHighlight();
     }
     scheduleNativeEditorDraftSave(editor);
   };
   const forceSynchronize = () => {
-    const sourceActive = state.activeSurface === "source"
-      || document.activeElement === sourceEditor
-      || sourceEditor.contains(document.activeElement);
+    const sourceActive =
+      state.activeSurface === "source" ||
+      document.activeElement === sourceEditor ||
+      sourceEditor.contains(document.activeElement);
     const nextValue = sourceActive
       ? getProfileSignatureSourceText(sourceEditor)
       : serializeProfileSignatureWysiwyg(visual);
@@ -19740,20 +22234,27 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
       state.sourceSelection = current;
       return current;
     }
-    return state.sourceSelection || {
-      start: textarea.value.length,
-      end: textarea.value.length
-    };
+    return (
+      state.sourceSelection || {
+        start: textarea.value.length,
+        end: textarea.value.length
+      }
+    );
   };
-  const replaceSourceSelection = (before, after = "", requireSelection = false, selectionOverride = null) => {
+  const replaceSourceSelection = (
+    before,
+    after = "",
+    requireSelection = false,
+    selectionOverride = null
+  ) => {
     const sourceValue = String(textarea.value || "").replace(/[\u200b\uFEFF]/g, "");
     const resolvedSelection = selectionOverride
       ? getEditorColorSourceSelectionForApply(selectionOverride, sourceValue)
       : null;
     if (
-      selectionOverride?.surface === "visual"
-      && normalizeEditorColorSelectionText(selectionOverride.selectedText)
-      && !resolvedSelection
+      selectionOverride?.surface === "visual" &&
+      normalizeEditorColorSelectionText(selectionOverride.selectedText) &&
+      !resolvedSelection
     ) {
       return false;
     }
@@ -19819,7 +22320,7 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
     if (liveSourceSelection || savedSourceSelection) {
       const sourceSelection = syntaxToolsCore?.preferSavedSelection
         ? syntaxToolsCore.preferSavedSelection(liveSourceSelection, savedSourceSelection)
-        : (liveSourceSelection || savedSourceSelection);
+        : liveSourceSelection || savedSourceSelection;
       if (sourceSelection && state.activeSurface === "source") {
         return { ...sourceSelection, surface: "source" };
       }
@@ -19828,11 +22329,11 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
     const liveVisualSelection = liveVisualRange
       ? buildEditorColorVisualLogicalSelection(editor, visual, liveVisualRange)
       : null;
-    const savedVisualSelection = editor.__cc98WysiwygLogicalSelection
-      || editor.__cc98ColorSelectionSnapshot;
+    const savedVisualSelection =
+      editor.__cc98WysiwygLogicalSelection || editor.__cc98ColorSelectionSnapshot;
     const visualSelection = syntaxToolsCore?.preferSavedSelection
       ? syntaxToolsCore.preferSavedSelection(liveVisualSelection, savedVisualSelection)
-      : (liveVisualSelection || savedVisualSelection);
+      : liveVisualSelection || savedVisualSelection;
     const resolvedVisualSelection = visualSelection
       ? getEditorColorSourceSelectionForApply(visualSelection, sourceValue)
       : null;
@@ -19914,7 +22415,9 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
       state.activeSurface = "visual";
       return insertProfileSignatureWysiwygNode(editor, visual, image);
     }
-    const emotionTag = String(item?.insertText || "").replace(/^\[/, "").replace(/\]$/, "");
+    const emotionTag = String(item?.insertText || "")
+      .replace(/^\[/, "")
+      .replace(/\]$/, "");
     if (!emotionTag || !item?.src) {
       return false;
     }
@@ -19944,9 +22447,8 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
     return replaceSourceWithText(`[url=${url}]${label}[/url]`);
   };
   const insertMedia = (requestedTag) => {
-    const tag = requestedTag === "image"
-      ? "img"
-      : (requestedTag === "bilibili" ? "bilibili" : requestedTag);
+    const tag =
+      requestedTag === "image" ? "img" : requestedTag === "bilibili" ? "bilibili" : requestedTag;
     const promptLabels = {
       img: "请输入图片地址",
       video: "请输入视频地址",
@@ -19982,55 +22484,43 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
   editor.__cc98WysiwygSyncSource = syncFromVisual;
   editor.__cc98WysiwygRememberSelection = rememberSelection;
   editor.__cc98WysiwygApplyColor = (color, selectionOverride = null) => {
-    const normalized = String(color || "").trim().toLowerCase();
+    const normalized = String(color || "")
+      .trim()
+      .toLowerCase();
     if (normalized !== "transparent" && !/^#[0-9a-f]{6}$/i.test(normalized)) {
       return false;
     }
-    const selection = selectionOverride
-      || editor.__cc98ColorSelectionSnapshot
-      || promoteEditorColorLogicalSelection(editor, visual, textarea.value);
+    const selection =
+      selectionOverride ||
+      editor.__cc98ColorSelectionSnapshot ||
+      promoteEditorColorLogicalSelection(editor, visual, textarea.value);
     if (selection?.surface === "source") {
-      return replaceSourceSelection(
-        `[color=${normalized}]`,
-        "[/color]",
-        false,
-        selection
-      );
+      return replaceSourceSelection(`[color=${normalized}]`, "[/color]", false, selection);
     }
     if (selection?.surface === "visual") {
       const sourceSelection = getEditorColorSourceSelectionForApply(selection, textarea.value);
       if (isUsableEditorColorSourceSelection(selection, textarea.value, sourceSelection)) {
-        return replaceSourceSelection(
-          `[color=${normalized}]`,
-          "[/color]",
-          false,
-          selection
-        );
+        return replaceSourceSelection(`[color=${normalized}]`, "[/color]", false, selection);
       }
       const markerRange = getEditorColorSelectionMarkerRange(selection);
       const expectedSelection = getEditorColorSelectionExpectedSourceText(selection);
       if (
-        expectedSelection.replace(/\s|\[[^\]]+\]/g, "")
-        && (!markerRange || !hasMeaningfulProfileSignatureWysiwygRange(markerRange))
+        expectedSelection.replace(/\s|\[[^\]]+\]/g, "") &&
+        (!markerRange || !hasMeaningfulProfileSignatureWysiwygRange(markerRange))
       ) {
         return false;
       }
       state.activeSurface = "visual";
-      return applyProfileSignatureWysiwygInlineTag(
-        editor,
-        visual,
-        "color",
-        normalized,
-        { color: normalized }
-      );
+      return applyProfileSignatureWysiwygInlineTag(editor, visual, "color", normalized, {
+        color: normalized
+      });
     }
     return applyInlineTag("color", normalized, { color: normalized });
   };
   editor.__cc98WysiwygClearColor = (selectionOverride = null) => {
     if (isNativeDualUbbSourceActive(state)) {
-      const selection = selectionOverride?.surface === "source"
-        ? selectionOverride
-        : getSourceSelection();
+      const selection =
+        selectionOverride?.surface === "source" ? selectionOverride : getSourceSelection();
       const result = removeEditorColorTagsFromSource(
         textarea.value,
         selection.start,
@@ -20060,7 +22550,10 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
       return applyProfileSignatureWysiwygTypography(editor, visual, tag, value);
     }
     const result = window.CC98RebornExtendedUbbCore?.applyTypographyToSource(
-      textarea.value, getSourceSelection(), tag, value
+      textarea.value,
+      getSourceSelection(),
+      tag,
+      value
     );
     if (!result) {
       return false;
@@ -20114,12 +22607,14 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
   });
   sourceEditor.addEventListener("focus", () => {
     state.activeSurface = "source";
-    state.sourceSelection = getProfileSignatureSourceSelection(sourceEditor) || state.sourceSelection;
+    state.sourceSelection =
+      getProfileSignatureSourceSelection(sourceEditor) || state.sourceSelection;
   });
   ["keyup", "mouseup"].forEach((type) => {
     sourceEditor.addEventListener(type, () => {
       state.activeSurface = "source";
-      state.sourceSelection = getProfileSignatureSourceSelection(sourceEditor) || state.sourceSelection;
+      state.sourceSelection =
+        getProfileSignatureSourceSelection(sourceEditor) || state.sourceSelection;
     });
   });
   sourceEditor.addEventListener("input", () => syncFromSource(!state.sourceIsComposing));
@@ -20134,11 +22629,16 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
     if (!["Tab", "Enter"].includes(event.key)) {
       return;
     }
-    if (event.key === "Enter" && (event.isComposing || event.ctrlKey || event.metaKey || event.altKey)) {
+    if (
+      event.key === "Enter" &&
+      (event.isComposing || event.ctrlKey || event.metaKey || event.altKey)
+    ) {
       return;
     }
     event.preventDefault();
-    if (insertProfileSignatureSourceTextAtSelection(sourceEditor, event.key === "Tab" ? "\t" : "\n")) {
+    if (
+      insertProfileSignatureSourceTextAtSelection(sourceEditor, event.key === "Tab" ? "\t" : "\n")
+    ) {
       syncFromSource(true);
     }
   });
@@ -20152,7 +22652,8 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
     syncFromSource(true);
   });
   sourceEditor.addEventListener("blur", () => {
-    state.sourceSelection = getProfileSignatureSourceSelection(sourceEditor) || state.sourceSelection;
+    state.sourceSelection =
+      getProfileSignatureSourceSelection(sourceEditor) || state.sourceSelection;
     if (!state.sourceIsComposing) {
       scheduleSourceHighlight(true);
     }
@@ -20244,16 +22745,16 @@ function stabilizeNativeDualUbbEditor(editor) {
     return;
   }
   if (
-    existingState
-    && existingState.textarea === textarea
-    && existingState.workspace?.isConnected
+    existingState &&
+    existingState.textarea === textarea &&
+    existingState.workspace?.isConnected
   ) {
     existingState.workspace.hidden = false;
     ensureNativeDualUbbToolbarControls(editor, existingState);
     if (
-      !existingState.sourceIsComposing
-      && !existingState.visualIsComposing
-      && existingState.lastNativeValue !== textarea.value
+      !existingState.sourceIsComposing &&
+      !existingState.visualIsComposing &&
+      existingState.lastNativeValue !== textarea.value
     ) {
       existingState.refreshFromNative(document.activeElement === existingState.sourceEditor);
     }
@@ -20266,24 +22767,32 @@ function stabilizeNativeDualUbbEditor(editor) {
 }
 
 function stabilizeNativeVoteEditor(editor) {
-  editor.querySelectorAll(".createTopicTitle").forEach(row => {
-    row.classList.toggle("cc98-rebuild-vote-settings", Boolean(row.querySelector('input[name="expiredDays"], input[name="maxVoteCount"]')));
+  editor.querySelectorAll(".createTopicTitle").forEach((row) => {
+    row.classList.toggle(
+      "cc98-rebuild-vote-settings",
+      Boolean(row.querySelector('input[name="expiredDays"], input[name="maxVoteCount"]'))
+    );
     const option = row.querySelector('input[name="voteItem"]');
     row.classList.toggle("cc98-rebuild-vote-option", Boolean(option));
     if (option) {
       const label = cleanupPostText(row.querySelector(".createTopicListName")?.textContent);
       option.setAttribute("aria-label", label || "投票选项");
-      row.querySelectorAll("button").forEach(button => {
+      row.querySelectorAll("button").forEach((button) => {
         button.dataset.cc98VoteAction = "remove";
         button.title = `删除${label || "投票选项"}`;
         button.setAttribute("aria-label", button.title);
       });
     }
   });
-  editor.querySelectorAll('input[name="expiredDays"], input[name="maxVoteCount"]').forEach(input => {
-    input.setAttribute("aria-label", input.name === "expiredDays" ? "投票有效天数" : "最多可投数量");
-  });
-  editor.querySelectorAll("button.hiddenImage").forEach(button => {
+  editor
+    .querySelectorAll('input[name="expiredDays"], input[name="maxVoteCount"]')
+    .forEach((input) => {
+      input.setAttribute(
+        "aria-label",
+        input.name === "expiredDays" ? "投票有效天数" : "最多可投数量"
+      );
+    });
+  editor.querySelectorAll("button.hiddenImage").forEach((button) => {
     if (!cleanupPostText(button.textContent).startsWith("添加选项")) return;
     button.dataset.cc98VoteAction = "add";
     button.classList.add("cc98-rebuild-vote-add");
@@ -20295,7 +22804,9 @@ function stabilizeNativeEditor(editor) {
     return;
   }
   editor.classList.add("cc98-rebuild-native-editor");
-  [...editor.children].find(child => child.matches(".row") && child.querySelector('a[href*="/board/"]'))?.classList.add("cc98-rebuild-editor-breadcrumb");
+  [...editor.children]
+    .find((child) => child.matches(".row") && child.querySelector('a[href*="/board/"]'))
+    ?.classList.add("cc98-rebuild-editor-breadcrumb");
   stabilizeNativeVoteEditor(editor);
   ensureNativeEditorDraftControls(editor);
   labelEditorToolbarButtons(editor);
@@ -20308,7 +22819,10 @@ function stabilizeNativeEditor(editor) {
   stabilizeEditorEmojiImages(editor);
   stabilizeEditorPreviewFormatting(editor);
   ensurePendingNativeEditorSubmitRecovery(editor);
-  editor.querySelectorAll(".ubb-editor, .react-mde, .mde-header, .mde-text, .mde-preview, .mde-preview-content, .markdown-editor, .for-container, .for-editor, .for-toolbar, .for-preview, .editor-preview, .CodeMirror, textarea")
+  editor
+    .querySelectorAll(
+      ".ubb-editor, .react-mde, .mde-header, .mde-text, .mde-preview, .mde-preview-content, .markdown-editor, .for-container, .for-editor, .for-toolbar, .for-preview, .editor-preview, .CodeMirror, textarea"
+    )
     .forEach((node) => node.classList.add("cc98-rebuild-editor-surface"));
 }
 
@@ -20336,9 +22850,10 @@ function schedulePostSubmitPageRefresh(options = {}) {
   nativePostSubmitRefreshTimers.forEach((timer) => window.clearTimeout(timer));
   nativePostSubmitRefreshTimers = [];
   let context = readEditorSubmitContext();
-  const isCurrentTransaction = context
-    && context.startedRouteKey === startedRouteKey
-    && Date.now() - Number(context.submittedAt || 0) < 3000;
+  const isCurrentTransaction =
+    context &&
+    context.startedRouteKey === startedRouteKey &&
+    Date.now() - Number(context.submittedAt || 0) < 3000;
   if (!isCurrentTransaction) {
     markEditorSubmitIntent({
       startedRouteKey,
@@ -20350,27 +22865,31 @@ function schedulePostSubmitPageRefresh(options = {}) {
     });
     context = readEditorSubmitContext();
   }
-  const recoveryDelays = /^(?:post|reply)$/i.test(context?.submitKind || "")
-    ? [6000, 11000]
-    : [];
+  const recoveryDelays = /^(?:post|reply)$/i.test(context?.submitKind || "") ? [6000, 11000] : [];
   nativePostSubmitRefreshTimers = [
-    ...recoveryDelays.map((delay, index) => window.setTimeout(() => {
-      recoverUnobservedNativePostSubmit(startedRouteKey, {
-        allowRepeat: index > 0,
-        fallbackDelay: index > 0 ? 260 : 420
-      });
-    }, delay)),
+    ...recoveryDelays.map((delay, index) =>
+      window.setTimeout(() => {
+        recoverUnobservedNativePostSubmit(startedRouteKey, {
+          allowRepeat: index > 0,
+          fallbackDelay: index > 0 ? 260 : 420
+        });
+      }, delay)
+    ),
     window.setTimeout(() => {
       const latest = readEditorSubmitContext();
       if (!latest || latest.startedRouteKey !== startedRouteKey) {
         return;
       }
       clearEditorSubmitIntent();
-      document.querySelectorAll("[data-cc98-native-submit-released='true'], [data-cc98-submit-transaction-active='true']").forEach((editor) => {
-        delete editor.dataset.cc98NativeSubmitReleased;
-        delete editor.dataset.cc98SubmitTransactionActive;
-        delete editor.dataset.cc98SubmitTransactionStartedAt;
-      });
+      document
+        .querySelectorAll(
+          "[data-cc98-native-submit-released='true'], [data-cc98-submit-transaction-active='true']"
+        )
+        .forEach((editor) => {
+          delete editor.dataset.cc98NativeSubmitReleased;
+          delete editor.dataset.cc98SubmitTransactionActive;
+          delete editor.dataset.cc98SubmitTransactionStartedAt;
+        });
       document.querySelectorAll("[data-cc98-submit-pending='true']").forEach((control) => {
         delete control.dataset.cc98SubmitPending;
       });
@@ -20390,163 +22909,197 @@ function bindNativeEditorStabilizer(editor) {
   }
   nativeEditorStabilizers.add(editor);
   bindMarkdownEditorInputTracking(editor);
-  editor.addEventListener("keydown", (event) => {
-    if (!/^(?:Enter| )$/.test(event.key)) {
-      return;
-    }
-    const control = event.target?.closest?.("#post-topic-changeMode, .changeEditor, .cc98-rebuild-markdown-entry");
-    if (!(control instanceof HTMLElement)) {
-      return;
-    }
-    event.preventDefault();
-    event.stopPropagation();
-    control.click();
-  }, true);
-  editor.addEventListener("pointerdown", (event) => {
-    blurMarkdownEditorBeforePreview(editor, event.target);
-    if (event.target?.closest?.(".cc98-rebuild-editor-font-select")) {
-      return;
-    }
-    if (event.target?.closest?.(".cc98-rebuild-message-emoji-panel")) {
-      return;
-    }
-    const dualToolbarControl = event.target?.closest?.(".ubb-buttons .ubb-button");
-    if (getNativeDualUbbToolbarCommand(dualToolbarControl)) {
-      editor.__cc98DualUbbState?.rememberSelection?.();
+  editor.addEventListener(
+    "keydown",
+    (event) => {
+      if (!/^(?:Enter| )$/.test(event.key)) {
+        return;
+      }
+      const control = event.target?.closest?.(
+        "#post-topic-changeMode, .changeEditor, .cc98-rebuild-markdown-entry"
+      );
+      if (!(control instanceof HTMLElement)) {
+        return;
+      }
       event.preventDefault();
       event.stopPropagation();
-      return;
-    }
-    if (isEditorEmojiButtonTarget(event.target)) {
-      editor.__cc98DualUbbState?.rememberSelection?.();
-      stopNativeEditorToolbarEvent(event);
-      hideNativeEditorLegacyEmojiPanel(editor);
-      const currentPanel = editor.querySelector(":scope > .cc98-rebuild-message-emoji-panel");
-      const shouldOpen = !(currentPanel instanceof HTMLElement) || currentPanel.hidden;
-      const pointerToggle = {
-        pointerId: Number.isFinite(event.pointerId) ? event.pointerId : null,
-        startedAt: Date.now()
-      };
-      editor.__cc98EmojiPointerToggle = pointerToggle;
-      setEditorEmojiPanelOpen(editor, shouldOpen);
-      window.setTimeout(() => {
-        if (editor.__cc98EmojiPointerToggle === pointerToggle) {
-          delete editor.__cc98EmojiPointerToggle;
-        }
-      }, 5000);
-      return;
-    }
-    if (!event.target?.closest?.(".cc98-rebuild-message-emoji-panel")) {
-      setEditorEmojiPanelOpen(editor, false);
-    }
-    const passthroughControl = getNativeEditorPassthroughControl(event.target);
-    if (passthroughControl) {
-      editor.__cc98DualUbbState?.rememberSelection?.();
-      if (getNativeEditorInsertControlKind(passthroughControl) !== "file") {
+      control.click();
+    },
+    true
+  );
+  editor.addEventListener(
+    "pointerdown",
+    (event) => {
+      blurMarkdownEditorBeforePreview(editor, event.target);
+      if (event.target?.closest?.(".cc98-rebuild-editor-font-select")) {
+        return;
+      }
+      if (event.target?.closest?.(".cc98-rebuild-message-emoji-panel")) {
+        return;
+      }
+      const dualToolbarControl = event.target?.closest?.(".ubb-buttons .ubb-button");
+      if (getNativeDualUbbToolbarCommand(dualToolbarControl)) {
+        editor.__cc98DualUbbState?.rememberSelection?.();
         event.preventDefault();
         event.stopPropagation();
+        return;
       }
-      return;
-    }
-    const colorButton = getEditorColorTriggerButton(event.target);
-    const fontSizeButton = event.target?.closest?.(".ubb-button-fontSize, .cc98-rebuild-font-size-button");
-    if (!colorButton && !event.target?.closest?.(".cc98-rebuild-color-popover")) {
-      closeEditorColorPopovers();
-    }
-    if (!fontSizeButton && !event.target?.closest?.(".cc98-rebuild-font-size-popover")) {
-      closeEditorFontSizePopovers();
-    }
-    if (!colorButton || event.target?.closest?.(".cc98-rebuild-color-popover, .sp-container, .sp-picker-container")) {
-      return;
-    }
-    event.preventDefault();
-    event.stopPropagation();
-    openEditorColorPicker(colorButton, editor);
-  }, true);
-  editor.addEventListener("pointercancel", () => {
-    delete editor.__cc98EmojiPointerToggle;
-  }, true);
-  editor.addEventListener("click", (event) => {
-    if (deferMarkdownPreviewUntilInputSettles(editor, event)) {
-      return;
-    }
-    if (event.target?.closest?.(".cc98-rebuild-editor-font-select")) {
-      return;
-    }
-    if (isNativePostSubmitEditor(editor) && isLikelyEditorSubmitControl(event.target)) {
-      const submitControl = event.target?.closest?.("#post-topic-button, [id^='post-topic-button-'], button, input[type='button'], input[type='submit'], .button, .ant-btn, [role='button']");
-      appendRebornReplyTailIfNeeded(editor, submitControl);
-      scheduleNativeEditorDraftSave(editor);
-      const context = getNativeEditorSubmitContext({ editor });
-      if (!beginNativeEditorSubmitTransaction(editor, submitControl, context)) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
+      if (isEditorEmojiButtonTarget(event.target)) {
+        editor.__cc98DualUbbState?.rememberSelection?.();
+        stopNativeEditorToolbarEvent(event);
+        hideNativeEditorLegacyEmojiPanel(editor);
+        const currentPanel = editor.querySelector(":scope > .cc98-rebuild-message-emoji-panel");
+        const shouldOpen = !(currentPanel instanceof HTMLElement) || currentPanel.hidden;
+        const pointerToggle = {
+          pointerId: Number.isFinite(event.pointerId) ? event.pointerId : null,
+          startedAt: Date.now()
+        };
+        editor.__cc98EmojiPointerToggle = pointerToggle;
+        setEditorEmojiPanelOpen(editor, shouldOpen);
+        window.setTimeout(() => {
+          if (editor.__cc98EmojiPointerToggle === pointerToggle) {
+            delete editor.__cc98EmojiPointerToggle;
+          }
+        }, 5000);
+        return;
       }
-      return;
-    }
-    if (handleNativeDualUbbToolbarControl(editor, event.target, event)) {
-      return;
-    }
-    if (event.target?.closest?.(".cc98-rebuild-message-emoji-panel img")) {
-      return;
-    }
-    if (event.target?.closest?.(".cc98-rebuild-message-emoji-panel")) {
-      return;
-    }
-    if (isEditorEmojiButtonTarget(event.target)) {
-      stopNativeEditorToolbarEvent(event);
-      if (editor.__cc98EmojiPointerToggle) {
-        delete editor.__cc98EmojiPointerToggle;
+      if (!event.target?.closest?.(".cc98-rebuild-message-emoji-panel")) {
+        setEditorEmojiPanelOpen(editor, false);
+      }
+      const passthroughControl = getNativeEditorPassthroughControl(event.target);
+      if (passthroughControl) {
+        editor.__cc98DualUbbState?.rememberSelection?.();
+        if (getNativeEditorInsertControlKind(passthroughControl) !== "file") {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        return;
+      }
+      const colorButton = getEditorColorTriggerButton(event.target);
+      const fontSizeButton = event.target?.closest?.(
+        ".ubb-button-fontSize, .cc98-rebuild-font-size-button"
+      );
+      if (!colorButton && !event.target?.closest?.(".cc98-rebuild-color-popover")) {
+        closeEditorColorPopovers();
+      }
+      if (!fontSizeButton && !event.target?.closest?.(".cc98-rebuild-font-size-popover")) {
+        closeEditorFontSizePopovers();
+      }
+      if (
+        !colorButton ||
+        event.target?.closest?.(".cc98-rebuild-color-popover, .sp-container, .sp-picker-container")
+      ) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      openEditorColorPicker(colorButton, editor);
+    },
+    true
+  );
+  editor.addEventListener(
+    "pointercancel",
+    () => {
+      delete editor.__cc98EmojiPointerToggle;
+    },
+    true
+  );
+  editor.addEventListener(
+    "click",
+    (event) => {
+      if (deferMarkdownPreviewUntilInputSettles(editor, event)) {
+        return;
+      }
+      if (event.target?.closest?.(".cc98-rebuild-editor-font-select")) {
+        return;
+      }
+      if (isNativePostSubmitEditor(editor) && isLikelyEditorSubmitControl(event.target)) {
+        const submitControl = event.target?.closest?.(
+          "#post-topic-button, [id^='post-topic-button-'], button, input[type='button'], input[type='submit'], .button, .ant-btn, [role='button']"
+        );
+        appendRebornReplyTailIfNeeded(editor, submitControl);
+        scheduleNativeEditorDraftSave(editor);
+        const context = getNativeEditorSubmitContext({ editor });
+        if (!beginNativeEditorSubmitTransaction(editor, submitControl, context)) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+        }
+        return;
+      }
+      if (handleNativeDualUbbToolbarControl(editor, event.target, event)) {
+        return;
+      }
+      if (event.target?.closest?.(".cc98-rebuild-message-emoji-panel img")) {
+        return;
+      }
+      if (event.target?.closest?.(".cc98-rebuild-message-emoji-panel")) {
+        return;
+      }
+      if (isEditorEmojiButtonTarget(event.target)) {
+        stopNativeEditorToolbarEvent(event);
+        if (editor.__cc98EmojiPointerToggle) {
+          delete editor.__cc98EmojiPointerToggle;
+          scheduleNativeEditorStabilize(editor);
+          return;
+        }
+        const currentPanel = editor.querySelector(":scope > .cc98-rebuild-message-emoji-panel");
+        const shouldOpen = !(currentPanel instanceof HTMLElement) || currentPanel.hidden;
+        setEditorEmojiPanelOpen(editor, shouldOpen);
         scheduleNativeEditorStabilize(editor);
         return;
       }
-      const currentPanel = editor.querySelector(":scope > .cc98-rebuild-message-emoji-panel");
-      const shouldOpen = !(currentPanel instanceof HTMLElement) || currentPanel.hidden;
-      setEditorEmojiPanelOpen(editor, shouldOpen);
-      scheduleNativeEditorStabilize(editor);
-      return;
-    }
-    if (!event.target?.closest?.(".cc98-rebuild-message-emoji-panel")) {
-      setEditorEmojiPanelOpen(editor, false);
-    }
-    if (handleNativeEditorInsertControl(editor, event.target, event)) {
-      return;
-    }
-    const colorButton = getEditorColorTriggerButton(event.target);
-    if (colorButton && !event.target?.closest?.(".cc98-rebuild-color-popover, .sp-container, .sp-picker-container")) {
-      if (openEditorColorPicker(colorButton, editor)) {
-        event.preventDefault();
-        event.stopPropagation();
+      if (!event.target?.closest?.(".cc98-rebuild-message-emoji-panel")) {
+        setEditorEmojiPanelOpen(editor, false);
+      }
+      if (handleNativeEditorInsertControl(editor, event.target, event)) {
         return;
       }
-    }
-    window.setTimeout(() => stabilizeNativeEditor(editor), 40);
-    const control = event.target?.closest?.(".changeEditor, #post-topic-changeMode, [title*='Preview'], .fa-window-maximize");
-    if (control) {
-      scheduleNativeEditorStabilize(editor);
-    }
-  }, true);
-  editor.addEventListener("submit", (event) => {
-    if (isEditorAuxiliarySubmitEvent(event, editor)) {
-      return;
-    }
-    if (!isNativePostSubmitEditor(editor)) {
-      return;
-    }
-    if (editor.dataset.cc98SubmitTransactionActive === "true") {
-      return;
-    }
-    const submitControl = findNativeEditorSubmitControl(editor, event.submitter);
-    appendRebornReplyTailIfNeeded(editor, submitControl);
-    const context = getNativeEditorSubmitContext({ editor });
-    if (submitControl instanceof HTMLElement) {
-      beginNativeEditorSubmitTransaction(editor, submitControl, context);
-    } else {
-      markEditorSubmitIntent(context);
-      schedulePostSubmitPageRefresh(context);
-    }
-    scheduleNativeEditorDraftSave(editor);
-  }, true);
+      const colorButton = getEditorColorTriggerButton(event.target);
+      if (
+        colorButton &&
+        !event.target?.closest?.(".cc98-rebuild-color-popover, .sp-container, .sp-picker-container")
+      ) {
+        if (openEditorColorPicker(colorButton, editor)) {
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
+      }
+      window.setTimeout(() => stabilizeNativeEditor(editor), 40);
+      const control = event.target?.closest?.(
+        ".changeEditor, #post-topic-changeMode, [title*='Preview'], .fa-window-maximize"
+      );
+      if (control) {
+        scheduleNativeEditorStabilize(editor);
+      }
+    },
+    true
+  );
+  editor.addEventListener(
+    "submit",
+    (event) => {
+      if (isEditorAuxiliarySubmitEvent(event, editor)) {
+        return;
+      }
+      if (!isNativePostSubmitEditor(editor)) {
+        return;
+      }
+      if (editor.dataset.cc98SubmitTransactionActive === "true") {
+        return;
+      }
+      const submitControl = findNativeEditorSubmitControl(editor, event.submitter);
+      appendRebornReplyTailIfNeeded(editor, submitControl);
+      const context = getNativeEditorSubmitContext({ editor });
+      if (submitControl instanceof HTMLElement) {
+        beginNativeEditorSubmitTransaction(editor, submitControl, context);
+      } else {
+        markEditorSubmitIntent(context);
+        schedulePostSubmitPageRefresh(context);
+      }
+      scheduleNativeEditorDraftSave(editor);
+    },
+    true
+  );
   const editorObserver = new MutationObserver(() => scheduleNativeEditorStabilize(editor));
   editorObserver.observe(editor, {
     childList: true,
@@ -20567,7 +23120,9 @@ function renderEditorPage(app) {
     meta.append(createElement("span", "cc98-rebuild-muted", data.titlePlaceholder));
   }
   if (data.submitLabel) {
-    meta.append(createElement("span", "cc98-rebuild-chip cc98-rebuild-editor-submit-chip", data.submitLabel));
+    meta.append(
+      createElement("span", "cc98-rebuild-chip cc98-rebuild-editor-submit-chip", data.submitLabel)
+    );
   }
   hero.append(meta);
   hero.querySelector("h1")?.remove();
@@ -20576,7 +23131,9 @@ function renderEditorPage(app) {
   if (!data.editor) {
     const fallback = createElement("section", "cc98-rebuild-section");
     fallback.append(createElement("h2", "", "正在等待编辑器"));
-    fallback.append(createElement("p", "cc98-rebuild-card-meta", "原页面编辑器还没有加载完成，稍后会自动更新。"));
+    fallback.append(
+      createElement("p", "cc98-rebuild-card-meta", "原页面编辑器还没有加载完成，稍后会自动更新。")
+    );
     app.append(fallback);
     return;
   }
@@ -20592,7 +23149,11 @@ function renderEditorPage(app) {
 
 function renderPostReplyEditor(app) {
   const reply = document.querySelector("#sendTopicInfo");
-  if (!reply || reply.closest("#cc98-comfort-app") || reply.dataset.cc98NativeSubmitReleased === "true") {
+  if (
+    !reply ||
+    reply.closest("#cc98-comfort-app") ||
+    reply.dataset.cc98NativeSubmitReleased === "true"
+  ) {
     return;
   }
   rememberReparentedNativeNode(reply);
@@ -20608,10 +23169,11 @@ function renderPostReplyEditor(app) {
 
 function renderMessagePage(app) {
   const source = document.querySelector(".message-root") || document.querySelector(".message");
-  const title = getFirstText(document, ".message-message-wTitle")
-    || getFirstText(document, ".message-title")
-    || document.title.replace(/-?CC98论坛/i, "").trim()
-    || "消息";
+  const title =
+    getFirstText(document, ".message-message-wTitle") ||
+    getFirstText(document, ".message-title") ||
+    document.title.replace(/-?CC98论坛/i, "").trim() ||
+    "消息";
 
   const hero = createElement("section", "cc98-rebuild-message-hero");
   const heroTop = createElement("div", "cc98-rebuild-message-hero-top");
@@ -20636,10 +23198,12 @@ function renderMessagePage(app) {
 }
 
 function getMessagePageTitle(root = document) {
-  return getFirstText(root, ".message-message-wTitle")
-    || getFirstText(root, ".message-title")
-    || document.title.replace(/-?\s*CC98.*$/i, "").trim()
-    || "\u6d88\u606f";
+  return (
+    getFirstText(root, ".message-message-wTitle") ||
+    getFirstText(root, ".message-title") ||
+    document.title.replace(/-?\s*CC98.*$/i, "").trim() ||
+    "\u6d88\u606f"
+  );
 }
 
 function syncMessageCenterHeader(source, heroTop) {
@@ -20654,14 +23218,17 @@ function syncMessageCenterHeader(source, heroTop) {
     // query strings and hashes don't change which section is selected.
     const section = getCurrentCc98RoutePath().split(/[?#]/)[0].split("/")[2] || "response";
     for (const link of nav.querySelectorAll(":scope > a[href]")) {
-      const path = getCc98RoutePathFromHref(link.getAttribute("href")).split(/[?#]/)[0].replace(/\/$/, "");
+      const path = getCc98RoutePathFromHref(link.getAttribute("href"))
+        .split(/[?#]/)[0]
+        .replace(/\/$/, "");
       if (path === `/message/${section}`) {
         if (link.getAttribute("aria-current") !== "page") link.setAttribute("aria-current", "page");
       } else if (link.hasAttribute("aria-current")) link.removeAttribute("aria-current");
     }
   }
   const originalWrap = source.querySelector(".readAllMessage");
-  const originalControl = originalWrap?.querySelector?.("button, a, [role='button']") || originalWrap;
+  const originalControl =
+    originalWrap?.querySelector?.("button, a, [role='button']") || originalWrap;
   let proxy = heroTop.querySelector(".cc98-rebuild-message-read-all-proxy");
   if (!(originalControl instanceof HTMLElement)) {
     proxy?.remove();
@@ -20676,19 +23243,30 @@ function syncMessageCenterHeader(source, heroTop) {
   }
   originalWrap.classList.add("cc98-rebuild-message-read-all-source");
   if (!(proxy instanceof HTMLButtonElement)) {
-    proxy = createButton("cc98-rebuild-message-read-all-proxy", "\u5168\u90e8\u6807\u4e3a\u5df2\u8bfb", (event) => {
-      event?.preventDefault?.();
-      event?.stopPropagation?.();
-      const sourceButton = source.querySelector(".readAllMessage button, .readAllMessage a, .readAllMessage [role='button']") || source.querySelector(".readAllMessage");
-      if (sourceButton instanceof HTMLElement) {
-        triggerOriginalControl(sourceButton);
+    proxy = createButton(
+      "cc98-rebuild-message-read-all-proxy",
+      "\u5168\u90e8\u6807\u4e3a\u5df2\u8bfb",
+      (event) => {
+        event?.preventDefault?.();
+        event?.stopPropagation?.();
+        const sourceButton =
+          source.querySelector(
+            ".readAllMessage button, .readAllMessage a, .readAllMessage [role='button']"
+          ) || source.querySelector(".readAllMessage");
+        if (sourceButton instanceof HTMLElement) {
+          triggerOriginalControl(sourceButton);
+        }
       }
-    });
+    );
     heroTop.append(proxy);
   }
-  const label = cleanupPostText(originalControl.textContent || originalWrap.textContent) || "\u5168\u90e8\u6807\u4e3a\u5df2\u8bfb";
+  const label =
+    cleanupPostText(originalControl.textContent || originalWrap.textContent) ||
+    "\u5168\u90e8\u6807\u4e3a\u5df2\u8bfb";
   proxy.textContent = label;
-  proxy.disabled = Boolean(originalControl.matches?.(":disabled, [disabled], [aria-disabled='true']"));
+  proxy.disabled = Boolean(
+    originalControl.matches?.(":disabled, [disabled], [aria-disabled='true']")
+  );
 }
 
 function captureMessageWindowScrollState(root = document) {
@@ -20736,10 +23314,16 @@ function stabilizeNativeMessageSurfaces(source) {
       return;
     }
     const content = windowNode.querySelector(":scope > .message-message-wContent");
-    const composer = windowNode.querySelector(":scope > .message-message-wPost")
-      || [...windowNode.querySelectorAll(".message-message-wPost")]
-        .find((node) => node instanceof HTMLElement && !node.closest(".cc98-rebuild-message-editor"));
-    if (content instanceof HTMLElement && composer instanceof HTMLElement && content.nextElementSibling !== composer) {
+    const composer =
+      windowNode.querySelector(":scope > .message-message-wPost") ||
+      [...windowNode.querySelectorAll(".message-message-wPost")].find(
+        (node) => node instanceof HTMLElement && !node.closest(".cc98-rebuild-message-editor")
+      );
+    if (
+      content instanceof HTMLElement &&
+      composer instanceof HTMLElement &&
+      content.nextElementSibling !== composer
+    ) {
       content.after(composer);
       movedComposer = true;
     }
@@ -20775,7 +23359,11 @@ function stabilizeNativeMessageSurfaces(source) {
     }
     node.classList.add("cc98-rebuild-message-surface-clean");
     const styleText = node.getAttribute("style") || "";
-    if (/background(?:-color)?\s*:\s*(?:white|#fff(?:fff)?|rgb\(\s*255\s*,\s*255\s*,\s*255\s*\))/i.test(styleText)) {
+    if (
+      /background(?:-color)?\s*:\s*(?:white|#fff(?:fff)?|rgb\(\s*255\s*,\s*255\s*,\s*255\s*\))/i.test(
+        styleText
+      )
+    ) {
       node.style.setProperty("background", "transparent", "important");
       node.style.setProperty("background-color", "transparent", "important");
       node.style.setProperty("background-image", "none", "important");
@@ -20796,11 +23384,13 @@ function syncPrivateMessageReading(source) {
   const title = getFirstText(header, ".message-message-wTitle");
   const selected = !!title && !title.includes("无当前聊天对象");
   chat.toggleAttribute("data-dm-selected", selected);
-  chat.querySelectorAll('.message-message-pList > div[id^="contact_"]:not([tabindex]):not([role])').forEach(row => {
-    row.tabIndex = 0;
-    row.setAttribute("role", "link");
-    row.setAttribute("data-cc98-dm-contact", "");
-  });
+  chat
+    .querySelectorAll('.message-message-pList > div[id^="contact_"]:not([tabindex]):not([role])')
+    .forEach((row) => {
+      row.tabIndex = 0;
+      row.setAttribute("role", "link");
+      row.setAttribute("data-cc98-dm-contact", "");
+    });
   const switchPane = (pane) => {
     chat.dataset.dmPane = pane;
     const focusTarget = pane === "list" ? ".cc98-dm-chat-button" : ".cc98-dm-contacts-button";
@@ -20819,16 +23409,22 @@ function syncPrivateMessageReading(source) {
 }
 
 function handlePrivateMessageContactKey(event) {
-  if (event.key === "Enter" && event.target instanceof Element && event.target.hasAttribute("data-cc98-dm-contact")) {
+  if (
+    event.key === "Enter" &&
+    event.target instanceof Element &&
+    event.target.hasAttribute("data-cc98-dm-contact")
+  ) {
     event.preventDefault();
     event.target.querySelector(".message-message-person")?.click();
   }
 }
 
 function isNativeMessageContentNode(node) {
-  return node instanceof Element
-    && Boolean(node.closest(NATIVE_MESSAGE_ROOT_SELECTOR))
-    && !node.closest(".cc98-rebuild-message-editor, .cc98-rebuild-message-emoji-panel");
+  return (
+    node instanceof Element &&
+    Boolean(node.closest(NATIVE_MESSAGE_ROOT_SELECTOR)) &&
+    !node.closest(".cc98-rebuild-message-editor, .cc98-rebuild-message-emoji-panel")
+  );
 }
 
 function getNativeMessageEmojiSource(image) {
@@ -20836,17 +23432,31 @@ function getNativeMessageEmojiSource(image) {
   const candidates = [
     ...Array.from(image.closest("picture")?.querySelectorAll("source") || []),
     image
-  ].map((node) => {
-    const attribute = node.getAttribute("srcset") ? "srcset"
-      : node.getAttribute("data-srcset") ? "data-srcset" : "";
-    return { node, attribute, value: attribute ? node.getAttribute(attribute) : "" };
-  }).filter((entry) => entry.value);
+  ]
+    .map((node) => {
+      const attribute = node.getAttribute("srcset")
+        ? "srcset"
+        : node.getAttribute("data-srcset")
+          ? "data-srcset"
+          : "";
+      return { node, attribute, value: attribute ? node.getAttribute(attribute) : "" };
+    })
+    .filter((entry) => entry.value);
   if (candidates.length) {
-    const sources = candidates.flatMap(({ value }) => value.split(",").map((item) => item.trim().split(/\s+/)[0]).filter(Boolean));
+    const sources = candidates.flatMap(({ value }) =>
+      value
+        .split(",")
+        .map((item) => item.trim().split(/\s+/)[0])
+        .filter(Boolean)
+    );
     // Include the fallback: inactive picture sources must never replace an
     // ordinary photo. A mixed responsive set keeps its native image sizing.
-    if ((fallback && !getLocalEmojiAssetUrlFromSrc(fallback))
-      || !sources.length || !sources.every((value) => getLocalEmojiAssetUrlFromSrc(value))) return null;
+    if (
+      (fallback && !getLocalEmojiAssetUrlFromSrc(fallback)) ||
+      !sources.length ||
+      !sources.every((value) => getLocalEmojiAssetUrlFromSrc(value))
+    )
+      return null;
     return { src: fallback || sources[0], candidates };
   }
   return { src: fallback, candidates: [] };
@@ -20857,13 +23467,20 @@ function markNativeMessageEmojiImage(image) {
   const source = getNativeMessageEmojiSource(image);
   // Uploaded photos can have names like face.png or 123.png. Only known
   // forum emoji asset paths identify an emoticon in a native message.
-  if (image.closest(NATIVE_MESSAGE_EMOJI_CONTENT_SELECTOR) && source && getLocalEmojiAssetUrlFromSrc(source.src)) {
+  if (
+    image.closest(NATIVE_MESSAGE_EMOJI_CONTENT_SELECTOR) &&
+    source &&
+    getLocalEmojiAssetUrlFromSrc(source.src)
+  ) {
     markRebuiltEmojiImage(image, source.src);
     source.candidates.forEach(({ node, attribute, value }) => {
       // Leave lazy metadata to the native renderer. Creating srcset here can
       // override a later photo when React reuses this image element.
       if (attribute !== "srcset") return;
-      const local = value.split(",").map((item) => item.trim().replace(/^\S+/, (url) => getLocalEmojiAssetUrlFromSrc(url))).join(", ");
+      const local = value
+        .split(",")
+        .map((item) => item.trim().replace(/^\S+/, (url) => getLocalEmojiAssetUrlFromSrc(url)))
+        .join(", ");
       if (node.getAttribute("srcset") !== local) node.setAttribute("srcset", local);
     });
   } else {
@@ -20883,9 +23500,10 @@ function setNativeMessageInputValue(input, value) {
     return;
   }
   const previousValue = input.value;
-  const descriptor = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(input), "value")
-    || Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")
-    || Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value");
+  const descriptor =
+    Object.getOwnPropertyDescriptor(Object.getPrototypeOf(input), "value") ||
+    Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value") ||
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value");
   if (descriptor?.set) {
     descriptor.set.call(input, value);
   } else {
@@ -20903,7 +23521,9 @@ function insertPrivateMessageText(textarea, text, caretOffset = null) {
   if (!(textarea instanceof HTMLTextAreaElement)) {
     return;
   }
-  const start = Number.isFinite(textarea.selectionStart) ? textarea.selectionStart : textarea.value.length;
+  const start = Number.isFinite(textarea.selectionStart)
+    ? textarea.selectionStart
+    : textarea.value.length;
   const end = Number.isFinite(textarea.selectionEnd) ? textarea.selectionEnd : start;
   const value = textarea.value;
   setNativeMessageInputValue(textarea, `${value.slice(0, start)}${text}${value.slice(end)}`);
@@ -20916,7 +23536,9 @@ function insertPrivateMessageUbb(textarea, before, after = before) {
   if (!(textarea instanceof HTMLTextAreaElement)) {
     return;
   }
-  const start = Number.isFinite(textarea.selectionStart) ? textarea.selectionStart : textarea.value.length;
+  const start = Number.isFinite(textarea.selectionStart)
+    ? textarea.selectionStart
+    : textarea.value.length;
   const end = Number.isFinite(textarea.selectionEnd) ? textarea.selectionEnd : start;
   const selected = textarea.value.slice(start, end);
   const text = `${before}${selected}${after}`;
@@ -20927,7 +23549,9 @@ function getPrivateMessageSelectedText(textarea) {
   if (!(textarea instanceof HTMLTextAreaElement)) {
     return "";
   }
-  const start = Number.isFinite(textarea.selectionStart) ? textarea.selectionStart : textarea.value.length;
+  const start = Number.isFinite(textarea.selectionStart)
+    ? textarea.selectionStart
+    : textarea.value.length;
   const end = Number.isFinite(textarea.selectionEnd) ? textarea.selectionEnd : start;
   return textarea.value.slice(start, end);
 }
@@ -20969,7 +23593,21 @@ function getPrivateMessageEmojiCategories() {
   };
   const mahjongCartoonIds = ["003", "018", "019", "046", "049", "059", "096", "134", "189", "217"];
   const mahjongCartoonGifIds = new Set(["018", "049", "096"]);
-  const mahjongFaceGifIds = new Set(["004", "009", "056", "061", "062", "087", "115", "120", "137", "168", "169", "175", "206"]);
+  const mahjongFaceGifIds = new Set([
+    "004",
+    "009",
+    "056",
+    "061",
+    "062",
+    "087",
+    "115",
+    "120",
+    "137",
+    "168",
+    "169",
+    "175",
+    "206"
+  ]);
   const classicIds = [
     ...Array.from({ length: 10 }, (_, index) => pad2(index)),
     ...Array.from({ length: 34 }, (_, index) => String(index + 10)),
@@ -20990,21 +23628,53 @@ function getPrivateMessageEmojiCategories() {
       key: "ac",
       label: "AC娘",
       items: [
-        ...makeRange(54, (index) => pad2(index + 1), (code) => `ac${code}`, (code) => getExtensionAssetUrl(`${getLocalAcEmojiFolder()}/${code}.png`)),
-        ...makeRange(40, (index) => String(index + 1001), (code) => `ac${code}`, (code) => getExtensionAssetUrl(`${getLocalAcEmojiFolder()}/${code}.png`)),
-        ...makeRange(55, (index) => String(index + 2001), (code) => `ac${code}`, (code) => getExtensionAssetUrl(`${getLocalAcEmojiFolder()}/${code}.png`))
+        ...makeRange(
+          54,
+          (index) => pad2(index + 1),
+          (code) => `ac${code}`,
+          (code) => getExtensionAssetUrl(`${getLocalAcEmojiFolder()}/${code}.png`)
+        ),
+        ...makeRange(
+          40,
+          (index) => String(index + 1001),
+          (code) => `ac${code}`,
+          (code) => getExtensionAssetUrl(`${getLocalAcEmojiFolder()}/${code}.png`)
+        ),
+        ...makeRange(
+          55,
+          (index) => String(index + 2001),
+          (code) => `ac${code}`,
+          (code) => getExtensionAssetUrl(`${getLocalAcEmojiFolder()}/${code}.png`)
+        )
       ]
     },
     {
       key: "mahjong",
       label: "麻将脸",
       items: [
-        ...makeRange(16, (index) => pad3(index + 1), (code) => `a:${code}`, (code) => getMahjongEmotionUrl("a", code)),
-        ...mahjongCartoonIds.map((code) => makeItem(
-          `c:${code}`,
-          getExtensionAssetUrl(`images/mahjong/carton2017/${code}.${mahjongCartoonGifIds.has(code) ? "gif" : "png"}`)
-        )),
-        ...makeRange(208, (index) => pad3(index + 1), (code) => `f:${code}`, (code) => getExtensionAssetUrl(`images/mahjong/face2017/${code}.${mahjongFaceGifIds.has(code) ? "gif" : "png"}`))
+        ...makeRange(
+          16,
+          (index) => pad3(index + 1),
+          (code) => `a:${code}`,
+          (code) => getMahjongEmotionUrl("a", code)
+        ),
+        ...mahjongCartoonIds.map((code) =>
+          makeItem(
+            `c:${code}`,
+            getExtensionAssetUrl(
+              `images/mahjong/carton2017/${code}.${mahjongCartoonGifIds.has(code) ? "gif" : "png"}`
+            )
+          )
+        ),
+        ...makeRange(
+          208,
+          (index) => pad3(index + 1),
+          (code) => `f:${code}`,
+          (code) =>
+            getExtensionAssetUrl(
+              `images/mahjong/face2017/${code}.${mahjongFaceGifIds.has(code) ? "gif" : "png"}`
+            )
+        )
       ]
     },
     {
@@ -21030,16 +23700,18 @@ function getPrivateMessageEmojiCategories() {
     {
       key: "em",
       label: "经典",
-      items: classicIds.map((code) => makeItem(
-        `em${code}`,
-        getExtensionAssetUrl(`images/em/em${code}.gif`)
-      ))
+      items: classicIds.map((code) =>
+        makeItem(`em${code}`, getExtensionAssetUrl(`images/em/em${code}.gif`))
+      )
     }
   ];
 }
 
 function ensurePrivateMessageEmojiPanel(editor, textarea, options = {}) {
-  if (!(editor instanceof HTMLElement) || (!(textarea instanceof HTMLTextAreaElement) && typeof options.onSelect !== "function")) {
+  if (
+    !(editor instanceof HTMLElement) ||
+    (!(textarea instanceof HTMLTextAreaElement) && typeof options.onSelect !== "function")
+  ) {
     return null;
   }
   bindPrivateMessageEmojiBlankDismiss();
@@ -21096,11 +23768,15 @@ function ensurePrivateMessageEmojiPanel(editor, textarea, options = {}) {
         } else if (typeof editor.__cc98WysiwygInsertEmoji === "function") {
           editor.__cc98WysiwygInsertEmoji(item);
         } else {
-          const targetTextarea = panel.__cc98EmojiTextarea instanceof HTMLTextAreaElement ? panel.__cc98EmojiTextarea : textarea;
+          const targetTextarea =
+            panel.__cc98EmojiTextarea instanceof HTMLTextAreaElement
+              ? panel.__cc98EmojiTextarea
+              : textarea;
           insertPrivateMessageText(targetTextarea, item.insertText);
         }
         panel.hidden = true;
-        if (panel.__cc98EmojiAnchor?.hasAttribute("aria-expanded")) panel.__cc98EmojiAnchor.setAttribute("aria-expanded", "false");
+        if (panel.__cc98EmojiAnchor?.hasAttribute("aria-expanded"))
+          panel.__cc98EmojiAnchor.setAttribute("aria-expanded", "false");
         editor.classList.remove("cc98-rebuild-message-emoji-open", "cc98-rebuild-emoji-panel-open");
         if (panel.dataset.cc98NativeEditorEmoji === "true") {
           scheduleNativeEditorStabilize(editor);
@@ -21118,36 +23794,56 @@ function ensurePrivateMessageEmojiPanel(editor, textarea, options = {}) {
       image.src = item.src;
       image.alt = "";
       image.loading = "lazy";
-      image.addEventListener("error", () => {
-        if (item.favoriteImage) {
-          image.hidden = true;
-          button.classList.add("is-unavailable");
-          button.append(createElement("span", "", item.note || "图片"));
-        } else {
-          button.hidden = true;
-        }
-      }, { once: true });
+      image.addEventListener(
+        "error",
+        () => {
+          if (item.favoriteImage) {
+            image.hidden = true;
+            button.classList.add("is-unavailable");
+            button.append(createElement("span", "", item.note || "图片"));
+          } else {
+            button.hidden = true;
+          }
+        },
+        { once: true }
+      );
       if (!item.favoriteImage) markRebuiltEmojiImage(image, item.src);
       button.append(image);
       content.append(button);
     });
   };
   const renderStatus = (message) => {
-    content.replaceChildren(createElement("div", "cc98-rebuild-image-favorites-picker-status", message));
+    content.replaceChildren(
+      createElement("div", "cc98-rebuild-image-favorites-picker-status", message)
+    );
   };
   const showFavorites = (items) => {
     const usable = (Array.isArray(items) ? items : []).filter((item) => item?.url && item?.code);
-    renderItems(activeCategory, usable.map((item) => ({ src: item.url, insertText: item.code, note: item.note, favoriteImage: true })));
+    renderItems(
+      activeCategory,
+      usable.map((item) => ({
+        src: item.url,
+        insertText: item.code,
+        note: item.note,
+        favoriteImage: true
+      }))
+    );
     if (!usable.length) renderStatus("暂无图片收藏");
   };
   const renderCategory = (activeKey) => {
-    const key = activeKey === "image-favorites" && !panel.__cc98EmojiAllowFavorites ? categories[0].key : activeKey;
+    const key =
+      activeKey === "image-favorites" && !panel.__cc98EmojiAllowFavorites
+        ? categories[0].key
+        : activeKey;
     activeCategory = categories.find((item) => item.key === key) || categories[0];
     const revision = ++renderRevision;
     tabs.querySelectorAll(".cc98-rebuild-message-emoji-tab").forEach((tab) => {
       tab.classList.toggle("is-active", tab.dataset.emojiKey === activeCategory.key);
     });
-    content.classList.toggle("cc98-rebuild-image-favorites-picker", activeCategory.key === "image-favorites");
+    content.classList.toggle(
+      "cc98-rebuild-image-favorites-picker",
+      activeCategory.key === "image-favorites"
+    );
     if (activeCategory.key !== "image-favorites") {
       renderItems(activeCategory, activeCategory.items);
       return;
@@ -21159,13 +23855,16 @@ function ensurePrivateMessageEmojiPanel(editor, textarea, options = {}) {
       renderStatus("图片收藏暂不可用");
       return;
     }
-    Promise.resolve().then(() => favorites.list()).then((items) => {
-      if (revision === renderRevision) showFavorites(items);
-    }).catch((error) => {
-      if (revision !== renderRevision) return;
-      content.removeAttribute("aria-busy");
-      renderStatus(error?.message || "图片收藏加载失败");
-    });
+    Promise.resolve()
+      .then(() => favorites.list())
+      .then((items) => {
+        if (revision === renderRevision) showFavorites(items);
+      })
+      .catch((error) => {
+        if (revision !== renderRevision) return;
+        content.removeAttribute("aria-busy");
+        renderStatus(error?.message || "图片收藏加载失败");
+      });
   };
   panel.__cc98EmojiRefreshFavorites = (fromStore = false) => {
     if (activeCategory.key !== "image-favorites") return;
@@ -21177,10 +23876,14 @@ function ensurePrivateMessageEmojiPanel(editor, textarea, options = {}) {
     }
   };
   categories.forEach((category) => {
-    const tab = createButton("cc98-rebuild-message-emoji-tab ubb-emoji-button", category.label, (event) => {
-      event?.preventDefault?.();
-      renderCategory(category.key);
-    });
+    const tab = createButton(
+      "cc98-rebuild-message-emoji-tab ubb-emoji-button",
+      category.label,
+      (event) => {
+        event?.preventDefault?.();
+        renderCategory(category.key);
+      }
+    );
     tab.type = "button";
     tab.dataset.emojiKey = category.key;
     tab.hidden = category.key === "image-favorites" && !allowFavorites;
@@ -21205,9 +23908,15 @@ function bindFloatingEmojiPanelReposition(panel) {
   }
   floatingEmojiPanelRepositionBound = true;
   const reposition = () => {
-    for (const openPanel of document.getElementsByClassName("cc98-rebuild-message-emoji-panel-floating")) {
+    for (const openPanel of document.getElementsByClassName(
+      "cc98-rebuild-message-emoji-panel-floating"
+    )) {
       if (!openPanel.hidden && openPanel.__cc98EmojiAnchor?.isConnected) {
-        positionPrivateMessageEmojiPanel(openPanel.__cc98EmojiEditor, openPanel, openPanel.__cc98EmojiAnchor);
+        positionPrivateMessageEmojiPanel(
+          openPanel.__cc98EmojiEditor,
+          openPanel,
+          openPanel.__cc98EmojiAnchor
+        );
       }
     }
   };
@@ -21221,14 +23930,20 @@ function closePrivateMessageEmojiPanels(exceptTarget = null) {
       return;
     }
     const anchor = panel.__cc98EmojiAnchor;
-    if (exceptTarget instanceof Node && (panel.contains(exceptTarget) || anchor?.contains?.(exceptTarget))) {
+    if (
+      exceptTarget instanceof Node &&
+      (panel.contains(exceptTarget) || anchor?.contains?.(exceptTarget))
+    ) {
       return;
     }
     panel.hidden = true;
     if (anchor?.hasAttribute("aria-expanded")) anchor.setAttribute("aria-expanded", "false");
-    const editor = panel.__cc98EmojiEditor instanceof HTMLElement
-      ? panel.__cc98EmojiEditor
-      : panel.closest(".cc98-rebuild-message-editor, .cc98-rebuild-profile-signature-editor, .cc98-rebuild-native-editor");
+    const editor =
+      panel.__cc98EmojiEditor instanceof HTMLElement
+        ? panel.__cc98EmojiEditor
+        : panel.closest(
+            ".cc98-rebuild-message-editor, .cc98-rebuild-profile-signature-editor, .cc98-rebuild-native-editor"
+          );
     editor?.classList?.remove?.("cc98-rebuild-message-emoji-open", "cc98-rebuild-emoji-panel-open");
   });
 }
@@ -21238,16 +23953,20 @@ function bindPrivateMessageEmojiBlankDismiss() {
     return;
   }
   privateMessageEmojiDismissBound = true;
-  document.addEventListener("pointerdown", (event) => {
-    const target = event.target;
-    if (!(target instanceof Node)) {
-      return;
-    }
-    if (target instanceof Element && isEditorEmojiButtonTarget(target)) {
-      return;
-    }
-    closePrivateMessageEmojiPanels(target);
-  }, true);
+  document.addEventListener(
+    "pointerdown",
+    (event) => {
+      const target = event.target;
+      if (!(target instanceof Node)) {
+        return;
+      }
+      if (target instanceof Element && isEditorEmojiButtonTarget(target)) {
+        return;
+      }
+      closePrivateMessageEmojiPanels(target);
+    },
+    true
+  );
 }
 
 function positionPrivateMessageEmojiPanel(editor, panel, anchor) {
@@ -21256,8 +23975,14 @@ function positionPrivateMessageEmojiPanel(editor, panel, anchor) {
   }
   const editorRect = editor instanceof HTMLElement ? editor.getBoundingClientRect() : null;
   const anchorRect = anchor.getBoundingClientRect();
-  const viewportWidth = Math.max(320, window.innerWidth || document.documentElement.clientWidth || 1024);
-  const viewportHeight = Math.max(320, window.innerHeight || document.documentElement.clientHeight || 768);
+  const viewportWidth = Math.max(
+    320,
+    window.innerWidth || document.documentElement.clientWidth || 1024
+  );
+  const viewportHeight = Math.max(
+    320,
+    window.innerHeight || document.documentElement.clientHeight || 768
+  );
   const preferredWidth = editorRect?.width || 720;
   const width = Math.min(Math.max(preferredWidth, 360), viewportWidth - 24);
   const left = Math.min(Math.max(12, anchorRect.left), Math.max(12, viewportWidth - width - 12));
@@ -21284,9 +24009,10 @@ function positionPrivateMessageEmojiPanel(editor, panel, anchor) {
     const panelHeight = Math.min(panel.offsetHeight || 340, viewportHeight - 24);
     const topAbove = anchorRect.top - panelHeight - 8;
     const topBelow = anchorRect.bottom + 8;
-    const top = topAbove >= 12
-      ? topAbove
-      : Math.min(Math.max(12, topBelow), Math.max(12, viewportHeight - panelHeight - 12));
+    const top =
+      topAbove >= 12
+        ? topAbove
+        : Math.min(Math.max(12, topBelow), Math.max(12, viewportHeight - panelHeight - 12));
     applyImportantStyle(panel, {
       top: `${Math.round(top)}px`,
       "max-height": `${Math.round(Math.min(380, viewportHeight - 24))}px`
@@ -21318,12 +24044,18 @@ function buildPrivateMessageInsertPanel(editor, fields, onConfirm) {
     inputs[field.name] = input;
   });
   const actions = createElement("div", "cc98-rebuild-message-editor-panel-actions");
-  const confirm = createButton("cc98-rebuild-message-editor-panel-button is-primary", "确定", (event) => {
-    event.preventDefault();
-    const values = Object.fromEntries(Object.entries(inputs).map(([key, input]) => [key, input.value.trim()]));
-    onConfirm(values);
-    panel.hidden = true;
-  });
+  const confirm = createButton(
+    "cc98-rebuild-message-editor-panel-button is-primary",
+    "确定",
+    (event) => {
+      event.preventDefault();
+      const values = Object.fromEntries(
+        Object.entries(inputs).map(([key, input]) => [key, input.value.trim()])
+      );
+      onConfirm(values);
+      panel.hidden = true;
+    }
+  );
   const cancel = createButton("cc98-rebuild-message-editor-panel-button", "取消", (event) => {
     event.preventDefault();
     panel.hidden = true;
@@ -21336,10 +24068,19 @@ function buildPrivateMessageInsertPanel(editor, fields, onConfirm) {
 }
 
 function getPrivateMessageNativeControls(source, container) {
-  return [...new Set([
-    ...container.querySelectorAll("button, a, label, input[type='file'], [role='button']"),
-    ...source.querySelectorAll(".message-message-wPost button, .message-message-wPost a, .message-message-wPost label, .message-message-wPost input[type='file'], .message-message-wPost [role='button']")
-  ].filter((control) => control instanceof HTMLElement && !control.closest(".cc98-rebuild-message-editor")))];
+  return [
+    ...new Set(
+      [
+        ...container.querySelectorAll("button, a, label, input[type='file'], [role='button']"),
+        ...source.querySelectorAll(
+          ".message-message-wPost button, .message-message-wPost a, .message-message-wPost label, .message-message-wPost input[type='file'], .message-message-wPost [role='button']"
+        )
+      ].filter(
+        (control) =>
+          control instanceof HTMLElement && !control.closest(".cc98-rebuild-message-editor")
+      )
+    )
+  ];
 }
 
 function getPrivateMessageControlSignature(control) {
@@ -21350,29 +24091,49 @@ function getPrivateMessageControlSignature(control) {
     control.getAttribute?.("title"),
     control.getAttribute?.("aria-label"),
     control.textContent
-  ].filter(Boolean).join(" ");
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
 function findPrivateMessageNativeControl(source, container, kind) {
   const controls = getPrivateMessageNativeControls(source, container);
   if (kind === "send") {
-    return controls.find((control) => /发送|send/i.test(cleanupPostText(control.textContent) || getPrivateMessageControlSignature(control)))
-      || controls.find((control) => control.classList?.contains("message-message-wPostBtn") && !/上传|图片|upload|image/i.test(getPrivateMessageControlSignature(control)))
-      || null;
+    return (
+      controls.find((control) =>
+        /发送|send/i.test(
+          cleanupPostText(control.textContent) || getPrivateMessageControlSignature(control)
+        )
+      ) ||
+      controls.find(
+        (control) =>
+          control.classList?.contains("message-message-wPostBtn") &&
+          !/上传|图片|upload|image/i.test(getPrivateMessageControlSignature(control))
+      ) ||
+      null
+    );
   }
   if (kind === "uploadImage") {
     const imageInput = controls.find((control) => {
-      return control instanceof HTMLInputElement
-        && control.type === "file"
-        && /image|\.png|\.jpe?g|\.gif|\.webp/i.test(control.accept || getPrivateMessageControlSignature(control));
+      return (
+        control instanceof HTMLInputElement &&
+        control.type === "file" &&
+        /image|\.png|\.jpe?g|\.gif|\.webp/i.test(
+          control.accept || getPrivateMessageControlSignature(control)
+        )
+      );
     });
     if (imageInput) {
       return imageInput;
     }
-    return controls.find((control) => {
-      const signature = getPrivateMessageControlSignature(control);
-      return /上传图片|图片|image|picture|upload/i.test(signature) && !/发送|send/i.test(signature);
-    }) || null;
+    return (
+      controls.find((control) => {
+        const signature = getPrivateMessageControlSignature(control);
+        return (
+          /上传图片|图片|image|picture|upload/i.test(signature) && !/发送|send/i.test(signature)
+        );
+      }) || null
+    );
   }
   return null;
 }
@@ -21392,8 +24153,7 @@ function getPrivateMessageUploadFileInput(control, source) {
     const forId = control.getAttribute("for");
     if (forId) {
       const owner = control.ownerDocument || document;
-      const input = owner.getElementById(forId)
-        || source?.querySelector?.(`#${CSS.escape(forId)}`);
+      const input = owner.getElementById(forId) || source?.querySelector?.(`#${CSS.escape(forId)}`);
       if (input instanceof HTMLInputElement && input.type === "file") {
         return input;
       }
@@ -21436,7 +24196,11 @@ function isInsideHiddenMessageNode(node) {
       return true;
     }
     const style = window.getComputedStyle(current);
-    if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity || 1) === 0) {
+    if (
+      style.display === "none" ||
+      style.visibility === "hidden" ||
+      Number(style.opacity || 1) === 0
+    ) {
       return true;
     }
     current = current.parentElement;
@@ -21448,7 +24212,11 @@ function getPrivateMessageComposerContainer(nativeInput) {
   if (!(nativeInput instanceof HTMLTextAreaElement) && !(nativeInput instanceof HTMLInputElement)) {
     return null;
   }
-  if (nativeInput.closest(".message-message-wContent, .message-message-wcContent, .message-message-pList")) {
+  if (
+    nativeInput.closest(
+      ".message-message-wContent, .message-message-wcContent, .message-message-pList"
+    )
+  ) {
     return null;
   }
   const container = nativeInput.closest(".message-message-wPost");
@@ -21467,9 +24235,14 @@ function cleanupPrivateMessageEditorPlacement(source) {
       return;
     }
     const container = editor.closest(".message-message-wPost");
-    const misplaced = !(container instanceof HTMLElement)
-      || editor.parentElement !== container
-      || Boolean(editor.closest(".message-message-wContent, .message-message-wcContent, .message-message-pList"));
+    const misplaced =
+      !(container instanceof HTMLElement) ||
+      editor.parentElement !== container ||
+      Boolean(
+        editor.closest(
+          ".message-message-wContent, .message-message-wcContent, .message-message-pList"
+        )
+      );
     if (misplaced) {
       const input = editor.parentElement?.querySelector?.(".message-message-wPostArea");
       if (input instanceof HTMLElement) {
@@ -21484,13 +24257,23 @@ function getPrivateMessageComposerInputs(source) {
   if (!(source instanceof HTMLElement)) {
     return [];
   }
-  const windows = [...source.querySelectorAll(".message-message-window")]
-    .filter((windowNode) => windowNode instanceof HTMLElement && !isInsideHiddenMessageNode(windowNode));
+  const windows = [...source.querySelectorAll(".message-message-window")].filter(
+    (windowNode) => windowNode instanceof HTMLElement && !isInsideHiddenMessageNode(windowNode)
+  );
   const scopes = windows.length ? windows : [source];
-  return [...new Set(scopes.flatMap((scope) => (
-    [...scope.querySelectorAll(".message-message-wPost textarea.message-message-wPostArea, .message-message-wPost input.message-message-wPostArea")]
-      .filter((input) => input instanceof HTMLTextAreaElement || input instanceof HTMLInputElement)
-  )))].filter((input) => getPrivateMessageComposerContainer(input));
+  return [
+    ...new Set(
+      scopes.flatMap((scope) =>
+        [
+          ...scope.querySelectorAll(
+            ".message-message-wPost textarea.message-message-wPostArea, .message-message-wPost input.message-message-wPostArea"
+          )
+        ].filter(
+          (input) => input instanceof HTMLTextAreaElement || input instanceof HTMLInputElement
+        )
+      )
+    )
+  ].filter((input) => getPrivateMessageComposerContainer(input));
 }
 
 function stabilizePrivateMessageEditor(source) {
@@ -21540,7 +24323,12 @@ function stabilizePrivateMessageComposer(source, nativeInput) {
     if (value === textarea.value) {
       return;
     }
-    if (force || document.activeElement !== textarea || value.includes(textarea.value) || textarea.value.includes(value)) {
+    if (
+      force ||
+      document.activeElement !== textarea ||
+      value.includes(textarea.value) ||
+      textarea.value.includes(value)
+    ) {
       textarea.value = value;
       textarea.dispatchEvent(new Event("input", { bubbles: true }));
     }
@@ -21586,9 +24374,15 @@ function stabilizePrivateMessageComposer(source, nativeInput) {
       insertPrivateMessageTaggedUrl(textarea, "img", "请输入图片地址");
     }
   });
-  addActionButton("影", "插入视频", () => insertPrivateMessageTaggedUrl(textarea, "video", "请输入视频地址"));
-  addActionButton("Bili", "插入 Bilibili 视频", () => insertPrivateMessageTaggedUrl(textarea, "bilibili", "请输入 Bilibili 地址或 BV 号"));
-  addActionButton("音", "插入音频", () => insertPrivateMessageTaggedUrl(textarea, "audio", "请输入音频地址"));
+  addActionButton("影", "插入视频", () =>
+    insertPrivateMessageTaggedUrl(textarea, "video", "请输入视频地址")
+  );
+  addActionButton("Bili", "插入 Bilibili 视频", () =>
+    insertPrivateMessageTaggedUrl(textarea, "bilibili", "请输入 Bilibili 地址或 BV 号")
+  );
+  addActionButton("音", "插入音频", () =>
+    insertPrivateMessageTaggedUrl(textarea, "audio", "请输入音频地址")
+  );
   const emojiButton = addActionButton("☺", "插入表情", (event) => {
     const panel = ensurePrivateMessageEmojiPanel(editor, textarea);
     if (panel instanceof HTMLElement) {
@@ -21598,9 +24392,11 @@ function stabilizePrivateMessageComposer(source, nativeInput) {
       editor.classList.toggle("cc98-rebuild-message-emoji-open", willOpen);
       if (willOpen) {
         positionPrivateMessageEmojiPanel(editor, panel, event?.currentTarget);
-        [60, 180].forEach((delay) => window.setTimeout(() => {
-          positionPrivateMessageEmojiPanel(editor, panel, event?.currentTarget);
-        }, delay));
+        [60, 180].forEach((delay) =>
+          window.setTimeout(() => {
+            positionPrivateMessageEmojiPanel(editor, panel, event?.currentTarget);
+          }, delay)
+        );
       }
     }
   });
@@ -21618,12 +24414,14 @@ function stabilizePrivateMessageComposer(source, nativeInput) {
   const size = document.createElement("select");
   size.className = "cc98-rebuild-message-editor-select";
   size.title = "字号";
-  size.append(...["字号", "1", "2", "3", "4", "5", "6", "7"].map((value, index) => {
-    const option = document.createElement("option");
-    option.value = index === 0 ? "" : value;
-    option.textContent = value;
-    return option;
-  }));
+  size.append(
+    ...["字号", "1", "2", "3", "4", "5", "6", "7"].map((value, index) => {
+      const option = document.createElement("option");
+      option.value = index === 0 ? "" : value;
+      option.textContent = value;
+      return option;
+    })
+  );
   size.addEventListener("change", () => {
     if (size.value === EDITOR_TYPOGRAPHY_RESET_VALUE) {
       clearEditorTypography(editor, "size", getStoredEditorFontSizeSelection(size, textarea));
@@ -21668,8 +24466,14 @@ function stabilizePrivateMessageComposer(source, nativeInput) {
     format.setAttribute("aria-expanded", "false");
     emojiButton.setAttribute("aria-expanded", "false");
     for (const [button, shape] of [
-      [emojiButton, "M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM8 14c1.8 3.5 6.2 3.5 8 0M8.5 9.5h.1m6.8 0h.1"],
-      [imageButton, "M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2ZM3 16l5-5 4 4 3-3 6 6M15 8h.1"]
+      [
+        emojiButton,
+        "M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM8 14c1.8 3.5 6.2 3.5 8 0M8.5 9.5h.1m6.8 0h.1"
+      ],
+      [
+        imageButton,
+        "M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2ZM3 16l5-5 4 4 3-3 6 6M15 8h.1"
+      ]
     ]) {
       const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
       svg.setAttribute("viewBox", "0 0 24 24");
@@ -21710,7 +24514,10 @@ function stabilizePrivateMessageComposer(source, nativeInput) {
   nativeInput.addEventListener("change", () => syncFromNative());
   getPrivateMessageNativeControls(source, container).forEach((control) => {
     const input = getPrivateMessageUploadFileInput(control, source);
-    if (input instanceof HTMLInputElement && input.dataset.cc98RebuildMessageUploadSync !== "true") {
+    if (
+      input instanceof HTMLInputElement &&
+      input.dataset.cc98RebuildMessageUploadSync !== "true"
+    ) {
       input.dataset.cc98RebuildMessageUploadSync = "true";
       input.addEventListener("change", scheduleSyncFromNative, true);
     }
@@ -21776,7 +24583,9 @@ function bindMessageTitleSync(source, heroTitle, heroTop) {
     const chat = person.closest(".message-message");
     if (chat && matchMedia("(max-width: 700px)").matches) {
       chat.dataset.dmPane = "chat";
-      requestAnimationFrame(() => chat.querySelector(".cc98-dm-contacts-button")?.focus({ preventScroll: true }));
+      requestAnimationFrame(() =>
+        chat.querySelector(".cc98-dm-contacts-button")?.focus({ preventScroll: true })
+      );
     }
     const name = getFirstText(person, ".message-message-pName");
     if (name) {
@@ -21797,18 +24606,32 @@ function bindMessageTitleSync(source, heroTitle, heroTop) {
     // or replace the React-owned message paragraphs or rebuild the page.
     records.forEach((record) => {
       if (record.type === "attributes") {
-        if (record.target instanceof HTMLSourceElement) stabilizeNativeMessageEmojis(record.target.closest("picture"));
+        if (record.target instanceof HTMLSourceElement)
+          stabilizeNativeMessageEmojis(record.target.closest("picture"));
         else markNativeMessageEmojiImage(record.target);
       } else if (record.type === "childList") {
         record.addedNodes.forEach(stabilizeNativeMessageEmojis);
-        if (record.target instanceof Element && record.target.closest("picture")) stabilizeNativeMessageEmojis(record.target.closest("picture"));
+        if (record.target instanceof Element && record.target.closest("picture"))
+          stabilizeNativeMessageEmojis(record.target.closest("picture"));
       }
     });
     scheduleTitleSync();
   });
   messageTitleObserver.observe(source, {
-    childList: true, subtree: true, characterData: true, attributes: true,
-    attributeFilter: ["src", "srcset", "data-src", "data-srcset", "data-original", "data-cc98-lazy-src", "data-lazy-src", "data-original-src"]
+    childList: true,
+    subtree: true,
+    characterData: true,
+    attributes: true,
+    attributeFilter: [
+      "src",
+      "srcset",
+      "data-src",
+      "data-srcset",
+      "data-original",
+      "data-cc98-lazy-src",
+      "data-lazy-src",
+      "data-original-src"
+    ]
   });
   syncTitle();
   stabilizeNativeMessageSurfaces(source);
@@ -21820,13 +24643,12 @@ function getNativeSignInResult(source) {
   if (!(source instanceof HTMLElement)) {
     return null;
   }
-  const expectedLines = [
-    "你已经连续签到了",
-    "上次签到时间是",
-    "获得财富值"
-  ];
-  const matchedRows = expectedLines.map((text) => [...source.querySelectorAll(".row")]
-    .find((row) => cleanupPostText(row.textContent).includes(text)));
+  const expectedLines = ["你已经连续签到了", "上次签到时间是", "获得财富值"];
+  const matchedRows = expectedLines.map((text) =>
+    [...source.querySelectorAll(".row")].find((row) =>
+      cleanupPostText(row.textContent).includes(text)
+    )
+  );
   if (matchedRows.some((row) => !(row instanceof HTMLElement))) {
     return null;
   }
@@ -21845,11 +24667,10 @@ function stabilizeNativeSignIn(source) {
   // this React subtree out of the post/reply dual-editor transaction entirely.
   teardownNativeDualUbbEditor(source);
   removeNativeEditorDraftControls(source);
-  source.classList.remove(
-    "cc98-rebuild-native-editor",
-    "cc98-rebuild-emoji-panel-open"
-  );
-  source.querySelectorAll(":scope > .cc98-rebuild-message-emoji-panel").forEach((panel) => panel.remove());
+  source.classList.remove("cc98-rebuild-native-editor", "cc98-rebuild-emoji-panel-open");
+  source
+    .querySelectorAll(":scope > .cc98-rebuild-message-emoji-panel")
+    .forEach((panel) => panel.remove());
   source.querySelectorAll(".cc98-rebuild-signin-result").forEach((result) => {
     result.classList.remove("cc98-rebuild-signin-result");
   });
@@ -21918,8 +24739,10 @@ function renderSignInPage(app) {
 
 function isOpenIdLoginCenterPage() {
   try {
-    return location.hostname === "openid.cc98.org"
-      && /\/(?:Account|PassKey)\/LogOn/i.test(location.pathname);
+    return (
+      location.hostname === "openid.cc98.org" &&
+      /\/(?:Account|PassKey)\/LogOn/i.test(location.pathname)
+    );
   } catch {
     return false;
   }
@@ -21970,10 +24793,14 @@ function getOpenIdLoginSource() {
   if (!isOpenIdLoginCenterPage()) {
     return null;
   }
-  const form = document.querySelector('form[action*="/Account/LogOn"], form[action*="/PassKey/LogOn"]');
-  return form?.closest(".container.body-content")
-    || form?.closest(".col-12, [class*='col-']")
-    || document.querySelector(".container.body-content");
+  const form = document.querySelector(
+    'form[action*="/Account/LogOn"], form[action*="/PassKey/LogOn"]'
+  );
+  return (
+    form?.closest(".container.body-content") ||
+    form?.closest(".col-12, [class*='col-']") ||
+    document.querySelector(".container.body-content")
+  );
 }
 
 function prepareOpenIdLoginSource(source) {
@@ -22018,7 +24845,10 @@ function renderLoginPage(app) {
 
 function hasFreshCc98LoginSession() {
   try {
-    const expiration = Number.parseInt(localStorage.getItem("refresh_token_expirationTime") || "", 10);
+    const expiration = Number.parseInt(
+      localStorage.getItem("refresh_token_expirationTime") || "",
+      10
+    );
     return Number.isFinite(expiration) && expiration * 1000 > Date.now();
   } catch {
     return false;
@@ -22051,10 +24881,12 @@ function hasCc98LoginSessionChangedSince(snapshot) {
   if (!snapshot || !snapshot.fresh) {
     return true;
   }
-  return current.refreshTokenExpiration !== snapshot.refreshTokenExpiration
-    || current.refreshToken !== snapshot.refreshToken
-    || current.accessToken !== snapshot.accessToken
-    || current.userInfo !== snapshot.userInfo;
+  return (
+    current.refreshTokenExpiration !== snapshot.refreshTokenExpiration ||
+    current.refreshToken !== snapshot.refreshToken ||
+    current.accessToken !== snapshot.accessToken ||
+    current.userInfo !== snapshot.userInfo
+  );
 }
 
 function readLoginRedirectSnapshot() {
@@ -22068,7 +24900,10 @@ function readLoginRedirectSnapshot() {
 
 function writeLoginRedirectSnapshot(snapshot) {
   try {
-    sessionStorage.setItem(LOGIN_REDIRECT_SNAPSHOT_KEY, JSON.stringify(snapshot || getCc98LoginSessionSnapshot()));
+    sessionStorage.setItem(
+      LOGIN_REDIRECT_SNAPSHOT_KEY,
+      JSON.stringify(snapshot || getCc98LoginSessionSnapshot())
+    );
   } catch {
     // Snapshot is only used to avoid stale-token redirects.
   }
@@ -22135,10 +24970,11 @@ function redirectToCc98Home() {
 function isCc98LoginPath() {
   try {
     const url = new URL(location.href);
-    const normalizePath = (value) => String(value || "")
-      .split(/[?#]/, 1)[0]
-      .replace(/\/+$/, "")
-      .toLowerCase();
+    const normalizePath = (value) =>
+      String(value || "")
+        .split(/[?#]/, 1)[0]
+        .replace(/\/+$/, "")
+        .toLowerCase();
     const routePath = normalizePath(getCc98RoutePathFromHref(url.href));
     if (routePath === "/logon") {
       return true;
@@ -22165,9 +25001,11 @@ function isCc98NullRedirectPage() {
     }
     const currentPrefix = getWebVpnProxyPrefixFromUrl(url.href);
     const confirmedPrefix = getConfirmedWebVpnCc98Prefix();
-    return Boolean(currentPrefix)
-      && (!confirmedPrefix
-        || normalizeWebVpnProxyPrefix(currentPrefix) === normalizeWebVpnProxyPrefix(confirmedPrefix));
+    return (
+      Boolean(currentPrefix) &&
+      (!confirmedPrefix ||
+        normalizeWebVpnProxyPrefix(currentPrefix) === normalizeWebVpnProxyPrefix(confirmedPrefix))
+    );
   } catch {
     return /\/null\/?$/i.test(location.href);
   }
@@ -22250,7 +25088,9 @@ function scheduleLogoutRedirect() {
   markLogoutRedirectIntent();
   clearOpenIdBindingForCc98Logout();
   window.setTimeout(clearLikelyCc98LoginState, 80);
-  logoutRedirectTimers = [650, 1500, 3000, 5200].map((delay) => window.setTimeout(redirectToCc98Login, delay));
+  logoutRedirectTimers = [650, 1500, 3000, 5200].map((delay) =>
+    window.setTimeout(redirectToCc98Login, delay)
+  );
 }
 
 function clearLoginRedirectWatcher() {
@@ -22345,9 +25185,15 @@ function bindLoginRedirect(login) {
 }
 
 function getUserCenterActiveTitle() {
-  return document.querySelector(".user-center-navigation-active .center-nav-item, [aria-current='page'] .center-nav-item")?.textContent?.trim()
-    || getFirstText(document, ".user-theme-info h2, .user-center-head p, .user-center-router h2")
-    || "个人中心";
+  return (
+    document
+      .querySelector(
+        ".user-center-navigation-active .center-nav-item, [aria-current='page'] .center-nav-item"
+      )
+      ?.textContent?.trim() ||
+    getFirstText(document, ".user-theme-info h2, .user-center-head p, .user-center-router h2") ||
+    "个人中心"
+  );
 }
 
 function updateUserCenterHero(app = document.querySelector("#cc98-comfort-app")) {
@@ -22355,7 +25201,9 @@ function updateUserCenterHero(app = document.querySelector("#cc98-comfort-app"))
   if (title) {
     const nextTitle = app.querySelector(".cc98-rebuild-user-settings-panel:not([hidden])")
       ? "插件设置"
-      : app.querySelector(".cc98-rebuild-user-blacklist-panel:not([hidden])") ? "屏蔽规则" : getUserCenterActiveTitle();
+      : app.querySelector(".cc98-rebuild-user-blacklist-panel:not([hidden])")
+        ? "屏蔽规则"
+        : getUserCenterActiveTitle();
     if (title.textContent !== nextTitle) {
       title.textContent = nextTitle;
     }
@@ -22383,8 +25231,9 @@ function deactivateAvatarCrop(control) {
 function stabilizeUserCenterFavoriteActions(router) {
   router.querySelectorAll(".ant-dropdown-link.ant-dropdown-trigger").forEach((link) => {
     const isFavoriteAction = Boolean(
-      link.closest(".user-center-myfavorites, .user-center-myfavorite, .user-favorites, .user-post-content")
-      || link.querySelector(".anticon-unordered-list")
+      link.closest(
+        ".user-center-myfavorites, .user-center-myfavorite, .user-favorites, .user-post-content"
+      ) || link.querySelector(".anticon-unordered-list")
     );
     if (!isFavoriteAction) {
       return;
@@ -22406,7 +25255,10 @@ function stabilizeUserCenterSearchButtons(router) {
     if (!nestedButton) {
       return;
     }
-    const text = nestedButton.textContent?.replace(/\s+/g, "") || button.textContent?.replace(/\s+/g, "") || "搜索";
+    const text =
+      nestedButton.textContent?.replace(/\s+/g, "") ||
+      button.textContent?.replace(/\s+/g, "") ||
+      "搜索";
     button.classList.add("cc98-rebuild-flat-search-button");
     button.textContent = "";
     const label = createElement("span", "", text);
@@ -22419,10 +25271,15 @@ function isLikelyProfileSignatureTextarea(textarea, textareas) {
   if (!(textarea instanceof HTMLTextAreaElement)) {
     return false;
   }
-  if (textarea.closest(".cc98-rebuild-profile-signature-editor, .cc98-rebuild-message-editor, .cc98-rebuild-native-message, .createTopic, #sendTopicInfo, .ubb-editor, .message-message-wPost")) {
+  if (
+    textarea.closest(
+      ".cc98-rebuild-profile-signature-editor, .cc98-rebuild-message-editor, .cc98-rebuild-native-message, .createTopic, #sendTopicInfo, .ubb-editor, .message-message-wPost"
+    )
+  ) {
     return false;
   }
-  const signaturePattern = /(?:\u7b7e\u540d|\u4e2a\u6027|\u7b80\u4ecb|\u4ecb\u7ecd|signature|description|intro|bio)/i;
+  const signaturePattern =
+    /(?:\u7b7e\u540d|\u4e2a\u6027|\u7b80\u4ecb|\u4ecb\u7ecd|signature|description|intro|bio)/i;
   const ownText = [
     textarea.name,
     textarea.id,
@@ -22430,7 +25287,9 @@ function isLikelyProfileSignatureTextarea(textarea, textareas) {
     textarea.placeholder,
     textarea.getAttribute("aria-label"),
     textarea.getAttribute("title")
-  ].filter(Boolean).join(" ");
+  ]
+    .filter(Boolean)
+    .join(" ");
   if (signaturePattern.test(ownText)) {
     return true;
   }
@@ -22453,7 +25312,13 @@ function insertProfileSignatureLink(textarea) {
   if (!url) {
     return;
   }
-  const label = selected || promptPrivateMessageValue("\u8bf7\u8f93\u5165\u663e\u793a\u6587\u5b57\uff08\u53ef\u7559\u7a7a\uff09", url) || url;
+  const label =
+    selected ||
+    promptPrivateMessageValue(
+      "\u8bf7\u8f93\u5165\u663e\u793a\u6587\u5b57\uff08\u53ef\u7559\u7a7a\uff09",
+      url
+    ) ||
+    url;
   insertPrivateMessageText(textarea, `[url=${url}]${label}[/url]`);
 }
 
@@ -22526,24 +25391,21 @@ function getProfileSignatureUbbScope(source, position) {
 function appendProfileSignatureSyntaxToken(target, match, colorIndex = null) {
   const emotionTag = match[4];
   if (emotionTag) {
-    target.append(createElement(
-      "span",
-      "cc98-rebuild-profile-signature-syntax-token is-emoji",
-      `[${emotionTag}]`
-    ));
+    target.append(
+      createElement(
+        "span",
+        "cc98-rebuild-profile-signature-syntax-token is-emoji",
+        `[${emotionTag}]`
+      )
+    );
     return;
   }
 
   const closing = match[1] || "";
   const tag = String(match[2] || "").toLowerCase();
   const value = match[3];
-  const pairClass = Number.isInteger(colorIndex)
-    ? ` is-pair-${Math.abs(colorIndex) % 8}`
-    : "";
-  const token = createElement(
-    "span",
-    `cc98-rebuild-profile-signature-syntax-token${pairClass}`
-  );
+  const pairClass = Number.isInteger(colorIndex) ? ` is-pair-${Math.abs(colorIndex) % 8}` : "";
+  const token = createElement("span", `cc98-rebuild-profile-signature-syntax-token${pairClass}`);
   token.dataset.cc98SyntaxTag = tag;
   token.append(createElement("span", "cc98-rebuild-profile-signature-syntax-bracket", "["));
   if (closing) {
@@ -22679,7 +25541,11 @@ function getProfileSignatureSourceSelection(sourceEditor) {
   };
 }
 
-function resolveProfileSignatureSourceOffset(sourceEditor, targetOffset, preferNeutralBoundary = true) {
+function resolveProfileSignatureSourceOffset(
+  sourceEditor,
+  targetOffset,
+  preferNeutralBoundary = true
+) {
   const safeOffset = Math.max(0, Number(targetOffset) || 0);
   const walker = document.createTreeWalker(sourceEditor, NodeFilter.SHOW_TEXT);
   let remaining = safeOffset;
@@ -22767,9 +25633,10 @@ function renderEditableProfileSignatureSource(sourceEditor, source, preserveSele
     return;
   }
   const normalizedSource = String(source ?? "").replace(/\r\n?/g, "\n");
-  const selectionState = preserveSelection && document.activeElement === sourceEditor
-    ? getProfileSignatureSourceSelection(sourceEditor)
-    : null;
+  const selectionState =
+    preserveSelection && document.activeElement === sourceEditor
+      ? getProfileSignatureSourceSelection(sourceEditor)
+      : null;
   const scrollTop = sourceEditor.scrollTop;
   const scrollLeft = sourceEditor.scrollLeft;
   sourceEditor.dataset.cc98SourceEmpty = normalizedSource.length ? "false" : "true";
@@ -22787,7 +25654,11 @@ function getDualUbbSourceActiveLine(sourceEditor, source) {
     return -1;
   }
   const offset = Math.max(0, Math.min(String(source ?? "").length, selection.end));
-  return String(source ?? "").slice(0, offset).split("\n").length - 1;
+  return (
+    String(source ?? "")
+      .slice(0, offset)
+      .split("\n").length - 1
+  );
 }
 
 function renderDualUbbLogicalLineGutter(gutter, sourceEditor, source) {
@@ -22796,9 +25667,9 @@ function renderDualUbbLogicalLineGutter(gutter, sourceEditor, source) {
   }
   const normalizedSource = String(source ?? "").replace(/\r\n?/g, "\n");
   const logicalLines = normalizedSource.split("\n");
-  const syntaxLines = [...sourceEditor.querySelectorAll(
-    ".cc98-rebuild-profile-signature-syntax-line"
-  )];
+  const syntaxLines = [
+    ...sourceEditor.querySelectorAll(".cc98-rebuild-profile-signature-syntax-line")
+  ];
   const computedLineHeight = Number.parseFloat(getComputedStyle(sourceEditor).lineHeight) || 24;
   const activeLine = getDualUbbSourceActiveLine(sourceEditor, normalizedSource);
   const fragment = document.createDocumentFragment();
@@ -22811,11 +25682,9 @@ function renderDualUbbLogicalLineGutter(gutter, sourceEditor, source) {
       "--cc98-dual-source-logical-line-height",
       `${Math.max(computedLineHeight, Math.ceil(measuredHeight))}px`
     );
-    row.append(createElement(
-      "span",
-      "cc98-rebuild-dual-ubb-source-line-number",
-      String(index + 1)
-    ));
+    row.append(
+      createElement("span", "cc98-rebuild-dual-ubb-source-line-number", String(index + 1))
+    );
     fragment.append(row);
   });
 
@@ -22824,27 +25693,40 @@ function renderDualUbbLogicalLineGutter(gutter, sourceEditor, source) {
 }
 
 function bindDualUbbLogicalLineGutter(gutter, sourceEditor, getSource) {
-  if (!(gutter instanceof HTMLElement)
-    || !(sourceEditor instanceof HTMLElement)
-    || gutter.dataset.cc98DualSourceGutterBound === "true") {
+  if (
+    !(gutter instanceof HTMLElement) ||
+    !(sourceEditor instanceof HTMLElement) ||
+    gutter.dataset.cc98DualSourceGutterBound === "true"
+  ) {
     return;
   }
   gutter.dataset.cc98DualSourceGutterBound = "true";
-  const refresh = () => renderDualUbbLogicalLineGutter(
-    gutter,
-    sourceEditor,
-    typeof getSource === "function" ? getSource() : ""
+  const refresh = () =>
+    renderDualUbbLogicalLineGutter(
+      gutter,
+      sourceEditor,
+      typeof getSource === "function" ? getSource() : ""
+    );
+  sourceEditor.addEventListener(
+    "scroll",
+    () => {
+      gutter.scrollTop = sourceEditor.scrollTop;
+    },
+    { passive: true }
   );
-  sourceEditor.addEventListener("scroll", () => {
-    gutter.scrollTop = sourceEditor.scrollTop;
-  }, { passive: true });
   ["focus", "keyup", "mouseup"].forEach((type) => {
     sourceEditor.addEventListener(type, refresh);
   });
   return refresh;
 }
 
-function renderProfileSignatureCodeChrome(gutter, positionLabel, scopeLabel, textarea, syntaxLayer) {
+function renderProfileSignatureCodeChrome(
+  gutter,
+  positionLabel,
+  scopeLabel,
+  textarea,
+  syntaxLayer
+) {
   if (!(gutter instanceof HTMLElement) || !(textarea instanceof HTMLTextAreaElement)) {
     return;
   }
@@ -22864,14 +25746,24 @@ function renderProfileSignatureCodeChrome(gutter, positionLabel, scopeLabel, tex
   depths.forEach((depth, index) => {
     const row = createElement("div", "cc98-rebuild-profile-signature-code-gutter-row");
     row.classList.toggle("is-active", index === activeLine);
-    const number = createElement("span", "cc98-rebuild-profile-signature-code-line-number", String(index + 1));
+    const number = createElement(
+      "span",
+      "cc98-rebuild-profile-signature-code-line-number",
+      String(index + 1)
+    );
     const guides = createElement("span", "cc98-rebuild-profile-signature-code-depth-guides");
     const visibleDepth = Math.min(6, Math.max(0, depth));
     for (let guideIndex = 0; guideIndex < visibleDepth; guideIndex += 1) {
       guides.append(createElement("span", "cc98-rebuild-profile-signature-code-depth-guide"));
     }
     if (depth > visibleDepth) {
-      guides.append(createElement("span", "cc98-rebuild-profile-signature-code-depth-overflow", `+${depth - visibleDepth}`));
+      guides.append(
+        createElement(
+          "span",
+          "cc98-rebuild-profile-signature-code-depth-overflow",
+          `+${depth - visibleDepth}`
+        )
+      );
     }
     const syntaxLineHeight = syntaxLines[index]?.getBoundingClientRect().height || 0;
     row.style.setProperty(
@@ -22897,9 +25789,9 @@ function renderProfileSignatureCodeChrome(gutter, positionLabel, scopeLabel, tex
     const scope = generatedSource ? [] : getProfileSignatureUbbScope(value, caret);
     scopeLabel.textContent = generatedSource
       ? "UBB \u6e90\u7801"
-      : (scope.length
+      : scope.length
         ? `UBB \u5c42\u7ea7\uff1a${scope.map((tag) => `[${tag}]`).join(" \u203a ")}`
-        : "UBB \u5c42\u7ea7\uff1a\u6839\u7ea7");
+        : "UBB \u5c42\u7ea7\uff1a\u6839\u7ea7";
     scopeLabel.title = scopeLabel.textContent;
   }
 }
@@ -22911,7 +25803,9 @@ function isProfileSignatureWysiwygBlock(node) {
   if (node.dataset.cc98UbbTag === "align") {
     return true;
   }
-  return /^(?:address|article|aside|blockquote|div|footer|h[1-6]|header|main|nav|p|pre|section)$/i.test(node.tagName);
+  return /^(?:address|article|aside|blockquote|div|footer|h[1-6]|header|main|nav|p|pre|section)$/i.test(
+    node.tagName
+  );
 }
 
 function isProfileSignatureWysiwygPlaceholderBlock(node) {
@@ -22919,18 +25813,19 @@ function isProfileSignatureWysiwygPlaceholderBlock(node) {
     return false;
   }
   if (
-    node.dataset.cc98UbbTag
-    || node.dataset.cc98LocalUbbTag
-    || node.hasAttribute("data-cc98-local-ubb-source")
+    node.dataset.cc98UbbTag ||
+    node.dataset.cc98LocalUbbTag ||
+    node.hasAttribute("data-cc98-local-ubb-source")
   ) {
     return false;
   }
   const children = [...node.childNodes].filter((child) => {
-    return !(child instanceof Text)
-      || Boolean(String(child.nodeValue || "").replace(/[\u200b\uFEFF]/g, ""));
+    return (
+      !(child instanceof Text) ||
+      Boolean(String(child.nodeValue || "").replace(/[\u200b\uFEFF]/g, ""))
+    );
   });
-  return children.length === 0
-    || (children.length === 1 && children[0] instanceof HTMLBRElement);
+  return children.length === 0 || (children.length === 1 && children[0] instanceof HTMLBRElement);
 }
 
 function wrapProfileSignatureUbb(tag, value, content) {
@@ -22962,11 +25857,7 @@ function serializeProfileSignatureWysiwygChildren(parent) {
         output += serializeProfileSignatureWysiwygNode(child);
       }
     } else {
-      if (
-        previousWasBlock
-        && !(child instanceof HTMLBRElement)
-        && !output.endsWith("\n")
-      ) {
+      if (previousWasBlock && !(child instanceof HTMLBRElement) && !output.endsWith("\n")) {
         output += "\n";
       }
       output += serializeProfileSignatureWysiwygNode(child);
@@ -23028,9 +25919,10 @@ function serializeProfileSignatureWysiwygNode(node) {
   }
   if (extendedUbbTag === "md") {
     const serializeMarkdown = window.CC98RebornExtendedUbb?.serializeEditableMarkdown;
-    const markdownContent = typeof serializeMarkdown === "function"
-      ? serializeMarkdown(node)
-      : String(node.innerText || node.textContent || "").replace(/\r\n?/g, "\n");
+    const markdownContent =
+      typeof serializeMarkdown === "function"
+        ? serializeMarkdown(node)
+        : String(node.innerText || node.textContent || "").replace(/\r\n?/g, "\n");
     return wrapProfileSignatureUbb("md", "", markdownContent);
   }
   if (extendedUbbTag) {
@@ -23040,9 +25932,9 @@ function serializeProfileSignatureWysiwygNode(node) {
   // into the native UBB value as `[color]​[/color]` (or as an empty wrapper
   // after a toolbar selection is lost).
   if (
-    explicitTag === "color"
-    && !content.replace(/[\u200b\uFEFF]/g, "")
-    && !node.querySelector("img, audio, video, iframe, object, embed")
+    explicitTag === "color" &&
+    !content.replace(/[\u200b\uFEFF]/g, "") &&
+    !node.querySelector("img, audio, video, iframe, object, embed")
   ) {
     return "";
   }
@@ -23078,9 +25970,10 @@ function serializeProfileSignatureWysiwygNode(node) {
     content = wrapProfileSignatureUbb("size", directSize, content);
   }
   if (directColor) {
-    const normalizedColor = directColor.trim().toLowerCase() === "transparent"
-      ? "transparent"
-      : normalizeHexColor(directColor, "");
+    const normalizedColor =
+      directColor.trim().toLowerCase() === "transparent"
+        ? "transparent"
+        : normalizeHexColor(directColor, "");
     if (normalizedColor) {
       content = wrapProfileSignatureUbb("color", normalizedColor, content);
     }
@@ -23101,13 +25994,21 @@ function serializeProfileSignatureWysiwyg(root) {
     .replace(/\r\n?/g, "\n")
     .replace(/[\u200b\uFEFF]/g, "")
     .replace(/\uE000cc98-color-(?:start|end)-\d+\uE001/g, "");
-  const hasMedia = Boolean(root?.querySelector?.(
-    "img, audio, video, [data-cc98-ubb-emotion-tag], [data-cc98-ubb-tag='audio'], [data-cc98-ubb-tag='video'], [data-cc98-ubb-tag='bili'], [data-cc98-ubb-tag='bilibili']"
-  ));
-  const hasExtendedStructuredContent = Boolean(root?.querySelector?.(
-    "[data-cc98-local-ubb-tag='code'], [data-cc98-local-ubb-tag='md'], [data-cc98-local-ubb-tag='quote'], [data-cc98-local-ubb-tag='table'], [data-cc98-local-ubb-source]"
-  ));
-  return !hasMedia && !hasExtendedStructuredContent && !String(root?.textContent || "").replace(/[\u200b\uFEFF]/g, "").trim()
+  const hasMedia = Boolean(
+    root?.querySelector?.(
+      "img, audio, video, [data-cc98-ubb-emotion-tag], [data-cc98-ubb-tag='audio'], [data-cc98-ubb-tag='video'], [data-cc98-ubb-tag='bili'], [data-cc98-ubb-tag='bilibili']"
+    )
+  );
+  const hasExtendedStructuredContent = Boolean(
+    root?.querySelector?.(
+      "[data-cc98-local-ubb-tag='code'], [data-cc98-local-ubb-tag='md'], [data-cc98-local-ubb-tag='quote'], [data-cc98-local-ubb-tag='table'], [data-cc98-local-ubb-source]"
+    )
+  );
+  return !hasMedia &&
+    !hasExtendedStructuredContent &&
+    !String(root?.textContent || "")
+      .replace(/[\u200b\uFEFF]/g, "")
+      .trim()
     ? ""
     : output;
 }
@@ -23145,7 +26046,7 @@ function getProfileSignatureWysiwygRange(wysiwyg) {
   }
   const range = selection.getRangeAt(0);
   const container = range.commonAncestorContainer;
-  return (container === wysiwyg || wysiwyg.contains(container)) ? range : null;
+  return container === wysiwyg || wysiwyg.contains(container) ? range : null;
 }
 
 function hasMeaningfulProfileSignatureWysiwygRange(range) {
@@ -23157,9 +26058,7 @@ function hasMeaningfulProfileSignatureWysiwygRange(range) {
   }
   try {
     const fragment = range.cloneContents();
-    return Boolean(fragment.querySelector?.(
-      "img, audio, video, iframe, object, embed"
-    ));
+    return Boolean(fragment.querySelector?.("img, audio, video, iframe, object, embed"));
   } catch {
     return false;
   }
@@ -23183,37 +26082,34 @@ function rememberProfileSignatureWysiwygRange(editor, wysiwyg, options = {}) {
 
   const range = getProfileSignatureWysiwygRange(wysiwyg);
   const storedRange = editor.__cc98WysiwygRange;
-  const storedRangeIsValid = storedRange instanceof Range
-    && storedRange.startContainer?.isConnected
-    && storedRange.endContainer?.isConnected
-    && (
-      storedRange.commonAncestorContainer === wysiwyg
-      || wysiwyg.contains(storedRange.commonAncestorContainer)
-    );
+  const storedRangeIsValid =
+    storedRange instanceof Range &&
+    storedRange.startContainer?.isConnected &&
+    storedRange.endContainer?.isConnected &&
+    (storedRange.commonAncestorContainer === wysiwyg ||
+      wysiwyg.contains(storedRange.commonAncestorContainer));
   let effectiveRange = range;
   if (
-    options.preserveNonCollapsed
-    && storedRangeIsValid
-    && hasMeaningfulProfileSignatureWysiwygRange(storedRange)
-    && (!range || !hasMeaningfulProfileSignatureWysiwygRange(range))
+    options.preserveNonCollapsed &&
+    storedRangeIsValid &&
+    hasMeaningfulProfileSignatureWysiwygRange(storedRange) &&
+    (!range || !hasMeaningfulProfileSignatureWysiwygRange(range))
   ) {
     effectiveRange = storedRange;
   }
   const logical = editor?.__cc98WysiwygLogicalSelection;
   const logicalHasContent = Boolean(
-    logical
-    && logical.surface === "visual"
-    && logical.wysiwyg === wysiwyg
-    && (
-      normalizeEditorColorSelectionText(logical.selectedText).replace(/\s/g, "")
-      || normalizeEditorColorSelectionText(logical.sourceSelectedText).replace(/\s|\[[^\]]+\]/g, "")
-    )
+    logical &&
+    logical.surface === "visual" &&
+    logical.wysiwyg === wysiwyg &&
+    (normalizeEditorColorSelectionText(logical.selectedText).replace(/\s/g, "") ||
+      normalizeEditorColorSelectionText(logical.sourceSelectedText).replace(/\s|\[[^\]]+\]/g, ""))
   );
   if (
-    options.preserveNonCollapsed
-    && logicalHasContent
-    && (!effectiveRange || !hasMeaningfulProfileSignatureWysiwygRange(effectiveRange))
-    && !(storedRangeIsValid && hasMeaningfulProfileSignatureWysiwygRange(storedRange))
+    options.preserveNonCollapsed &&
+    logicalHasContent &&
+    (!effectiveRange || !hasMeaningfulProfileSignatureWysiwygRange(effectiveRange)) &&
+    !(storedRangeIsValid && hasMeaningfulProfileSignatureWysiwygRange(storedRange))
   ) {
     // Do not let the capture path turn a post-redraw caret into the active
     // color selection.  The caller will promote the logical source interval.
@@ -23228,7 +26124,11 @@ function rememberProfileSignatureWysiwygRange(editor, wysiwyg, options = {}) {
     // Focus can briefly expose a collapsed caret while a toolbar/popover is
     // taking focus.  Do not throw away a meaningful logical selection in that
     // short window when the caller explicitly asked to preserve it.
-    if (!(options.preserveNonCollapsed && logicalHasContent && !hasMeaningfulProfileSignatureWysiwygRange(effectiveRange))) {
+    if (!(
+      options.preserveNonCollapsed &&
+      logicalHasContent &&
+      !hasMeaningfulProfileSignatureWysiwygRange(effectiveRange)
+    )) {
       editor.__cc98WysiwygRange = effectiveRange.cloneRange();
       rememberEditorColorVisualLogicalSelection(editor, wysiwyg, effectiveRange);
     }
@@ -23237,13 +26137,14 @@ function rememberProfileSignatureWysiwygRange(editor, wysiwyg, options = {}) {
 }
 
 function restoreProfileSignatureWysiwygRange(editor, wysiwyg) {
-  let range = getEditorColorSelectionMarkerRange(editor?.__cc98ColorSelectionSnapshot)
-    || editor.__cc98WysiwygRange;
+  let range =
+    getEditorColorSelectionMarkerRange(editor?.__cc98ColorSelectionSnapshot) ||
+    editor.__cc98WysiwygRange;
   if (
-    !(range instanceof Range)
-    || !range.startContainer?.isConnected
-    || !range.endContainer?.isConnected
-    || !(range.commonAncestorContainer === wysiwyg || wysiwyg.contains(range.commonAncestorContainer))
+    !(range instanceof Range) ||
+    !range.startContainer?.isConnected ||
+    !range.endContainer?.isConnected ||
+    !(range.commonAncestorContainer === wysiwyg || wysiwyg.contains(range.commonAncestorContainer))
   ) {
     range = document.createRange();
     range.selectNodeContents(wysiwyg);
@@ -23258,9 +26159,7 @@ function restoreProfileSignatureWysiwygRange(editor, wysiwyg) {
 
 function isWysiwygDeletionInput(event) {
   const inputType = String(event?.inputType || "");
-  return /^delete/i.test(inputType)
-    || event?.key === "Backspace"
-    || event?.key === "Delete";
+  return /^delete/i.test(inputType) || event?.key === "Backspace" || event?.key === "Delete";
 }
 
 function createWysiwygDeletionInputTracker(root) {
@@ -23310,9 +26209,7 @@ function isWysiwygColorWrapper(node) {
     return false;
   }
   const explicitTag = String(node.dataset.cc98UbbTag || "").toLowerCase();
-  return explicitTag === "color"
-    || Boolean(node.style.color)
-    || node.hasAttribute("color");
+  return explicitTag === "color" || Boolean(node.style.color) || node.hasAttribute("color");
 }
 
 function clearWysiwygColorPresentation(root) {
@@ -23458,16 +26355,22 @@ function clearProfileSignatureWysiwygColor(editor, wysiwyg) {
     endRange.insertNode(endMarker);
     startRange.insertNode(startMarker);
   }
-  const startBoundaryChanged = splitWysiwygFormattingAncestorsAtMarker(wysiwyg, startMarker, isWysiwygColorWrapper);
-  const endBoundaryChanged = splitWysiwygFormattingAncestorsAtMarker(wysiwyg, endMarker, isWysiwygColorWrapper);
+  const startBoundaryChanged = splitWysiwygFormattingAncestorsAtMarker(
+    wysiwyg,
+    startMarker,
+    isWysiwygColorWrapper
+  );
+  const endBoundaryChanged = splitWysiwygFormattingAncestorsAtMarker(
+    wysiwyg,
+    endMarker,
+    isWysiwygColorWrapper
+  );
   const boundaryChanged = startBoundaryChanged || endBoundaryChanged;
 
   if (wasCollapsed) {
     const changed = boundaryChanged;
     const parent = startMarker.parentNode;
-    const offset = parent instanceof Node
-      ? [...parent.childNodes].indexOf(startMarker)
-      : -1;
+    const offset = parent instanceof Node ? [...parent.childNodes].indexOf(startMarker) : -1;
     if (!changed || !(parent instanceof Node) || offset < 0) {
       startMarker.remove();
       endMarker.remove();
@@ -23532,8 +26435,10 @@ function hasMeaningfulWysiwygContent(node) {
       continue;
     }
     const tagName = child.tagName.toLowerCase();
-    if (/^(?:img|audio|video|iframe|object|embed)$/i.test(tagName)
-      || child.matches(".aplayer, [data-cc98-ubb-media-tag], [data-cc98-ubb-emotion-tag]")) {
+    if (
+      /^(?:img|audio|video|iframe|object|embed)$/i.test(tagName) ||
+      child.matches(".aplayer, [data-cc98-ubb-media-tag], [data-cc98-ubb-emotion-tag]")
+    ) {
       return true;
     }
     if (hasMeaningfulWysiwygContent(child)) {
@@ -23558,9 +26463,7 @@ function normalizeEmptyWysiwygFormatting(root) {
     return false;
   }
   const selection = window.getSelection();
-  const selectionAnchor = selection?.rangeCount
-    ? selection.getRangeAt(0).startContainer
-    : null;
+  const selectionAnchor = selection?.rangeCount ? selection.getRangeAt(0).startContainer : null;
   const canNormalizeWrapper = (node) => {
     if (!isWysiwygFormattingWrapper(node) || hasMeaningfulWysiwygContent(node)) {
       return false;
@@ -23568,18 +26471,16 @@ function normalizeEmptyWysiwygFormatting(root) {
     if (node.dataset.cc98WysiwygTypingWrapper !== "true") {
       return true;
     }
-    return Boolean(
-      selectionAnchor
-      && (selectionAnchor === node || node.contains(selectionAnchor))
-    );
+    return Boolean(selectionAnchor && (selectionAnchor === node || node.contains(selectionAnchor)));
   };
   let caretTarget = null;
   if (selection?.rangeCount) {
     const range = selection.getRangeAt(0);
     if (range.startContainer === root || root.contains(range.startContainer)) {
-      let current = range.startContainer instanceof HTMLElement
-        ? range.startContainer
-        : range.startContainer.parentElement;
+      let current =
+        range.startContainer instanceof HTMLElement
+          ? range.startContainer
+          : range.startContainer.parentElement;
       let emptyAncestor = null;
       while (current && current !== root) {
         if (canNormalizeWrapper(current)) {
@@ -23614,8 +26515,10 @@ function normalizeEmptyWysiwygFormatting(root) {
         return;
       }
       [...node.childNodes].forEach((child) => {
-        if (child.nodeType === Node.TEXT_NODE
-          && !String(child.nodeValue || "").replace(/[\u200b\uFEFF\u00a0]/g, "").length) {
+        if (
+          child.nodeType === Node.TEXT_NODE &&
+          !String(child.nodeValue || "").replace(/[\u200b\uFEFF\u00a0]/g, "").length
+        ) {
           return;
         }
         parent.insertBefore(child, node);
@@ -23694,11 +26597,13 @@ function applyProfileSignatureWysiwygTypography(editor, wysiwyg, tag, value) {
   startRange.insertNode(startMarker);
   const cssProperty = tag === "font" ? "font-family" : "font-size";
   const legacyAttribute = tag === "font" ? "face" : "size";
-  const isPropertyTag = (candidate) => candidate === tag || (tag === "font" && candidate === "english");
-  const isWrapper = (node) => isPropertyTag(node.dataset.cc98UbbTag)
-    || isPropertyTag(node.dataset.cc98LocalUbbTag)
-    || Boolean(node.style.getPropertyValue(cssProperty))
-    || (node.tagName === "FONT" && node.hasAttribute(legacyAttribute));
+  const isPropertyTag = (candidate) =>
+    candidate === tag || (tag === "font" && candidate === "english");
+  const isWrapper = (node) =>
+    isPropertyTag(node.dataset.cc98UbbTag) ||
+    isPropertyTag(node.dataset.cc98LocalUbbTag) ||
+    Boolean(node.style.getPropertyValue(cssProperty)) ||
+    (node.tagName === "FONT" && node.hasAttribute(legacyAttribute));
   splitWysiwygFormattingAncestorsAtMarker(wysiwyg, startMarker, isWrapper);
   splitWysiwygFormattingAncestorsAtMarker(wysiwyg, endMarker, isWrapper);
   const selectedRange = document.createRange();
@@ -23724,8 +26629,12 @@ function applyProfileSignatureWysiwygTypography(editor, wysiwyg, tag, value) {
     }
     node.style.removeProperty(cssProperty);
     node.removeAttribute(legacyAttribute);
-    if (node.tagName === "SPAN" && [...node.attributes].every((attribute) =>
-      ["style", "class"].includes(attribute.name) && !attribute.value.trim())) {
+    if (
+      node.tagName === "SPAN" &&
+      [...node.attributes].every(
+        (attribute) => ["style", "class"].includes(attribute.name) && !attribute.value.trim()
+      )
+    ) {
       node.replaceWith(...node.childNodes);
     }
   });
@@ -23734,16 +26643,23 @@ function applyProfileSignatureWysiwygTypography(editor, wysiwyg, tag, value) {
     wrapper.dataset.cc98UbbTag = tag;
     wrapper.dataset.cc98UbbValue = value;
   }
-  wrapper.style.setProperty(cssProperty, value === null ? "inherit"
-    : (tag === "font" ? value : `${0.72 + Number(value) * 0.14}em`), "important");
+  wrapper.style.setProperty(
+    cssProperty,
+    value === null ? "inherit" : tag === "font" ? value : `${0.72 + Number(value) * 0.14}em`,
+    "important"
+  );
   wrapper.append(fragment);
   if (wasCollapsed || !wrapper.childNodes.length) {
     wrapper.replaceChildren(document.createTextNode("\u200b"));
   }
   selectedRange.insertNode(wrapper);
   [startMarker.previousSibling, endMarker.nextSibling].forEach((node) => {
-    if (node instanceof HTMLElement && isWrapper(node)
-      && !hasMeaningfulWysiwygContent(node) && !node.querySelector("br")) {
+    if (
+      node instanceof HTMLElement &&
+      isWrapper(node) &&
+      !hasMeaningfulWysiwygContent(node) &&
+      !node.querySelector("br")
+    ) {
       node.remove();
     }
   });
@@ -23764,23 +26680,20 @@ function applyProfileSignatureWysiwygInlineTag(editor, wysiwyg, tag, value, styl
   const savedSourceText = normalizeEditorColorSelectionText(savedSelection?.sourceSelectedText);
   const storedRange = editor?.__cc98WysiwygRange;
   const savedSelectionHasContent = Boolean(
-    savedSelection
-    && savedSelection.surface === "visual"
-    && !savedSelection.collapsed
-    && (
-      savedVisibleText.replace(/\s/g, "")
-      || savedSourceText.replace(/\s|\[[^\]]+\]/g, "")
-    )
+    savedSelection &&
+    savedSelection.surface === "visual" &&
+    !savedSelection.collapsed &&
+    (savedVisibleText.replace(/\s/g, "") || savedSourceText.replace(/\s|\[[^\]]+\]/g, ""))
   );
   const storedSelectionHasContent = Boolean(
-    storedRange instanceof Range
-    && !storedRange.collapsed
-    && hasMeaningfulProfileSignatureWysiwygRange(storedRange)
+    storedRange instanceof Range &&
+    !storedRange.collapsed &&
+    hasMeaningfulProfileSignatureWysiwygRange(storedRange)
   );
   if (
-    String(tag || "").toLowerCase() === "color"
-    && (savedSelectionHasContent || storedSelectionHasContent)
-    && !hasSelectedContent
+    String(tag || "").toLowerCase() === "color" &&
+    (savedSelectionHasContent || storedSelectionHasContent) &&
+    !hasSelectedContent
   ) {
     // Never turn a lost non-collapsed selection into an empty color wrapper.
     // The caller can still retry through the source interval when available.
@@ -23788,9 +26701,10 @@ function applyProfileSignatureWysiwygInlineTag(editor, wysiwyg, tag, value, styl
   }
   // Reply-only content is a structured block, not an unstyled inline wrapper.
   // Reuse the preview renderer immediately without replacing the live selection.
-  const span = (tag === "replyview"
-    ? buildNativeEditorUbbPreview("[replyview][/replyview]").firstElementChild
-    : null) || document.createElement("span");
+  const span =
+    (tag === "replyview"
+      ? buildNativeEditorUbbPreview("[replyview][/replyview]").firstElementChild
+      : null) || document.createElement("span");
   if (!span.dataset.cc98LocalUbbTag) {
     span.dataset.cc98UbbTag = tag;
   }
@@ -23833,9 +26747,7 @@ function applyProfileSignatureWysiwygGradient(editor, wysiwyg, stops, density = 
   if (!selected) {
     return false;
   }
-  const article = buildNativeEditorUbbPreview(
-    buildEditorGradientUbb(selected, stops, density)
-  );
+  const article = buildNativeEditorUbbPreview(buildEditorGradientUbb(selected, stops, density));
   const nodes = [...article.childNodes];
   if (!nodes.length) {
     return false;
@@ -23866,7 +26778,11 @@ function insertProfileSignatureWysiwygLink(editor, wysiwyg) {
   link.target = "_blank";
   link.rel = "noopener noreferrer";
   if (range.collapsed) {
-    const label = promptPrivateMessageValue("\u8bf7\u8f93\u5165\u663e\u793a\u6587\u5b57\uff08\u53ef\u7559\u7a7a\uff09", url) || url;
+    const label =
+      promptPrivateMessageValue(
+        "\u8bf7\u8f93\u5165\u663e\u793a\u6587\u5b57\uff08\u53ef\u7559\u7a7a\uff09",
+        url
+      ) || url;
     link.textContent = label;
   } else {
     link.append(range.extractContents());
@@ -23901,8 +26817,9 @@ function insertProfileSignatureWysiwygMedia(editor, wysiwyg, tag, promptLabel) {
 
 function stabilizeProfileSignatureToolbar(router) {
   const config = router.querySelector(".user-center-config") || router;
-  const textareas = [...config.querySelectorAll("textarea")]
-    .filter((textarea) => textarea instanceof HTMLTextAreaElement);
+  const textareas = [...config.querySelectorAll("textarea")].filter(
+    (textarea) => textarea instanceof HTMLTextAreaElement
+  );
   textareas
     .filter((textarea) => isLikelyProfileSignatureTextarea(textarea, textareas))
     .forEach((textarea) => {
@@ -23926,7 +26843,11 @@ function stabilizeProfileSignatureToolbar(router) {
         "cc98-rebuild-message-editor-preview cc98-rebuild-profile-signature-wysiwyg-pane cc98-rebuild-dual-ubb-visual-pane"
       );
       const wysiwygHeader = createElement("div", "cc98-rebuild-profile-signature-preview-header");
-      const wysiwygTitle = createElement("span", "cc98-rebuild-profile-signature-preview-title", "上下都可以编辑哦~");
+      const wysiwygTitle = createElement(
+        "span",
+        "cc98-rebuild-profile-signature-preview-title",
+        "上下都可以编辑哦~"
+      );
       const wysiwygMeta = createElement("span", "cc98-rebuild-profile-signature-preview-meta");
       const wysiwyg = createElement(
         "div",
@@ -24038,9 +26959,10 @@ function stabilizeProfileSignatureToolbar(router) {
         }
       };
       const forceSynchronize = () => {
-        const sourceActive = activeSurface === "source"
-          || document.activeElement === syntaxLayer
-          || syntaxLayer.contains(document.activeElement);
+        const sourceActive =
+          activeSurface === "source" ||
+          document.activeElement === syntaxLayer ||
+          syntaxLayer.contains(document.activeElement);
         const nextValue = sourceActive
           ? getProfileSignatureSourceText(syntaxLayer)
           : serializeProfileSignatureWysiwyg(wysiwyg);
@@ -24079,12 +27001,13 @@ function stabilizeProfileSignatureToolbar(router) {
         const currentSourceSelection = getProfileSignatureSourceSelection(syntaxLayer);
         if (currentSourceSelection) {
           activeSurface = "source";
-          const effectiveSourceSelection = (
-            options.preserveNonCollapsed
-            && sourceSelection
-            && sourceSelection.start !== sourceSelection.end
-            && currentSourceSelection.start === currentSourceSelection.end
-          ) ? sourceSelection : currentSourceSelection;
+          const effectiveSourceSelection =
+            options.preserveNonCollapsed &&
+            sourceSelection &&
+            sourceSelection.start !== sourceSelection.end &&
+            currentSourceSelection.start === currentSourceSelection.end
+              ? sourceSelection
+              : currentSourceSelection;
           sourceSelection = effectiveSourceSelection;
           if (options.captureColorSelection) {
             captureEditorColorSourceSelection(editor, textarea, effectiveSourceSelection);
@@ -24104,20 +27027,27 @@ function stabilizeProfileSignatureToolbar(router) {
           sourceSelection = current;
           return current;
         }
-        return sourceSelection || {
-          start: textarea.value.length,
-          end: textarea.value.length
-        };
+        return (
+          sourceSelection || {
+            start: textarea.value.length,
+            end: textarea.value.length
+          }
+        );
       };
-      const replaceSourceSelection = (before, after = "", requireSelection = false, selectionOverride = null) => {
+      const replaceSourceSelection = (
+        before,
+        after = "",
+        requireSelection = false,
+        selectionOverride = null
+      ) => {
         const sourceValue = String(textarea.value || "").replace(/[\u200b\uFEFF]/g, "");
         const resolvedSelection = selectionOverride
           ? getEditorColorSourceSelectionForApply(selectionOverride, sourceValue)
           : null;
         if (
-          selectionOverride?.surface === "visual"
-          && normalizeEditorColorSelectionText(selectionOverride.selectedText)
-          && !resolvedSelection
+          selectionOverride?.surface === "visual" &&
+          normalizeEditorColorSelectionText(selectionOverride.selectedText) &&
+          !resolvedSelection
         ) {
           return false;
         }
@@ -24171,64 +27101,50 @@ function stabilizeProfileSignatureToolbar(router) {
       editor.__cc98WysiwygSyncSource = syncGeneratedSource;
       editor.__cc98WysiwygRememberSelection = rememberActiveSelection;
       editor.__cc98WysiwygApplyColor = (color, selectionOverride = null) => {
-        const normalized = String(color || "").trim().toLowerCase();
+        const normalized = String(color || "")
+          .trim()
+          .toLowerCase();
         if (normalized !== "transparent" && !/^#[0-9a-f]{6}$/i.test(normalized)) {
           return false;
         }
-        const selection = selectionOverride
-          || editor.__cc98ColorSelectionSnapshot
-          || promoteEditorColorLogicalSelection(editor, wysiwyg, textarea.value);
+        const selection =
+          selectionOverride ||
+          editor.__cc98ColorSelectionSnapshot ||
+          promoteEditorColorLogicalSelection(editor, wysiwyg, textarea.value);
         if (selection?.surface === "source") {
-          return replaceSourceSelection(
-            `[color=${normalized}]`,
-            "[/color]",
-            false,
-            selection
-          );
+          return replaceSourceSelection(`[color=${normalized}]`, "[/color]", false, selection);
         }
         if (selection?.surface === "visual") {
           const sourceSelection = getEditorColorSourceSelectionForApply(selection, textarea.value);
           if (isUsableEditorColorSourceSelection(selection, textarea.value, sourceSelection)) {
-            return replaceSourceSelection(
-              `[color=${normalized}]`,
-              "[/color]",
-              false,
-              selection
-            );
+            return replaceSourceSelection(`[color=${normalized}]`, "[/color]", false, selection);
           }
           const markerRange = getEditorColorSelectionMarkerRange(selection);
           const expectedSelection = getEditorColorSelectionExpectedSourceText(selection);
           if (
-            expectedSelection.replace(/\s|\[[^\]]+\]/g, "")
-            && (!markerRange || !hasMeaningfulProfileSignatureWysiwygRange(markerRange))
+            expectedSelection.replace(/\s|\[[^\]]+\]/g, "") &&
+            (!markerRange || !hasMeaningfulProfileSignatureWysiwygRange(markerRange))
           ) {
             return false;
           }
           activeSurface = "visual";
-          return applyProfileSignatureWysiwygInlineTag(
-            editor,
-            wysiwyg,
-            "color",
-            normalized,
-            { color: normalized }
-          );
+          return applyProfileSignatureWysiwygInlineTag(editor, wysiwyg, "color", normalized, {
+            color: normalized
+          });
         }
         if (activeSurface === "source") {
           return replaceSourceSelection(`[color=${normalized}]`, "[/color]");
         }
-        return applyProfileSignatureWysiwygInlineTag(
-          editor,
-          wysiwyg,
-          "color",
-          normalized,
-          { color: normalized }
-        );
+        return applyProfileSignatureWysiwygInlineTag(editor, wysiwyg, "color", normalized, {
+          color: normalized
+        });
       };
       editor.__cc98WysiwygClearColor = (selectionOverride = null) => {
         if (activeSurface === "source") {
-          const selection = selectionOverride?.surface === "source"
-            ? selectionOverride
-            : getActiveSourceSelection();
+          const selection =
+            selectionOverride?.surface === "source"
+              ? selectionOverride
+              : getActiveSourceSelection();
           const result = removeEditorColorTagsFromSource(
             textarea.value,
             selection.start,
@@ -24263,7 +27179,10 @@ function stabilizeProfileSignatureToolbar(router) {
       const applyTypography = (tag, value) => {
         if (activeSurface === "source") {
           const result = window.CC98RebornExtendedUbbCore?.applyTypographyToSource(
-            textarea.value, getActiveSourceSelection(), tag, value
+            textarea.value,
+            getActiveSourceSelection(),
+            tag,
+            value
           );
           if (!result) {
             return false;
@@ -24326,48 +27245,68 @@ function stabilizeProfileSignatureToolbar(router) {
       addCommandButton("\u5de6", "\u5de6\u5bf9\u9f50", "justifyLeft");
       addCommandButton("\u4e2d", "\u5c45\u4e2d", "justifyCenter");
       addCommandButton("\u53f3", "\u53f3\u5bf9\u9f50", "justifyRight");
-      addActionButton("\u94fe", "\u63d2\u5165\u94fe\u63a5", () => insertProfileSignatureWysiwygLink(editor, wysiwyg));
-      addActionButton("\u56fe", "\u63d2\u5165\u56fe\u7247", () => (
-        insertProfileSignatureWysiwygMedia(editor, wysiwyg, "img", "\u8bf7\u8f93\u5165\u56fe\u7247\u5730\u5740")
-      ));
-      addActionButton("\u5f71", "\u63d2\u5165\u89c6\u9891", () => (
-        insertProfileSignatureWysiwygMedia(editor, wysiwyg, "video", "\u8bf7\u8f93\u5165\u89c6\u9891\u5730\u5740")
-      ));
-      addActionButton("Bili", "\u63d2\u5165 Bilibili \u89c6\u9891", () => (
-        insertProfileSignatureWysiwygMedia(editor, wysiwyg, "bilibili", "\u8bf7\u8f93\u5165 Bilibili \u5730\u5740\u6216 BV \u53f7")
-      ));
-      addActionButton("\u97f3", "\u63d2\u5165\u97f3\u9891", () => (
-        insertProfileSignatureWysiwygMedia(editor, wysiwyg, "audio", "\u8bf7\u8f93\u5165\u97f3\u9891\u5730\u5740")
-      ));
-      const sourceButton = addActionButton("\u6e90\u7801", "\u663e\u793a\u6216\u9690\u85cf\u53ef\u76f4\u63a5\u7f16\u8f91\u7684 UBB \u6e90\u7801", () => {
-        const willShow = codePane.hidden;
-        codePane.hidden = !willShow;
-        divider.hidden = !willShow;
-        workspace.classList.toggle("is-source-hidden", !willShow);
-        sourceButton.classList.toggle("is-active", willShow);
-        sourceButton.setAttribute("aria-pressed", String(willShow));
-        if (willShow) {
-          refreshCodeChrome();
+      addActionButton("\u94fe", "\u63d2\u5165\u94fe\u63a5", () =>
+        insertProfileSignatureWysiwygLink(editor, wysiwyg)
+      );
+      addActionButton("\u56fe", "\u63d2\u5165\u56fe\u7247", () =>
+        insertProfileSignatureWysiwygMedia(
+          editor,
+          wysiwyg,
+          "img",
+          "\u8bf7\u8f93\u5165\u56fe\u7247\u5730\u5740"
+        )
+      );
+      addActionButton("\u5f71", "\u63d2\u5165\u89c6\u9891", () =>
+        insertProfileSignatureWysiwygMedia(
+          editor,
+          wysiwyg,
+          "video",
+          "\u8bf7\u8f93\u5165\u89c6\u9891\u5730\u5740"
+        )
+      );
+      addActionButton("Bili", "\u63d2\u5165 Bilibili \u89c6\u9891", () =>
+        insertProfileSignatureWysiwygMedia(
+          editor,
+          wysiwyg,
+          "bilibili",
+          "\u8bf7\u8f93\u5165 Bilibili \u5730\u5740\u6216 BV \u53f7"
+        )
+      );
+      addActionButton("\u97f3", "\u63d2\u5165\u97f3\u9891", () =>
+        insertProfileSignatureWysiwygMedia(
+          editor,
+          wysiwyg,
+          "audio",
+          "\u8bf7\u8f93\u5165\u97f3\u9891\u5730\u5740"
+        )
+      );
+      const sourceButton = addActionButton(
+        "\u6e90\u7801",
+        "\u663e\u793a\u6216\u9690\u85cf\u53ef\u76f4\u63a5\u7f16\u8f91\u7684 UBB \u6e90\u7801",
+        () => {
+          const willShow = codePane.hidden;
+          codePane.hidden = !willShow;
+          divider.hidden = !willShow;
+          workspace.classList.toggle("is-source-hidden", !willShow);
+          sourceButton.classList.toggle("is-active", willShow);
+          sourceButton.setAttribute("aria-pressed", String(willShow));
+          if (willShow) {
+            refreshCodeChrome();
+          }
         }
-      });
+      );
       sourceButton.classList.add("is-active");
       sourceButton.setAttribute("aria-pressed", "true");
 
-      legacyPreviewButton = addActionButton(
-        "旧预览",
-        "打开 0.3.1 版 UBB 预览（备用）",
-        () => setLegacyPreviewOpen(legacyPreview.hidden)
+      legacyPreviewButton = addActionButton("旧预览", "打开 0.3.1 版 UBB 预览（备用）", () =>
+        setLegacyPreviewOpen(legacyPreview.hidden)
       );
       legacyPreviewButton.classList.add("cc98-rebuild-dual-ubb-toolbar-utility");
       legacyPreviewButton.setAttribute("aria-pressed", "false");
-      const syncButton = addActionButton(
-        "同步",
-        "同步上下编辑区并重新渲染",
-        () => {
-          forceSynchronize();
-          showRebuiltTransientToast(syncButton, "上下编辑区已同步");
-        }
-      );
+      const syncButton = addActionButton("同步", "同步上下编辑区并重新渲染", () => {
+        forceSynchronize();
+        showRebuiltTransientToast(syncButton, "上下编辑区已同步");
+      });
       syncButton.classList.add("cc98-rebuild-dual-ubb-toolbar-utility");
 
       const fontFamily = createEditorFontFamilyControl(
@@ -24463,11 +27402,19 @@ function stabilizeProfileSignatureToolbar(router) {
         if (!["Tab", "Enter"].includes(event.key)) {
           return;
         }
-        if (event.key === "Enter" && (event.isComposing || event.ctrlKey || event.metaKey || event.altKey)) {
+        if (
+          event.key === "Enter" &&
+          (event.isComposing || event.ctrlKey || event.metaKey || event.altKey)
+        ) {
           return;
         }
         event.preventDefault();
-        if (insertProfileSignatureSourceTextAtSelection(syntaxLayer, event.key === "Tab" ? "\t" : "\n")) {
+        if (
+          insertProfileSignatureSourceTextAtSelection(
+            syntaxLayer,
+            event.key === "Tab" ? "\t" : "\n"
+          )
+        ) {
           syncFromSourceEditor(true);
         }
       });
@@ -24574,7 +27521,11 @@ function collectProfileAccountStateMessages(router) {
     if (!(node instanceof HTMLElement)) {
       return;
     }
-    if (node.closest(".user-description, .signature, .cc98-rebuild-signature-content, .cc98-rebuild-profile-badge-panel")) {
+    if (
+      node.closest(
+        ".user-description, .signature, .cc98-rebuild-signature-content, .cc98-rebuild-profile-badge-panel"
+      )
+    ) {
       return;
     }
     addEntry(node.textContent, node);
@@ -24599,10 +27550,10 @@ function hideProfileAccountStateSource(entry) {
     const grid = source.closest("#userGenderAndBirthday");
     const parent = source.parentElement;
     if (
-      grid instanceof HTMLElement
-      && parent instanceof HTMLElement
-      && parent.parentElement === grid
-      && normalizeProfileAccountStateText(parent.textContent) === entry.text
+      grid instanceof HTMLElement &&
+      parent instanceof HTMLElement &&
+      parent.parentElement === grid &&
+      normalizeProfileAccountStateText(parent.textContent) === entry.text
     ) {
       parent.classList.add("cc98-rebuild-profile-account-state-source");
       parent.toggleAttribute("hidden", true);
@@ -24616,7 +27567,11 @@ function hideProfileAccountStateSource(entry) {
     if (!(parent instanceof HTMLElement)) {
       return;
     }
-    const holder = createElement("span", "cc98-rebuild-profile-account-state-source", source.nodeValue || "");
+    const holder = createElement(
+      "span",
+      "cc98-rebuild-profile-account-state-source",
+      source.nodeValue || ""
+    );
     holder.toggleAttribute("hidden", true);
     holder.setAttribute("aria-hidden", "true");
     holder.style.setProperty("display", "none", "important");
@@ -24666,9 +27621,7 @@ function stabilizeUserProfileBadges(router, avatar) {
     if (!(item instanceof HTMLElement)) {
       return;
     }
-    const key = normalizeProfileAccountStateText(
-      item.dataset.cc98AccountState || item.textContent
-    );
+    const key = normalizeProfileAccountStateText(item.dataset.cc98AccountState || item.textContent);
     if (!key || existingAccountStateItems.has(key)) {
       item.remove();
       return;
@@ -24702,10 +27655,15 @@ function stabilizeUserProfileBadges(router, avatar) {
       item.style.removeProperty("color");
     }
   });
-  const hasBadgeContent = Boolean(cleanupPostText(badge.textContent) || accountStateMessages.length);
+  const hasBadgeContent = Boolean(
+    cleanupPostText(badge.textContent) || accountStateMessages.length
+  );
   if (!hasBadgeContent && badge.parentElement?.classList.contains("user-avatar")) {
     badge.classList.remove("cc98-rebuild-profile-badge-panel");
-    badge.classList.remove("cc98-rebuild-profile-badge-single", "cc98-rebuild-profile-badge-multiple");
+    badge.classList.remove(
+      "cc98-rebuild-profile-badge-single",
+      "cc98-rebuild-profile-badge-multiple"
+    );
     badge.classList.add("cc98-rebuild-profile-badge-empty");
     delete badge.dataset.cc98BadgeCount;
     badge.toggleAttribute("hidden", true);
@@ -24726,7 +27684,10 @@ function stabilizeUserProfileBadges(router, avatar) {
   badge.toggleAttribute("hidden", !hasBadgeContent);
   badge.setAttribute("aria-hidden", hasBadgeContent ? "false" : "true");
   if (!hasBadgeContent) {
-    badge.classList.remove("cc98-rebuild-profile-badge-single", "cc98-rebuild-profile-badge-multiple");
+    badge.classList.remove(
+      "cc98-rebuild-profile-badge-single",
+      "cc98-rebuild-profile-badge-multiple"
+    );
     delete badge.dataset.cc98BadgeCount;
     badge.style.setProperty("display", "none", "important");
     return;
@@ -24784,7 +27745,11 @@ function stabilizeUserProfileStats(router) {
     const profile = router.querySelector(".user-profile");
     const avatar = router.querySelector(".user-center-exact > .user-avatar, .user-avatar");
     const userId = profile?.querySelector("#userId");
-    if (!(profile instanceof HTMLElement) || !(avatar instanceof HTMLElement) || !(userId instanceof HTMLElement)) {
+    if (
+      !(profile instanceof HTMLElement) ||
+      !(avatar instanceof HTMLElement) ||
+      !(userId instanceof HTMLElement)
+    ) {
       return;
     }
 
@@ -24804,22 +27769,42 @@ function stabilizeUserProfileStats(router) {
       if (!/^(?:\u5173\u6ce8|\u53d6\u5173|\u53d6\u6d88\u5173\u6ce8)$/.test(label)) {
         return;
       }
-      control.classList.add("cc98-rebuild-profile-inline-action", "cc98-rebuild-profile-follow-action");
+      control.classList.add(
+        "cc98-rebuild-profile-inline-action",
+        "cc98-rebuild-profile-follow-action"
+      );
       if (control instanceof HTMLButtonElement) {
-        control.classList.add("cc98-rebuild-profile-action-button", "cc98-rebuild-profile-follow-button");
+        control.classList.add(
+          "cc98-rebuild-profile-action-button",
+          "cc98-rebuild-profile-follow-button"
+        );
       } else {
-        control.querySelector("button")?.classList.add("cc98-rebuild-profile-action-button", "cc98-rebuild-profile-follow-button");
+        control
+          .querySelector("button")
+          ?.classList.add(
+            "cc98-rebuild-profile-action-button",
+            "cc98-rebuild-profile-follow-button"
+          );
       }
       if (nameLine instanceof HTMLElement && control.parentElement !== nameLine) {
         nameLine.append(control);
       }
     });
 
-    const messageLink = [...userId.querySelectorAll("a")]
-      .find((link) => cleanupPostText(link.textContent) === "\u79c1\u4fe1");
+    const messageLink = [...userId.querySelectorAll("a")].find(
+      (link) => cleanupPostText(link.textContent) === "\u79c1\u4fe1"
+    );
     if (messageLink instanceof HTMLElement) {
-      messageLink.classList.add("cc98-rebuild-profile-inline-action", "cc98-rebuild-profile-message-action");
-      messageLink.querySelector("button")?.classList.add("cc98-rebuild-profile-action-button", "cc98-rebuild-profile-message-button");
+      messageLink.classList.add(
+        "cc98-rebuild-profile-inline-action",
+        "cc98-rebuild-profile-message-action"
+      );
+      messageLink
+        .querySelector("button")
+        ?.classList.add(
+          "cc98-rebuild-profile-action-button",
+          "cc98-rebuild-profile-message-button"
+        );
       if (nameLine instanceof HTMLElement && messageLink.parentElement !== nameLine) {
         nameLine.append(messageLink);
       }
@@ -24899,7 +27884,9 @@ function stabilizeUserProfileStats(router) {
     if (!(grid instanceof HTMLElement) || row.parentElement === grid) {
       return;
     }
-    const postCountItem = [...grid.children].find((item) => cleanupPostText(item.textContent).startsWith("\u53d1\u5e16\u6570"));
+    const postCountItem = [...grid.children].find((item) =>
+      cleanupPostText(item.textContent).startsWith("\u53d1\u5e16\u6570")
+    );
     if (postCountItem?.parentElement === grid) {
       postCountItem.after(row);
     } else {
@@ -24915,7 +27902,9 @@ function stabilizeUserDescriptionSignatures(router) {
       return;
     }
     const rawText = article.textContent || "";
-    const hasRawUbb = /\[(?:\/?(?:b|i|u|s|del|url|color|size|align|img)(?:=[^\]]+)?)\]/i.test(rawText);
+    const hasRawUbb = /\[(?:\/?(?:b|i|u|s|del|url|color|size|align|img)(?:=[^\]]+)?)\]/i.test(
+      rawText
+    );
     if (hasRawUbb && article.dataset.cc98ProfileSignatureUbbSource !== rawText) {
       article.dataset.cc98ProfileSignatureUbbSource = rawText;
       const fragment = document.createDocumentFragment();
@@ -24931,7 +27920,10 @@ function stabilizeUserDescriptionSignatures(router) {
       });
       article.replaceChildren(fragment);
     }
-    article.classList.add("cc98-rebuild-profile-signature-content", "cc98-rebuild-signature-content");
+    article.classList.add(
+      "cc98-rebuild-profile-signature-content",
+      "cc98-rebuild-signature-content"
+    );
     parseInlineUbbTextNodes(article);
     strengthenInlineTextStyles(article);
     markInlineUbbStyleClasses(article);
@@ -24983,7 +27975,8 @@ function bindUserReplyContentNavigation(content, href) {
 }
 
 function stabilizeUserReplyUbbContents(router) {
-  const ubbPattern = /\[(?:cc98\d{2}|ac(?:\d{2}|\d{4})|[acf]:\d{3}|tb\d{2}|ms\d{2}|em\d{2}|\/?(?:b|i|u|s|del|url|color|size|align|img|audio|mp3|video|bili|bilibili)(?:=[^\]]+)?)\]/i;
+  const ubbPattern =
+    /\[(?:cc98\d{2}|ac(?:\d{2}|\d{4})|[acf]:\d{3}|tb\d{2}|ms\d{2}|em\d{2}|\/?(?:b|i|u|s|del|url|color|size|align|img|audio|mp3|video|bili|bilibili)(?:=[^\]]+)?)\]/i;
   router.querySelectorAll('.user-post-content a[href*="/topic/"]').forEach((link) => {
     if (!(link instanceof HTMLAnchorElement) || link.closest(".cc98-rebuild-user-reply-ubb")) {
       return;
@@ -25023,40 +28016,57 @@ function isUserProfileRouteHref(href) {
 }
 
 function stabilizeUserCenterUserLinks(router) {
-  router.querySelectorAll([
-    ".user-center-myfollowings-user a[href*='/user/']",
-    ".user-center-myfans a[href*='/user/']",
-    ".user-center-myfans-user a[href*='/user/']",
-    ".user-center-myfollowers-user a[href*='/user/']",
-    "a[href*='/user/id/']",
-    "a[href*='/user/name/']"
-  ].join(",")).forEach((link) => {
-    if (!(link instanceof HTMLAnchorElement) || link.dataset.cc98UserCenterUserLinkBound === "true") {
-      return;
-    }
-    const href = makeAbsoluteCc98Url(link.getAttribute("href") || link.href || "");
-    if (!isUserProfileRouteHref(href)) {
-      return;
-    }
-    link.dataset.cc98UserCenterUserLinkBound = "true";
-    link.addEventListener("click", (event) => {
-      if (event.defaultPrevented || event.button !== 0) {
+  router
+    .querySelectorAll(
+      [
+        ".user-center-myfollowings-user a[href*='/user/']",
+        ".user-center-myfans a[href*='/user/']",
+        ".user-center-myfans-user a[href*='/user/']",
+        ".user-center-myfollowers-user a[href*='/user/']",
+        "a[href*='/user/id/']",
+        "a[href*='/user/name/']"
+      ].join(",")
+    )
+    .forEach((link) => {
+      if (
+        !(link instanceof HTMLAnchorElement) ||
+        link.dataset.cc98UserCenterUserLinkBound === "true"
+      ) {
         return;
       }
-      if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || link.target === "_blank") {
+      const href = makeAbsoluteCc98Url(link.getAttribute("href") || link.href || "");
+      if (!isUserProfileRouteHref(href)) {
         return;
       }
-      const targetHref = makeAbsoluteCc98Url(link.getAttribute("href") || link.href || "");
-      if (!isUserProfileRouteHref(targetHref)) {
-        return;
-      }
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
-      navigateToRebuiltHref(targetHref);
-      scheduleRouteFollowup(targetHref);
-    }, true);
-  });
+      link.dataset.cc98UserCenterUserLinkBound = "true";
+      link.addEventListener(
+        "click",
+        (event) => {
+          if (event.defaultPrevented || event.button !== 0) {
+            return;
+          }
+          if (
+            event.ctrlKey ||
+            event.metaKey ||
+            event.shiftKey ||
+            event.altKey ||
+            link.target === "_blank"
+          ) {
+            return;
+          }
+          const targetHref = makeAbsoluteCc98Url(link.getAttribute("href") || link.href || "");
+          if (!isUserProfileRouteHref(targetHref)) {
+            return;
+          }
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+          navigateToRebuiltHref(targetHref);
+          scheduleRouteFollowup(targetHref);
+        },
+        true
+      );
+    });
 }
 
 function hasActiveTextSelectionWithin(root) {
@@ -25068,8 +28078,8 @@ function hasActiveTextSelectionWithin(root) {
     return false;
   }
   return Boolean(
-    (selection.anchorNode && root.contains(selection.anchorNode))
-    || (selection.focusNode && root.contains(selection.focusNode))
+    (selection.anchorNode && root.contains(selection.anchorNode)) ||
+    (selection.focusNode && root.contains(selection.focusNode))
   );
 }
 
@@ -25078,14 +28088,17 @@ function hasActivePublicProfileTextSelection() {
     return false;
   }
   const app = document.querySelector("#cc98-comfort-app");
-  const router = app?.querySelector(".cc98-rebuild-native-user-router")
-    || document.querySelector(".user-center-router");
+  const router =
+    app?.querySelector(".cc98-rebuild-native-user-router") ||
+    document.querySelector(".user-center-router");
   return hasActiveTextSelectionWithin(app) || hasActiveTextSelectionWithin(router);
 }
 
 function isPublicProfileSelectionProtected() {
-  return isPublicUserProfilePage()
-    && (publicProfilePointerSelectionActive || hasActivePublicProfileTextSelection());
+  return (
+    isPublicUserProfilePage() &&
+    (publicProfilePointerSelectionActive || hasActivePublicProfileTextSelection())
+  );
 }
 
 function bindPublicProfileSelectionRebuildGuard() {
@@ -25104,16 +28117,25 @@ function bindPublicProfileSelectionRebuildGuard() {
       }
     }, 80);
   };
-  document.addEventListener("pointerdown", (event) => {
-    if (event.button !== 0 || !isPublicUserProfilePage()) {
-      return;
-    }
-    const router = document.querySelector("#cc98-comfort-app .cc98-rebuild-native-user-router")
-      || document.querySelector(".user-center-router");
-    if (router instanceof HTMLElement && event.target instanceof Node && router.contains(event.target)) {
-      publicProfilePointerSelectionActive = true;
-    }
-  }, true);
+  document.addEventListener(
+    "pointerdown",
+    (event) => {
+      if (event.button !== 0 || !isPublicUserProfilePage()) {
+        return;
+      }
+      const router =
+        document.querySelector("#cc98-comfort-app .cc98-rebuild-native-user-router") ||
+        document.querySelector(".user-center-router");
+      if (
+        router instanceof HTMLElement &&
+        event.target instanceof Node &&
+        router.contains(event.target)
+      ) {
+        publicProfilePointerSelectionActive = true;
+      }
+    },
+    true
+  );
   const releasePointerSelection = () => {
     if (!publicProfilePointerSelectionActive) {
       return;
@@ -25124,9 +28146,13 @@ function bindPublicProfileSelectionRebuildGuard() {
   document.addEventListener("pointerup", releasePointerSelection, true);
   document.addEventListener("pointercancel", releasePointerSelection, true);
   window.addEventListener("blur", releasePointerSelection);
-  document.addEventListener("selectionchange", () => {
-    flushDeferredRebuild();
-  }, true);
+  document.addEventListener(
+    "selectionchange",
+    () => {
+      flushDeferredRebuild();
+    },
+    true
+  );
 }
 
 function deferPublicProfileRebuildForSelection() {
@@ -25140,8 +28166,8 @@ function deferPublicProfileRebuildForSelection() {
 
 function stabilizeNativeUserCenter(router) {
   if (
-    hasActiveTextSelectionWithin(router)
-    || (isPublicUserProfilePage() && publicProfilePointerSelectionActive)
+    hasActiveTextSelectionWithin(router) ||
+    (isPublicUserProfilePage() && publicProfilePointerSelectionActive)
   ) {
     return false;
   }
@@ -25173,21 +28199,31 @@ function bindNativeUserCenterStabilizer(router) {
   nativeUserCenterStabilizers.add(router);
   eagerUserCenterImages(router);
   stabilizeNativeUserCenter(router);
-  router.addEventListener("change", (event) => {
-    const input = event.target?.closest?.('input[type="file"]#uploadAvatar, input[type="file"][accept*="image"]');
-    if (!input) {
-      return;
-    }
-    if (input.files?.length || input.value) {
-      activateAvatarCrop(input);
-    }
-  }, true);
-  router.addEventListener("click", (event) => {
-    const defaultAvatarButton = event.target?.closest?.("#chooseDefaultAvatar");
-    if (defaultAvatarButton) {
-      deactivateAvatarCrop(defaultAvatarButton);
-    }
-  }, true);
+  router.addEventListener(
+    "change",
+    (event) => {
+      const input = event.target?.closest?.(
+        'input[type="file"]#uploadAvatar, input[type="file"][accept*="image"]'
+      );
+      if (!input) {
+        return;
+      }
+      if (input.files?.length || input.value) {
+        activateAvatarCrop(input);
+      }
+    },
+    true
+  );
+  router.addEventListener(
+    "click",
+    (event) => {
+      const defaultAvatarButton = event.target?.closest?.("#chooseDefaultAvatar");
+      if (defaultAvatarButton) {
+        deactivateAvatarCrop(defaultAvatarButton);
+      }
+    },
+    true
+  );
   let userCenterStabilizeTimer = null;
   const scheduleUserCenterStabilize = (delay = 80) => {
     window.clearTimeout(userCenterStabilizeTimer);
@@ -25208,7 +28244,14 @@ function bindNativeUserCenterStabilizer(router) {
     subtree: true,
     characterData: true,
     attributes: true,
-    attributeFilter: ["src", "data-src", "data-original", "data-url", "data-avatar", "data-portrait"]
+    attributeFilter: [
+      "src",
+      "data-src",
+      "data-original",
+      "data-url",
+      "data-avatar",
+      "data-portrait"
+    ]
   });
 }
 
@@ -25236,16 +28279,20 @@ function submitAntSimplePage(input, page) {
   }
   input.focus({ preventScroll: true });
   input.value = String(Math.max(1, Number(page) || 1));
-  ["input", "change"].forEach((type) => input.dispatchEvent(new Event(type, { bubbles: true, cancelable: true })));
+  ["input", "change"].forEach((type) =>
+    input.dispatchEvent(new Event(type, { bubbles: true, cancelable: true }))
+  );
   ["keydown", "keypress", "keyup"].forEach((type) => {
-    input.dispatchEvent(new KeyboardEvent(type, {
-      key: "Enter",
-      code: "Enter",
-      keyCode: 13,
-      which: 13,
-      bubbles: true,
-      cancelable: true
-    }));
+    input.dispatchEvent(
+      new KeyboardEvent(type, {
+        key: "Enter",
+        code: "Enter",
+        keyCode: 13,
+        which: 13,
+        bubbles: true,
+        cancelable: true
+      })
+    );
   });
   input.blur();
   scheduleDelayedRebuilds();
@@ -25261,8 +28308,10 @@ function rebuildAntSimplePagination(pagination) {
   if (!(container instanceof HTMLElement)) {
     return;
   }
-  if (!container.classList.contains("cc98-rebuild-ant-pagination-host")) container.classList.add("cc98-rebuild-ant-pagination-host");
-  if (!pagination.classList.contains("cc98-rebuild-ant-pagination-source")) pagination.classList.add("cc98-rebuild-ant-pagination-source");
+  if (!container.classList.contains("cc98-rebuild-ant-pagination-host"))
+    container.classList.add("cc98-rebuild-ant-pagination-host");
+  if (!pagination.classList.contains("cc98-rebuild-ant-pagination-source"))
+    pagination.classList.add("cc98-rebuild-ant-pagination-source");
 
   const state = getAntSimplePaginationState(pagination);
   let proxy = container.querySelector(":scope > .cc98-rebuild-ant-simple-pager");
@@ -25271,9 +28320,18 @@ function rebuildAntSimplePagination(pagination) {
     container.append(proxy);
   }
 
-  const prevDisabled = state.prev?.classList.contains("ant-pagination-disabled") || state.prev?.getAttribute("aria-disabled") === "true";
-  const nextDisabled = state.next?.classList.contains("ant-pagination-disabled") || state.next?.getAttribute("aria-disabled") === "true";
-  const stateKey = [state.current, state.total, prevDisabled ? "p0" : "p1", nextDisabled ? "n0" : "n1"].join(":");
+  const prevDisabled =
+    state.prev?.classList.contains("ant-pagination-disabled") ||
+    state.prev?.getAttribute("aria-disabled") === "true";
+  const nextDisabled =
+    state.next?.classList.contains("ant-pagination-disabled") ||
+    state.next?.getAttribute("aria-disabled") === "true";
+  const stateKey = [
+    state.current,
+    state.total,
+    prevDisabled ? "p0" : "p1",
+    nextDisabled ? "n0" : "n1"
+  ].join(":");
   if (proxy.dataset.cc98PaginationState === stateKey) {
     return;
   }
@@ -25332,14 +28390,23 @@ function getAntPaginationButtonLabel(item) {
   if (item.classList.contains("ant-pagination-next")) {
     return ">";
   }
-  if (item.classList.contains("ant-pagination-jump-prev") || item.classList.contains("ant-pagination-jump-next")) {
+  if (
+    item.classList.contains("ant-pagination-jump-prev") ||
+    item.classList.contains("ant-pagination-jump-next")
+  ) {
     return "...";
   }
-  return cleanupPostText(item.textContent).replace(/\u2022/g, ".") || cleanupPostText(item.getAttribute("title"));
+  return (
+    cleanupPostText(item.textContent).replace(/\u2022/g, ".") ||
+    cleanupPostText(item.getAttribute("title"))
+  );
 }
 
 function rebuildAntFullPagination(pagination) {
-  if (!(pagination instanceof HTMLElement) || pagination.classList.contains("ant-pagination-simple")) {
+  if (
+    !(pagination instanceof HTMLElement) ||
+    pagination.classList.contains("ant-pagination-simple")
+  ) {
     return;
   }
   if (!pagination.closest(".ant-modal-content")) {
@@ -25356,8 +28423,10 @@ function rebuildAntFullPagination(pagination) {
     return;
   }
 
-  if (!container.classList.contains("cc98-rebuild-ant-pagination-host")) container.classList.add("cc98-rebuild-ant-pagination-host");
-  if (!pagination.classList.contains("cc98-rebuild-ant-pagination-source")) pagination.classList.add("cc98-rebuild-ant-pagination-source");
+  if (!container.classList.contains("cc98-rebuild-ant-pagination-host"))
+    container.classList.add("cc98-rebuild-ant-pagination-host");
+  if (!pagination.classList.contains("cc98-rebuild-ant-pagination-source"))
+    pagination.classList.add("cc98-rebuild-ant-pagination-source");
 
   let proxy = container.querySelector(":scope > .cc98-rebuild-ant-full-pager");
   if (!(proxy instanceof HTMLElement)) {
@@ -25366,11 +28435,13 @@ function rebuildAntFullPagination(pagination) {
     container.append(proxy);
   }
 
-  const stateKey = items.map((item) => [
-    item.className,
-    item.getAttribute("title") || "",
-    cleanupPostText(item.textContent)
-  ].join("|")).join(";");
+  const stateKey = items
+    .map((item) =>
+      [item.className, item.getAttribute("title") || "", cleanupPostText(item.textContent)].join(
+        "|"
+      )
+    )
+    .join(";");
   if (proxy.dataset.cc98PaginationState === stateKey) {
     return;
   }
@@ -25382,9 +28453,13 @@ function rebuildAntFullPagination(pagination) {
     if (!label) {
       return;
     }
-    const isDisabled = item.classList.contains("ant-pagination-disabled") || item.getAttribute("aria-disabled") === "true";
+    const isDisabled =
+      item.classList.contains("ant-pagination-disabled") ||
+      item.getAttribute("aria-disabled") === "true";
     const isCurrent = item.classList.contains("ant-pagination-item-active");
-    const isJump = item.classList.contains("ant-pagination-jump-prev") || item.classList.contains("ant-pagination-jump-next");
+    const isJump =
+      item.classList.contains("ant-pagination-jump-prev") ||
+      item.classList.contains("ant-pagination-jump-next");
     const button = createElement("button", "cc98-rebuild-ant-page-button", label);
     button.type = "button";
     button.disabled = Boolean(isDisabled);
@@ -25399,7 +28474,10 @@ function rebuildAntFullPagination(pagination) {
     if (isJump) {
       button.classList.add("is-jump");
     }
-    if (item.classList.contains("ant-pagination-prev") || item.classList.contains("ant-pagination-next")) {
+    if (
+      item.classList.contains("ant-pagination-prev") ||
+      item.classList.contains("ant-pagination-next")
+    ) {
       button.classList.add("is-arrow");
     }
     button.addEventListener("click", () => {
@@ -25420,11 +28498,15 @@ function cleanupAntFullPaginationOutsideModals() {
       proxy.remove();
     }
   });
-  document.querySelectorAll(".ant-pagination.cc98-rebuild-ant-pagination-source:not(.ant-pagination-simple)").forEach((pagination) => {
-    if (!pagination.closest(".ant-modal-content")) {
-      pagination.classList.remove("cc98-rebuild-ant-pagination-source");
-    }
-  });
+  document
+    .querySelectorAll(
+      ".ant-pagination.cc98-rebuild-ant-pagination-source:not(.ant-pagination-simple)"
+    )
+    .forEach((pagination) => {
+      if (!pagination.closest(".ant-modal-content")) {
+        pagination.classList.remove("cc98-rebuild-ant-pagination-source");
+      }
+    });
 }
 
 function stabilizeNativeAntUi() {
@@ -25433,15 +28515,37 @@ function stabilizeNativeAntUi() {
   }
   cleanupAntFullPaginationOutsideModals();
   const nativeRoot = document.querySelector("#root");
-  nativeRoot?.querySelectorAll(".ant-list, .ant-list-item, .ant-list-item-meta, .ant-list-item-content, .ant-list-item-meta-content").forEach((node) => {
-    if (!node.classList.contains("cc98-rebuild-native-ant-list")) node.classList.add("cc98-rebuild-native-ant-list");
-  });
-  nativeRoot?.querySelectorAll(".ant-list-pagination .ant-pagination-simple, .ant-pagination.ant-pagination-simple").forEach(rebuildAntSimplePagination);
-  document.querySelectorAll(".ant-modal-content .ant-list, .ant-modal-content .ant-list-item, .ant-modal-content .ant-list-item-meta, .ant-modal-content .ant-list-item-content, .ant-modal-content .ant-list-item-meta-content").forEach((node) => {
-    if (!node.classList.contains("cc98-rebuild-native-ant-list")) node.classList.add("cc98-rebuild-native-ant-list");
-  });
-  document.querySelectorAll(".ant-modal-content .ant-list-pagination .ant-pagination-simple, .ant-modal-content .ant-pagination.ant-pagination-simple").forEach(rebuildAntSimplePagination);
-  document.querySelectorAll(".ant-modal-content .ant-list-pagination .ant-pagination:not(.ant-pagination-simple)").forEach(rebuildAntFullPagination);
+  nativeRoot
+    ?.querySelectorAll(
+      ".ant-list, .ant-list-item, .ant-list-item-meta, .ant-list-item-content, .ant-list-item-meta-content"
+    )
+    .forEach((node) => {
+      if (!node.classList.contains("cc98-rebuild-native-ant-list"))
+        node.classList.add("cc98-rebuild-native-ant-list");
+    });
+  nativeRoot
+    ?.querySelectorAll(
+      ".ant-list-pagination .ant-pagination-simple, .ant-pagination.ant-pagination-simple"
+    )
+    .forEach(rebuildAntSimplePagination);
+  document
+    .querySelectorAll(
+      ".ant-modal-content .ant-list, .ant-modal-content .ant-list-item, .ant-modal-content .ant-list-item-meta, .ant-modal-content .ant-list-item-content, .ant-modal-content .ant-list-item-meta-content"
+    )
+    .forEach((node) => {
+      if (!node.classList.contains("cc98-rebuild-native-ant-list"))
+        node.classList.add("cc98-rebuild-native-ant-list");
+    });
+  document
+    .querySelectorAll(
+      ".ant-modal-content .ant-list-pagination .ant-pagination-simple, .ant-modal-content .ant-pagination.ant-pagination-simple"
+    )
+    .forEach(rebuildAntSimplePagination);
+  document
+    .querySelectorAll(
+      ".ant-modal-content .ant-list-pagination .ant-pagination:not(.ant-pagination-simple)"
+    )
+    .forEach(rebuildAntFullPagination);
 }
 
 function scheduleNativeAntUiStabilize() {
@@ -25452,7 +28556,8 @@ function scheduleNativeAntUiStabilize() {
 function isNativeAntUiMutation(record) {
   const target = record.target instanceof Element ? record.target : record.target?.parentElement;
   if (target?.closest(".cc98-rebuild-ant-simple-pager, .cc98-rebuild-ant-full-pager")) return false;
-  if (target?.matches(NATIVE_ANT_UI_SELECTOR) || target?.closest(NATIVE_ANT_UI_SELECTOR)) return true;
+  if (target?.matches(NATIVE_ANT_UI_SELECTOR) || target?.closest(NATIVE_ANT_UI_SELECTOR))
+    return true;
   if (record.type === "attributes") return false;
   // Only newly added/removed subtrees need a descendant scan. A change on a
   // large ancestor does not make its unrelated existing Ant widgets dirty.
@@ -25465,9 +28570,11 @@ function isNativeAntUiMutation(record) {
     if (element.closest(".cc98-rebuild-ant-simple-pager, .cc98-rebuild-ant-full-pager")) {
       return false;
     }
-    return element.matches(NATIVE_ANT_UI_SELECTOR)
-      || Boolean(element.closest(NATIVE_ANT_UI_SELECTOR))
-      || Boolean(element.querySelector?.(NATIVE_ANT_UI_SELECTOR));
+    return (
+      element.matches(NATIVE_ANT_UI_SELECTOR) ||
+      Boolean(element.closest(NATIVE_ANT_UI_SELECTOR)) ||
+      Boolean(element.querySelector?.(NATIVE_ANT_UI_SELECTOR))
+    );
   });
 }
 
@@ -25496,7 +28603,13 @@ function renderHome(app) {
   const visibleSections = hotOnly && hotSections.length > 0 ? hotSections : sections;
   if (hotOnly && visibleSections.length > 0) {
     const hero = createElement("section", "cc98-rebuild-hero cc98-rebuild-home-hot-hero");
-    hero.append(createElement("p", "cc98-rebuild-kicker cc98-rebuild-version-kicker", `Reborn View · ${EXTENSION_VERSION_LABEL}`));
+    hero.append(
+      createElement(
+        "p",
+        "cc98-rebuild-kicker cc98-rebuild-version-kicker",
+        `Reborn View · ${EXTENSION_VERSION_LABEL}`
+      )
+    );
     hero.append(createElement("h1", "", visibleSections[0].title));
     app.append(hero);
   }
@@ -25547,16 +28660,18 @@ function getSearchRouteAge() {
 }
 
 function hasNativeSearchLoadingSignal() {
-  const candidate = document.querySelector([
-    ".ant-spin-spinning",
-    ".ant-spin-nested-loading .ant-spin",
-    ".ant-spin-blur",
-    "[class*='loading']",
-    "[class*='Loading']",
-    "[class*='loadMore']",
-    "[id*='loading']",
-    "[id*='Loading']"
-  ].join(","));
+  const candidate = document.querySelector(
+    [
+      ".ant-spin-spinning",
+      ".ant-spin-nested-loading .ant-spin",
+      ".ant-spin-blur",
+      "[class*='loading']",
+      "[class*='Loading']",
+      "[class*='loadMore']",
+      "[id*='loading']",
+      "[id*='Loading']"
+    ].join(",")
+  );
   if (!(candidate instanceof HTMLElement)) {
     return false;
   }
@@ -25565,7 +28680,10 @@ function hasNativeSearchLoadingSignal() {
   // The native search empty-state wrapper includes `loading` in its class on
   // some Forum builds. It is not a live spinner, so it must not keep the
   // rebuilt search view in its pending state indefinitely.
-  if (/noResult|emptyResult|searchNone/i.test(className) || /抱歉呢前辈|没有找到|查询出错/.test(text)) {
+  if (
+    /noResult|emptyResult|searchNone/i.test(className) ||
+    /抱歉呢前辈|没有找到|查询出错/.test(text)
+  ) {
     return false;
   }
   return true;
@@ -25590,9 +28708,8 @@ function scheduleSearchEmptyRecheck() {
   window.clearTimeout(searchPageEmptyRecheckTimer);
   const age = getSearchRouteAge();
   const initialRemaining = SEARCH_EMPTY_INITIAL_GRACE_MS - age;
-  const nextDelay = initialRemaining > 0
-    ? Math.max(360, Math.min(900, initialRemaining + 80))
-    : 900;
+  const nextDelay =
+    initialRemaining > 0 ? Math.max(360, Math.min(900, initialRemaining + 80)) : 900;
   searchPageEmptyRecheckTimer = window.setTimeout(scheduleRebuild, nextDelay);
 }
 
@@ -25600,10 +28717,19 @@ function renderSearchPendingState(app) {
   scheduleSearchEmptyRecheck();
   const section = createElement("section", "cc98-rebuild-empty-state cc98-rebuild-search-pending");
   const spinner = createElement("div", "cc98-rebuild-search-pending-spinner");
-  spinner.style.setProperty("--cc98-search-pending-spin-offset", `${-(Math.round(performance.now()) % 860)}ms`);
+  spinner.style.setProperty(
+    "--cc98-search-pending-spin-offset",
+    `${-(Math.round(performance.now()) % 860)}ms`
+  );
   section.append(spinner);
   section.append(createElement("h2", "", "\u6b63\u5728\u7b49\u5f85\u641c\u7d22\u7ed3\u679c"));
-  section.append(createElement("p", "", "\u539f\u9875\u9762\u8fd8\u5728\u52a0\u8f7d\uff0c\u7a0d\u540e\u4f1a\u81ea\u52a8\u5237\u65b0\u7ed3\u679c\u533a\u3002"));
+  section.append(
+    createElement(
+      "p",
+      "",
+      "\u539f\u9875\u9762\u8fd8\u5728\u52a0\u8f7d\uff0c\u7a0d\u540e\u4f1a\u81ea\u52a8\u5237\u65b0\u7ed3\u679c\u533a\u3002"
+    )
+  );
   app.append(section);
 }
 
@@ -25630,23 +28756,26 @@ function scheduleNewTopicModeSync(initialToken = "") {
   newTopicModeSyncTimers = [];
   let previousToken = initialToken;
   const delays = [35, 180, 520, 1080, 1680];
-  newTopicModeSyncTimers = delays.map((delay, index) => window.setTimeout(() => {
-    if (revision !== newTopicModeSyncRevision || !isNewTopicsPage()) {
-      return;
-    }
-    const panel = document.querySelector("#cc98-comfort-app .cc98-rebuild-new-topic-controls");
-    syncNewTopicModePanel(panel);
-    const token = getNewTopicNativeSyncToken();
-    if (index === 0 || token !== previousToken || index === delays.length - 1) {
-      refreshRebuiltFromLoadedNativeContent(null, { automatic: true });
-      previousToken = token;
-    }
-    if (index === delays.length - 1) {
-      newTopicModeSyncTimers = [];
-      document.querySelector("#cc98-comfort-app .cc98-rebuild-new-topic-controls")
-        ?.classList.remove("is-syncing");
-    }
-  }, delay));
+  newTopicModeSyncTimers = delays.map((delay, index) =>
+    window.setTimeout(() => {
+      if (revision !== newTopicModeSyncRevision || !isNewTopicsPage()) {
+        return;
+      }
+      const panel = document.querySelector("#cc98-comfort-app .cc98-rebuild-new-topic-controls");
+      syncNewTopicModePanel(panel);
+      const token = getNewTopicNativeSyncToken();
+      if (index === 0 || token !== previousToken || index === delays.length - 1) {
+        refreshRebuiltFromLoadedNativeContent(null, { automatic: true });
+        previousToken = token;
+      }
+      if (index === delays.length - 1) {
+        newTopicModeSyncTimers = [];
+        document
+          .querySelector("#cc98-comfort-app .cc98-rebuild-new-topic-controls")
+          ?.classList.remove("is-syncing");
+      }
+    }, delay)
+  );
 }
 
 function triggerNewTopicNativeControl(controlId, panel) {
@@ -25680,9 +28809,7 @@ function updateNewTopicAutoRefreshVisitState() {
 
 function scheduleNewTopicEntryAutoRefresh() {
   updateNewTopicAutoRefreshVisitState();
-  if (!newTopicAutoRefreshVisitActive
-    || newTopicAutoRefreshTriggered
-    || newTopicAutoRefreshTimer) {
+  if (!newTopicAutoRefreshVisitActive || newTopicAutoRefreshTriggered || newTopicAutoRefreshTimer) {
     return;
   }
   newTopicAutoRefreshTriggered = true;
@@ -25702,7 +28829,8 @@ function scheduleNewTopicEntryAutoRefresh() {
       return;
     }
     const initialToken = getNewTopicNativeSyncToken();
-    document.querySelector("#cc98-comfort-app .cc98-rebuild-new-topic-controls")
+    document
+      .querySelector("#cc98-comfort-app .cc98-rebuild-new-topic-controls")
       ?.classList.add("is-syncing");
     triggerOriginalControl(source);
     scheduleNewTopicModeSync(initialToken);
@@ -25761,12 +28889,19 @@ function createNewTopicModeControls() {
   });
 
   panel.append(heading, modes);
-  const virtualToggle = createButton("cc98-rebuild-new-topic-mode", globalThis.CC98RebornNewTopicsVirtual?.isFull() ? "恢复按需显示" : "显示全部", (event) => {
-    event.preventDefault();
-    globalThis.CC98RebornNewTopicsVirtual?.toggleAll();
-  });
+  const virtualToggle = createButton(
+    "cc98-rebuild-new-topic-mode",
+    globalThis.CC98RebornNewTopicsVirtual?.isFull() ? "恢复按需显示" : "显示全部",
+    (event) => {
+      event.preventDefault();
+      globalThis.CC98RebornNewTopicsVirtual?.toggleAll();
+    }
+  );
   virtualToggle.dataset.newTopicsVirtualToggle = "true";
-  virtualToggle.setAttribute("aria-pressed", String(Boolean(globalThis.CC98RebornNewTopicsVirtual?.isFull())));
+  virtualToggle.setAttribute(
+    "aria-pressed",
+    String(Boolean(globalThis.CC98RebornNewTopicsVirtual?.isFull()))
+  );
   panel.append(virtualToggle);
   syncNewTopicModePanel(panel);
   return panel;
@@ -25782,16 +28917,22 @@ function renderTopics(app) {
   const topics = getTopicItems();
   const searchKeyword = isSearchPage ? getCurrentSearchKeyword() : "";
   const sortedTopics = isSearchPage ? sortSearchTopicItems(topics, searchKeyword) : topics;
-  const fuzzyTerms = searchKeyword && lastSettings?.advancedFuzzySearch ? tokenizeSearchQuery(searchKeyword) : [];
-  const fallbackFuzzyTerms = fuzzyTerms.length ? fuzzyTerms : [normalizeSuggestionText(searchKeyword)].filter(Boolean);
-  const useAdvancedFuzzy = Boolean(lastSettings?.advancedFuzzySearch && (
-    fuzzyTerms.length >= 2
-    || (lastSettings?.aiSearchSuggestEnabled && normalizeSuggestionText(searchKeyword).length >= 4)
-  ));
+  const fuzzyTerms =
+    searchKeyword && lastSettings?.advancedFuzzySearch ? tokenizeSearchQuery(searchKeyword) : [];
+  const fallbackFuzzyTerms = fuzzyTerms.length
+    ? fuzzyTerms
+    : [normalizeSuggestionText(searchKeyword)].filter(Boolean);
+  const useAdvancedFuzzy = Boolean(
+    lastSettings?.advancedFuzzySearch &&
+    (fuzzyTerms.length >= 2 ||
+      (lastSettings?.aiSearchSuggestEnabled && normalizeSuggestionText(searchKeyword).length >= 4))
+  );
   if (!topics.length && !isSearchPage) {
-    const nativeEmptyMessage = cleanupPostText(document.querySelector(
-      ".noResultText, .focus-empty, [class*='emptyResult'], [class*='noResult']"
-    )?.textContent || "");
+    const nativeEmptyMessage = cleanupPostText(
+      document.querySelector(
+        ".noResultText, .focus-empty, [class*='emptyResult'], [class*='noResult']"
+      )?.textContent || ""
+    );
     if (nativeEmptyMessage) {
       const section = createElement("section", "cc98-rebuild-empty-state");
       section.append(createElement("h2", "", "暂时没有帖子"));
@@ -25802,7 +28943,10 @@ function renderTopics(app) {
     if (isNewTopicsPage()) {
       scheduleNewTopicsPendingRecheck();
     }
-    const section = createElement("section", "cc98-rebuild-empty-state cc98-rebuild-search-pending");
+    const section = createElement(
+      "section",
+      "cc98-rebuild-empty-state cc98-rebuild-search-pending"
+    );
     section.append(createElement("div", "cc98-rebuild-search-pending-spinner"));
     section.append(createElement("h2", "", "正在等待帖子列表"));
     section.append(createElement("p", "", "原页面仍在加载帖子，内容就绪后会自动应用到新界面。"));
@@ -25821,11 +28965,18 @@ function renderTopics(app) {
       app.append(feed);
       return;
     }
-    const message = cleanupPostText(document.querySelector(".noResultText")?.textContent)
-      || "抱歉呢前辈，没有找到你想要的帖子哦~";
+    const message =
+      cleanupPostText(document.querySelector(".noResultText")?.textContent) ||
+      "抱歉呢前辈，没有找到你想要的帖子哦~";
     const section = createElement("section", "cc98-rebuild-empty-state");
     section.append(createElement("h2", "", "没有找到结果"));
-    section.append(createElement("p", "", message.replace(/^-+|-+$/g, "").trim() || "抱歉呢前辈，没有找到你想要的帖子哦~"));
+    section.append(
+      createElement(
+        "p",
+        "",
+        message.replace(/^-+|-+$/g, "").trim() || "抱歉呢前辈，没有找到你想要的帖子哦~"
+      )
+    );
     app.append(section);
     return;
   }
@@ -25833,9 +28984,14 @@ function renderTopics(app) {
   feed.dataset.feedKind = isSearchPage ? "search" : "topics";
   if (useAdvancedFuzzy) {
     feed.dataset.feedKind = "search-fuzzy";
-    app.append(createAdvancedFuzzySearchPanel(searchKeyword, fallbackFuzzyTerms, feed, sortedTopics));
+    app.append(
+      createAdvancedFuzzySearchPanel(searchKeyword, fallbackFuzzyTerms, feed, sortedTopics)
+    );
   }
-  const useNewTopicsVirtual = !useAdvancedFuzzy && isNewTopicsPage() && globalThis.CC98RebornNewTopicsVirtual?.mount(feed, sortedTopics);
+  const useNewTopicsVirtual =
+    !useAdvancedFuzzy &&
+    isNewTopicsPage() &&
+    globalThis.CC98RebornNewTopicsVirtual?.mount(feed, sortedTopics);
   if (!useAdvancedFuzzy && !useNewTopicsVirtual) {
     sortedTopics.forEach((item) => {
       const card = renderTopicCard(item);
@@ -25875,11 +29031,19 @@ function renderBoardSearch(app) {
       renderSearchPendingState(app);
       return;
     }
-    const message = cleanupPostText(document.querySelector("#noResultBoard .noResultText, .noResultText")?.textContent)
-      || "抱歉呢前辈，没有找到你想要的版面哦~";
+    const message =
+      cleanupPostText(
+        document.querySelector("#noResultBoard .noResultText, .noResultText")?.textContent
+      ) || "抱歉呢前辈，没有找到你想要的版面哦~";
     const section = createElement("section", "cc98-rebuild-empty-state");
     section.append(createElement("h2", "", "没有找到版面"));
-    section.append(createElement("p", "", message.replace(/^-+|-+$/g, "").trim() || "抱歉呢前辈，没有找到你想要的版面哦~"));
+    section.append(
+      createElement(
+        "p",
+        "",
+        message.replace(/^-+|-+$/g, "").trim() || "抱歉呢前辈，没有找到你想要的版面哦~"
+      )
+    );
     app.append(section);
     return;
   }
@@ -25906,9 +29070,10 @@ function getProfileUserIdText() {
       return directText;
     }
   }
-  return cleanupPostText(document.querySelector(
-    ".user-profile [class*='userName'], .user-avatar + p, h1, h2"
-  )?.textContent || "");
+  return cleanupPostText(
+    document.querySelector(".user-profile [class*='userName'], .user-avatar + p, h1, h2")
+      ?.textContent || ""
+  );
 }
 
 function getCurrentProfilePageBlockedInfo() {
@@ -25935,8 +29100,9 @@ function getCurrentTopicBlockedAuthorInfo(postItems = null) {
     return null;
   }
   const items = postItems || getPostItems();
-  const author = items.find((item) => item.uid && (item.isOriginalPoster || Number(item.index) === 1))
-    || items.find((item) => item.uid && Number(item.index) === 1);
+  const author =
+    items.find((item) => item.uid && (item.isOriginalPoster || Number(item.index) === 1)) ||
+    items.find((item) => item.uid && Number(item.index) === 1);
   const reason = getUserBlockReason({
     id: author?.user,
     user: author?.user,
@@ -25969,13 +29135,22 @@ function renderBlockedPageGate(app, info) {
   const section = createElement("section", "cc98-rebuild-blocked-page");
   section.append(createElement("p", "cc98-rebuild-kicker", "Blacklist"));
   section.append(createElement("h1", "", `${info.role}已被屏蔽`));
-  const detail = [info.reason, info.name, info.uid ? `UID ${info.uid}` : ""].filter(Boolean).join(" · ");
-  section.append(createElement("p", "cc98-rebuild-card-meta", detail || "已根据你的屏蔽规则隐藏本页内容。"));
+  const detail = [info.reason, info.name, info.uid ? `UID ${info.uid}` : ""]
+    .filter(Boolean)
+    .join(" · ");
+  section.append(
+    createElement("p", "cc98-rebuild-card-meta", detail || "已根据你的屏蔽规则隐藏本页内容。")
+  );
   const actions = createElement("div", "cc98-rebuild-blocked-page-actions");
-  actions.append(createButton("cc98-rebuild-action", "查看内容", () => {
-    revealBlacklistScope(BLACKLIST_PAGE_REVEAL_PREFIX, info.uid || info.name || info.reason || "");
-    scheduleRebuild();
-  }));
+  actions.append(
+    createButton("cc98-rebuild-action", "查看内容", () => {
+      revealBlacklistScope(
+        BLACKLIST_PAGE_REVEAL_PREFIX,
+        info.uid || info.name || info.reason || ""
+      );
+      scheduleRebuild();
+    })
+  );
   actions.append(createLink("cc98-rebuild-action", "管理屏蔽规则", getBlacklistPageHref()));
   section.append(actions);
   app.append(section);
@@ -26022,7 +29197,9 @@ function renderBoardCard(board, pinned = false) {
     togglePinnedBoard(board);
   });
   pinButton.type = "button";
-  pinButton.title = pinned ? `\u53d6\u6d88\u7f6e\u9876 ${board.title}` : `\u7f6e\u9876 ${board.title}`;
+  pinButton.title = pinned
+    ? `\u53d6\u6d88\u7f6e\u9876 ${board.title}`
+    : `\u7f6e\u9876 ${board.title}`;
   pinButton.setAttribute("aria-label", pinButton.title);
   card.append(pinButton);
   if (board.image) {
@@ -26053,7 +29230,10 @@ function renderBoards(app) {
   });
   const pinnedBoards = pinnedHrefs.map((href) => boardsByHref.get(href)).filter(Boolean);
   if (pinnedBoards.length) {
-    const block = createElement("section", "cc98-rebuild-section cc98-rebuild-pinned-board-section");
+    const block = createElement(
+      "section",
+      "cc98-rebuild-section cc98-rebuild-pinned-board-section"
+    );
     block.append(createElement("h2", "", "\u7f6e\u9876\u7248\u9762"));
     const grid = createElement("div", "cc98-rebuild-board-grid cc98-rebuild-pinned-board-grid");
     pinnedBoards.forEach((board) => grid.append(renderBoardCard(board, true)));
@@ -26061,7 +29241,9 @@ function renderBoards(app) {
     app.append(block);
   }
   sections.forEach((section) => {
-    const visibleBoards = section.boards.filter((board) => !pinnedSet.has(normalizePinnedBoardHref(board.href)));
+    const visibleBoards = section.boards.filter(
+      (board) => !pinnedSet.has(normalizePinnedBoardHref(board.href))
+    );
     if (!visibleBoards.length) {
       return;
     }
@@ -26109,9 +29291,12 @@ function hideEmbeddedBlacklistPanel(router, panel, app) {
   if (panel instanceof HTMLElement) {
     panel.hidden = true;
   }
-  panel?.closest?.(".cc98-rebuild-user-layout")?.querySelectorAll?.(".cc98-rebuild-blacklist-nav-entry").forEach((entry) => {
-    entry.classList.remove("is-active");
-  });
+  panel
+    ?.closest?.(".cc98-rebuild-user-layout")
+    ?.querySelectorAll?.(".cc98-rebuild-blacklist-nav-entry")
+    .forEach((entry) => {
+      entry.classList.remove("is-active");
+    });
   updateUserCenterHero(app);
 }
 
@@ -26129,12 +29314,16 @@ function createBlacklistNavLink(router = null, panel = null, app = null, navSour
 }
 
 function injectBlacklistUserNavEntry(navSource, router = null, panel = null, app = null) {
-  if (!(navSource instanceof HTMLElement) || navSource.querySelector(".cc98-rebuild-blacklist-nav-entry")) {
+  if (
+    !(navSource instanceof HTMLElement) ||
+    navSource.querySelector(".cc98-rebuild-blacklist-nav-entry")
+  ) {
     return;
   }
   const link = createBlacklistNavLink(router, panel, app, navSource);
-  const controls = [...navSource.querySelectorAll("a, button, li, div")]
-    .filter((node) => node instanceof HTMLElement);
+  const controls = [...navSource.querySelectorAll("a, button, li, div")].filter(
+    (node) => node instanceof HTMLElement
+  );
   const target = [...controls].reverse().find((node) => {
     const text = cleanupPostText(node.textContent);
     return /我的粉丝|粉丝|我的关注/.test(text);
@@ -26165,7 +29354,10 @@ function injectBlacklistUserNavEntry(navSource, router = null, panel = null, app
 }
 
 function createEmbeddedBlacklistPanel() {
-  const panel = createElement("section", "cc98-rebuild-native-user-router cc98-rebuild-user-blacklist-panel");
+  const panel = createElement(
+    "section",
+    "cc98-rebuild-native-user-router cc98-rebuild-user-blacklist-panel"
+  );
   panel.hidden = true;
   renderBlacklistPage(panel, { embedded: true });
   return panel;
@@ -26177,12 +29369,16 @@ function hideEmbeddedUserSettingsPanel(router, panel, app) {
     delete router.dataset.cc98EmbeddedSettingsHidden;
   }
   if (panel instanceof HTMLElement) panel.hidden = true;
-  app?.querySelectorAll(".cc98-rebuild-native-user-nav, .cc98-rebuild-user-nav").forEach((nav) => delete nav.dataset.cc98SettingsOpen);
+  app
+    ?.querySelectorAll(".cc98-rebuild-native-user-nav, .cc98-rebuild-user-nav")
+    .forEach((nav) => delete nav.dataset.cc98SettingsOpen);
   app?.querySelectorAll(".cc98-rebuild-settings-nav-entry").forEach((entry) => {
     entry.classList.remove("is-active");
     entry.removeAttribute("aria-current");
   });
-  app?.querySelector('.cc98-rebuild-nav [data-cc98-settings-link]')?.removeAttribute("aria-current");
+  app
+    ?.querySelector(".cc98-rebuild-nav [data-cc98-settings-link]")
+    ?.removeAttribute("aria-current");
   updateUserCenterHero(app);
   if (app?.isConnected && app.dataset.routeKey === getRoutePageKey()) {
     releaseRebuildTransitionVeil({ immediate: true });
@@ -26190,10 +29386,19 @@ function hideEmbeddedUserSettingsPanel(router, panel, app) {
 }
 
 function showEmbeddedUserSettingsPanel(router, panel, app, navSource) {
-  if (!(router instanceof HTMLElement) || !(panel instanceof HTMLElement) || !(navSource instanceof HTMLElement)) return;
+  if (
+    !(router instanceof HTMLElement) ||
+    !(panel instanceof HTMLElement) ||
+    !(navSource instanceof HTMLElement)
+  )
+    return;
   embeddedBlacklistOpenPath = "";
-  app.querySelectorAll(".cc98-rebuild-user-blacklist-panel").forEach((node) => { node.hidden = true; });
-  navSource.querySelectorAll(".cc98-rebuild-blacklist-nav-entry").forEach((node) => node.classList.remove("is-active"));
+  app.querySelectorAll(".cc98-rebuild-user-blacklist-panel").forEach((node) => {
+    node.hidden = true;
+  });
+  navSource
+    .querySelectorAll(".cc98-rebuild-blacklist-nav-entry")
+    .forEach((node) => node.classList.remove("is-active"));
   router.hidden = true;
   delete router.dataset.cc98EmbeddedBlacklistHidden;
   router.dataset.cc98EmbeddedSettingsHidden = "true";
@@ -26203,7 +29408,9 @@ function showEmbeddedUserSettingsPanel(router, panel, app, navSource) {
     entry.classList.add("is-active");
     entry.setAttribute("aria-current", "page");
   });
-  app.querySelector('.cc98-rebuild-nav [data-cc98-settings-link]')?.setAttribute("aria-current", "page");
+  app
+    .querySelector(".cc98-rebuild-nav [data-cc98-settings-link]")
+    ?.setAttribute("aria-current", "page");
   if (!panel.querySelector("iframe")) {
     const frame = createElement("iframe", "cc98-rebuild-user-settings-frame");
     frame.title = "CC98 Reborn 插件设置";
@@ -26211,8 +29418,17 @@ function showEmbeddedUserSettingsPanel(router, panel, app, navSource) {
     frame.height = "1200";
     const extensionOrigin = chrome.runtime.getURL("").replace(/\/$/, "");
     const onMessage = (event) => {
-      if (!panel.isConnected || event.source !== frame.contentWindow || event.origin !== extensionOrigin) return;
-      if (event.data?.type === "cc98-reborn:settings-size" && typeof event.data.height === "number" && Number.isFinite(event.data.height)) {
+      if (
+        !panel.isConnected ||
+        event.source !== frame.contentWindow ||
+        event.origin !== extensionOrigin
+      )
+        return;
+      if (
+        event.data?.type === "cc98-reborn:settings-size" &&
+        typeof event.data.height === "number" &&
+        Number.isFinite(event.data.height)
+      ) {
         frame.style.height = `${Math.max(160, Math.min(12000, Math.ceil(event.data.height)))}px`;
       } else if (event.data?.type === "cc98-reborn:settings-open-blacklist") {
         if (!lastSettings.enabled || !lastSettings.rebuildUi) {
@@ -26223,7 +29439,12 @@ function showEmbeddedUserSettingsPanel(router, panel, app, navSource) {
         url.hash = "";
         history.replaceState(history.state, "", url.href);
         hideEmbeddedUserSettingsPanel(router, panel, app);
-        showEmbeddedBlacklistPanel(router, app.querySelector(".cc98-rebuild-user-blacklist-panel"), app, navSource);
+        showEmbeddedBlacklistPanel(
+          router,
+          app.querySelector(".cc98-rebuild-user-blacklist-panel"),
+          app,
+          navSource
+        );
       }
     };
     userSettingsFrameMessageCleanup?.();
@@ -26259,7 +29480,11 @@ function createUserSettingsNavLink() {
 }
 
 function injectUserSettingsNavEntry(navSource) {
-  if (!(navSource instanceof HTMLElement) || navSource.querySelector(".cc98-rebuild-settings-nav-entry")) return;
+  if (
+    !(navSource instanceof HTMLElement) ||
+    navSource.querySelector(".cc98-rebuild-settings-nav-entry")
+  )
+    return;
   const link = createUserSettingsNavLink();
   const list = navSource.querySelector("ul");
   if (list) {
@@ -26273,7 +29498,9 @@ function injectUserSettingsNavEntry(navSource) {
 
 function getUserSettingsShellParts(app) {
   return {
-    router: app?.querySelector(".cc98-rebuild-user-router-host > .user-center-router, .cc98-rebuild-user-router-host > .cc98-rebuild-section"),
+    router: app?.querySelector(
+      ".cc98-rebuild-user-router-host > .user-center-router, .cc98-rebuild-user-router-host > .cc98-rebuild-section"
+    ),
     nav: app?.querySelector(".cc98-rebuild-native-user-nav, .cc98-rebuild-user-nav")
   };
 }
@@ -26284,8 +29511,16 @@ function adoptReadyUserSettingsNativeShell(app) {
   const mounted = getUserSettingsShellParts(app);
   const settingsPanel = app.querySelector(".cc98-rebuild-user-settings-panel");
   const blacklistPanel = app.querySelector(".cc98-rebuild-user-blacklist-panel");
-  if (!navSource || !router || !mounted.nav?.classList.contains("cc98-rebuild-user-nav") || !mounted.router || !settingsPanel
-    || app.contains(navSource) || app.contains(router)) return;
+  if (
+    !navSource ||
+    !router ||
+    !mounted.nav?.classList.contains("cc98-rebuild-user-nav") ||
+    !mounted.router ||
+    !settingsPanel ||
+    app.contains(navSource) ||
+    app.contains(router)
+  )
+    return;
   // Adopt the late native siblings in place; moving the settings iframe itself
   // would destroy its browsing context and any edits in its form.
   rememberReparentedNativeNode(navSource);
@@ -26381,9 +29616,14 @@ function renderUserCenter(app) {
 
   if (isUserCenterPendingNativeLoad()) {
     app.dataset.cc98UserCenterPending = "true";
-    const pending = createElement("section", "cc98-rebuild-section cc98-rebuild-user-center-pending");
+    const pending = createElement(
+      "section",
+      "cc98-rebuild-section cc98-rebuild-user-center-pending"
+    );
     pending.append(createElement("h2", "", "正在加载个人中心"));
-    pending.append(createElement("p", "cc98-rebuild-card-meta", "原页面内容还没有完全载入，稍后会自动显示。"));
+    pending.append(
+      createElement("p", "cc98-rebuild-card-meta", "原页面内容还没有完全载入，稍后会自动显示。")
+    );
     app.append(pending);
     showLoadingOverlay("正在加载个人中心...", { allowUserCenter: true });
     scheduleUserCenterPendingRebuild();
@@ -26405,9 +29645,11 @@ function renderUserCenter(app) {
     if (data.actions.length > 0) {
       const actionGrid = createElement("div", "cc98-rebuild-action-grid");
       data.actions.forEach((action, index) => {
-        actionGrid.append(createButton("cc98-rebuild-chip cc98-rebuild-action", action, () => {
-          originalButtons[index]?.click();
-        }));
+        actionGrid.append(
+          createButton("cc98-rebuild-chip cc98-rebuild-action", action, () => {
+            originalButtons[index]?.click();
+          })
+        );
       });
       main.append(actionGrid);
     }
@@ -26515,11 +29757,9 @@ function splitSearchTermByHints(term) {
 
 function splitUnknownSearchChunk(chunk) {
   let clean = normalizeSuggestionText(chunk).replace(/\s+/g, "");
-  SEARCH_STOP_PHRASES
-    .sort((a, b) => b.length - a.length)
-    .forEach((phrase) => {
-      clean = clean.replace(new RegExp(escapeRegExp(phrase), "g"), "");
-    });
+  SEARCH_STOP_PHRASES.sort((a, b) => b.length - a.length).forEach((phrase) => {
+    clean = clean.replace(new RegExp(escapeRegExp(phrase), "g"), "");
+  });
   if (!clean) {
     return [];
   }
@@ -26570,9 +29810,13 @@ function tokenizeSearchQuery(query) {
     .map((term) => term.trim())
     .filter(Boolean);
   const terms = rawTerms.flatMap((term) => splitLongSearchTerm(term));
-  return [...new Set(terms
-    .map((term) => normalizeSuggestionText(term))
-    .filter((term) => term.length >= 2 && !SEARCH_OPTIONAL_TERMS.has(term)))].slice(0, 6);
+  return [
+    ...new Set(
+      terms
+        .map((term) => normalizeSuggestionText(term))
+        .filter((term) => term.length >= 2 && !SEARCH_OPTIONAL_TERMS.has(term))
+    )
+  ].slice(0, 6);
 }
 
 function getTermImportance(term) {
@@ -26603,13 +29847,17 @@ function getCurrentSearchKeyword() {
 }
 
 function getNativeSearchRoot() {
-  return [...document.querySelectorAll("#search")]
-    .find((node) => node instanceof HTMLElement && !node.closest("#cc98-comfort-app")) || null;
+  return (
+    [...document.querySelectorAll("#search")].find(
+      (node) => node instanceof HTMLElement && !node.closest("#cc98-comfort-app")
+    ) || null
+  );
 }
 
 function getNativeSearchState() {
   const root = getNativeSearchRoot();
-  const selected = cleanupPostText(root?.querySelector?.(".searchBoxSelect")?.textContent) || "\u4e3b\u9898";
+  const selected =
+    cleanupPostText(root?.querySelector?.(".searchBoxSelect")?.textContent) || "\u4e3b\u9898";
   const options = root
     ? [...root.querySelectorAll(".searchBoxSub li")]
         .filter((item) => item instanceof HTMLElement)
@@ -26617,7 +29865,11 @@ function getNativeSearchState() {
         .map((item) => cleanupPostText(item.textContent))
         .filter(Boolean)
     : [];
-  const uniqueOptions = [...new Set(options.length ? options : [selected, "\u7528\u6237", "\u7248\u9762"].filter(Boolean))];
+  const uniqueOptions = [
+    ...new Set(
+      options.length ? options : [selected, "\u7528\u6237", "\u7248\u9762"].filter(Boolean)
+    )
+  ];
   return {
     root,
     selected,
@@ -26638,14 +29890,18 @@ function selectNativeSearchType(root, type) {
   if (current === type) {
     return true;
   }
-  const option = [...root.querySelectorAll(".searchBoxSub li")]
-    .find((item) => item instanceof HTMLElement
-      && getComputedStyle(item).display !== "none"
-      && cleanupPostText(item.textContent) === type);
+  const option = [...root.querySelectorAll(".searchBoxSub li")].find(
+    (item) =>
+      item instanceof HTMLElement &&
+      getComputedStyle(item).display !== "none" &&
+      cleanupPostText(item.textContent) === type
+  );
   if (!(option instanceof HTMLElement)) {
     return false;
   }
-  dispatchMouseSequence(root.querySelector(".searchBoxSelect") || root.querySelector(".caret-down") || option);
+  dispatchMouseSequence(
+    root.querySelector(".searchBoxSelect") || root.querySelector(".caret-down") || option
+  );
   dispatchMouseSequence(option);
   return true;
 }
@@ -26660,7 +29916,9 @@ function getCurrentSearchBoardId() {
     return searchBoardId;
   }
   const boardLink = [...document.querySelectorAll('a[href*="/board/"]')]
-    .map((link) => link instanceof HTMLAnchorElement ? (link.href || link.getAttribute("href") || "") : "")
+    .map((link) =>
+      link instanceof HTMLAnchorElement ? link.href || link.getAttribute("href") || "" : ""
+    )
     .map((href) => href.match(/\/board\/(\d+)/i)?.[1])
     .find(Boolean);
   return Math.max(0, Number(boardLink) || 0);
@@ -26685,7 +29943,9 @@ function getRebuiltSearchTargetHref(keyword, type) {
     return buildCc98RouteHref(`/searchBoard?keyword=${encodeNativeSearchKeyword(normalized)}`);
   }
   const boardId = normalizedType === "\u7248\u5185" ? getCurrentSearchBoardId() : 0;
-  return buildCc98RouteHref(`/search?boardId=${boardId}&keyword=${encodeNativeSearchKeyword(normalized)}`);
+  return buildCc98RouteHref(
+    `/search?boardId=${boardId}&keyword=${encodeNativeSearchKeyword(normalized)}`
+  );
 }
 
 function captureRebuiltSearchUiState(app = document.querySelector("#cc98-comfort-app")) {
@@ -26726,9 +29986,9 @@ function restoreRebuiltSearchUiState(app, state) {
       return;
     }
     if (
-      state.typeMenuOpen
-      && typeButton instanceof HTMLButtonElement
-      && typeMenu instanceof HTMLElement
+      state.typeMenuOpen &&
+      typeButton instanceof HTMLButtonElement &&
+      typeMenu instanceof HTMLElement
     ) {
       typeMenu.hidden = false;
       typeButton.setAttribute("aria-expanded", "true");
@@ -26738,7 +29998,9 @@ function restoreRebuiltSearchUiState(app, state) {
     }
     if (state.focused) {
       input.focus({ preventScroll: true });
-      const start = Number.isInteger(state.selectionStart) ? state.selectionStart : input.value.length;
+      const start = Number.isInteger(state.selectionStart)
+        ? state.selectionStart
+        : input.value.length;
       const end = Number.isInteger(state.selectionEnd) ? state.selectionEnd : start;
       try {
         input.setSelectionRange(start, end);
@@ -26753,10 +30015,12 @@ function restoreRebuiltSearchUiState(app, state) {
 function isEditingRebuiltSearchOnCurrentRoute() {
   const app = document.querySelector("#cc98-comfort-app");
   const active = document.activeElement;
-  return app instanceof HTMLElement
-    && app.dataset.routeKey === getRoutePageKey()
-    && active instanceof HTMLInputElement
-    && active.matches('.cc98-rebuild-search input[type="search"]');
+  return (
+    app instanceof HTMLElement &&
+    app.dataset.routeKey === getRoutePageKey() &&
+    active instanceof HTMLInputElement &&
+    active.matches('.cc98-rebuild-search input[type="search"]')
+  );
 }
 
 function submitRebuiltSearch(keyword, type = getNativeSearchState().selected) {
@@ -26765,7 +30029,9 @@ function submitRebuiltSearch(keyword, type = getNativeSearchState().selected) {
     return false;
   }
   rememberSearchHistoryQuery(normalized);
-  const targetHref = repairWebVpnNakedCc98Href(getRebuiltSearchTargetHref(normalized, type) || getSearchUrl(normalized).href);
+  const targetHref = repairWebVpnNakedCc98Href(
+    getRebuiltSearchTargetHref(normalized, type) || getSearchUrl(normalized).href
+  );
   const startedAt = getRoutePageKey();
   const targetRouteKey = getRoutePageKey(targetHref);
   scheduleRouteFollowup(targetHref, startedAt);
@@ -26808,7 +30074,8 @@ function normalizeSearchHistoryItems(items) {
       return;
     }
     const key = query.toLocaleLowerCase();
-    const searchedAt = Number(typeof item === "string" ? 0 : item?.searchedAt) || (source.length - index);
+    const searchedAt =
+      Number(typeof item === "string" ? 0 : item?.searchedAt) || source.length - index;
     const existing = byQuery.get(key);
     if (!existing || searchedAt > existing.searchedAt) {
       byQuery.set(key, { query, searchedAt });
@@ -26843,7 +30110,10 @@ function notifySearchHistoryChanged() {
 
 function hydrateSearchHistoryStorage() {
   const storageKey = getSearchHistoryStorageKey();
-  if (searchHistoryStorageHydratedKey === storageKey || searchHistoryStorageHydratingKey === storageKey) {
+  if (
+    searchHistoryStorageHydratedKey === storageKey ||
+    searchHistoryStorageHydratingKey === storageKey
+  ) {
     return;
   }
   if (!globalThis.chrome?.storage?.local?.get) {
@@ -26861,7 +30131,8 @@ function hydrateSearchHistoryStorage() {
       searchHistoryStorageHydratedKey = storageKey;
       return;
     }
-    const cachedItems = searchHistoryCache?.storageKey === storageKey ? searchHistoryCache.items : [];
+    const cachedItems =
+      searchHistoryCache?.storageKey === storageKey ? searchHistoryCache.items : [];
     const storedItems = normalizeSearchHistoryItems(result?.[storageKey]);
     const merged = normalizeSearchHistoryItems([...cachedItems, ...storedItems, ...localItems]);
     searchHistoryCache = { storageKey, items: merged };
@@ -26915,35 +30186,170 @@ function rememberSearchHistoryQuery(query) {
 function normalizeSuggestionText(text) {
   return String(text ?? "")
     .replace(/[【】《》（）()[\]「」『』"'“”‘’]/g, " ")
-    .replace(/[\u3000\u3010\u3011\u300a\u300b\uff08\uff09\u300c\u300d\u300e\u300f\u201c\u201d\u2018\u2019"']/g, " ")
+    .replace(
+      /[\u3000\u3010\u3011\u300a\u300b\uff08\uff09\u300c\u300d\u300e\u300f\u201c\u201d\u2018\u2019"']/g,
+      " "
+    )
     .replace(/\s+/g, " ")
     .trim();
 }
 
-const SEARCH_SUGGESTION_TOKEN_SPLIT_RE = new RegExp("[\\s,.;:!?()\\[\\]{}<>|/\\\\~\"'\\u3000\\uff0c\\u3002\\uff1f\\uff01\\u3001\\uff1b\\uff1a\\uff08\\uff09\\u3010\\u3011\\u300a\\u300b\\u201c\\u201d\\u2018\\u2019\\u00b7\\u2026\\u2014\\-_=+]+", "u");
-const SEARCH_SUGGESTION_EDGE_PUNCTUATION_RE = new RegExp("^[\\s,.;:!?()\\[\\]{}<>|/\\\\~\"'\\u3000\\uff0c\\u3002\\uff1f\\uff01\\u3001\\uff1b\\uff1a\\uff08\\uff09\\u3010\\u3011\\u300a\\u300b\\u201c\\u201d\\u2018\\u2019\\u00b7\\u2026\\u2014\\-_=+]+|[\\s,.;:!?()\\[\\]{}<>|/\\\\~\"'\\u3000\\uff0c\\u3002\\uff1f\\uff01\\u3001\\uff1b\\uff1a\\uff08\\uff09\\u3010\\u3011\\u300a\\u300b\\u201c\\u201d\\u2018\\u2019\\u00b7\\u2026\\u2014\\-_=+]+$", "gu");
-const SEARCH_SUGGESTION_WEAK_EDGE_RE = /^[\u7684\u4e86\u5462\u5417\u561b\u554a\u5440\u5427\u4e48\u548c\u4e0e\u53ca\u6216\u5728\u5bf9\u4e3a\u628a\u88ab\u4ece\u5230\u5c31\u90fd\u4e5f\u8fd8\u5f88\u66f4\u6700]+|[\u7684\u4e86\u5462\u5417\u561b\u554a\u5440\u5427\u4e48\u548c\u4e0e\u53ca\u6216\u5728\u5bf9\u4e3a\u628a\u88ab\u4ece\u5230\u5c31\u90fd\u4e5f\u8fd8\u5f88\u66f4\u6700]+$/gu;
-const SEARCH_SUGGESTION_WEAK_TERMS = new Set([
-  "求问", "请问", "请教", "想问", "有没有", "有无", "什么", "怎么", "如何", "为什么",
-  "推荐", "求助", "问题", "相关", "大家", "一个", "这个", "那个", "可以", "不能",
-  "是不是", "有没有什么", "哪里", "哪个", "哪些", "一下", "一点", "感觉", "真的",
-  "比较", "大佬", "蹲", "插眼", "求", "问", "the", "and", "for", "with", "help"
-].map((term) => term.toLowerCase()));
-const SEARCH_SUGGESTION_PHRASE_BREAK_TERMS = new Set([
-  "求问", "请问", "请教", "想问", "有没有", "有无", "什么", "怎么", "如何", "为什么",
-  "哪里", "哪个", "哪些", "可以", "不能", "是不是", "有没有什么", "一下", "一点",
-  "感觉", "真的", "比较", "大佬", "蹲", "插眼"
-].map((term) => term.toLowerCase()));
+const SEARCH_SUGGESTION_TOKEN_SPLIT_RE = new RegExp(
+  "[\\s,.;:!?()\\[\\]{}<>|/\\\\~\"'\\u3000\\uff0c\\u3002\\uff1f\\uff01\\u3001\\uff1b\\uff1a\\uff08\\uff09\\u3010\\u3011\\u300a\\u300b\\u201c\\u201d\\u2018\\u2019\\u00b7\\u2026\\u2014\\-_=+]+",
+  "u"
+);
+const SEARCH_SUGGESTION_EDGE_PUNCTUATION_RE = new RegExp(
+  "^[\\s,.;:!?()\\[\\]{}<>|/\\\\~\"'\\u3000\\uff0c\\u3002\\uff1f\\uff01\\u3001\\uff1b\\uff1a\\uff08\\uff09\\u3010\\u3011\\u300a\\u300b\\u201c\\u201d\\u2018\\u2019\\u00b7\\u2026\\u2014\\-_=+]+|[\\s,.;:!?()\\[\\]{}<>|/\\\\~\"'\\u3000\\uff0c\\u3002\\uff1f\\uff01\\u3001\\uff1b\\uff1a\\uff08\\uff09\\u3010\\u3011\\u300a\\u300b\\u201c\\u201d\\u2018\\u2019\\u00b7\\u2026\\u2014\\-_=+]+$",
+  "gu"
+);
+const SEARCH_SUGGESTION_WEAK_EDGE_RE =
+  /^[\u7684\u4e86\u5462\u5417\u561b\u554a\u5440\u5427\u4e48\u548c\u4e0e\u53ca\u6216\u5728\u5bf9\u4e3a\u628a\u88ab\u4ece\u5230\u5c31\u90fd\u4e5f\u8fd8\u5f88\u66f4\u6700]+|[\u7684\u4e86\u5462\u5417\u561b\u554a\u5440\u5427\u4e48\u548c\u4e0e\u53ca\u6216\u5728\u5bf9\u4e3a\u628a\u88ab\u4ece\u5230\u5c31\u90fd\u4e5f\u8fd8\u5f88\u66f4\u6700]+$/gu;
+const SEARCH_SUGGESTION_WEAK_TERMS = new Set(
+  [
+    "求问",
+    "请问",
+    "请教",
+    "想问",
+    "有没有",
+    "有无",
+    "什么",
+    "怎么",
+    "如何",
+    "为什么",
+    "推荐",
+    "求助",
+    "问题",
+    "相关",
+    "大家",
+    "一个",
+    "这个",
+    "那个",
+    "可以",
+    "不能",
+    "是不是",
+    "有没有什么",
+    "哪里",
+    "哪个",
+    "哪些",
+    "一下",
+    "一点",
+    "感觉",
+    "真的",
+    "比较",
+    "大佬",
+    "蹲",
+    "插眼",
+    "求",
+    "问",
+    "the",
+    "and",
+    "for",
+    "with",
+    "help"
+  ].map((term) => term.toLowerCase())
+);
+const SEARCH_SUGGESTION_PHRASE_BREAK_TERMS = new Set(
+  [
+    "求问",
+    "请问",
+    "请教",
+    "想问",
+    "有没有",
+    "有无",
+    "什么",
+    "怎么",
+    "如何",
+    "为什么",
+    "哪里",
+    "哪个",
+    "哪些",
+    "可以",
+    "不能",
+    "是不是",
+    "有没有什么",
+    "一下",
+    "一点",
+    "感觉",
+    "真的",
+    "比较",
+    "大佬",
+    "蹲",
+    "插眼"
+  ].map((term) => term.toLowerCase())
+);
 const SEARCH_SUGGESTION_MEANING_HINTS = [
-  "选课", "退课", "补选", "课程", "课程评价", "老师", "教材", "作业",
-  "考试", "复习", "期中", "期末", "历年卷", "回忆卷", "资料", "笔记",
-  "小测", "绩点", "综评", "奖学金", "保研", "推免", "考研", "复试",
-  "转专业", "专业", "学院", "竺院", "医学院", "混合班", "实验", "报告",
-  "论文", "毕业", "答辩", "实习", "兼职", "面试", "简历", "租房",
-  "二手", "拼车", "宿舍", "寝室", "食堂", "校区", "体测", "补测",
-  "军训", "挂科", "补考", "重修", "医保", "校医院", "心理", "痛经",
-  "中医", "紫金港", "玉泉", "西溪", "海宁", "之江", "计算机", "软工",
-  "人工智能", "机器学习", "深度学习", "大模型", "chatgpt", "codex", "deepseek", "openai"
+  "选课",
+  "退课",
+  "补选",
+  "课程",
+  "课程评价",
+  "老师",
+  "教材",
+  "作业",
+  "考试",
+  "复习",
+  "期中",
+  "期末",
+  "历年卷",
+  "回忆卷",
+  "资料",
+  "笔记",
+  "小测",
+  "绩点",
+  "综评",
+  "奖学金",
+  "保研",
+  "推免",
+  "考研",
+  "复试",
+  "转专业",
+  "专业",
+  "学院",
+  "竺院",
+  "医学院",
+  "混合班",
+  "实验",
+  "报告",
+  "论文",
+  "毕业",
+  "答辩",
+  "实习",
+  "兼职",
+  "面试",
+  "简历",
+  "租房",
+  "二手",
+  "拼车",
+  "宿舍",
+  "寝室",
+  "食堂",
+  "校区",
+  "体测",
+  "补测",
+  "军训",
+  "挂科",
+  "补考",
+  "重修",
+  "医保",
+  "校医院",
+  "心理",
+  "痛经",
+  "中医",
+  "紫金港",
+  "玉泉",
+  "西溪",
+  "海宁",
+  "之江",
+  "计算机",
+  "软工",
+  "人工智能",
+  "机器学习",
+  "深度学习",
+  "大模型",
+  "chatgpt",
+  "codex",
+  "deepseek",
+  "openai"
 ];
 
 function hasCjkSuggestionText(text) {
@@ -26970,8 +30376,10 @@ function trimSuggestionPhrase(term) {
 
 function suggestionHasMeaningHint(term) {
   const normalized = trimSuggestionPhrase(term).toLowerCase();
-  return SEARCH_SOLID_TERMS.has(normalized)
-    || SEARCH_SUGGESTION_MEANING_HINTS.some((hint) => normalized.includes(hint.toLowerCase()));
+  return (
+    SEARCH_SOLID_TERMS.has(normalized) ||
+    SEARCH_SUGGESTION_MEANING_HINTS.some((hint) => normalized.includes(hint.toLowerCase()))
+  );
 }
 
 function isExactMeaningHint(term) {
@@ -26981,7 +30389,9 @@ function isExactMeaningHint(term) {
 
 function suggestionContainsPhraseBreak(term) {
   const normalized = trimSuggestionPhrase(term).toLowerCase();
-  return [...SEARCH_SUGGESTION_PHRASE_BREAK_TERMS].some((weak) => weak.length >= 2 && normalized.includes(weak));
+  return [...SEARCH_SUGGESTION_PHRASE_BREAK_TERMS].some(
+    (weak) => weak.length >= 2 && normalized.includes(weak)
+  );
 }
 
 function isLikelyBrokenSuggestionTerm(term, query = "") {
@@ -27004,7 +30414,10 @@ function isLikelyBrokenSuggestionTerm(term, query = "") {
   if (/^(?:这|那|哪).{0,3}$/u.test(normalized)) {
     return true;
   }
-  if (normalized.length <= 4 && normalized !== normalized.replace(SEARCH_SUGGESTION_WEAK_EDGE_RE, "")) {
+  if (
+    normalized.length <= 4 &&
+    normalized !== normalized.replace(SEARCH_SUGGESTION_WEAK_EDGE_RE, "")
+  ) {
     return true;
   }
   return false;
@@ -27101,7 +30514,12 @@ function getSuggestionTail(text, keyword) {
 function isMeaningfulSearchSuggestion(text, keyword) {
   const clean = normalizeSuggestionText(text);
   const base = normalizeSuggestionText(keyword);
-  if (!clean || clean.length < 2 || clean.length > 32 || clean.toLowerCase() === base.toLowerCase()) {
+  if (
+    !clean ||
+    clean.length < 2 ||
+    clean.length > 32 ||
+    clean.toLowerCase() === base.toLowerCase()
+  ) {
     return false;
   }
   return isMeaningfulSuggestionTerm(getSuggestionTail(clean, base), base);
@@ -27119,19 +30537,46 @@ function isWeakSuggestionTerm(term, query) {
   const normalized = trimSuggestionPhrase(term).toLowerCase();
   const normalizedQuery = normalizeSuggestionText(query).toLowerCase();
   const weakTerms = new Set([
-    "求问", "请问", "有没有", "有无", "什么", "怎么", "如何", "为什么", "推荐", "求助", "问题", "相关",
-    "大家", "一个", "这个", "那个", "一下", "可以", "不能", "是不是", "有没有什么", "求", "问",
-    "the", "and", "for", "with", "help"
+    "求问",
+    "请问",
+    "有没有",
+    "有无",
+    "什么",
+    "怎么",
+    "如何",
+    "为什么",
+    "推荐",
+    "求助",
+    "问题",
+    "相关",
+    "大家",
+    "一个",
+    "这个",
+    "那个",
+    "一下",
+    "可以",
+    "不能",
+    "是不是",
+    "有没有什么",
+    "求",
+    "问",
+    "the",
+    "and",
+    "for",
+    "with",
+    "help"
   ]);
-  return !normalized
-    || normalized === normalizedQuery
-    || normalized.length < 2
-    || normalized.length > 18
-    || weakTerms.has(normalized)
-    || SEARCH_SUGGESTION_WEAK_TERMS.has(normalized)
-    || isLikelyBrokenSuggestionTerm(normalized, normalizedQuery)
-    || /^\d+$/.test(normalized)
-    || /^[a-z]{1,2}$/.test(normalized);
+  return (
+    !normalized ||
+    normalized === normalizedQuery ||
+    normalized.length < 2 ||
+    normalized.length > 18 ||
+    weakTerms.has(normalized) ||
+    SEARCH_SUGGESTION_WEAK_TERMS.has(normalized) ||
+    isLikelyBrokenSuggestionTerm(normalized, normalizedQuery) ||
+    /^\d+$/.test(normalized) ||
+    /^[a-z]{1,2}$/.test(normalized)
+  );
 }
 
 function segmentSuggestionWords(text) {
@@ -27143,12 +30588,16 @@ function segmentSuggestionWords(text) {
   const addWord = (word) => addUniqueSuggestionTerm(words, word);
   splitSuggestionTextChunks(source).forEach((chunk) => {
     const compact = chunk.replace(/\s+/g, "");
-    compact.match(/\d+(?:\.\d+)?\s*(?:米|m|km|公里|分钟|分|秒|元|块|天|周|月|年|次|级)/gi)
+    compact
+      .match(/\d+(?:\.\d+)?\s*(?:米|m|km|公里|分钟|分|秒|元|块|天|周|月|年|次|级)/gi)
       ?.forEach((term) => addWord(term.replace(/\s+/g, "")));
-    compact.match(/[A-Za-z][A-Za-z0-9+#.-]{1,16}/g)
-      ?.forEach(addWord);
+    compact.match(/[A-Za-z][A-Za-z0-9+#.-]{1,16}/g)?.forEach(addWord);
     collectHintedSuggestionPhrases(compact).forEach(addWord);
-    if (hasCjkSuggestionText(compact) && compact.length <= 8 && !suggestionContainsPhraseBreak(compact)) {
+    if (
+      hasCjkSuggestionText(compact) &&
+      compact.length <= 8 &&
+      !suggestionContainsPhraseBreak(compact)
+    ) {
       addWord(compact);
     }
     if (typeof Intl !== "undefined" && Intl.Segmenter) {
@@ -27177,9 +30626,11 @@ function extractSuggestionTerms(title, keyword) {
   const addTerm = (term, score) => {
     const cleanTerm = trimSuggestionPhrase(term);
     const lowerTerm = cleanTerm.toLowerCase();
-    const withoutQuery = normalizeSuggestionText(lowerTerm.includes(query)
-      ? cleanTerm.replace(new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "ig"), " ")
-      : cleanTerm);
+    const withoutQuery = normalizeSuggestionText(
+      lowerTerm.includes(query)
+        ? cleanTerm.replace(new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "ig"), " ")
+        : cleanTerm
+    );
     const finalTerm = trimSuggestionPhrase(withoutQuery || cleanTerm);
     if (query && query.includes(finalTerm.toLowerCase())) {
       return;
@@ -27189,15 +30640,18 @@ function extractSuggestionTerms(title, keyword) {
     }
   };
 
-  cleanTitle.match(/\d+(?:\.\d+)?\s*(?:米|m|km|公里|分钟|分|秒|元|块|天|周|月|年|次|级)/gi)
+  cleanTitle
+    .match(/\d+(?:\.\d+)?\s*(?:米|m|km|公里|分钟|分|秒|元|块|天|周|月|年|次|级)/gi)
     ?.forEach((term) => addTerm(term.replace(/\s+/g, ""), 9));
-  cleanTitle.match(/[A-Za-z][A-Za-z0-9+#.-]{1,16}/g)
-    ?.forEach((term) => addTerm(term, 5));
+  cleanTitle.match(/[A-Za-z][A-Za-z0-9+#.-]{1,16}/g)?.forEach((term) => addTerm(term, 5));
 
   const lowerTitle = cleanTitle.toLowerCase();
   const queryIndex = lowerTitle.indexOf(query);
   if (queryIndex >= 0) {
-    const nearby = cleanTitle.slice(Math.max(0, queryIndex - 12), Math.min(cleanTitle.length, queryIndex + keyword.length + 18));
+    const nearby = cleanTitle.slice(
+      Math.max(0, queryIndex - 12),
+      Math.min(cleanTitle.length, queryIndex + keyword.length + 18)
+    );
     segmentSuggestionWords(nearby).forEach((word) => addTerm(word, 7));
   }
   const words = segmentSuggestionWords(cleanTitle);
@@ -27255,9 +30709,14 @@ function collectSearchSuggestionEntriesFromDocument(doc) {
     const title = getFirstText(topic, ".focus-topic-title, .card-topic-title");
     addEntry(title, topic);
   });
-  doc.querySelectorAll(".board-postItem-title > a, .mainPageListTitle a, a[href*='/topic/']").forEach((node) => {
-    addEntry(node.textContent, node.closest(".board-postItem-body, .mainPageListRow, .focus-topic, .card-topic"));
-  });
+  doc
+    .querySelectorAll(".board-postItem-title > a, .mainPageListTitle a, a[href*='/topic/']")
+    .forEach((node) => {
+      addEntry(
+        node.textContent,
+        node.closest(".board-postItem-body, .mainPageListRow, .focus-topic, .card-topic")
+      );
+    });
 
   return entries.slice(0, 160);
 }
@@ -27274,7 +30733,10 @@ function extractDirectSuggestionPhrases(title, keyword) {
   const phrases = [];
   const addPhrase = (phrase) => {
     const clean = trimSuggestionPhrase(phrase).replace(/\s+/g, "");
-    if (isMeaningfulSearchSuggestion(clean, base) && !phrases.some((item) => item.toLowerCase() === clean.toLowerCase())) {
+    if (
+      isMeaningfulSearchSuggestion(clean, base) &&
+      !phrases.some((item) => item.toLowerCase() === clean.toLowerCase())
+    ) {
       phrases.push(clean);
     }
   };
@@ -27307,9 +30769,13 @@ function extractDirectSuggestionPhrases(title, keyword) {
       if (next && isMeaningfulSuggestionTerm(next, base)) {
         addPhrase(`${base}${next}`);
       }
-      if (previous && next && previous.length + base.length + next.length <= 12
-        && isMeaningfulSuggestionTerm(previous, base)
-        && isMeaningfulSuggestionTerm(next, base)) {
+      if (
+        previous &&
+        next &&
+        previous.length + base.length + next.length <= 12 &&
+        isMeaningfulSuggestionTerm(previous, base) &&
+        isMeaningfulSuggestionTerm(next, base)
+      ) {
         addPhrase(`${previous}${base}${next}`);
       }
     });
@@ -27325,13 +30791,23 @@ function extractDirectSuggestionPhrases(title, keyword) {
     const right = afterMatches[0] || "";
     [left.slice(-4), left.slice(-3), left.slice(-2), ""].forEach((prefix) => {
       const candidate = `${prefix}${base}`;
-      if (prefix && !/^(求问|请问|有没有|有无|关于|问|求)/.test(prefix) && candidate !== base && candidate.length <= 12) {
+      if (
+        prefix &&
+        !/^(求问|请问|有没有|有无|关于|问|求)/.test(prefix) &&
+        candidate !== base &&
+        candidate.length <= 12
+      ) {
         phrases.push(candidate);
       }
     });
     [right.slice(0, 2), right.slice(0, 3), right.slice(0, 4)].forEach((suffix) => {
       const candidate = `${base}${suffix}`;
-      if (suffix && !/^(怎么|如何|吗|呢|呀|啊|求|问)/.test(suffix) && candidate !== base && candidate.length <= 12) {
+      if (
+        suffix &&
+        !/^(怎么|如何|吗|呢|呀|啊|求|问)/.test(suffix) &&
+        candidate !== base &&
+        candidate.length <= 12
+      ) {
         phrases.push(candidate);
       }
     });
@@ -27340,8 +30816,9 @@ function extractDirectSuggestionPhrases(title, keyword) {
     }
     start = lowerTitle.indexOf(query, start + query.length);
   }
-  return [...new Set(phrases)]
-    .filter((phrase) => !isWeakSuggestionTerm(phrase.replace(base, " "), query));
+  return [...new Set(phrases)].filter(
+    (phrase) => !isWeakSuggestionTerm(phrase.replace(base, " "), query)
+  );
 }
 
 function buildSearchSuggestionsFromEntries(entries, keyword) {
@@ -27358,8 +30835,15 @@ function buildSearchSuggestionsFromEntries(entries, keyword) {
     });
     extractSuggestionTerms(title, base).forEach(({ term, score }) => {
       const suggestion = `${base} ${term}`;
-      if (!suggestion.toLowerCase().includes(`${query} ${query}`) && isMeaningfulSearchSuggestion(suggestion, base)) {
-        addSuggestionScore(expandedScores, suggestion, (score + (title.toLowerCase().includes(query) ? 4 : 0)) * weight);
+      if (
+        !suggestion.toLowerCase().includes(`${query} ${query}`) &&
+        isMeaningfulSearchSuggestion(suggestion, base)
+      ) {
+        addSuggestionScore(
+          expandedScores,
+          suggestion,
+          (score + (title.toLowerCase().includes(query) ? 4 : 0)) * weight
+        );
       }
     });
   });
@@ -27367,31 +30851,46 @@ function buildSearchSuggestionsFromEntries(entries, keyword) {
   const direct = [...directScores.entries()]
     .sort((a, b) => b[1] - a[1] || b[0].length - a[0].length)
     .map(([text]) => text)
-    .filter((text, index, list) => list.findIndex((item) => item.includes(text) || text.includes(item)) === index)
+    .filter(
+      (text, index, list) =>
+        list.findIndex((item) => item.includes(text) || text.includes(item)) === index
+    )
     .slice(0, 5);
   const expanded = [...expandedScores.entries()]
     .sort((a, b) => b[1] - a[1] || b[0].length - a[0].length)
     .map(([text]) => text)
-    .filter((text, index, list) => list.findIndex((item) => item.includes(text) || text.includes(item)) === index);
+    .filter(
+      (text, index, list) =>
+        list.findIndex((item) => item.includes(text) || text.includes(item)) === index
+    );
 
   return [...direct, ...expanded]
-    .filter((text, index, list) => list.indexOf(text) === index
-      && isMeaningfulSearchSuggestion(text, base)
-      && !direct.some((item) => item !== text && item.includes(text)))
+    .filter(
+      (text, index, list) =>
+        list.indexOf(text) === index &&
+        isMeaningfulSearchSuggestion(text, base) &&
+        !direct.some((item) => item !== text && item.includes(text))
+    )
     .slice(0, 10);
 }
 
 function buildSearchSuggestionsFromTitles(titles, keyword) {
-  return buildSearchSuggestionsFromEntries(titles.map((title) => ({
-    title: normalizeSuggestionText(title),
-    viewCount: "",
-    replyCount: "",
-    weight: 1
-  })), keyword);
+  return buildSearchSuggestionsFromEntries(
+    titles.map((title) => ({
+      title: normalizeSuggestionText(title),
+      viewCount: "",
+      replyCount: "",
+      weight: 1
+    })),
+    keyword
+  );
 }
 
 function buildSearchSuggestionsFromDocument(doc, keyword) {
-  return buildSearchSuggestionsFromEntries(collectSearchSuggestionEntriesFromDocument(doc), keyword);
+  return buildSearchSuggestionsFromEntries(
+    collectSearchSuggestionEntriesFromDocument(doc),
+    keyword
+  );
 }
 
 function loadSearchSuggestionsInFrame(keyword) {
@@ -27412,39 +30911,54 @@ function loadSearchSuggestionsInFrame(keyword) {
       iframe.remove();
       resolve(result);
     };
-    iframe.addEventListener("load", () => {
-      const startedAt = Date.now();
-      let bestSuggestions = [];
-      let bestTitles = [];
-      let scrollStep = 0;
-      interval = window.setInterval(() => {
-        try {
-          const doc = iframe.contentDocument;
-          if (!doc) {
-            return;
-          }
-          const elapsed = Date.now() - startedAt;
-          const win = iframe.contentWindow;
-          if (win && elapsed > 700 && scrollStep < 5) {
-            scrollStep += 1;
-            win.scrollTo(0, Math.max(doc.documentElement.scrollHeight, doc.body?.scrollHeight || 0));
-            win.dispatchEvent(new Event("scroll"));
-          }
-          const entries = collectSearchSuggestionEntriesFromDocument(doc);
-          const suggestions = buildSearchSuggestionsFromEntries(entries, keyword);
-          if (suggestions.length > bestSuggestions.length) {
-            bestSuggestions = suggestions;
-            bestTitles = entries.map((entry) => entry.title);
-          }
-          const hasResultSurface = Boolean(doc.querySelector(".focus-topic, .card-topic, .board-postItem-body, a[href*='/topic/']"));
-          if ((bestSuggestions.length >= 6 && elapsed > 1800) || (hasResultSurface && elapsed > 4200) || elapsed > 6500) {
+    iframe.addEventListener(
+      "load",
+      () => {
+        const startedAt = Date.now();
+        let bestSuggestions = [];
+        let bestTitles = [];
+        let scrollStep = 0;
+        interval = window.setInterval(() => {
+          try {
+            const doc = iframe.contentDocument;
+            if (!doc) {
+              return;
+            }
+            const elapsed = Date.now() - startedAt;
+            const win = iframe.contentWindow;
+            if (win && elapsed > 700 && scrollStep < 5) {
+              scrollStep += 1;
+              win.scrollTo(
+                0,
+                Math.max(doc.documentElement.scrollHeight, doc.body?.scrollHeight || 0)
+              );
+              win.dispatchEvent(new Event("scroll"));
+            }
+            const entries = collectSearchSuggestionEntriesFromDocument(doc);
+            const suggestions = buildSearchSuggestionsFromEntries(entries, keyword);
+            if (suggestions.length > bestSuggestions.length) {
+              bestSuggestions = suggestions;
+              bestTitles = entries.map((entry) => entry.title);
+            }
+            const hasResultSurface = Boolean(
+              doc.querySelector(
+                ".focus-topic, .card-topic, .board-postItem-body, a[href*='/topic/']"
+              )
+            );
+            if (
+              (bestSuggestions.length >= 6 && elapsed > 1800) ||
+              (hasResultSurface && elapsed > 4200) ||
+              elapsed > 6500
+            ) {
+              finish({ suggestions: bestSuggestions, titles: bestTitles });
+            }
+          } catch {
             finish({ suggestions: bestSuggestions, titles: bestTitles });
           }
-        } catch {
-          finish({ suggestions: bestSuggestions, titles: bestTitles });
-        }
-      }, 260);
-    }, { once: true });
+        }, 260);
+      },
+      { once: true }
+    );
     timeout = window.setTimeout(() => finish({ suggestions: [], titles: [] }), 7600);
     iframe.src = getSearchUrl(keyword).href;
     document.body.append(iframe);
@@ -27456,13 +30970,15 @@ function buildSearchTermCombinations(terms) {
   const normalized = pickImportantSearchTerms(terms)
     .sort((a, b) => getTermImportance(b) - getTermImportance(a))
     .slice(0, 6);
-  const required = normalized
-    .filter((term) => getTermImportance(term) >= 3.5)
-    .slice(0, 3);
+  const required = normalized.filter((term) => getTermImportance(term) >= 3.5).slice(0, 3);
   const pick = (start, size, chosen) => {
     if (chosen.length === size) {
       const combo = chosen.join(" ");
-      if (!required.length || chosen.some((term) => required.includes(term)) || chosen.length === normalized.length) {
+      if (
+        !required.length ||
+        chosen.some((term) => required.includes(term)) ||
+        chosen.length === normalized.length
+      ) {
         combos.push(combo);
       }
       return;
@@ -27509,13 +31025,9 @@ function getTopicFreshnessScore(item) {
 }
 
 function getFuzzyItemScore(item, terms, combo, index) {
-  const haystack = normalizeSuggestionText([
-    item.title,
-    item.board,
-    item.user,
-    item.meta,
-    item.hoverMeta
-  ].filter(Boolean).join(" ")).toLowerCase();
+  const haystack = normalizeSuggestionText(
+    [item.title, item.board, item.user, item.meta, item.hoverMeta].filter(Boolean).join(" ")
+  ).toLowerCase();
   const matchedTerms = terms.filter((term) => haystack.includes(term.toLowerCase()));
   const comboTerms = normalizeSuggestionText(combo).split(/\s+/).filter(Boolean);
   const comboHitBonus = comboTerms
@@ -27527,13 +31039,15 @@ function getFuzzyItemScore(item, terms, combo, index) {
     .reduce((sum, term) => sum + getTermImportance(term) * 22, 0);
   const views = parseCountValue(item.viewCount);
   const replies = Number(item.replyCount) || 0;
-  return matchedTerms.reduce((sum, term) => sum + getTermImportance(term) * 55, 0)
-    + comboHitBonus
-    + titleHitBonus
-    + Math.log10(views + 1) * 12
-    + Math.log10(replies + 1) * 18
-    + getTopicFreshnessScore(item)
-    - index * 0.2;
+  return (
+    matchedTerms.reduce((sum, term) => sum + getTermImportance(term) * 55, 0) +
+    comboHitBonus +
+    titleHitBonus +
+    Math.log10(views + 1) * 12 +
+    Math.log10(replies + 1) * 18 +
+    getTopicFreshnessScore(item) -
+    index * 0.2
+  );
 }
 
 async function fetchFuzzySearchItems(query, terms, combo, comboIndex) {
@@ -27549,8 +31063,15 @@ async function fetchFuzzySearchItems(query, terms, combo, comboIndex) {
       if (items.length) {
         return items.map((item, index) => ({
           ...item,
-          fuzzyScore: getFuzzyItemScore(item, terms, combo, index) + (terms.length - combo.split(/\s+/).length) * -10 - comboIndex,
-          fuzzyMatchedTerms: terms.filter((term) => normalizeSuggestionText(`${item.title} ${item.board} ${item.hoverMeta}`).toLowerCase().includes(term.toLowerCase())),
+          fuzzyScore:
+            getFuzzyItemScore(item, terms, combo, index) +
+            (terms.length - combo.split(/\s+/).length) * -10 -
+            comboIndex,
+          fuzzyMatchedTerms: terms.filter((term) =>
+            normalizeSuggestionText(`${item.title} ${item.board} ${item.hoverMeta}`)
+              .toLowerCase()
+              .includes(term.toLowerCase())
+          ),
           fuzzyQuery: combo
         }));
       }
@@ -27579,41 +31100,59 @@ function loadFuzzySearchItemsInFrame(query, terms, combo, comboIndex) {
       iframe.remove();
       resolve(items);
     };
-    iframe.addEventListener("load", () => {
-      const startedAt = Date.now();
-      let bestItems = [];
-      let scrollStep = 0;
-      interval = window.setInterval(() => {
-        try {
-          const doc = iframe.contentDocument;
-          if (!doc) {
-            return;
-          }
-          const elapsed = Date.now() - startedAt;
-          const win = iframe.contentWindow;
-          if (win && elapsed > 700 && scrollStep < 3) {
-            scrollStep += 1;
-            win.scrollTo(0, Math.max(doc.documentElement.scrollHeight, doc.body?.scrollHeight || 0));
-            win.dispatchEvent(new Event("scroll"));
-          }
-          const items = getTopicItems(doc).map((item, index) => ({
-            ...item,
-            fuzzyScore: getFuzzyItemScore(item, terms, combo, index) + (terms.length - combo.split(/\s+/).length) * -10 - comboIndex,
-            fuzzyMatchedTerms: terms.filter((term) => normalizeSuggestionText(`${item.title} ${item.board} ${item.hoverMeta}`).toLowerCase().includes(term.toLowerCase())),
-            fuzzyQuery: combo
-          }));
-          if (items.length > bestItems.length) {
-            bestItems = items;
-          }
-          const hasNoResult = Boolean(doc.querySelector(".noResultText"));
-          if ((bestItems.length && elapsed > 1300) || (hasNoResult && elapsed > 1500) || elapsed > 4200) {
+    iframe.addEventListener(
+      "load",
+      () => {
+        const startedAt = Date.now();
+        let bestItems = [];
+        let scrollStep = 0;
+        interval = window.setInterval(() => {
+          try {
+            const doc = iframe.contentDocument;
+            if (!doc) {
+              return;
+            }
+            const elapsed = Date.now() - startedAt;
+            const win = iframe.contentWindow;
+            if (win && elapsed > 700 && scrollStep < 3) {
+              scrollStep += 1;
+              win.scrollTo(
+                0,
+                Math.max(doc.documentElement.scrollHeight, doc.body?.scrollHeight || 0)
+              );
+              win.dispatchEvent(new Event("scroll"));
+            }
+            const items = getTopicItems(doc).map((item, index) => ({
+              ...item,
+              fuzzyScore:
+                getFuzzyItemScore(item, terms, combo, index) +
+                (terms.length - combo.split(/\s+/).length) * -10 -
+                comboIndex,
+              fuzzyMatchedTerms: terms.filter((term) =>
+                normalizeSuggestionText(`${item.title} ${item.board} ${item.hoverMeta}`)
+                  .toLowerCase()
+                  .includes(term.toLowerCase())
+              ),
+              fuzzyQuery: combo
+            }));
+            if (items.length > bestItems.length) {
+              bestItems = items;
+            }
+            const hasNoResult = Boolean(doc.querySelector(".noResultText"));
+            if (
+              (bestItems.length && elapsed > 1300) ||
+              (hasNoResult && elapsed > 1500) ||
+              elapsed > 4200
+            ) {
+              finish(bestItems);
+            }
+          } catch {
             finish(bestItems);
           }
-        } catch {
-          finish(bestItems);
-        }
-      }, 260);
-    }, { once: true });
+        }, 260);
+      },
+      { once: true }
+    );
     timeout = window.setTimeout(() => finish([]), 5200);
     iframe.src = getSearchUrl(query).href;
     document.body.append(iframe);
@@ -27625,7 +31164,10 @@ function mergeFuzzyItems(target, items) {
     const key = item.href || item.title;
     const previous = target.get(key);
     if (!previous || item.fuzzyScore > previous.fuzzyScore) {
-      const terms = new Set([...(previous?.fuzzyMatchedTerms || []), ...(item.fuzzyMatchedTerms || [])]);
+      const terms = new Set([
+        ...(previous?.fuzzyMatchedTerms || []),
+        ...(item.fuzzyMatchedTerms || [])
+      ]);
       target.set(key, {
         ...item,
         fuzzyMatchedTerms: [...terms],
@@ -27633,7 +31175,10 @@ function mergeFuzzyItems(target, items) {
       });
       return;
     }
-    const terms = new Set([...(previous.fuzzyMatchedTerms || []), ...(item.fuzzyMatchedTerms || [])]);
+    const terms = new Set([
+      ...(previous.fuzzyMatchedTerms || []),
+      ...(item.fuzzyMatchedTerms || [])
+    ]);
     previous.fuzzyMatchedTerms = [...terms];
   });
 }
@@ -27646,17 +31191,26 @@ function renderFuzzyFeed(feed, itemMap, isDone = false) {
   if (!items.length && isDone) {
     const empty = createElement("article", "cc98-rebuild-card");
     empty.append(createElement("div", "cc98-rebuild-card-title", "没有找到结果"));
-    empty.append(createElement("p", "cc98-rebuild-card-meta", "抱歉呢前辈，没有找到你想要的帖子哦~"));
+    empty.append(
+      createElement("p", "cc98-rebuild-card-meta", "抱歉呢前辈，没有找到你想要的帖子哦~")
+    );
     feed.append(empty);
     return;
   }
   items.forEach((item) => {
-    const matched = item.fuzzyMatchedTerms?.length ? `匹配: ${item.fuzzyMatchedTerms.join(" / ")}` : "";
-    const card = renderHighlightedTopicCard({
-      ...item,
-      meta: item.meta || matched,
-      hoverMeta: [item.hoverMeta, matched, item.fuzzyQuery ? `来源搜索: ${item.fuzzyQuery}` : ""].filter(Boolean).join("  ")
-    }, item.fuzzyMatchedTerms?.length ? item.fuzzyMatchedTerms : terms);
+    const matched = item.fuzzyMatchedTerms?.length
+      ? `匹配: ${item.fuzzyMatchedTerms.join(" / ")}`
+      : "";
+    const card = renderHighlightedTopicCard(
+      {
+        ...item,
+        meta: item.meta || matched,
+        hoverMeta: [item.hoverMeta, matched, item.fuzzyQuery ? `来源搜索: ${item.fuzzyQuery}` : ""]
+          .filter(Boolean)
+          .join("  ")
+      },
+      item.fuzzyMatchedTerms?.length ? item.fuzzyMatchedTerms : terms
+    );
     card.dataset.itemKey = `fuzzy:${item.href}`;
     feed.append(card);
   });
@@ -27671,7 +31225,11 @@ function createAdvancedFuzzySearchPanel(query, terms, feed, initialItems) {
   const progress = createElement("div", "cc98-rebuild-fuzzy-progress");
   const bar = createElement("span", "");
   progress.append(bar);
-  const detail = createElement("p", "cc98-rebuild-card-meta", "正在按相关度从高到低合并搜索结果...");
+  const detail = createElement(
+    "p",
+    "cc98-rebuild-card-meta",
+    "正在按相关度从高到低合并搜索结果..."
+  );
   const queue = createElement("div", "cc98-rebuild-fuzzy-queue");
   const renderQueue = (combos) => {
     queue.textContent = "";
@@ -27694,12 +31252,19 @@ function createAdvancedFuzzySearchPanel(query, terms, feed, initialItems) {
     status.textContent = `${sourceLabel ? `${sourceLabel} ` : ""}拆词: ${activeTerms.join(" / ")}`;
     renderQueue(combos);
     bar.style.width = "0";
-    mergeFuzzyItems(itemMap, sourceItems.map((item, index) => ({
-      ...item,
-      fuzzyScore: getFuzzyItemScore(item, activeTerms, query, index) + 80,
-      fuzzyMatchedTerms: activeTerms.filter((term) => normalizeSuggestionText(`${item.title} ${item.board} ${item.hoverMeta}`).toLowerCase().includes(term.toLowerCase())),
-      fuzzyQuery: query
-    })));
+    mergeFuzzyItems(
+      itemMap,
+      sourceItems.map((item, index) => ({
+        ...item,
+        fuzzyScore: getFuzzyItemScore(item, activeTerms, query, index) + 80,
+        fuzzyMatchedTerms: activeTerms.filter((term) =>
+          normalizeSuggestionText(`${item.title} ${item.board} ${item.hoverMeta}`)
+            .toLowerCase()
+            .includes(term.toLowerCase())
+        ),
+        fuzzyQuery: query
+      }))
+    );
     renderFuzzyFeed(feed, itemMap);
     for (let index = 0; index < combos.length; index += 1) {
       if (sequence !== advancedFuzzySearchSequence) {
@@ -27756,8 +31321,14 @@ function renderSearchHistory(box, input, suggestions, state, onSubmit) {
   const section = createElement("section", "cc98-rebuild-search-history");
   section.setAttribute("aria-label", "\u641c\u7d22\u5386\u53f2");
   const header = createElement("div", "cc98-rebuild-search-history-header");
-  header.append(createElement("span", "cc98-rebuild-search-history-title", "\u641c\u7d22\u5386\u53f2"));
-  const clearButton = createElement("button", "cc98-rebuild-search-history-clear", "\u5168\u90e8\u6e05\u7a7a");
+  header.append(
+    createElement("span", "cc98-rebuild-search-history-title", "\u641c\u7d22\u5386\u53f2")
+  );
+  const clearButton = createElement(
+    "button",
+    "cc98-rebuild-search-history-clear",
+    "\u5168\u90e8\u6e05\u7a7a"
+  );
   clearButton.type = "button";
   clearButton.addEventListener("mousedown", (event) => event.preventDefault());
   clearButton.addEventListener("click", (event) => {
@@ -27781,13 +31352,18 @@ function renderSearchHistory(box, input, suggestions, state, onSubmit) {
     const deleteButton = createElement("button", "cc98-rebuild-search-history-delete", "\u00d7");
     deleteButton.type = "button";
     deleteButton.title = `\u5220\u9664\u201c${item.query}\u201d`;
-    deleteButton.setAttribute("aria-label", `\u5220\u9664\u641c\u7d22\u5386\u53f2\uff1a${item.query}`);
+    deleteButton.setAttribute(
+      "aria-label",
+      `\u5220\u9664\u641c\u7d22\u5386\u53f2\uff1a${item.query}`
+    );
     deleteButton.addEventListener("mousedown", (event) => event.preventDefault());
     deleteButton.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
       const itemKey = item.query.toLocaleLowerCase();
-      writeSearchHistory(readSearchHistory().filter((entry) => entry.query.toLocaleLowerCase() !== itemKey));
+      writeSearchHistory(
+        readSearchHistory().filter((entry) => entry.query.toLocaleLowerCase() !== itemKey)
+      );
       renderSearchSuggestions(box, input, suggestions, state, onSubmit);
     });
     row.append(queryButton, deleteButton);
@@ -27798,7 +31374,13 @@ function renderSearchHistory(box, input, suggestions, state, onSubmit) {
   return true;
 }
 
-function renderSearchSuggestions(box, input, suggestions, state = "ready", onSubmit = submitRebuiltSearch) {
+function renderSearchSuggestions(
+  box,
+  input,
+  suggestions,
+  state = "ready",
+  onSubmit = submitRebuiltSearch
+) {
   box.textContent = "";
   box.dataset.state = state;
   const hasHistory = renderSearchHistory(box, input, suggestions, state, onSubmit);
@@ -27809,10 +31391,14 @@ function renderSearchSuggestions(box, input, suggestions, state = "ready", onSub
   }
   box.hidden = false;
   if (hasHistory) {
-    box.append(createElement("div", "cc98-rebuild-search-suggestion-heading", "\u641c\u7d22\u8054\u60f3"));
+    box.append(
+      createElement("div", "cc98-rebuild-search-suggestion-heading", "\u641c\u7d22\u8054\u60f3")
+    );
   }
   if (state === "loading") {
-    box.append(createElement("div", "cc98-rebuild-search-suggestion-status", "正在分析相关搜索..."));
+    box.append(
+      createElement("div", "cc98-rebuild-search-suggestion-status", "正在分析相关搜索...")
+    );
     return;
   }
   if (!suggestions.length) {
@@ -27834,19 +31420,20 @@ function renderSearchSuggestions(box, input, suggestions, state = "ready", onSub
 }
 
 function getAiSearchSuggestConfig() {
-  const provider = lastSettings?.aiSearchSuggestProvider || DEFAULT_SETTINGS.aiSearchSuggestProvider;
+  const provider =
+    lastSettings?.aiSearchSuggestProvider || DEFAULT_SETTINGS.aiSearchSuggestProvider;
   const defaults = AI_SEARCH_PROVIDER_DEFAULTS[provider] || AI_SEARCH_PROVIDER_DEFAULTS.openai;
   const otherDefaults = Object.entries(AI_SEARCH_PROVIDER_DEFAULTS)
     .filter(([name]) => name !== provider)
     .map(([, value]) => value);
   const rawEndpoint = String(lastSettings?.aiSearchSuggestEndpoint ?? "").trim();
   const rawModel = String(lastSettings?.aiSearchSuggestModel ?? "").trim();
-  const endpoint = rawEndpoint && !otherDefaults.some((item) => item.endpoint === rawEndpoint)
-    ? rawEndpoint
-    : defaults.endpoint;
-  const model = rawModel && !otherDefaults.some((item) => item.model === rawModel)
-    ? rawModel
-    : defaults.model;
+  const endpoint =
+    rawEndpoint && !otherDefaults.some((item) => item.endpoint === rawEndpoint)
+      ? rawEndpoint
+      : defaults.endpoint;
+  const model =
+    rawModel && !otherDefaults.some((item) => item.model === rawModel) ? rawModel : defaults.model;
   return {
     provider,
     endpoint,
@@ -27930,15 +31517,26 @@ function sanitizeAiSearchSuggestions(keyword, suggestions) {
       if (lowerSuggestion.startsWith(`${lowerBase} `)) {
         return suggestion;
       }
-      const term = normalizeSuggestionText(lowerSuggestion.includes(lowerBase)
-        ? suggestion.replace(new RegExp(lowerBase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "ig"), " ")
-        : suggestion);
+      const term = normalizeSuggestionText(
+        lowerSuggestion.includes(lowerBase)
+          ? suggestion.replace(
+              new RegExp(lowerBase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "ig"),
+              " "
+            )
+          : suggestion
+      );
       return term ? `${base} ${term}` : "";
     })
     .filter((suggestion) => {
       const term = getSuggestionTail(suggestion, base);
       const key = suggestion.toLowerCase();
-      if (!suggestion || suggestion.length > 32 || seen.has(key) || isWeakSuggestionTerm(term, lowerBase) || !isMeaningfulSearchSuggestion(suggestion, base)) {
+      if (
+        !suggestion ||
+        suggestion.length > 32 ||
+        seen.has(key) ||
+        isWeakSuggestionTerm(term, lowerBase) ||
+        !isMeaningfulSearchSuggestion(suggestion, base)
+      ) {
         return false;
       }
       seen.add(key);
@@ -27953,7 +31551,14 @@ function sanitizeAiSearchTerms(query, terms) {
     .map((term) => trimSuggestionPhrase(term))
     .filter((term) => {
       const key = term.toLowerCase();
-      if (!term || term.length < 2 || term.length > 12 || seen.has(key) || SEARCH_OPTIONAL_TERMS.has(term) || !isMeaningfulSuggestionTerm(term, query)) {
+      if (
+        !term ||
+        term.length < 2 ||
+        term.length > 12 ||
+        seen.has(key) ||
+        SEARCH_OPTIONAL_TERMS.has(term) ||
+        !isMeaningfulSuggestionTerm(term, query)
+      ) {
         return false;
       }
       seen.add(key);
@@ -28024,7 +31629,10 @@ async function refineSearchTermsWithAi(query, localTerms) {
       return localTerms;
     }
     const data = await response.json();
-    const aiTerms = sanitizeAiSearchTerms(query, parseAiSearchSuggestionText(getAiResponseText(data)));
+    const aiTerms = sanitizeAiSearchTerms(
+      query,
+      parseAiSearchSuggestionText(getAiResponseText(data))
+    );
     return aiTerms.length >= 2 ? aiTerms : localTerms;
   } catch {
     return localTerms;
@@ -28102,7 +31710,10 @@ async function enhanceSearchSuggestionsWithAi(keyword, localSuggestions, titles)
       return localSuggestions;
     }
     const data = await response.json();
-    const aiSuggestions = sanitizeAiSearchSuggestions(keyword, parseAiSearchSuggestionText(getAiResponseText(data)));
+    const aiSuggestions = sanitizeAiSearchSuggestions(
+      keyword,
+      parseAiSearchSuggestionText(getAiResponseText(data))
+    );
     const merged = [...aiSuggestions, ...localSuggestions];
     return merged.filter((text, index, list) => list.indexOf(text) === index).slice(0, 10);
   } catch {
@@ -28117,7 +31728,11 @@ async function fetchSearchSuggestions(keyword) {
   }
   const cached = searchSuggestionCache.get(normalized);
   const cacheFingerprint = getSearchSuggestionCacheFingerprint();
-  if (cached && cached.fingerprint === cacheFingerprint && Date.now() - cached.time < 10 * 60 * 1000) {
+  if (
+    cached &&
+    cached.fingerprint === cacheFingerprint &&
+    Date.now() - cached.time < 10 * 60 * 1000
+  ) {
     return cached.suggestions;
   }
   if (Date.now() - searchSuggestionLastFetchAt < 2600) {
@@ -28206,7 +31821,12 @@ function createSearchForm() {
     }
     suggestTimer = window.setTimeout(async () => {
       const sequence = ++searchSuggestionSequence;
-      renderSearchSuggestions(suggestionBox, input, cached?.suggestions ?? [], cached ? "ready" : "loading");
+      renderSearchSuggestions(
+        suggestionBox,
+        input,
+        cached?.suggestions ?? [],
+        cached ? "ready" : "loading"
+      );
       try {
         const suggestions = await fetchSearchSuggestions(keyword);
         if (sequence === searchSuggestionSequence && input.value.trim() === keyword) {
@@ -28266,9 +31886,8 @@ function createRebuiltSearchForm(preservedState = null) {
   const input = createElement("input", "");
   input.type = "search";
   input.placeholder = "\u8bf7\u8f93\u5165\u641c\u7d22\u5185\u5bb9";
-  input.value = typeof preservedState?.value === "string"
-    ? preservedState.value
-    : getCurrentSearchKeyword();
+  input.value =
+    typeof preservedState?.value === "string" ? preservedState.value : getCurrentSearchKeyword();
   input.autocomplete = "off";
   const inputWrap = createElement("div", "cc98-rebuild-search-field");
   const suggestionBox = createElement("div", "cc98-rebuild-search-suggestions");
@@ -28339,20 +31958,42 @@ function createRebuiltSearchForm(preservedState = null) {
     }
     const cached = searchSuggestionCache.get(normalizeSuggestionText(keyword));
     if (cached && cached.suggestions.length) {
-      renderSearchSuggestions(suggestionBox, input, cached.suggestions, "ready", submitCurrentSearch);
+      renderSearchSuggestions(
+        suggestionBox,
+        input,
+        cached.suggestions,
+        "ready",
+        submitCurrentSearch
+      );
     }
     suggestTimer = window.setTimeout(async () => {
       const sequence = ++searchSuggestionSequence;
       const typeAtRequest = selectedSearchType;
-      renderSearchSuggestions(suggestionBox, input, cached?.suggestions ?? [], cached ? "ready" : "loading", submitCurrentSearch);
+      renderSearchSuggestions(
+        suggestionBox,
+        input,
+        cached?.suggestions ?? [],
+        cached ? "ready" : "loading",
+        submitCurrentSearch
+      );
       try {
         const suggestions = await fetchSearchSuggestions(keyword);
-        if (sequence === searchSuggestionSequence && input.value.trim() === keyword && selectedSearchType === typeAtRequest) {
+        if (
+          sequence === searchSuggestionSequence &&
+          input.value.trim() === keyword &&
+          selectedSearchType === typeAtRequest
+        ) {
           renderSearchSuggestions(suggestionBox, input, suggestions, "ready", submitCurrentSearch);
         }
       } catch {
         if (sequence === searchSuggestionSequence) {
-          renderSearchSuggestions(suggestionBox, input, cached?.suggestions ?? [], "ready", submitCurrentSearch);
+          renderSearchSuggestions(
+            suggestionBox,
+            input,
+            cached?.suggestions ?? [],
+            "ready",
+            submitCurrentSearch
+          );
         }
       }
     }, 900);
@@ -28451,14 +32092,9 @@ function readLaterItemMatchesQuery(item, query) {
   if (!keyword) {
     return true;
   }
-  const haystack = [
-    item.title,
-    item.board,
-    item.user,
-    item.uid,
-    item.meta,
-    item.href
-  ].map((value) => normalizeSuggestionText(value).toLowerCase()).join(" ");
+  const haystack = [item.title, item.board, item.user, item.uid, item.meta, item.href]
+    .map((value) => normalizeSuggestionText(value).toLowerCase())
+    .join(" ");
   return haystack.includes(keyword);
 }
 
@@ -28476,7 +32112,9 @@ function renderReadLaterSidebarContent(sidebar, options = {}) {
     return;
   }
   const items = sortReadLaterItems(options.items || readReadLaterItems());
-  const filteredItems = items.filter((item) => readLaterItemMatchesQuery(item, readLaterSidebarSearchQuery));
+  const filteredItems = items.filter((item) =>
+    readLaterItemMatchesQuery(item, readLaterSidebarSearchQuery)
+  );
   const pageSize = 8;
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize));
   readLaterSidebarPage = Math.max(1, Math.min(totalPages, Number(readLaterSidebarPage) || 1));
@@ -28525,7 +32163,10 @@ function renderReadLaterSidebarContent(sidebar, options = {}) {
     viewport.append(empty);
   } else {
     pageItems.forEach((item) => {
-      const row = createElement("article", `cc98-rebuild-read-later-sidebar-item${item.readAt ? " is-read" : ""}`);
+      const row = createElement(
+        "article",
+        `cc98-rebuild-read-later-sidebar-item${item.readAt ? " is-read" : ""}`
+      );
       row.dataset.readLaterKey = item.key;
       const top = createElement("div", "cc98-rebuild-read-later-sidebar-item-top");
       const state = createElement(
@@ -28538,9 +32179,13 @@ function renderReadLaterSidebarContent(sidebar, options = {}) {
         top.append(createElement("span", "cc98-rebuild-read-later-sidebar-board", item.board));
       }
       const controls = createElement("div", "cc98-rebuild-read-later-sidebar-item-controls");
-      const toggleRead = createButton("cc98-rebuild-read-later-sidebar-icon", item.readAt ? "↶" : "✓", () => {
-        markReadLaterItemRead(item.key, !item.readAt);
-      });
+      const toggleRead = createButton(
+        "cc98-rebuild-read-later-sidebar-icon",
+        item.readAt ? "↶" : "✓",
+        () => {
+          markReadLaterItemRead(item.key, !item.readAt);
+        }
+      );
       toggleRead.title = item.readAt ? "标为未读" : "标为已读";
       toggleRead.setAttribute("aria-label", `${toggleRead.title}: ${item.title}`);
       const remove = createButton("cc98-rebuild-read-later-sidebar-icon is-delete", "×", () => {
@@ -28556,10 +32201,9 @@ function renderReadLaterSidebarContent(sidebar, options = {}) {
       const title = createLink("cc98-rebuild-read-later-sidebar-title", item.title, item.href);
       title.addEventListener("click", () => markReadLaterItemRead(item.key, true));
       row.append(title);
-      const meta = [
-        item.user,
-        item.addedAt ? formatReadLaterTime(item.addedAt) : ""
-      ].filter(Boolean).join(" · ");
+      const meta = [item.user, item.addedAt ? formatReadLaterTime(item.addedAt) : ""]
+        .filter(Boolean)
+        .join(" · ");
       if (meta) {
         row.append(createElement("p", "cc98-rebuild-read-later-sidebar-meta", meta));
       }
@@ -28599,7 +32243,11 @@ function createReadLaterSidebar() {
     writeReadLaterItems(readReadLaterItems().filter((item) => !item.readAt));
     showRebuiltTransientToast(sidebar, "已清除已读项");
   });
-  const openAll = createLink("cc98-rebuild-read-later-sidebar-open-all", "全部", getReadLaterPageHref());
+  const openAll = createLink(
+    "cc98-rebuild-read-later-sidebar-open-all",
+    "全部",
+    getReadLaterPageHref()
+  );
   headingActions.append(clearRead, openAll);
   heading.append(headingTitle, headingActions);
 
@@ -28663,16 +32311,18 @@ function createRebuiltBackToTopControl() {
 function syncReadLaterUi() {
   const items = readReadLaterItems();
   const savedKeys = new Set(items.map((item) => item.key));
-  document.querySelectorAll(".cc98-rebuild-read-later-button[data-read-later-key]").forEach((button) => {
-    if (!(button instanceof HTMLButtonElement)) {
-      return;
-    }
-    const saved = savedKeys.has(button.dataset.readLaterKey || "");
-    const title = saved ? "移出稍后再看" : "加入稍后再看";
-    button.classList.toggle("is-saved", saved);
-    button.title = title;
-    button.setAttribute("aria-label", `${title}: ${button.dataset.readLaterTitle || "帖子"}`);
-  });
+  document
+    .querySelectorAll(".cc98-rebuild-read-later-button[data-read-later-key]")
+    .forEach((button) => {
+      if (!(button instanceof HTMLButtonElement)) {
+        return;
+      }
+      const saved = savedKeys.has(button.dataset.readLaterKey || "");
+      const title = saved ? "移出稍后再看" : "加入稍后再看";
+      button.classList.toggle("is-saved", saved);
+      button.title = title;
+      button.setAttribute("aria-label", `${title}: ${button.dataset.readLaterTitle || "帖子"}`);
+    });
   document.querySelectorAll(".cc98-rebuild-read-later-sidebar").forEach((sidebar) => {
     renderReadLaterSidebarContent(sidebar, { items, preserveScroll: true });
   });
@@ -28703,7 +32353,13 @@ function renderReadLaterSearchControls(section, totalCount, filteredCount) {
   });
   section.append(form);
   if (readLaterSearchQuery) {
-    section.append(createElement("p", "cc98-rebuild-card-meta", `\u641c\u7d22\u7ed3\u679c ${filteredCount} / ${totalCount}`));
+    section.append(
+      createElement(
+        "p",
+        "cc98-rebuild-card-meta",
+        `\u641c\u7d22\u7ed3\u679c ${filteredCount} / ${totalCount}`
+      )
+    );
   }
 }
 
@@ -28717,7 +32373,11 @@ function renderReadLaterPager(section, totalPages) {
     scheduleRebuild();
   });
   prev.disabled = readLaterPage <= 1;
-  const info = createElement("span", "cc98-rebuild-read-later-page-info", `${readLaterPage} / ${totalPages}`);
+  const info = createElement(
+    "span",
+    "cc98-rebuild-read-later-page-info",
+    `${readLaterPage} / ${totalPages}`
+  );
   const next = createButton("cc98-rebuild-mini-action", "\u4e0b\u4e00\u9875", () => {
     readLaterPage = Math.min(totalPages, readLaterPage + 1);
     scheduleRebuild();
@@ -28730,47 +32390,69 @@ function renderReadLaterPager(section, totalPages) {
 function renderReadLaterPage(app) {
   markCurrentTopicReadLaterRead();
   const section = createElement("section", "cc98-rebuild-section cc98-rebuild-read-later-page");
-  const heading = createElement("div", "cc98-rebuild-section-heading cc98-rebuild-read-later-heading");
+  const heading = createElement(
+    "div",
+    "cc98-rebuild-section-heading cc98-rebuild-read-later-heading"
+  );
   heading.append(createElement("h2", "", "\u7a0d\u540e\u518d\u770b"));
   const actions = createElement("div", "cc98-rebuild-read-later-actions");
   const importInput = createElement("input", "");
   importInput.type = "file";
   importInput.accept = "application/json,.json";
   importInput.hidden = true;
-  const importButton = createButton("cc98-rebuild-action", "\u5bfc\u5165", () => importInput.click());
+  const importButton = createButton("cc98-rebuild-action", "\u5bfc\u5165", () =>
+    importInput.click()
+  );
   importInput.addEventListener("change", () => {
     importReadLaterItemsFromFile(importInput.files?.[0], importButton);
     importInput.value = "";
   });
-  const exportButton = createButton("cc98-rebuild-action", "\u5bfc\u51fa", () => exportReadLaterItems(exportButton));
-  const clearReadButton = createButton("cc98-rebuild-action cc98-rebuild-read-later-clear", "\u6e05\u9664\u5df2\u8bfb", () => {
-    writeReadLaterItems(readReadLaterItems().filter((item) => !item.readAt));
-    showRebuiltTransientToast(clearReadButton, "\u5df2\u6e05\u9664\u5df2\u8bfb\u9879");
-    scheduleRebuild();
-  });
+  const exportButton = createButton("cc98-rebuild-action", "\u5bfc\u51fa", () =>
+    exportReadLaterItems(exportButton)
+  );
+  const clearReadButton = createButton(
+    "cc98-rebuild-action cc98-rebuild-read-later-clear",
+    "\u6e05\u9664\u5df2\u8bfb",
+    () => {
+      writeReadLaterItems(readReadLaterItems().filter((item) => !item.readAt));
+      showRebuiltTransientToast(clearReadButton, "\u5df2\u6e05\u9664\u5df2\u8bfb\u9879");
+      scheduleRebuild();
+    }
+  );
   actions.append(importButton, exportButton, clearReadButton, importInput);
   heading.append(actions);
   section.append(heading);
 
-  const allItems = readReadLaterItems()
-    .sort((a, b) => {
-      if (Boolean(a.readAt) !== Boolean(b.readAt)) {
-        return a.readAt ? 1 : -1;
-      }
-      return (b.addedAt || 0) - (a.addedAt || 0);
-    });
-  const filteredItems = allItems.filter((item) => readLaterItemMatchesQuery(item, readLaterSearchQuery));
+  const allItems = readReadLaterItems().sort((a, b) => {
+    if (Boolean(a.readAt) !== Boolean(b.readAt)) {
+      return a.readAt ? 1 : -1;
+    }
+    return (b.addedAt || 0) - (a.addedAt || 0);
+  });
+  const filteredItems = allItems.filter((item) =>
+    readLaterItemMatchesQuery(item, readLaterSearchQuery)
+  );
   const pageSize = 10;
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize));
   readLaterPage = Math.max(1, Math.min(totalPages, Number(readLaterPage) || 1));
   const items = filteredItems.slice((readLaterPage - 1) * pageSize, readLaterPage * pageSize);
   renderReadLaterSearchControls(section, allItems.length, filteredItems.length);
-  const summary = createElement("p", "cc98-rebuild-card-meta", `\u672a\u8bfb ${allItems.filter((item) => !item.readAt).length} / \u5168\u90e8 ${allItems.length}`);
+  const summary = createElement(
+    "p",
+    "cc98-rebuild-card-meta",
+    `\u672a\u8bfb ${allItems.filter((item) => !item.readAt).length} / \u5168\u90e8 ${allItems.length}`
+  );
   section.append(summary);
   if (!allItems.length) {
     const empty = createElement("div", "cc98-rebuild-empty-state");
     empty.append(createElement("h2", "", "\u6ca1\u6709\u7a0d\u540e\u518d\u770b"));
-    empty.append(createElement("p", "", "\u5728\u65b0\u5e16\u3001\u5341\u5927\u3001\u641c\u7d22\u3001\u5173\u6ce8\u548c\u7cbe\u9009\u9875\u9762\u7684\u5e16\u5b50\u53f3\u4fa7\u70b9\u51fb\u201c\u7a0d\u540e\u518d\u770b\u201d\u5373\u53ef\u6536\u85cf\u5230\u8fd9\u91cc\u3002"));
+    empty.append(
+      createElement(
+        "p",
+        "",
+        "\u5728\u65b0\u5e16\u3001\u5341\u5927\u3001\u641c\u7d22\u3001\u5173\u6ce8\u548c\u7cbe\u9009\u9875\u9762\u7684\u5e16\u5b50\u53f3\u4fa7\u70b9\u51fb\u201c\u7a0d\u540e\u518d\u770b\u201d\u5373\u53ef\u6536\u85cf\u5230\u8fd9\u91cc\u3002"
+      )
+    );
     section.append(empty);
     app.append(section);
     return;
@@ -28786,14 +32468,33 @@ function renderReadLaterPage(app) {
 
   const list = createElement("div", "cc98-rebuild-read-later-list");
   items.forEach((item) => {
-    const card = createElement("article", `cc98-rebuild-card cc98-rebuild-read-later-item${item.readAt ? " is-read" : ""}`);
+    const card = createElement(
+      "article",
+      `cc98-rebuild-card cc98-rebuild-read-later-item${item.readAt ? " is-read" : ""}`
+    );
     const top = createElement("div", "cc98-rebuild-card-top");
-    top.append(createElement("span", `cc98-rebuild-read-later-status${item.readAt ? " is-read" : ""}`, item.readAt ? "\u5df2\u8bfb" : "\u672a\u8bfb"));
+    top.append(
+      createElement(
+        "span",
+        `cc98-rebuild-read-later-status${item.readAt ? " is-read" : ""}`,
+        item.readAt ? "\u5df2\u8bfb" : "\u672a\u8bfb"
+      )
+    );
     if (item.board) {
-      top.append(item.boardHref ? createLink("cc98-rebuild-chip", item.board, item.boardHref) : createElement("span", "cc98-rebuild-chip", item.board));
+      top.append(
+        item.boardHref
+          ? createLink("cc98-rebuild-chip", item.board, item.boardHref)
+          : createElement("span", "cc98-rebuild-chip", item.board)
+      );
     }
     if (item.user) {
-      top.append(createElement("span", "cc98-rebuild-muted", item.uid ? `${item.user} 路 ${item.uid}` : item.user));
+      top.append(
+        createElement(
+          "span",
+          "cc98-rebuild-muted",
+          item.uid ? `${item.user} 路 ${item.uid}` : item.user
+        )
+      );
     }
     card.append(top);
     const title = createLink("cc98-rebuild-card-title", item.title, item.href);
@@ -28811,16 +32512,30 @@ function renderReadLaterPage(app) {
     }
     const itemActions = createElement("div", "cc98-rebuild-read-later-item-actions");
     itemActions.append(createLink("cc98-rebuild-mini-action", "\u9605\u8bfb", item.href));
-    itemActions.lastElementChild?.addEventListener?.("click", () => markReadLaterItemRead(item.key, true));
-    itemActions.append(createButton("cc98-rebuild-mini-action", item.readAt ? "\u6807\u4e3a\u672a\u8bfb" : "\u6807\u4e3a\u5df2\u8bfb", () => {
-      markReadLaterItemRead(item.key, !item.readAt);
-      scheduleRebuild();
-    }));
-    itemActions.append(createButton("cc98-rebuild-mini-action cc98-rebuild-read-later-delete", "\u5220\u9664", () => {
-      removeReadLaterItem(item.key);
-      showRebuiltTransientToast(card, "\u5df2\u5220\u9664");
-      scheduleRebuild();
-    }));
+    itemActions.lastElementChild?.addEventListener?.("click", () =>
+      markReadLaterItemRead(item.key, true)
+    );
+    itemActions.append(
+      createButton(
+        "cc98-rebuild-mini-action",
+        item.readAt ? "\u6807\u4e3a\u672a\u8bfb" : "\u6807\u4e3a\u5df2\u8bfb",
+        () => {
+          markReadLaterItemRead(item.key, !item.readAt);
+          scheduleRebuild();
+        }
+      )
+    );
+    itemActions.append(
+      createButton(
+        "cc98-rebuild-mini-action cc98-rebuild-read-later-delete",
+        "\u5220\u9664",
+        () => {
+          removeReadLaterItem(item.key);
+          showRebuiltTransientToast(card, "\u5df2\u5220\u9664");
+          scheduleRebuild();
+        }
+      )
+    );
     card.append(itemActions);
     list.append(card);
   });
@@ -28835,14 +32550,16 @@ function getBlacklistGroups() {
     {
       key: "content",
       title: "发言屏蔽条件",
-      description: "可组合正文文本、表情与数值条件。正文统计不含引用和签名；多条规则任一命中即折叠。文本不区分大小写，次数按不重叠匹配统计。",
+      description:
+        "可组合正文文本、表情与数值条件。正文统计不含引用和签名；多条规则任一命中即折叠。文本不区分大小写，次数按不重叠匹配统计。",
       values: rules.contentRules,
       placeholder: '"[ac01]" > 3 AND NOT "正常讨论"'
     },
     {
       key: "users",
       title: "屏蔽用户 ID",
-      description: "按用户 ID 文本严格匹配，同时隐藏引用中的对应发言；历史纯数字规则继续按 UID 兼容匹配。",
+      description:
+        "按用户 ID 文本严格匹配，同时隐藏引用中的对应发言；历史纯数字规则继续按 UID 兼容匹配。",
       values: rules.userIds,
       placeholder: "输入用户 ID，例如 Coran"
     },
@@ -28865,7 +32582,9 @@ function getBlacklistGroups() {
 
 function updateBlacklistGroup(key, values) {
   const rules = getBlacklistRules(lastSettings);
-  const normalizedValues = [...new Set((values || []).map((value) => String(value).trim()).filter(Boolean))];
+  const normalizedValues = [
+    ...new Set((values || []).map((value) => String(value).trim()).filter(Boolean))
+  ];
   if (key === "users") {
     rules.userIds = normalizedValues.map(normalizeBlockedUserId).filter(Boolean);
   } else if (key === "keywords") {
@@ -28890,14 +32609,21 @@ function addBlacklistValue(key, value, anchor) {
   if (key === "keywords") {
     try {
       const titleRule = globalThis.CC98RebornContentFilterCore.compileTitle(nextValue);
-      if (titleRule.hasRegex && values.filter(rule => rule.startsWith("/")).length >= 50) throw new Error("最多保存 50 条标题正则");
-    } catch (error) { showRebuiltTransientToast(anchor, error.message); return false; }
+      if (titleRule.hasRegex && values.filter((rule) => rule.startsWith("/")).length >= 50)
+        throw new Error("最多保存 50 条标题正则");
+    } catch (error) {
+      showRebuiltTransientToast(anchor, error.message);
+      return false;
+    }
   }
   if (key === "content") {
     try {
       globalThis.CC98RebornContentFilterCore.compile(nextValue);
       if (values.length >= 50) throw new Error("最多保存 50 条内容规则");
-    } catch (error) { showRebuiltTransientToast(anchor, error.message); return false; }
+    } catch (error) {
+      showRebuiltTransientToast(anchor, error.message);
+      return false;
+    }
   }
   if (values.includes(nextValue)) {
     showRebuiltTransientToast(anchor, "规则已存在");
@@ -28910,12 +32636,17 @@ function addBlacklistValue(key, value, anchor) {
 
 function removeBlacklistValue(key, value) {
   const group = getBlacklistGroups().find((item) => item.key === key);
-  updateBlacklistGroup(key, (group?.values || []).filter((item) => item !== value));
+  updateBlacklistGroup(
+    key,
+    (group?.values || []).filter((item) => item !== value)
+  );
 }
 
 function getBlacklistVisibleGroups() {
   const groups = getBlacklistGroups();
-  return blacklistFilterType === "all" ? groups : groups.filter((group) => group.key === blacklistFilterType);
+  return blacklistFilterType === "all"
+    ? groups
+    : groups.filter((group) => group.key === blacklistFilterType);
 }
 
 function renderBlacklistTabs(section) {
@@ -28945,28 +32676,39 @@ function createContentRulePatternControl(pattern) {
     const open = !previous || previous.hidden;
     closePrivateMessageEmojiPanels();
     if (!open) return;
-    const panel = ensurePrivateMessageEmojiPanel(wrapper, null, { onSelect(item) {
-      pattern.value = item.insertText;
-      pattern.dispatchEvent(new Event("input", { bubbles: true }));
-      pattern.focus({ preventScroll: true });
-    } });
+    const panel = ensurePrivateMessageEmojiPanel(wrapper, null, {
+      onSelect(item) {
+        pattern.value = item.insertText;
+        pattern.dispatchEvent(new Event("input", { bubbles: true }));
+        pattern.focus({ preventScroll: true });
+      }
+    });
     panel.dataset.contentRuleEmoji = "true";
-    panel.setAttribute("role", "dialog"); panel.setAttribute("aria-label", "选择屏蔽表情");
+    panel.setAttribute("role", "dialog");
+    panel.setAttribute("aria-label", "选择屏蔽表情");
     if (!panel.__cc98RuleEscapeBound) {
       panel.__cc98RuleEscapeBound = true;
-      panel.addEventListener("keydown", event => {
+      panel.addEventListener("keydown", (event) => {
         if (event.key !== "Escape") return;
-        event.preventDefault(); event.stopPropagation();
-        closePrivateMessageEmojiPanels(); picker.focus({ preventScroll: true });
+        event.preventDefault();
+        event.stopPropagation();
+        closePrivateMessageEmojiPanels();
+        picker.focus({ preventScroll: true });
       });
     }
-    panel.hidden = false; picker.setAttribute("aria-expanded", "true");
+    panel.hidden = false;
+    picker.setAttribute("aria-expanded", "true");
     positionPrivateMessageEmojiPanel(wrapper, panel, picker);
-    panel.querySelector(".cc98-rebuild-message-emoji-tab.is-active")?.focus({ preventScroll: true });
+    panel
+      .querySelector(".cc98-rebuild-message-emoji-tab.is-active")
+      ?.focus({ preventScroll: true });
   });
-  picker.type = "button"; picker.title = "选择表情";
+  picker.type = "button";
+  picker.title = "选择表情";
   picker.dataset.cc98EmojiTrigger = "true";
-  picker.setAttribute("aria-label", "选择屏蔽表情"); picker.setAttribute("aria-haspopup", "dialog"); picker.setAttribute("aria-expanded", "false");
+  picker.setAttribute("aria-label", "选择屏蔽表情");
+  picker.setAttribute("aria-haspopup", "dialog");
+  picker.setAttribute("aria-expanded", "false");
   wrapper.append(pattern, picker);
   return wrapper;
 }
@@ -28977,79 +32719,177 @@ function renderBlacklistGroup(group) {
   head.append(createElement("strong", "cc98-rebuild-blacklist-group-title", group.title));
   head.append(createElement("span", "cc98-rebuild-muted", `${group.values.length} 条`));
   card.append(head);
-  if (group.description) card.append(createElement("p", "cc98-rebuild-card-meta", group.description));
+  if (group.description)
+    card.append(createElement("p", "cc98-rebuild-card-meta", group.description));
   if (group.key === "content") {
     card.dataset.contentRules = "true";
     const quick = createElement("form", "cc98-rebuild-blacklist-form cc98-content-rule-quick");
-    const pattern = createElement("input"); pattern.placeholder = "文本或表情，如 [ac01]"; pattern.required = true;
-    pattern.setAttribute("aria-label", "要统计的文本或表情"); pattern.maxLength = 256;
-    const comparison = createElement("select"); comparison.setAttribute("aria-label", "次数比较");
-    [[">", "超过"], [">=", "至少"], ["=", "恰好"], ["<", "少于"], ["<=", "至多"]].forEach(([value, text]) => {
-      const option = createElement("option", "", text); option.value = value.trim(); comparison.append(option);
+    const pattern = createElement("input");
+    pattern.placeholder = "文本或表情，如 [ac01]";
+    pattern.required = true;
+    pattern.setAttribute("aria-label", "要统计的文本或表情");
+    pattern.maxLength = 256;
+    const comparison = createElement("select");
+    comparison.setAttribute("aria-label", "次数比较");
+    [
+      [">", "超过"],
+      [">=", "至少"],
+      ["=", "恰好"],
+      ["<", "少于"],
+      ["<=", "至多"]
+    ].forEach(([value, text]) => {
+      const option = createElement("option", "", text);
+      option.value = value.trim();
+      comparison.append(option);
     });
-    const count = createElement("input"); count.type = "number"; count.min = "0"; count.max = "100000"; count.step = "1"; count.value = "3"; count.required = true;
+    const count = createElement("input");
+    count.type = "number";
+    count.min = "0";
+    count.max = "100000";
+    count.step = "1";
+    count.value = "3";
+    count.required = true;
     count.setAttribute("aria-label", "匹配次数");
-    const add = createElement("button", "cc98-rebuild-search-submit", "添加规则"); add.type = "submit";
+    const add = createElement("button", "cc98-rebuild-search-submit", "添加规则");
+    add.type = "submit";
     quick.append(createContentRulePatternControl(pattern), comparison, count, add);
-    quick.addEventListener("submit", event => {
+    quick.addEventListener("submit", (event) => {
       event.preventDefault();
-      addBlacklistValue("content", JSON.stringify(pattern.value) + " " + comparison.value + " " + count.value, add);
+      addBlacklistValue(
+        "content",
+        JSON.stringify(pattern.value) + " " + comparison.value + " " + count.value,
+        add
+      );
     });
     card.append(quick);
     card.append(createElement("strong", "cc98-rebuild-blacklist-group-title", "数值条件"));
     const numeric = createElement("form", "cc98-rebuild-blacklist-form cc98-content-rule-quick");
-    const metric = createElement("select"); metric.setAttribute("aria-label", "屏蔽指标");
-    [["风评", "本楼风评"], ["踩", "踩数"], ["赞踩比", "赞踩比（赞 ÷ 踩）"], ["赞踩总数", "赞踩总数"], ["赞", "赞数"]].forEach(([value, label]) => {
-      const option = createElement("option", "", label); option.value = value; metric.append(option);
+    const metric = createElement("select");
+    metric.setAttribute("aria-label", "屏蔽指标");
+    [
+      ["风评", "本楼风评"],
+      ["踩", "踩数"],
+      ["赞踩比", "赞踩比（赞 ÷ 踩）"],
+      ["赞踩总数", "赞踩总数"],
+      ["赞", "赞数"]
+    ].forEach(([value, label]) => {
+      const option = createElement("option", "", label);
+      option.value = value;
+      metric.append(option);
     });
-    const compare = createElement("select"); compare.setAttribute("aria-label", "指标比较");
-    [["<", "低于"], [">", "高于"], [">=", "不低于"], ["<=", "不高于"], ["=", "等于"], ["!=", "不等于"]].forEach(([value, label]) => {
-      const option = createElement("option", "", label); option.value = value; compare.append(option);
+    const compare = createElement("select");
+    compare.setAttribute("aria-label", "指标比较");
+    [
+      ["<", "低于"],
+      [">", "高于"],
+      [">=", "不低于"],
+      ["<=", "不高于"],
+      ["=", "等于"],
+      ["!=", "不等于"]
+    ].forEach(([value, label]) => {
+      const option = createElement("option", "", label);
+      option.value = value;
+      compare.append(option);
     });
-    const threshold = createElement("input"); threshold.type = "number"; threshold.step = "any"; threshold.min = "-1000000000"; threshold.max = "1000000000"; threshold.value = "-3"; threshold.required = true;
+    const threshold = createElement("input");
+    threshold.type = "number";
+    threshold.step = "any";
+    threshold.min = "-1000000000";
+    threshold.max = "1000000000";
+    threshold.value = "-3";
+    threshold.required = true;
     threshold.setAttribute("aria-label", "指标阈值");
-    const save = createElement("button", "cc98-rebuild-search-submit", "添加数值规则"); save.type = "submit";
+    const save = createElement("button", "cc98-rebuild-search-submit", "添加数值规则");
+    save.type = "submit";
     numeric.append(metric, compare, threshold, save);
-    const guard = createElement("label", "cc98-metric-rule-guard"); guard.hidden = true;
-    const minimum = createElement("input"); minimum.type = "number"; minimum.min = "0"; minimum.max = "1000000000"; minimum.step = "1"; minimum.value = "20"; minimum.required = true;
+    const guard = createElement("label", "cc98-metric-rule-guard");
+    guard.hidden = true;
+    const minimum = createElement("input");
+    minimum.type = "number";
+    minimum.min = "0";
+    minimum.max = "1000000000";
+    minimum.step = "1";
+    minimum.value = "20";
+    minimum.required = true;
     minimum.setAttribute("aria-label", "赞踩总数下限");
     guard.append(createElement("span", "", "同时要求赞踩总数不低于"), minimum);
-    const expression = () => metric.value + " " + compare.value + " " + threshold.value + (metric.value === "赞踩比" ? " AND 赞踩总数 >= " + minimum.value : "");
+    const expression = () =>
+      metric.value +
+      " " +
+      compare.value +
+      " " +
+      threshold.value +
+      (metric.value === "赞踩比" ? " AND 赞踩总数 >= " + minimum.value : "");
     metric.addEventListener("change", () => {
       guard.hidden = metric.value !== "赞踩比";
       compare.value = metric.value === "踩" ? ">" : metric.value === "赞踩总数" ? ">=" : "<";
       threshold.value = metric.value === "风评" ? "-3" : metric.value === "赞踩比" ? "0.5" : "20";
     });
-    numeric.addEventListener("submit", event => {
-      event.preventDefault(); if (metric.value === "赞踩比" && !minimum.reportValidity()) return;
+    numeric.addEventListener("submit", (event) => {
+      event.preventDefault();
+      if (metric.value === "赞踩比" && !minimum.reportValidity()) return;
       addBlacklistValue("content", expression(), save);
     });
     card.append(numeric, guard);
     const combine = createElement("div", "cc98-content-rule-examples");
-    [["AND", "以「且」加入下方表达式"], ["OR", "以「或」加入下方表达式"]].forEach(([operator, label]) => {
-      combine.append(createButton("cc98-rebuild-mini-action", label, () => {
-        if (!numeric.reportValidity() || (metric.value === "赞踩比" && !minimum.reportValidity())) return;
-        input.value = input.value.trim() ? "(" + input.value.trim() + ") " + operator + " (" + expression() + ")" : expression(); validateRule(); input.focus();
-      }));
+    [
+      ["AND", "以「且」加入下方表达式"],
+      ["OR", "以「或」加入下方表达式"]
+    ].forEach(([operator, label]) => {
+      combine.append(
+        createButton("cc98-rebuild-mini-action", label, () => {
+          if (!numeric.reportValidity() || (metric.value === "赞踩比" && !minimum.reportValidity()))
+            return;
+          input.value = input.value.trim()
+            ? "(" + input.value.trim() + ") " + operator + " (" + expression() + ")"
+            : expression();
+          validateRule();
+          input.focus();
+        })
+      );
     });
     card.append(combine);
-    card.append(createElement("p", "cc98-rebuild-card-meta", "风评为本楼完整评分记录中的风评值净增减；赞踩比为赞数 ÷ 踩数。零赞零踩时比例不判定；有赞无踩视为无限大。数据缺失或评分记录未展开完整时不判定，不额外请求服务器。赞踩总数下限可减少小样本波动。"));
-    card.append(createElement("p", "cc98-rebuild-card-meta", "高级表达式：AND / OR / NOT（且 / 或 / 非），支持括号；/正则/i 按匹配次数判断。单独写文本或正则表示至少出现 1 次。"));
+    card.append(
+      createElement(
+        "p",
+        "cc98-rebuild-card-meta",
+        "风评为本楼完整评分记录中的风评值净增减；赞踩比为赞数 ÷ 踩数。零赞零踩时比例不判定；有赞无踩视为无限大。数据缺失或评分记录未展开完整时不判定，不额外请求服务器。赞踩总数下限可减少小样本波动。"
+      )
+    );
+    card.append(
+      createElement(
+        "p",
+        "cc98-rebuild-card-meta",
+        "高级表达式：AND / OR / NOT（且 / 或 / 非），支持括号；/正则/i 按匹配次数判断。单独写文本或正则表示至少出现 1 次。"
+      )
+    );
   }
 
   const form = createElement("form", "cc98-rebuild-blacklist-form");
   if (["content", "keywords"].includes(group.key)) form.classList.add("cc98-content-rule-advanced");
   const input = createElement(group.key === "content" ? "textarea" : "input", "");
-  if (group.key !== "content") input.type = ["users", "keywords"].includes(group.key) ? "text" : "search";
-  else { input.rows = 2; input.maxLength = 1024; input.spellcheck = false; input.setAttribute("aria-label", "内容规则表达式"); }
-  if (group.key === "keywords") { input.maxLength = 1024; input.spellcheck = false; input.setAttribute("aria-label", "标题匹配规则"); }
+  if (group.key !== "content")
+    input.type = ["users", "keywords"].includes(group.key) ? "text" : "search";
+  else {
+    input.rows = 2;
+    input.maxLength = 1024;
+    input.spellcheck = false;
+    input.setAttribute("aria-label", "内容规则表达式");
+  }
+  if (group.key === "keywords") {
+    input.maxLength = 1024;
+    input.spellcheck = false;
+    input.setAttribute("aria-label", "标题匹配规则");
+  }
   input.inputMode = "text";
   input.placeholder = group.placeholder;
   input.autocomplete = "off";
   const submit = createElement("button", "cc98-rebuild-search-submit", "加入");
   submit.type = "submit";
   form.append(input, submit);
-  const error = createElement("p", "theme-error cc98-content-rule-error"); error.setAttribute("role", "status"); error.hidden = true;
+  const error = createElement("p", "theme-error cc98-content-rule-error");
+  error.setAttribute("role", "status");
+  error.hidden = true;
   let composing = false;
   function validateRule() {
     if (!["content", "keywords"].includes(group.key)) return true;
@@ -29062,12 +32902,15 @@ function renderBlacklistGroup(group) {
       submit.disabled = true;
       return false;
     }
-    let message = "语法有效", valid = true;
+    let message = "语法有效",
+      valid = true;
     try {
       if (group.key === "keywords") globalThis.CC98RebornContentFilterCore.compileTitle(value);
       else globalThis.CC98RebornContentFilterCore.compile(value);
+    } catch (failure) {
+      message = failure.message;
+      valid = false;
     }
-    catch (failure) { message = failure.message; valid = false; }
     if (error.textContent !== message) error.textContent = message;
     error.dataset.state = valid ? "valid" : "invalid";
     error.classList.toggle("is-valid", valid);
@@ -29078,9 +32921,17 @@ function renderBlacklistGroup(group) {
     return valid;
   }
   if (["content", "keywords"].includes(group.key)) {
-    input.addEventListener("input", event => { if (!event.isComposing) validateRule(); });
-    input.addEventListener("compositionstart", () => { composing = true; validateRule(); });
-    input.addEventListener("compositionend", () => { composing = false; validateRule(); });
+    input.addEventListener("input", (event) => {
+      if (!event.isComposing) validateRule();
+    });
+    input.addEventListener("compositionstart", () => {
+      composing = true;
+      validateRule();
+    });
+    input.addEventListener("compositionend", () => {
+      composing = false;
+      validateRule();
+    });
     validateRule();
   }
   form.addEventListener("submit", (event) => {
@@ -29096,12 +32947,25 @@ function renderBlacklistGroup(group) {
   if (group.key === "content") {
     card.append(error);
     const samples = createElement("div", "cc98-content-rule-examples");
-    [['表情超过 3 次', '"[ac01]" > 3'], ['逻辑组合', '("广告" OR "推广") AND NOT "讨论"'], ['正则次数', '/加[微薇]信/i >= 2'], ['风评或踩数', '风评 < -3 OR 踩 > 20'], ['低赞踩比＋总数下限', '赞踩比 < 0.5 AND 赞踩总数 >= 20']].forEach(([label, source]) => {
-      samples.append(createButton("cc98-rebuild-mini-action", label, () => { input.value = source; validateRule(); input.focus(); }));
+    [
+      ["表情超过 3 次", '"[ac01]" > 3'],
+      ["逻辑组合", '("广告" OR "推广") AND NOT "讨论"'],
+      ["正则次数", "/加[微薇]信/i >= 2"],
+      ["风评或踩数", "风评 < -3 OR 踩 > 20"],
+      ["低赞踩比＋总数下限", "赞踩比 < 0.5 AND 赞踩总数 >= 20"]
+    ].forEach(([label, source]) => {
+      samples.append(
+        createButton("cc98-rebuild-mini-action", label, () => {
+          input.value = source;
+          validateRule();
+          input.focus();
+        })
+      );
     });
     card.append(samples);
     const status = createElement("p", "cc98-rebuild-card-meta");
-    status.dataset.contentRuleStatus = "true"; status.setAttribute("role", "status");
+    status.dataset.contentRuleStatus = "true";
+    status.setAttribute("role", "status");
     status.textContent = globalThis.CC98RebornContentFilter?.errors().join("；") || "";
     card.append(status);
   }
@@ -29113,9 +32977,11 @@ function renderBlacklistGroup(group) {
     group.values.forEach((value) => {
       const row = createElement("div", "cc98-rebuild-blacklist-item");
       row.append(createElement("span", "cc98-rebuild-blacklist-value", value));
-      row.append(createButton("cc98-rebuild-mini-action cc98-rebuild-blacklist-delete", "删除", () => {
-        removeBlacklistValue(group.key, value);
-      }));
+      row.append(
+        createButton("cc98-rebuild-mini-action cc98-rebuild-blacklist-delete", "删除", () => {
+          removeBlacklistValue(group.key, value);
+        })
+      );
       list.append(row);
     });
   }
@@ -29149,21 +33015,35 @@ function renderBlacklistPlaceholderEditor(section) {
 
 function renderBlacklistPage(app, options = {}) {
   const section = createElement("section", "cc98-rebuild-section cc98-rebuild-blacklist-page");
-  const heading = createElement("div", "cc98-rebuild-section-heading cc98-rebuild-read-later-heading");
+  const heading = createElement(
+    "div",
+    "cc98-rebuild-section-heading cc98-rebuild-read-later-heading"
+  );
   heading.append(createElement("h2", "", "屏蔽规则"));
   if (!options.embedded) {
     const actions = createElement("div", "cc98-rebuild-read-later-actions");
-    actions.append(createLink("cc98-rebuild-action", "返回个人中心", buildCc98RouteHref("/usercenter")));
+    actions.append(
+      createLink("cc98-rebuild-action", "返回个人中心", buildCc98RouteHref("/usercenter"))
+    );
     heading.append(actions);
   }
   section.append(heading);
-  section.append(createElement("p", "cc98-rebuild-card-meta", "规则仅存储在本地。支持用户、标题、版面及发言条件；原有屏蔽配置继续生效。用户 ID 按文本精确匹配，纯数字旧规则继续按 UID 兼容匹配。"));
+  section.append(
+    createElement(
+      "p",
+      "cc98-rebuild-card-meta",
+      "规则仅存储在本地。支持用户、标题、版面及发言条件；原有屏蔽配置继续生效。用户 ID 按文本精确匹配，纯数字旧规则继续按 UID 兼容匹配。"
+    )
+  );
   renderBlacklistTabs(section);
   renderBlacklistPlaceholderEditor(section);
   const list = createElement("div", "cc98-rebuild-blacklist-groups");
   getBlacklistVisibleGroups().forEach((group) => list.append(renderBlacklistGroup(group)));
   section.append(list);
-  const semanticCard = createElement("article", "cc98-rebuild-card cc98-rebuild-semantic-settings-card");
+  const semanticCard = createElement(
+    "article",
+    "cc98-rebuild-card cc98-rebuild-semantic-settings-card"
+  );
   const semanticFrame = createElement("iframe", "cc98-rebuild-semantic-settings-frame");
   semanticFrame.title = "实验性语义屏蔽规则";
   semanticFrame.src = chrome.runtime.getURL("popup/semantic-settings.html");
@@ -29172,7 +33052,12 @@ function renderBlacklistPage(app, options = {}) {
   const semanticOrigin = chrome.runtime.getURL("").replace(/\/$/, "");
   const onSemanticSize = (event) => {
     if (event.source !== semanticFrame.contentWindow || event.origin !== semanticOrigin) return;
-    if (event.data?.type !== "cc98-reborn:semantic-settings-size" || typeof event.data.height !== "number" || !Number.isFinite(event.data.height)) return;
+    if (
+      event.data?.type !== "cc98-reborn:semantic-settings-size" ||
+      typeof event.data.height !== "number" ||
+      !Number.isFinite(event.data.height)
+    )
+      return;
     semanticFrame.style.height = `${Math.max(200, Math.min(12000, Math.ceil(event.data.height)))}px`;
   };
   const semanticFrameObserver = new MutationObserver(() => {
@@ -29183,7 +33068,10 @@ function renderBlacklistPage(app, options = {}) {
   window.addEventListener("message", onSemanticSize);
   semanticFrameObserver.observe(document.documentElement, { childList: true, subtree: true });
   semanticFrame.addEventListener("load", () => {
-    semanticFrame.contentWindow?.postMessage({ type: "cc98-reborn:semantic-settings-request-size" }, semanticOrigin);
+    semanticFrame.contentWindow?.postMessage(
+      { type: "cc98-reborn:semantic-settings-request-size" },
+      semanticOrigin
+    );
   });
   semanticCard.append(semanticFrame);
   section.append(semanticCard);
@@ -29193,22 +33081,35 @@ function renderBlacklistPage(app, options = {}) {
 function getErrorPageData() {
   const source = document.querySelector(".errorState");
   const rawTitle = getFirstText(document, ".errorTitle") || "糟糕！好像出错了";
-  const message = getFirstText(document, ".errorText") || document.title.replace(" - CC98论坛", "") || "页面暂时无法访问";
-  const originalAction = getFirstLink(document, ".errorState .returnIndexBtn a[href], .errorState a[href]");
-  const isNotLoggedIn = /未登录|401|log/i.test(`${message} ${document.title} ${originalAction?.href || ""}`);
+  const message =
+    getFirstText(document, ".errorText") ||
+    document.title.replace(" - CC98论坛", "") ||
+    "页面暂时无法访问";
+  const originalAction = getFirstLink(
+    document,
+    ".errorState .returnIndexBtn a[href], .errorState a[href]"
+  );
+  const isNotLoggedIn = /未登录|401|log/i.test(
+    `${message} ${document.title} ${originalAction?.href || ""}`
+  );
   const iconSrc = source?.querySelector?.("img")?.getAttribute("src") || "";
   const code = isNotLoggedIn
     ? "401"
-    : (/404|不存在/.test(`${message} ${document.title} ${iconSrc}`) ? "404" : "!");
+    : /404|不存在/.test(`${message} ${document.title} ${iconSrc}`)
+      ? "404"
+      : "!";
   const action = isNotLoggedIn
     ? { text: "去登录", href: "https://www.cc98.org/logOn" }
-    : { text: originalAction?.text || "返回首页", href: originalAction?.href || "https://www.cc98.org/" };
+    : {
+        text: originalAction?.text || "返回首页",
+        href: originalAction?.href || "https://www.cc98.org/"
+      };
   return {
     code,
     title: rawTitle,
     message,
     action,
-    tone: isNotLoggedIn ? "auth" : (code === "404" ? "missing" : "generic")
+    tone: isNotLoggedIn ? "auth" : code === "404" ? "missing" : "generic"
   };
 }
 
@@ -29223,14 +33124,18 @@ function renderErrorPage(app) {
   content.append(createElement("p", "cc98-rebuild-error-message", data.message));
 
   const actions = createElement("div", "cc98-rebuild-error-actions");
-  actions.append(createLink("cc98-rebuild-action cc98-rebuild-error-primary", data.action.text, data.action.href));
-  actions.append(createButton("cc98-rebuild-action cc98-rebuild-error-secondary", "返回上一页", () => {
-    if (history.length > 1) {
-      history.back();
-      return;
-    }
-    location.href = getCc98HomeHref();
-  }));
+  actions.append(
+    createLink("cc98-rebuild-action cc98-rebuild-error-primary", data.action.text, data.action.href)
+  );
+  actions.append(
+    createButton("cc98-rebuild-action cc98-rebuild-error-secondary", "返回上一页", () => {
+      if (history.length > 1) {
+        history.back();
+        return;
+      }
+      location.href = getCc98HomeHref();
+    })
+  );
   content.append(actions);
   shell.append(badge, content);
   app.append(shell);
@@ -29288,7 +33193,10 @@ function getSeamlessNativeContentSignature(kind = getPageKind(), options = {}) {
   }
   const app = document.querySelector("#cc98-comfort-app");
   const roots = [...document.querySelectorAll(selector)]
-    .filter((node) => node instanceof HTMLElement && !app?.contains(node) && !node.closest("#cc98-comfort-app"))
+    .filter(
+      (node) =>
+        node instanceof HTMLElement && !app?.contains(node) && !node.closest("#cc98-comfort-app")
+    )
     .slice(0, 180);
   let hash = 2166136261;
   const append = (value) => {
@@ -29303,8 +33211,10 @@ function getSeamlessNativeContentSignature(kind = getPageKind(), options = {}) {
     append(rootIndex);
     append(root.id);
     append(root.childElementCount);
-    const text = cleanupPostText(root.textContent)
-      .replace(/\b\d{1,3}:\d{2}(?::\d{2})?\b/g, "<clock>");
+    const text = cleanupPostText(root.textContent).replace(
+      /\b\d{1,3}:\d{2}(?::\d{2})?\b/g,
+      "<clock>"
+    );
     append(text.length);
     append(text.slice(0, 560));
     append(text.slice(-560));
@@ -29316,7 +33226,9 @@ function getSeamlessNativeContentSignature(kind = getPageKind(), options = {}) {
       append(cleanupPostText(link.textContent).slice(0, 180));
     });
 
-    const mediaNodes = [...root.querySelectorAll("img, video, audio, source, [style*='url(']")].slice(0, 180);
+    const mediaNodes = [
+      ...root.querySelectorAll("img, video, audio, source, [style*='url(']")
+    ].slice(0, 180);
     append(mediaNodes.length);
     mediaNodes.forEach((node) => {
       append(node.tagName);
@@ -29335,7 +33247,8 @@ function getSeamlessNativeContentSignature(kind = getPageKind(), options = {}) {
         "poster"
       ].forEach((attribute) => append(node.getAttribute?.(attribute) || ""));
       append(node.currentSrc || "");
-      const backgroundUrl = node.getAttribute?.("style")?.match(/url\(["']?([^"')]+)["']?\)/i)?.[1] || "";
+      const backgroundUrl =
+        node.getAttribute?.("style")?.match(/url\(["']?([^"')]+)["']?\)/i)?.[1] || "";
       append(backgroundUrl);
     });
   });
@@ -29365,18 +33278,19 @@ function markSeamlessNativeContentDirty() {
 
 function captureSeamlessRebuildScrollState() {
   const app = document.querySelector("#cc98-comfort-app");
-  const topbarBottom = app?.querySelector(".cc98-rebuild-topbar")?.getBoundingClientRect?.().bottom || 0;
-  const anchor = [...(app?.querySelectorAll?.("[data-item-key]") || [])]
-    .find((node) => {
-      const rect = node.getBoundingClientRect();
-      return rect.bottom > Math.max(0, topbarBottom) + 4 && rect.top < window.innerHeight - 4;
-    });
+  const topbarBottom =
+    app?.querySelector(".cc98-rebuild-topbar")?.getBoundingClientRect?.().bottom || 0;
+  const anchor = [...(app?.querySelectorAll?.("[data-item-key]") || [])].find((node) => {
+    const rect = node.getBoundingClientRect();
+    return rect.bottom > Math.max(0, topbarBottom) + 4 && rect.top < window.innerHeight - 4;
+  });
   return {
     routeKey: app?.dataset.routeKey || getRoutePageKey(),
     position: captureImageViewerScrollPosition(),
     anchorKey: anchor?.getAttribute("data-item-key") || "",
     anchorTop: anchor?.getBoundingClientRect?.().top || 0,
-    readLaterSidebarTop: app?.querySelector(".cc98-rebuild-read-later-sidebar-viewport")?.scrollTop || 0
+    readLaterSidebarTop:
+      app?.querySelector(".cc98-rebuild-read-later-sidebar-viewport")?.scrollTop || 0
   };
 }
 
@@ -29388,16 +33302,19 @@ function restoreSeamlessRebuildScrollState(state, interactionRevision, force = f
     return;
   }
   restoreImageViewerScrollPosition(state.position);
-  const readLaterViewport = document.querySelector("#cc98-comfort-app .cc98-rebuild-read-later-sidebar-viewport");
+  const readLaterViewport = document.querySelector(
+    "#cc98-comfort-app .cc98-rebuild-read-later-sidebar-viewport"
+  );
   if (readLaterViewport instanceof HTMLElement) {
     readLaterViewport.scrollTop = Number(state.readLaterSidebarTop) || 0;
   }
   if (!state.anchorKey) {
     return;
   }
-  const escapedKey = typeof CSS !== "undefined" && typeof CSS.escape === "function"
-    ? CSS.escape(state.anchorKey)
-    : state.anchorKey.replace(/["\\]/g, "\\$&");
+  const escapedKey =
+    typeof CSS !== "undefined" && typeof CSS.escape === "function"
+      ? CSS.escape(state.anchorKey)
+      : state.anchorKey.replace(/["\\]/g, "\\$&");
   const anchor = document.querySelector(`#cc98-comfort-app [data-item-key="${escapedKey}"]`);
   if (!(anchor instanceof HTMLElement)) {
     return;
@@ -29410,25 +33327,45 @@ function restoreSeamlessRebuildScrollState(state, interactionRevision, force = f
 
 function rememberReadingPositionBeforeReload() {
   const app = document.querySelector("#cc98-comfort-app");
-  if (!lastSettings?.enabled || !lastSettings.rebuildUi || nativeRouteRebuildPending
-    || app?.dataset.routeKey !== getRoutePageKey()) return;
+  if (
+    !lastSettings?.enabled ||
+    !lastSettings.rebuildUi ||
+    nativeRouteRebuildPending ||
+    app?.dataset.routeKey !== getRoutePageKey()
+  )
+    return;
   try {
-    sessionStorage.setItem(RELOAD_READING_POSITION_KEY, JSON.stringify({
-      ...captureSeamlessRebuildScrollState(), savedAt: Date.now()
-    }));
+    sessionStorage.setItem(
+      RELOAD_READING_POSITION_KEY,
+      JSON.stringify({
+        ...captureSeamlessRebuildScrollState(),
+        savedAt: Date.now()
+      })
+    );
   } catch {
     // Native history restoration remains available if session storage is full.
   }
 }
 
 function restoreReloadReadingPosition() {
-  if (reloadReadingPositionRestored || performance.getEntriesByType("navigation")[0]?.type !== "reload") return;
+  if (
+    reloadReadingPositionRestored ||
+    performance.getEntriesByType("navigation")[0]?.type !== "reload"
+  )
+    return;
   let state;
   try {
     state = JSON.parse(sessionStorage.getItem(RELOAD_READING_POSITION_KEY) || "null");
-  } catch { return; }
-  if (!state || state.routeKey !== getRoutePageKey() || Date.now() - state.savedAt > 10 * 60 * 1000
-    || !getNativeRouteRenderState(getPageKind()).ready) return;
+  } catch {
+    return;
+  }
+  if (
+    !state ||
+    state.routeKey !== getRoutePageKey() ||
+    Date.now() - state.savedAt > 10 * 60 * 1000 ||
+    !getNativeRouteRenderState(getPageKind()).ready
+  )
+    return;
   reloadReadingPositionRestored = true;
   removeSessionItem(RELOAD_READING_POSITION_KEY);
   // A reload restores where the reader left off, including after scrolling
@@ -29445,40 +33382,50 @@ function hasVisibleNativeDialog() {
       return false;
     }
     const style = getComputedStyle(dialog);
-    return style.display !== "none"
-      && style.visibility !== "hidden"
-      && dialog.getClientRects().length > 0;
+    return (
+      style.display !== "none" &&
+      style.visibility !== "hidden" &&
+      dialog.getClientRects().length > 0
+    );
   });
 }
 
 function isSeamlessNativeContentSyncBlocked() {
   const app = document.querySelector("#cc98-comfort-app");
-  if (!app
-    || isRebuilding
-    || document.visibilityState === "hidden"
-    || loadingOverlayActive
-    || nativeLazyScrollOverlayDepth > 0
-    || document.documentElement.dataset.cc98ComfortOriginalPrewarming === "true"
-    || document.querySelector("#cc98-comfort-image-viewer")
-    || isEditingRebuiltSearchOnCurrentRoute()
-    || hasActiveTextSelectionWithin(app)
-    || hasVisibleNativeDialog()) {
+  if (
+    !app ||
+    isRebuilding ||
+    document.visibilityState === "hidden" ||
+    loadingOverlayActive ||
+    nativeLazyScrollOverlayDepth > 0 ||
+    document.documentElement.dataset.cc98ComfortOriginalPrewarming === "true" ||
+    document.querySelector("#cc98-comfort-image-viewer") ||
+    isEditingRebuiltSearchOnCurrentRoute() ||
+    hasActiveTextSelectionWithin(app) ||
+    hasVisibleNativeDialog()
+  ) {
     return true;
   }
   const active = document.activeElement;
-  if (active instanceof HTMLElement
-    && app.contains(active)
-    && (active.matches("input, textarea, select, [contenteditable='true']")
-      || Boolean(active.closest(".cc98-rebuild-native-editor, .cc98-rebuild-native-message")))) {
+  if (
+    active instanceof HTMLElement &&
+    app.contains(active) &&
+    (active.matches("input, textarea, select, [contenteditable='true']") ||
+      Boolean(active.closest(".cc98-rebuild-native-editor, .cc98-rebuild-native-message")))
+  ) {
     return true;
   }
-  if (app.querySelector([
-    ".cc98-rebuild-post-author-popover:hover",
-    ".cc98-rebuild-native-user-entry:hover",
-    ".cc98-rebuild-color-popover:not([hidden])",
-    ".cc98-rebuild-font-size-popover:not([hidden])",
-    ".cc98-rebuild-message-emoji-panel:not([hidden])"
-  ].join(","))) {
+  if (
+    app.querySelector(
+      [
+        ".cc98-rebuild-post-author-popover:hover",
+        ".cc98-rebuild-native-user-entry:hover",
+        ".cc98-rebuild-color-popover:not([hidden])",
+        ".cc98-rebuild-font-size-popover:not([hidden])",
+        ".cc98-rebuild-message-emoji-panel:not([hidden])"
+      ].join(",")
+    )
+  ) {
     return true;
   }
   return false;
@@ -29488,27 +33435,34 @@ function runSeamlessNativeContentSync() {
   seamlessScrollSyncTimer = null;
   const now = Date.now();
   const kind = getPageKind();
-  if (now > seamlessScrollSyncIntentUntil
-    || !lastSettings?.enabled
-    || !lastSettings.rebuildUi
-    || !SEAMLESS_SCROLL_SYNC_PAGE_KINDS.has(kind)) {
+  if (
+    now > seamlessScrollSyncIntentUntil ||
+    !lastSettings?.enabled ||
+    !lastSettings.rebuildUi ||
+    !SEAMLESS_SCROLL_SYNC_PAGE_KINDS.has(kind)
+  ) {
     return;
   }
   if (isSeamlessNativeContentSyncBlocked()) {
     const remaining = seamlessScrollSyncIntentUntil - now;
     if (remaining > 180) {
-      seamlessScrollSyncTimer = window.setTimeout(runSeamlessNativeContentSync, Math.min(260, remaining));
+      seamlessScrollSyncTimer = window.setTimeout(
+        runSeamlessNativeContentSync,
+        Math.min(260, remaining)
+      );
     }
     return;
   }
 
   const routeKey = getRoutePageKey();
-  const hasBaseline = seamlessScrollSyncRouteKey === routeKey && Boolean(seamlessScrollSyncSignature);
+  const hasBaseline =
+    seamlessScrollSyncRouteKey === routeKey && Boolean(seamlessScrollSyncSignature);
   const isDirty = seamlessScrollSyncDirty && seamlessScrollSyncDirtyRouteKey === routeKey;
   if (hasBaseline && !isDirty) {
     return;
   }
-  const intervalRemaining = SEAMLESS_SCROLL_SYNC_MIN_INTERVAL - (now - seamlessScrollSyncLastRefreshAt);
+  const intervalRemaining =
+    SEAMLESS_SCROLL_SYNC_MIN_INTERVAL - (now - seamlessScrollSyncLastRefreshAt);
   if (hasBaseline && intervalRemaining > 0) {
     seamlessScrollSyncTimer = window.setTimeout(runSeamlessNativeContentSync, intervalRemaining);
     return;
@@ -29535,9 +33489,11 @@ function runSeamlessNativeContentSync() {
 
 function scheduleSeamlessNativeContentSync(options = {}) {
   const kind = options.kind || getPageKind();
-  if (!SEAMLESS_SCROLL_SYNC_PAGE_KINDS.has(kind)
-    || !lastSettings?.enabled
-    || !lastSettings.rebuildUi) {
+  if (
+    !SEAMLESS_SCROLL_SYNC_PAGE_KINDS.has(kind) ||
+    !lastSettings?.enabled ||
+    !lastSettings.rebuildUi
+  ) {
     return;
   }
   const fromMutation = Boolean(options.fromMutation);
@@ -29552,10 +33508,11 @@ function scheduleSeamlessNativeContentSync(options = {}) {
     seamlessScrollSyncIntentUntil = now + SEAMLESS_SCROLL_SYNC_INTENT_TTL;
   }
   const routeKey = getRoutePageKey();
-  const shouldCheck = fromMutation
-    || seamlessScrollSyncDirty
-    || seamlessScrollSyncRouteKey !== routeKey
-    || !seamlessScrollSyncSignature;
+  const shouldCheck =
+    fromMutation ||
+    seamlessScrollSyncDirty ||
+    seamlessScrollSyncRouteKey !== routeKey ||
+    !seamlessScrollSyncSignature;
   if (shouldCheck) {
     window.clearTimeout(seamlessScrollSyncTimer);
     seamlessScrollSyncTimer = window.setTimeout(
@@ -29572,7 +33529,10 @@ function scheduleSeamlessNativeContentSync(options = {}) {
   }
 }
 
-function isSeamlessNativeContentMutation(record, app = document.querySelector("#cc98-comfort-app")) {
+function isSeamlessNativeContentMutation(
+  record,
+  app = document.querySelector("#cc98-comfort-app")
+) {
   const selector = getSeamlessNativeContentSelector();
   if (!selector) {
     return false;
@@ -29580,12 +33540,18 @@ function isSeamlessNativeContentMutation(record, app = document.querySelector("#
   const candidates = [record.target, ...record.addedNodes, ...record.removedNodes];
   return candidates.some((node) => {
     const element = node instanceof Element ? node : node?.parentElement;
-    if (!(element instanceof Element) || app?.contains(element) || element.closest("#cc98-comfort-app, .cc98-rebuild-conversation-layer")) {
+    if (
+      !(element instanceof Element) ||
+      app?.contains(element) ||
+      element.closest("#cc98-comfort-app, .cc98-rebuild-conversation-layer")
+    ) {
       return false;
     }
-    return element.matches(selector)
-      || Boolean(element.closest(selector))
-      || Boolean(element.querySelector?.(selector));
+    return (
+      element.matches(selector) ||
+      Boolean(element.closest(selector)) ||
+      Boolean(element.querySelector?.(selector))
+    );
   });
 }
 
@@ -29605,16 +33571,25 @@ function setRebuiltRefreshButtonBusy(button, busy, idleLabel = "同步") {
 }
 
 function syncMountedNewTopicsFeed() {
-  if (!isNewTopicsPage() || nativeRouteRebuildPending
-    || !lastSettings?.enabled || !lastSettings.rebuildUi
-    || !globalThis.CC98RebornNewTopicsVirtual?.status().active) return false;
+  if (
+    !isNewTopicsPage() ||
+    nativeRouteRebuildPending ||
+    !lastSettings?.enabled ||
+    !lastSettings.rebuildUi ||
+    !globalThis.CC98RebornNewTopicsVirtual?.status().active
+  )
+    return false;
   const app = document.querySelector("#cc98-comfort-app");
   const feed = app?.querySelector('[data-feed-kind="topics"][data-cc98-virtual="true"]');
   if (!feed || app.dataset.routeKey !== getRoutePageKey()) return false;
   globalThis.CC98RebornNewTopicsVirtual.update(feed, getTopicItems(), { refresh: true });
   syncNewTopicModePanel(app.querySelector(".cc98-rebuild-new-topic-controls"));
   rememberSeamlessNativeContentSignature();
-  committedNativeRoute = { routeKey: getRoutePageKey(), kind: "topics", ...getNativeRouteRenderState("topics") };
+  committedNativeRoute = {
+    routeKey: getRoutePageKey(),
+    kind: "topics",
+    ...getNativeRouteRenderState("topics")
+  };
   return true;
 }
 
@@ -29632,8 +33607,11 @@ function refreshRebuiltFromLoadedNativeContent(button, options = {}) {
     }
     return;
   }
-  if (automatic && (nativeRouteRebuildPending
-    || document.querySelector("#cc98-comfort-app")?.dataset.routeKey !== getRoutePageKey())) {
+  if (
+    automatic &&
+    (nativeRouteRebuildPending ||
+      document.querySelector("#cc98-comfort-app")?.dataset.routeKey !== getRoutePageKey())
+  ) {
     scheduleRebuild({ automatic: true });
     return;
   }
@@ -29645,9 +33623,8 @@ function refreshRebuiltFromLoadedNativeContent(button, options = {}) {
   const interactionRevision = seamlessScrollInteractionRevision;
   const scrollState = captureSeamlessRebuildScrollState();
   const operationToken = String(++rebuiltRefreshSequence);
-  const idleLabel = button instanceof HTMLButtonElement
-    ? (button.textContent?.trim() || "同步")
-    : "同步";
+  const idleLabel =
+    button instanceof HTMLButtonElement ? button.textContent?.trim() || "同步" : "同步";
   let feedbackFinished = false;
 
   if (button instanceof HTMLButtonElement) {
@@ -29667,9 +33644,11 @@ function refreshRebuiltFromLoadedNativeContent(button, options = {}) {
       if (!(control instanceof HTMLButtonElement)) {
         return;
       }
-      if (control !== button
-        && control.dataset.cc98RefreshOperation
-        && control.dataset.cc98RefreshOperation !== operationToken) {
+      if (
+        control !== button &&
+        control.dataset.cc98RefreshOperation &&
+        control.dataset.cc98RefreshOperation !== operationToken
+      ) {
         return;
       }
       setRebuiltRefreshButtonBusy(control, false, idleLabel);
@@ -29678,9 +33657,12 @@ function refreshRebuiltFromLoadedNativeContent(button, options = {}) {
     if (getRoutePageKey() !== routeKey) {
       return;
     }
-    const anchor = currentButton instanceof HTMLButtonElement && currentButton.isConnected
-      ? currentButton
-      : (button instanceof HTMLButtonElement && button.isConnected ? button : null);
+    const anchor =
+      currentButton instanceof HTMLButtonElement && currentButton.isConnected
+        ? currentButton
+        : button instanceof HTMLButtonElement && button.isConnected
+          ? button
+          : null;
     showRebuiltTransientToast(anchor, success ? "已同步原页面内容" : "同步未完成，请稍后重试");
   };
 
@@ -29693,16 +33675,12 @@ function refreshRebuiltFromLoadedNativeContent(button, options = {}) {
   const restore = () => {
     const currentHashKey = getRebuiltHashScrollKey();
     const hashPositionIsStable = Boolean(
-      currentHashKey
-      && rebuiltHashScrollAppliedKey === currentHashKey
-      && rebuiltHashScrollAppliedInteractionRevision === seamlessScrollInteractionRevision
+      currentHashKey &&
+      rebuiltHashScrollAppliedKey === currentHashKey &&
+      rebuiltHashScrollAppliedInteractionRevision === seamlessScrollInteractionRevision
     );
     if (!hashPositionIsStable) {
-      restoreSeamlessRebuildScrollState(
-        scrollState,
-        interactionRevision,
-        !automatic
-      );
+      restoreSeamlessRebuildScrollState(scrollState, interactionRevision, !automatic);
     }
     // An automatic native-content refresh intentionally skips the normal
     // overlay/hash pass.  If the first rebuilt tree was mounted while the
@@ -29729,10 +33707,11 @@ function refreshRebuiltFromLoadedNativeContent(button, options = {}) {
   if (!automatic) {
     window.setTimeout(() => {
       const app = document.querySelector("#cc98-comfort-app");
-      const ready = app instanceof HTMLElement
-        && app.dataset.routeKey === routeKey
-        && document.documentElement.dataset.cc98ComfortRebuildReady === "true"
-        && !isRebuilding;
+      const ready =
+        app instanceof HTMLElement &&
+        app.dataset.routeKey === routeKey &&
+        document.documentElement.dataset.cc98ComfortRebuildReady === "true" &&
+        !isRebuilding;
       finishFeedback(ready);
     }, 360);
     window.setTimeout(() => finishFeedback(false), 1800);
@@ -29741,17 +33720,20 @@ function refreshRebuiltFromLoadedNativeContent(button, options = {}) {
 
 function getNativeRouteRenderState(kind) {
   const selector = getSeamlessNativeContentSelector(kind);
-  const nodes = selector ? [...document.querySelectorAll(selector)]
-    .filter((node) => !node.closest("#cc98-comfort-app")) : [];
-  let ready = nodes.some((node) => cleanupPostText(node.textContent)
-    || node.querySelector("img, .lazyload-placeholder, video, audio"));
+  const nodes = selector
+    ? [...document.querySelectorAll(selector)].filter((node) => !node.closest("#cc98-comfort-app"))
+    : [];
+  let ready = nodes.some(
+    (node) =>
+      cleanupPostText(node.textContent) ||
+      node.querySelector("img, .lazyload-placeholder, video, audio")
+  );
   if (kind === "post") {
     const topic = getTopicRouteInfo();
     const replies = nodes.filter((node) => !isHotPostNode(node));
     ready = replies.some((node, index) => {
       const floor = getPostFloorNumber(node, index);
-      return getTopicPageFromFloor(floor) === topic?.current
-        && hasPostContentContainer(node);
+      return getTopicPageFromFloor(floor) === topic?.current && hasPostContentContainer(node);
     });
   }
   const empty = document.querySelector("#noResultBoard, .noResultText, .no-topic");
@@ -29762,7 +33744,10 @@ function getNativeRouteRenderState(kind) {
   const stamp = getSeamlessNativeContentSignature(kind, { includeRoute: false });
   const metadata = [...document.querySelectorAll(".topicInfo-info, .pagination, .ant-pagination")]
     .filter((node) => !node.closest("#cc98-comfort-app"))
-    .map((node) => `${cleanupPostText(node.textContent)}|${[...node.querySelectorAll("a[href]")].map((link) => link.getAttribute("href")).join(",")}`)
+    .map(
+      (node) =>
+        `${cleanupPostText(node.textContent)}|${[...node.querySelectorAll("a[href]")].map((link) => link.getAttribute("href")).join(",")}`
+    )
     .join("|");
   const signature = `${getRoutePageKey()}|${stamp}|${document.title}|${metadata}|${kind === "post" ? topicContentSnapshotRevision : ""}`;
   return { nodes, ready, stamp, signature, title: document.title };
@@ -29777,8 +33762,11 @@ function clearNativeRouteRebuildPending() {
 }
 
 function shouldWaitForNativeRoute(existing, kind) {
-  if (!lastSettings?.enabled || !lastSettings.rebuildUi
-    || !SEAMLESS_SCROLL_SYNC_PAGE_KINDS.has(kind)) {
+  if (
+    !lastSettings?.enabled ||
+    !lastSettings.rebuildUi ||
+    !SEAMLESS_SCROLL_SYNC_PAGE_KINDS.has(kind)
+  ) {
     clearNativeRouteRebuildPending();
     return false;
   }
@@ -29786,17 +33774,29 @@ function shouldWaitForNativeRoute(existing, kind) {
   if (existing?.dataset.routeKey === routeKey && !nativeRouteRebuildPending) return false;
   if (nativeRouteRebuildPending?.routeKey !== routeKey) {
     clearNativeRouteRebuildPending();
-    nativeRouteRebuildPending = { routeKey, startedAt: Date.now(), waited: false, candidate: "", candidateAt: 0 };
+    nativeRouteRebuildPending = {
+      routeKey,
+      startedAt: Date.now(),
+      waited: false,
+      candidate: "",
+      candidateAt: 0
+    };
   }
   const pending = nativeRouteRebuildPending;
   const state = getNativeRouteRenderState(kind);
   // React updates the URL before replacing the old page's DOM. Do not label
   // those old rows as the destination page just because its pathname changed.
-  const stale = existing && existing.dataset.routeKey !== routeKey
-    && committedNativeRoute?.kind === kind && state.stamp === committedNativeRoute.stamp
-    && state.nodes.some((node) => committedNativeRoute.nodes.includes(node));
+  const stale =
+    existing &&
+    existing.dataset.routeKey !== routeKey &&
+    committedNativeRoute?.kind === kind &&
+    state.stamp === committedNativeRoute.stamp &&
+    state.nodes.some((node) => committedNativeRoute.nodes.includes(node));
   if (state.ready && !stale) {
-    if (!pending.waited || (pending.candidate === state.signature && Date.now() - pending.candidateAt >= 60)) {
+    if (
+      !pending.waited ||
+      (pending.candidate === state.signature && Date.now() - pending.candidateAt >= 60)
+    ) {
       clearNativeRouteRebuildPending();
       return false;
     }
@@ -29816,14 +33816,17 @@ function shouldWaitForNativeRoute(existing, kind) {
       status.setAttribute("role", "status");
       existing.append(status);
     }
-    status.textContent = Date.now() - pending.startedAt > 6000
-      ? "内容仍在加载，可点击同步重试" : "正在载入当前页…";
+    status.textContent =
+      Date.now() - pending.startedAt > 6000 ? "内容仍在加载，可点击同步重试" : "正在载入当前页…";
   }
   if (!nativeRouteRebuildTimer) {
-    nativeRouteRebuildTimer = window.setTimeout(() => {
-      nativeRouteRebuildTimer = null;
-      scheduleRebuild({ automatic: true });
-    }, Date.now() - pending.startedAt > 6000 ? 500 : 100);
+    nativeRouteRebuildTimer = window.setTimeout(
+      () => {
+        nativeRouteRebuildTimer = null;
+        scheduleRebuild({ automatic: true });
+      },
+      Date.now() - pending.startedAt > 6000 ? 500 : 100
+    );
   }
   return true;
 }
@@ -29832,17 +33835,31 @@ function renderPendingPageContent(app, kind) {
   app.dataset.cc98ContentPending = "true";
   app.setAttribute("aria-busy", "true");
   const content = createElement("section", "cc98-rebuild-pending-content");
-  const status = createElement("p", "cc98-rebuild-card-meta cc98-rebuild-pending-label", "正在加载内容…");
+  const status = createElement(
+    "p",
+    "cc98-rebuild-card-meta cc98-rebuild-pending-label",
+    "正在加载内容…"
+  );
   status.setAttribute("role", "status");
   content.append(status);
-  const feed = createElement("div", kind === "post" ? "cc98-rebuild-feed cc98-rebuild-post-feed" : "cc98-rebuild-list");
+  const feed = createElement(
+    "div",
+    kind === "post" ? "cc98-rebuild-feed cc98-rebuild-post-feed" : "cc98-rebuild-list"
+  );
   for (let index = 0; index < 3; index += 1) {
-    const card = createElement("article", `cc98-rebuild-card cc98-rebuild-pending-card${kind === "post" ? " cc98-rebuild-post" : ""}`);
+    const card = createElement(
+      "article",
+      `cc98-rebuild-card cc98-rebuild-pending-card${kind === "post" ? " cc98-rebuild-post" : ""}`
+    );
     card.setAttribute("aria-hidden", "true");
     if (kind === "post") {
       const header = createElement("div", "cc98-rebuild-post-header");
-      header.append(createElement("span", "cc98-rebuild-pending-avatar cc98-rebuild-pending-block"));
-      header.append(createElement("span", "cc98-rebuild-pending-author cc98-rebuild-pending-block"));
+      header.append(
+        createElement("span", "cc98-rebuild-pending-avatar cc98-rebuild-pending-block")
+      );
+      header.append(
+        createElement("span", "cc98-rebuild-pending-author cc98-rebuild-pending-block")
+      );
       card.append(header);
     }
     const body = createElement("div", "cc98-rebuild-post-body cc98-rebuild-pending-body");
@@ -29873,8 +33890,12 @@ function renderRebuiltUi(options = {}) {
   }
   const sameRoute = existing?.dataset.routeKey === getRoutePageKey();
   const stableKind = SEAMLESS_SCROLL_SYNC_PAGE_KINDS.has(currentKind);
-  if (options.automatic && sameRoute && stableKind
-    && getNativeRouteRenderState(currentKind).signature === committedNativeRoute?.signature) {
+  if (
+    options.automatic &&
+    sameRoute &&
+    stableKind &&
+    getNativeRouteRenderState(currentKind).signature === committedNativeRoute?.signature
+  ) {
     return;
   }
   if (options.automatic && sameRoute && isSeamlessNativeContentSyncBlocked()) {
@@ -29885,16 +33906,26 @@ function renderRebuiltUi(options = {}) {
   closeImageLinkMenu();
   const preservedPageScroll = sameRoute && stableKind ? captureSeamlessRebuildScrollState() : null;
   const scrollRevision = seamlessScrollInteractionRevision;
-  const keepMounted = Boolean(existing && stableKind && lastSettings?.enabled && lastSettings.rebuildUi);
+  const keepMounted = Boolean(
+    existing && stableKind && lastSettings?.enabled && lastSettings.rebuildUi
+  );
   const oldMinHeight = existing?.style.minHeight || "";
   if (keepMounted) existing.style.minHeight = `${existing.getBoundingClientRect().height}px`;
   isRebuilding = true;
   clearTopbarStabilizeTimers();
-  document.documentElement.classList.toggle("cc98-comfort", Boolean(lastSettings?.enabled || isRebornManagementRoute()));
+  document.documentElement.classList.toggle(
+    "cc98-comfort",
+    Boolean(lastSettings?.enabled || isRebornManagementRoute())
+  );
   adoptReadyUserSettingsNativeShell(existing);
   const settingsShell = getUserSettingsShellParts(existing);
-  if (isUserSettingsRoute() && existing?.dataset.routeKey === getRoutePageKey()
-    && settingsShell.router && settingsShell.nav && existing.querySelector(".cc98-rebuild-user-settings-frame")) {
+  if (
+    isUserSettingsRoute() &&
+    existing?.dataset.routeKey === getRoutePageKey() &&
+    settingsShell.router &&
+    settingsShell.nav &&
+    existing.querySelector(".cc98-rebuild-user-settings-frame")
+  ) {
     syncUserSettingsRoute();
     hideLoadingOverlay({ force: true });
     releaseRebuildTransitionVeil({ immediate: true });
@@ -29905,9 +33936,8 @@ function renderRebuiltUi(options = {}) {
   // topic tree.  On a URL with a fragment that transition can make the
   // browser restore scroll position to 0 before the rebuilt floor exists.
   // Keep the pre-rebuild viewport as a bridge until hash reconciliation runs.
-  const preservedHashScrollPosition = currentKind === "post" && getRebuiltHashScrollKey()
-    ? captureImageViewerScrollPosition()
-    : null;
+  const preservedHashScrollPosition =
+    currentKind === "post" && getRebuiltHashScrollKey() ? captureImageViewerScrollPosition() : null;
   if (!options.pending && currentKind === "topics" && shouldDeferNewTopicsRebuild()) {
     if (keepMounted) existing.style.minHeight = oldMinHeight;
     beginRebuildTransitionVeil(location.href);
@@ -29927,13 +33957,13 @@ function renderRebuiltUi(options = {}) {
 
   updateNewTopicAutoRefreshVisitState();
   clearUserCenterStaleLoadingOverlay(currentKind);
-  const preservedMessageScrollState = currentKind === "message"
-    ? captureMessageWindowScrollState(existing || document)
-    : null;
+  const preservedMessageScrollState =
+    currentKind === "message" ? captureMessageWindowScrollState(existing || document) : null;
   const preservedSearchState = captureRebuiltSearchUiState(existing);
-  const preservedSearchForm = existing?.dataset.routeKey === getRoutePageKey()
-    ? existing.querySelector(".cc98-rebuild-topbar > .cc98-rebuild-search")
-    : null;
+  const preservedSearchForm =
+    existing?.dataset.routeKey === getRoutePageKey()
+      ? existing.querySelector(".cc98-rebuild-topbar > .cc98-rebuild-search")
+      : null;
   if (preservedSearchForm instanceof HTMLFormElement && preservedSearchState?.typeMenuOpen) {
     preservedSearchForm.dataset.cc98PreserveTypeMenu = "true";
   }
@@ -29969,7 +33999,11 @@ function renderRebuiltUi(options = {}) {
     if (!keepMounted) existing.remove();
   }
 
-  if (currentKind === "userCenter" && isPublicUserProfilePage() && isUserCenterPendingNativeLoad()) {
+  if (
+    currentKind === "userCenter" &&
+    isPublicUserProfilePage() &&
+    isUserCenterPendingNativeLoad()
+  ) {
     document.documentElement.removeAttribute("data-cc98-comfort-app-root");
     const { router } = getPublicUserProfileNativeShell();
     if (router instanceof HTMLElement) {
@@ -30008,10 +34042,18 @@ function renderRebuiltUi(options = {}) {
       const navPath = getCurrentCc98RoutePath();
       [
         ["首页", "https://www.cc98.org/", kind === "home"],
-        ["版面", "https://www.cc98.org/boardList", ["boardList", "board", "boardSearch"].includes(kind)],
+        [
+          "版面",
+          "https://www.cc98.org/boardList",
+          ["boardList", "board", "boardSearch"].includes(kind)
+        ],
         ["新帖", "https://www.cc98.org/newTopics", /^\/newTopics(?:\/|$)/i.test(navPath)],
         ["关注", "https://www.cc98.org/focus", /^\/focus(?:\/|$)/i.test(navPath)],
-        ["精选", "https://www.cc98.org/recommendedTopics", /^\/recommendedTopics(?:\/|$)/i.test(navPath)],
+        [
+          "精选",
+          "https://www.cc98.org/recommendedTopics",
+          /^\/recommendedTopics(?:\/|$)/i.test(navPath)
+        ],
         ["\u7a0d\u540e\u518d\u770b", getReadLaterPageHref(), kind === "readLater"],
         ["插件设置", getUserSettingsPageHref(), isUserSettingsRoute()]
       ].forEach(([label, href, current]) => {
@@ -30021,9 +34063,10 @@ function renderRebuiltUi(options = {}) {
         navLinks.append(link);
       });
       nav.append(navLinks);
-      const searchForm = preservedSearchForm instanceof HTMLFormElement
-        ? preservedSearchForm
-        : createRebuiltSearchForm(preservedSearchState);
+      const searchForm =
+        preservedSearchForm instanceof HTMLFormElement
+          ? preservedSearchForm
+          : createRebuiltSearchForm(preservedSearchState);
       let refreshButton = searchForm.querySelector(".cc98-rebuild-refresh-button");
       if (!(refreshButton instanceof HTMLButtonElement)) {
         refreshButton = createButton(
@@ -30047,12 +34090,31 @@ function renderRebuiltUi(options = {}) {
       app.append(nav);
     }
 
-    if (!["board", "userCenter", "message", "signin", "login", "error", "blacklist"].includes(kind) && !(kind === "home" && lastSettings.homeHotOnly)) {
+    if (
+      !["board", "userCenter", "message", "signin", "login", "error", "blacklist"].includes(kind) &&
+      !(kind === "home" && lastSettings.homeHotOnly)
+    ) {
       const hero = createElement("section", "cc98-rebuild-hero");
-      hero.append(createElement("p", "cc98-rebuild-kicker cc98-rebuild-version-kicker", `Reborn View · ${EXTENSION_VERSION_LABEL}`));
-      const title = options.pending && kind === "post" ? getFirstText(document, ".topicInfo-info #essay1")
-        : (options.pending ? "" : getPageTitle());
-      hero.append(createElement("h1", options.pending && !title ? "cc98-rebuild-pending-title cc98-rebuild-pending-block" : "", title));
+      hero.append(
+        createElement(
+          "p",
+          "cc98-rebuild-kicker cc98-rebuild-version-kicker",
+          `Reborn View · ${EXTENSION_VERSION_LABEL}`
+        )
+      );
+      const title =
+        options.pending && kind === "post"
+          ? getFirstText(document, ".topicInfo-info #essay1")
+          : options.pending
+            ? ""
+            : getPageTitle();
+      hero.append(
+        createElement(
+          "h1",
+          options.pending && !title ? "cc98-rebuild-pending-title cc98-rebuild-pending-block" : "",
+          title
+        )
+      );
       if (kind === "post" && !options.pending) {
         syncTopicContextRow(hero);
       }
@@ -30093,10 +34155,20 @@ function renderRebuiltUi(options = {}) {
       renderGeneric(app);
     }
 
-    if (!["login", "error", "blacklist"].includes(kind) && !app.querySelector(".cc98-rebuild-blocked-page") && app.children.length <= 2) {
+    if (
+      !["login", "error", "blacklist"].includes(kind) &&
+      !app.querySelector(".cc98-rebuild-blocked-page") &&
+      app.children.length <= 2
+    ) {
       const fallback = createElement("section", "cc98-rebuild-section");
       fallback.append(createElement("h2", "", "正在等待页面内容"));
-      fallback.append(createElement("p", "cc98-rebuild-card-meta", "CC98 原页面还没有加载出可抽取内容。稍后会自动更新，也可以点击顶部同步。"));
+      fallback.append(
+        createElement(
+          "p",
+          "cc98-rebuild-card-meta",
+          "CC98 原页面还没有加载出可抽取内容。稍后会自动更新，也可以点击顶部同步。"
+        )
+      );
       app.append(fallback);
     }
 
@@ -30154,9 +34226,9 @@ function renderRebuiltUi(options = {}) {
     if (preservedHashScrollPosition) {
       const currentHashKey = getRebuiltHashScrollKey();
       const hashPositionIsStable = Boolean(
-        currentHashKey
-        && rebuiltHashScrollAppliedKey === currentHashKey
-        && rebuiltHashScrollAppliedInteractionRevision === seamlessScrollInteractionRevision
+        currentHashKey &&
+        rebuiltHashScrollAppliedKey === currentHashKey &&
+        rebuiltHashScrollAppliedInteractionRevision === seamlessScrollInteractionRevision
       );
       if (hashPositionIsStable) {
         scrollToCurrentRebuiltHash({ forceApplied: true });
@@ -30184,7 +34256,9 @@ function renderRebuiltUi(options = {}) {
     syncTopicViewCount();
     if (!options.pending) {
       rememberSeamlessNativeContentSignature();
-      committedNativeRoute = stableKind ? { routeKey: getRoutePageKey(), kind, ...getNativeRouteRenderState(kind) } : null;
+      committedNativeRoute = stableKind
+        ? { routeKey: getRoutePageKey(), kind, ...getNativeRouteRenderState(kind) }
+        : null;
       startPostLazyFallbackPrewarm();
     }
   } catch (error) {
@@ -30216,7 +34290,10 @@ function getBlockReason(item, settings) {
 
   const matchedBoard = blockedBoards.find((rule) => {
     const normalizedRule = normalizeText(rule);
-    return boardInfo.ids.includes(rule.trim()) || boardInfo.names.some((name) => normalizeText(name).includes(normalizedRule));
+    return (
+      boardInfo.ids.includes(rule.trim()) ||
+      boardInfo.names.some((name) => normalizeText(name).includes(normalizedRule))
+    );
   });
   if (matchedBoard) {
     return `版面：${matchedBoard}`;
@@ -30225,16 +34302,23 @@ function getBlockReason(item, settings) {
   const titleReason = getTitleBlockReason(title, settings);
   if (titleReason) return titleReason;
 
-  const matchedUserRule = blockedUserIds.find((rule) => userRuleMatchesIdentity(rule, {
-    ids: userIdentityTexts,
-    users: userIdentityTexts,
-    uids: userIds
-  }));
+  const matchedUserRule = blockedUserIds.find((rule) =>
+    userRuleMatchesIdentity(rule, {
+      ids: userIdentityTexts,
+      users: userIdentityTexts,
+      uids: userIds
+    })
+  );
   if (matchedUserRule) {
-    return normalizeBlockedUid(matchedUserRule) ? `UID：${matchedUserRule}` : `用户 ID：${matchedUserRule}`;
+    return normalizeBlockedUid(matchedUserRule)
+      ? `UID：${matchedUserRule}`
+      : `用户 ID：${matchedUserRule}`;
   }
 
-  if (item.matches(".user-post") && (getBlacklistRules(settings).contentRules.length || settings?.semanticFilterEnabled === true)) {
+  if (
+    item.matches(".user-post") &&
+    (getBlacklistRules(settings).contentRules.length || settings?.semanticFilterEnabled === true)
+  ) {
     const preview = item.querySelector(".user-post-content");
     if (preview) {
       let content = preview.querySelector(".cc98-rebuild-user-reply-ubb");
@@ -30242,8 +34326,16 @@ function getBlockReason(item, settings) {
         content = createElement("div");
         appendMultilineInlineUbb(content, preview.textContent);
       }
-      const post = { type: "post", content, metrics: globalThis.CC98RebornContentFilter?.metrics(item) };
-      return globalThis.CC98RebornContentFilter?.reason(post) || globalThis.CC98RebornSemanticFilter?.reason(post) || "";
+      const post = {
+        type: "post",
+        content,
+        metrics: globalThis.CC98RebornContentFilter?.metrics(item)
+      };
+      return (
+        globalThis.CC98RebornContentFilter?.reason(post) ||
+        globalThis.CC98RebornSemanticFilter?.reason(post) ||
+        ""
+      );
     }
   }
   return "";
@@ -30254,15 +34346,19 @@ function clearBlockedState() {
     item.classList.remove("cc98-comfort-is-blocked");
     item.removeAttribute("data-cc98-comfort-blocked-reason");
   });
-  document.querySelectorAll(".cc98-comfort-placeholder").forEach((placeholder) => placeholder.remove());
+  document
+    .querySelectorAll(".cc98-comfort-placeholder")
+    .forEach((placeholder) => placeholder.remove());
 }
 
 function isNativeSkinLink(link) {
   const href = link.getAttribute("href") ?? "";
-  return link.id === "mainStylesheet"
-    || /\/static\/content\/css_/i.test(href)
-    || /_files\/css_/i.test(href)
-    || /\\_files\\css_/i.test(href);
+  return (
+    link.id === "mainStylesheet" ||
+    /\/static\/content\/css_/i.test(href) ||
+    /_files\/css_/i.test(href) ||
+    /\\_files\\css_/i.test(href)
+  );
 }
 
 function applyNativeSkinPolicy() {
@@ -30400,9 +34496,11 @@ function runFiltering() {
 
     document.querySelectorAll(".cc98-comfort-placeholder").forEach((placeholder) => {
       const item = placeholder.nextElementSibling;
-      if (!(item instanceof HTMLElement)
-        || !item.matches(BLOCKABLE_SELECTORS)
-        || !item.classList.contains("cc98-comfort-is-blocked")) {
+      if (
+        !(item instanceof HTMLElement) ||
+        !item.matches(BLOCKABLE_SELECTORS) ||
+        !item.classList.contains("cc98-comfort-is-blocked")
+      ) {
         placeholder.remove();
       }
     });
@@ -30431,12 +34529,15 @@ function recoverMissingRebuiltApp() {
     return false;
   }
   const root = document.documentElement;
-  const wasMarkedReady = root.dataset.cc98ComfortRebuildReady === "true"
-    || root.dataset.cc98ComfortAppRoot === "true"
-    || root.classList.contains("cc98-comfort-rebuild-active");
-  if (!wasMarkedReady
-    || root.dataset.cc98ComfortOriginalPrewarming === "true"
-    || root.dataset.cc98ComfortPrewarming === "true") {
+  const wasMarkedReady =
+    root.dataset.cc98ComfortRebuildReady === "true" ||
+    root.dataset.cc98ComfortAppRoot === "true" ||
+    root.classList.contains("cc98-comfort-rebuild-active");
+  if (
+    !wasMarkedReady ||
+    root.dataset.cc98ComfortOriginalPrewarming === "true" ||
+    root.dataset.cc98ComfortPrewarming === "true"
+  ) {
     return false;
   }
 
@@ -30521,7 +34622,7 @@ function scheduleDelayedRebuilds() {
   if (delayedRebuildTimers.length) {
     return;
   }
-  delayedRebuildTimers = [120, 520, 1300].map((delay, index, delays) => (
+  delayedRebuildTimers = [120, 520, 1300].map((delay, index, delays) =>
     window.setTimeout(() => {
       scheduleFiltering();
       scheduleRebuild({ automatic: true });
@@ -30529,13 +34630,14 @@ function scheduleDelayedRebuilds() {
         delayedRebuildTimers = [];
       }
     }, delay)
-  ));
+  );
 }
 
 function appendUniqueCard(feed, key, createCard) {
-  const escapedKey = typeof CSS !== "undefined" && typeof CSS.escape === "function"
-    ? CSS.escape(key)
-    : key.replace(/["\\]/g, "\\$&");
+  const escapedKey =
+    typeof CSS !== "undefined" && typeof CSS.escape === "function"
+      ? CSS.escape(key)
+      : key.replace(/["\\]/g, "\\$&");
   if (!feed || feed.querySelector(`[data-item-key="${escapedKey}"]`)) {
     return false;
   }
@@ -30546,9 +34648,10 @@ function appendUniqueCard(feed, key, createCard) {
 }
 
 function upsertCard(feed, key, card) {
-  const escapedKey = typeof CSS !== "undefined" && typeof CSS.escape === "function"
-    ? CSS.escape(key)
-    : key.replace(/["\\]/g, "\\$&");
+  const escapedKey =
+    typeof CSS !== "undefined" && typeof CSS.escape === "function"
+      ? CSS.escape(key)
+      : key.replace(/["\\]/g, "\\$&");
   if (!feed) {
     return false;
   }
@@ -30583,9 +34686,10 @@ function reconcileCardFeed(feed, entries) {
   });
 
   entries.forEach(({ key }, index) => {
-    const escapedKey = typeof CSS !== "undefined" && typeof CSS.escape === "function"
-      ? CSS.escape(key)
-      : key.replace(/["\\]/g, "\\$&");
+    const escapedKey =
+      typeof CSS !== "undefined" && typeof CSS.escape === "function"
+        ? CSS.escape(key)
+        : key.replace(/["\\]/g, "\\$&");
     const card = feed.querySelector(`[data-item-key="${escapedKey}"]`);
     const current = feed.children[index] || null;
     if (card && current !== card) {
@@ -30609,9 +34713,9 @@ function syncRebuiltContent() {
     return;
   }
   if (
-    getPageKind() === "userCenter"
-    && isPublicUserProfilePage()
-    && isPublicProfileSelectionProtected()
+    getPageKind() === "userCenter" &&
+    isPublicUserProfilePage() &&
+    isPublicProfileSelectionProtected()
   ) {
     return;
   }
@@ -30631,8 +34735,10 @@ function syncRebuiltContent() {
       }
     } else if (isUserCenterNativeShellReady()) {
       const { navSource, router } = getUserCenterNativeShell();
-      if (navSource !== app?.querySelector(".user-center-navigation.cc98-rebuild-native-user-nav")
-        || router !== app?.querySelector(".user-center-router.cc98-rebuild-native-user-router")) {
+      if (
+        navSource !== app?.querySelector(".user-center-navigation.cc98-rebuild-native-user-nav") ||
+        router !== app?.querySelector(".user-center-router.cc98-rebuild-native-user-router")
+      ) {
         scheduleRebuild();
         return;
       }
@@ -30662,7 +34768,13 @@ function syncRebuiltContent() {
       const existing = mounted.get(key);
       const reason = existing ? shouldBlockRebuiltItem(item) : "";
       const blocked = reason && !isBlacklistItemRevealed(item);
-      const state = existing && getTopicCardRenderState(item, reason, !blocked && savedKeys.has(getReadLaterKeyFromHref(item.href)));
+      const state =
+        existing &&
+        getTopicCardRenderState(
+          item,
+          reason,
+          !blocked && savedKeys.has(getReadLaterKeyFromHref(item.href))
+        );
       // Native infinite feeds append frequently. Keep unchanged mounted cards,
       // including their loaded images, ASCII decorations and focused controls.
       if (state && topicCardRenderStates.get(existing) === state) return;
@@ -30679,10 +34791,13 @@ function syncRebuiltContent() {
   if (feed.dataset.feedKind === "search") {
     const keyword = getCurrentSearchKeyword();
     const topics = sortSearchTopicItems(getTopicItems(), keyword);
-    reconcileCardFeed(feed, topics.map((item) => ({
-      key: `topic:${item.href}`,
-      card: renderTopicCard(item)
-    })));
+    reconcileCardFeed(
+      feed,
+      topics.map((item) => ({
+        key: `topic:${item.href}`,
+        card: renderTopicCard(item)
+      }))
+    );
     const controls = app?.querySelector(".cc98-rebuild-search-sort");
     if (controls instanceof HTMLElement) {
       const nextControls = createSearchSortControls(topics.length, keyword);
@@ -30712,12 +34827,23 @@ function syncRebuiltContent() {
   }
 
   if (feed.dataset.feedKind === "post") {
-    const emptyBodies = new Map([...feed.querySelectorAll(":scope > .cc98-rebuild-post > .cc98-rebuild-post-body[data-cc98-empty-post-body]")]
-      .map((body) => [body.parentElement.dataset.itemKey, body]));
+    const emptyBodies = new Map(
+      [
+        ...feed.querySelectorAll(
+          ":scope > .cc98-rebuild-post > .cc98-rebuild-post-body[data-cc98-empty-post-body]"
+        )
+      ].map((body) => [body.parentElement.dataset.itemKey, body])
+    );
     getPostItems().forEach((item) => {
       const key = `post:${item.id}`;
       const emptyBody = emptyBodies.get(key);
-      if (emptyBody && (isMeaningfulPostContent(item.content) || item.text || item.voteContent || item.lotteryContent)) {
+      if (
+        emptyBody &&
+        (isMeaningfulPostContent(item.content) ||
+          item.text ||
+          item.voteContent ||
+          item.lotteryContent)
+      ) {
         if (shouldBlockRebuiltItem(item) && !isBlacklistItemRevealed(item)) {
           upsertCard(feed, key, renderPostCard(item));
         } else {
@@ -30807,45 +34933,69 @@ function armAutoLoader() {
   window.addEventListener("wheel", markScrollInteraction, { passive: true, capture: true });
   window.addEventListener("touchmove", markScrollInteraction, { passive: true, capture: true });
   document.addEventListener("pointerdown", markScrollInteraction, { passive: true, capture: true });
-  document.addEventListener("pointermove", (event) => {
-    if (event.buttons) {
-      markScrollInteraction();
-    }
-  }, { passive: true, capture: true });
-  document.addEventListener("keydown", (event) => {
-    if (["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "].includes(event.key)) {
-      markScrollInteraction();
-    }
-  }, true);
-  window.addEventListener("scroll", () => {
-    if (autoLoadScrollFrame) {
-      return;
-    }
-    autoLoadScrollFrame = window.requestAnimationFrame(() => {
-      autoLoadScrollFrame = 0;
-      if (!lastSettings?.enabled || !lastSettings.rebuildUi) {
+  document.addEventListener(
+    "pointermove",
+    (event) => {
+      if (event.buttons) {
+        markScrollInteraction();
+      }
+    },
+    { passive: true, capture: true }
+  );
+  document.addEventListener(
+    "keydown",
+    (event) => {
+      if (["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "].includes(event.key)) {
+        markScrollInteraction();
+      }
+    },
+    true
+  );
+  window.addEventListener(
+    "scroll",
+    () => {
+      if (autoLoadScrollFrame) {
         return;
       }
-      const kind = getPageKind();
-      if (SEAMLESS_SCROLL_SYNC_PAGE_KINDS.has(kind)) {
-        scheduleSeamlessNativeContentSync({ kind });
-      }
-      const nearBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 900;
-      if (!nearBottom) {
-        return;
-      }
-      pokeNativeInfiniteLoad();
-      if (kind === "userCenter") {
-        scheduleSync();
-      }
-    });
-  }, { passive: true });
+      autoLoadScrollFrame = window.requestAnimationFrame(() => {
+        autoLoadScrollFrame = 0;
+        if (!lastSettings?.enabled || !lastSettings.rebuildUi) {
+          return;
+        }
+        const kind = getPageKind();
+        if (SEAMLESS_SCROLL_SYNC_PAGE_KINDS.has(kind)) {
+          scheduleSeamlessNativeContentSync({ kind });
+        }
+        const nearBottom =
+          window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 900;
+        if (!nearBottom) {
+          return;
+        }
+        pokeNativeInfiniteLoad();
+        if (kind === "userCenter") {
+          scheduleSync();
+        }
+      });
+    },
+    { passive: true }
+  );
 }
 
 function isRebuiltInternalMutationTarget(record, app) {
   const changed = [...record.addedNodes, ...record.removedNodes];
-  if (changed.length && changed.every((node) => node instanceof Element
-    && (node.matches(".cc98-topic-drawer-layer, .cc98-rebuild-conversation-layer, .cc98-topic-search-layer, .cc98-topic-archive-layer, .cc98-topic-search-worker, .cc98-favorite-share-layer, .cc98-user-note-layer, .cc98-user-note-ui, .cc98-image-link-menu") || node.closest(".cc98-topic-drawer-layer, .cc98-rebuild-conversation-layer, .cc98-topic-search-layer, .cc98-topic-archive-layer, .cc98-topic-search-worker, .cc98-favorite-share-layer, .cc98-user-note-layer, .cc98-user-note-ui, .cc98-image-link-menu")))) {
+  if (
+    changed.length &&
+    changed.every(
+      (node) =>
+        node instanceof Element &&
+        (node.matches(
+          ".cc98-topic-drawer-layer, .cc98-rebuild-conversation-layer, .cc98-topic-search-layer, .cc98-topic-archive-layer, .cc98-topic-search-worker, .cc98-favorite-share-layer, .cc98-user-note-layer, .cc98-user-note-ui, .cc98-image-link-menu"
+        ) ||
+          node.closest(
+            ".cc98-topic-drawer-layer, .cc98-rebuild-conversation-layer, .cc98-topic-search-layer, .cc98-topic-archive-layer, .cc98-topic-search-worker, .cc98-favorite-share-layer, .cc98-user-note-layer, .cc98-user-note-ui, .cc98-image-link-menu"
+          ))
+    )
+  ) {
     return true;
   }
   const target = record.target instanceof Element ? record.target : record.target?.parentElement;
@@ -30855,23 +35005,27 @@ function isRebuiltInternalMutationTarget(record, app) {
   if (app?.contains(target)) {
     return true;
   }
-  return Boolean(target.closest([
-    "#cc98-comfort-loading",
-    "#cc98-comfort-image-viewer",
-    ".cc98-image-link-menu",
-    ".cc98-rebuild-conversation-layer",
-    ".cc98-topic-search-layer",
-    ".cc98-topic-archive-layer",
-    ".cc98-topic-search-worker",
-    ".cc98-topic-drawer-layer",
-    ".cc98-favorite-share-layer",
-    ".cc98-user-note-layer",
-    ".cc98-user-note-ui",
-    ".cc98-rebuild-color-popover",
-    ".cc98-rebuild-font-size-popover",
-    ".cc98-rebuild-message-emoji-panel",
-    ".cc98-rebuild-transient-toast"
-  ].join(",")));
+  return Boolean(
+    target.closest(
+      [
+        "#cc98-comfort-loading",
+        "#cc98-comfort-image-viewer",
+        ".cc98-image-link-menu",
+        ".cc98-rebuild-conversation-layer",
+        ".cc98-topic-search-layer",
+        ".cc98-topic-archive-layer",
+        ".cc98-topic-search-worker",
+        ".cc98-topic-drawer-layer",
+        ".cc98-favorite-share-layer",
+        ".cc98-user-note-layer",
+        ".cc98-user-note-ui",
+        ".cc98-rebuild-color-popover",
+        ".cc98-rebuild-font-size-popover",
+        ".cc98-rebuild-message-emoji-panel",
+        ".cc98-rebuild-transient-toast"
+      ].join(",")
+    )
+  );
 }
 
 function ensureObserver() {
@@ -30892,17 +35046,20 @@ function ensureObserver() {
     recoverMissingRebuiltApp();
     const app = document.querySelector("#cc98-comfort-app");
     const hasTopbarAvatarMutation = records.some((record) => {
-      const target = record.target instanceof Element ? record.target : record.target?.parentElement;
+      const target =
+        record.target instanceof Element ? record.target : record.target?.parentElement;
       if (record.type === "attributes") {
-        return target instanceof HTMLImageElement
-          && Boolean(target.closest(".topBarUserImg, .topBarUserInfo"));
+        return (
+          target instanceof HTMLImageElement &&
+          Boolean(target.closest(".topBarUserImg, .topBarUserInfo"))
+        );
       }
       return [...record.addedNodes].some((node) => {
-        return node instanceof Element
-          && (
-            node.matches?.(".topBarUserImg img, .topBarUserInfo img")
-            || Boolean(node.querySelector?.(".topBarUserImg img, .topBarUserInfo img"))
-          );
+        return (
+          node instanceof Element &&
+          (node.matches?.(".topBarUserImg img, .topBarUserInfo img") ||
+            Boolean(node.querySelector?.(".topBarUserImg img, .topBarUserInfo img")))
+        );
       });
     });
     if (hasTopbarAvatarMutation) {
@@ -30915,26 +35072,57 @@ function ensureObserver() {
     }
     if (app?.dataset.pageKind === "post") {
       const source = document.getElementById("viewtimes");
-      if (topicViewCountSource && !topicViewCountSource.isConnected
-        || topicLockScope && !topicLockScope.isConnected
-        || !topicLockScope && records.some(record => [...record.addedNodes].some(node => node instanceof Element
-          && !node.closest(lockContentExclusions) && (node.matches(nativeLockRow + ", .center > .column, " + nativeRedTip) || node.querySelector(nativeLockRow))))
-        || !topicViewCountSource && source && !app.contains(source)
-        || topicBreadcrumbSource && !topicBreadcrumbSource.isConnected
-        || !topicBreadcrumbSource && records.some(record => {
-          const target = record.target instanceof Element ? record.target : record.target.parentElement;
-          return target?.closest(".row")?.querySelector('a[href*="/boardlist" i]')
-            || [...record.addedNodes].some(node => node instanceof Element
-              && (node.matches('a[href*="/boardlist" i]') || node.querySelector('a[href*="/boardlist" i]')));
-        })) syncTopicViewCount();
+      if (
+        (topicViewCountSource && !topicViewCountSource.isConnected) ||
+        (topicLockScope && !topicLockScope.isConnected) ||
+        (!topicLockScope &&
+          records.some((record) =>
+            [...record.addedNodes].some(
+              (node) =>
+                node instanceof Element &&
+                !node.closest(lockContentExclusions) &&
+                (node.matches(nativeLockRow + ", .center > .column, " + nativeRedTip) ||
+                  node.querySelector(nativeLockRow))
+            )
+          )) ||
+        (!topicViewCountSource && source && !app.contains(source)) ||
+        (topicBreadcrumbSource && !topicBreadcrumbSource.isConnected) ||
+        (!topicBreadcrumbSource &&
+          records.some((record) => {
+            const target =
+              record.target instanceof Element ? record.target : record.target.parentElement;
+            return (
+              target?.closest(".row")?.querySelector('a[href*="/boardlist" i]') ||
+              [...record.addedNodes].some(
+                (node) =>
+                  node instanceof Element &&
+                  (node.matches('a[href*="/boardlist" i]') ||
+                    node.querySelector('a[href*="/boardlist" i]'))
+              )
+            );
+          }))
+      )
+        syncTopicViewCount();
     }
     const hasSourceMutation = records.some((record) => {
       const target = record.target;
       const changedNodes = [...record.addedNodes, ...record.removedNodes];
-      const onlyRebuildNodes = changedNodes.length > 0 && changedNodes.every((node) => {
-        return node instanceof Element && (node.id === "cc98-comfort-app" || node.matches(".cc98-topic-drawer-layer, .cc98-rebuild-conversation-layer, .cc98-topic-search-layer, .cc98-topic-archive-layer, .cc98-topic-search-worker, .cc98-favorite-share-layer, .cc98-user-note-layer, .cc98-user-note-ui")
-          || Boolean(node.closest?.("#cc98-comfort-app, .cc98-topic-drawer-layer, .cc98-rebuild-conversation-layer, .cc98-topic-search-layer, .cc98-topic-archive-layer, .cc98-topic-search-worker, .cc98-favorite-share-layer, .cc98-user-note-layer, .cc98-user-note-ui")));
-      });
+      const onlyRebuildNodes =
+        changedNodes.length > 0 &&
+        changedNodes.every((node) => {
+          return (
+            node instanceof Element &&
+            (node.id === "cc98-comfort-app" ||
+              node.matches(
+                ".cc98-topic-drawer-layer, .cc98-rebuild-conversation-layer, .cc98-topic-search-layer, .cc98-topic-archive-layer, .cc98-topic-search-worker, .cc98-favorite-share-layer, .cc98-user-note-layer, .cc98-user-note-ui"
+              ) ||
+              Boolean(
+                node.closest?.(
+                  "#cc98-comfort-app, .cc98-topic-drawer-layer, .cc98-rebuild-conversation-layer, .cc98-topic-search-layer, .cc98-topic-archive-layer, .cc98-topic-search-worker, .cc98-favorite-share-layer, .cc98-user-note-layer, .cc98-user-note-ui"
+                )
+              ))
+          );
+        });
       if (onlyRebuildNodes) {
         return false;
       }
@@ -30942,12 +35130,18 @@ function ensureObserver() {
         return false;
       }
       return changedNodes.some((node) => {
-        return node instanceof Element
-          && !node.closest?.("#cc98-comfort-app")
-          && (
-            node.matches?.(".topBarRight, .topBarUserInfo, .topBarUserCenter, .topBarUserCenter-mainPage, .topBarMessageDetails, .topBarMessageDetails-mainPage, .focus-topic, .card-topic, .board-postItem-body, .createTopic, #sendTopicInfo, .container.body-content, .user-center, .user-center-router, .user-center-exact, .user-profile, .user-activities, .user-posts, .user-post, form[action*='/Account/LogOn'], form[action*='/PassKey/LogOn'], article, [class*='floor'], [class*='post'], [class*='reply']")
-            || Boolean(node.querySelector?.(".topBarRight, .topBarUserInfo, .topBarUserCenter, .topBarUserCenter-mainPage, .topBarMessageDetails, .topBarMessageDetails-mainPage, .focus-topic, .card-topic, .board-postItem-body, .createTopic, #sendTopicInfo, .container.body-content, .user-center, .user-center-router, .user-center-exact, .user-profile, .user-activities, .user-posts, .user-post, form[action*='/Account/LogOn'], form[action*='/PassKey/LogOn'], article, [class*='floor'], [class*='post'], [class*='reply']"))
-          );
+        return (
+          node instanceof Element &&
+          !node.closest?.("#cc98-comfort-app") &&
+          (node.matches?.(
+            ".topBarRight, .topBarUserInfo, .topBarUserCenter, .topBarUserCenter-mainPage, .topBarMessageDetails, .topBarMessageDetails-mainPage, .focus-topic, .card-topic, .board-postItem-body, .createTopic, #sendTopicInfo, .container.body-content, .user-center, .user-center-router, .user-center-exact, .user-profile, .user-activities, .user-posts, .user-post, form[action*='/Account/LogOn'], form[action*='/PassKey/LogOn'], article, [class*='floor'], [class*='post'], [class*='reply']"
+          ) ||
+            Boolean(
+              node.querySelector?.(
+                ".topBarRight, .topBarUserInfo, .topBarUserCenter, .topBarUserCenter-mainPage, .topBarMessageDetails, .topBarMessageDetails-mainPage, .focus-topic, .card-topic, .board-postItem-body, .createTopic, #sendTopicInfo, .container.body-content, .user-center, .user-center-router, .user-center-exact, .user-profile, .user-activities, .user-posts, .user-post, form[action*='/Account/LogOn'], form[action*='/PassKey/LogOn'], article, [class*='floor'], [class*='post'], [class*='reply']"
+              )
+            ))
+        );
       });
     });
     const hasSeamlessNativeContentMutation = records.some((record) => {
@@ -30960,11 +35154,16 @@ function ensureObserver() {
       return;
     }
 
-    if (getPageKind() === "userCenter" && !isPublicUserProfilePage()
-      && isUserCenterNativeShellReady()) {
+    if (
+      getPageKind() === "userCenter" &&
+      !isPublicUserProfilePage() &&
+      isUserCenterNativeShellReady()
+    ) {
       const { navSource, router } = getUserCenterNativeShell();
-      if (navSource !== app?.querySelector(".user-center-navigation.cc98-rebuild-native-user-nav")
-        || router !== app?.querySelector(".user-center-router.cc98-rebuild-native-user-router")) {
+      if (
+        navSource !== app?.querySelector(".user-center-navigation.cc98-rebuild-native-user-nav") ||
+        router !== app?.querySelector(".user-center-router.cc98-rebuild-native-user-router")
+      ) {
         scheduleRebuild();
         return;
       }
@@ -30974,8 +35173,10 @@ function ensureObserver() {
       scheduleFiltering();
     }
     if (!isRebuilding) {
-      if (SEAMLESS_SCROLL_SYNC_PAGE_KINDS.has(getPageKind())
-        && Date.now() <= seamlessScrollSyncIntentUntil) {
+      if (
+        SEAMLESS_SCROLL_SYNC_PAGE_KINDS.has(getPageKind()) &&
+        Date.now() <= seamlessScrollSyncIntentUntil
+      ) {
         scheduleSeamlessNativeContentSync({ fromMutation: true });
       } else {
         scheduleSync();
@@ -31017,7 +35218,12 @@ function patchHistoryNavigation() {
       const beforeRoutePath = getCurrentCc98RoutePath();
       const beforeHash = location.hash;
       const isImageViewerHistoryState = Boolean(args[0]?.cc98ComfortImageViewer);
-      if (isWebVpnHost() && args.length >= 3 && typeof args[2] !== "undefined" && args[2] !== null) {
+      if (
+        isWebVpnHost() &&
+        args.length >= 3 &&
+        typeof args[2] !== "undefined" &&
+        args[2] !== null
+      ) {
         const fixedUrl = repairWebVpnNakedCc98Href(String(args[2]));
         try {
           const originalUrl = new URL(String(args[2]), location.href).href;
@@ -31051,9 +35257,8 @@ function patchHistoryNavigation() {
       if (nextRoutePath !== beforeRoutePath) {
         embeddedBlacklistOpenPath = "";
       }
-      const movedToAnotherPath = method === "pushState"
-        && beforeRoutePath !== nextRoutePath
-        && !location.hash;
+      const movedToAnotherPath =
+        method === "pushState" && beforeRoutePath !== nextRoutePath && !location.hash;
       if (redirectNullPageToHome()) {
         return result;
       }
@@ -31109,7 +35314,13 @@ function patchHistoryNavigation() {
       return;
     }
     clearRebuiltHashScrollIntent();
-    if (isReadLaterRoute() || isBlacklistRoute() || ["readLater", "blacklist"].includes(document.querySelector("#cc98-comfort-app")?.dataset.pageKind)) {
+    if (
+      isReadLaterRoute() ||
+      isBlacklistRoute() ||
+      ["readLater", "blacklist"].includes(
+        document.querySelector("#cc98-comfort-app")?.dataset.pageKind
+      )
+    ) {
       scheduleDelayedRebuilds();
       return;
     }
@@ -31128,7 +35339,13 @@ function ensureHeadObserver() {
       scheduleRebuild({ automatic: true });
     }
   });
-  headObserver.observe(document.head, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["href", "media", "rel", "id"] });
+  headObserver.observe(document.head, {
+    childList: true,
+    subtree: true,
+    characterData: true,
+    attributes: true,
+    attributeFilter: ["href", "media", "rel", "id"]
+  });
   applyNativeSkinPolicy();
 }
 
@@ -31149,8 +35366,19 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   }
 
   if (changes[PINNED_BOARDS_STORAGE_KEY]) {
-    pinnedBoardHrefsCache = [...new Set((Array.isArray(changes[PINNED_BOARDS_STORAGE_KEY].newValue) ? changes[PINNED_BOARDS_STORAGE_KEY].newValue : []).map(normalizePinnedBoardHref).filter(Boolean))];
-    try { localStorage.setItem(PINNED_BOARDS_STORAGE_KEY, JSON.stringify(pinnedBoardHrefsCache)); } catch {}
+    pinnedBoardHrefsCache = [
+      ...new Set(
+        (Array.isArray(changes[PINNED_BOARDS_STORAGE_KEY].newValue)
+          ? changes[PINNED_BOARDS_STORAGE_KEY].newValue
+          : []
+        )
+          .map(normalizePinnedBoardHref)
+          .filter(Boolean)
+      )
+    ];
+    try {
+      localStorage.setItem(PINNED_BOARDS_STORAGE_KEY, JSON.stringify(pinnedBoardHrefsCache));
+    } catch {}
     if (getPageKind() === "boards") scheduleRebuild();
   }
 
@@ -31191,7 +35419,9 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === "CC98_REBORN_EXIT_CURRENT_ACCOUNT") {
     exitCurrentCc98AccountFromOpenIdPrompt(null)
       .then(() => sendResponse({ ok: true }))
-      .catch((error) => sendResponse({ ok: false, error: error?.message || "exit-account-failed" }));
+      .catch((error) =>
+        sendResponse({ ok: false, error: error?.message || "exit-account-failed" })
+      );
     return true;
   }
 
@@ -31200,10 +35430,11 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
 function runNormalPageStartupFollowup() {
   const app = document.querySelector("#cc98-comfort-app");
-  const needsRebuild = !(app instanceof HTMLElement)
-    || app.dataset.routeKey !== getRoutePageKey()
-    || app.dataset.cc98UserCenterPending === "true"
-    || Boolean(app.querySelector(".cc98-rebuild-empty-state"));
+  const needsRebuild =
+    !(app instanceof HTMLElement) ||
+    app.dataset.routeKey !== getRoutePageKey() ||
+    app.dataset.cc98UserCenterPending === "true" ||
+    Boolean(app.querySelector(".cc98-rebuild-empty-state"));
   if (needsRebuild) {
     scheduleRebuild();
   } else {
