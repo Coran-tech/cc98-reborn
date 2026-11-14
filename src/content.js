@@ -13763,6 +13763,10 @@ function getHomeHotRankCacheKey(section) {
 
 function getHomeHotRankItemKey(item) {
   if (item?.href) {
+    // Native home links include /1, while the index API links omit it. Rank
+    // identity belongs to the topic, not its page, host alias or floor anchor.
+    const topic = getCc98RoutePathFromHref(item.href).match(/^\/topic\/(\d+)(?:\/|[?#]|$)/i);
+    if (topic) return `topic:${topic[1]}`;
     try {
       const url = new URL(item.href, location.origin);
       return `${url.origin}${url.pathname}`.toLowerCase();
@@ -13789,7 +13793,17 @@ function readHomeHotRankCache(section) {
   try {
     const parsed = JSON.parse(localStorage.getItem(getHomeHotRankCacheKey(section)) || "{}");
     const entries = Array.isArray(parsed.entries) ? parsed.entries : [];
-    return entries.filter((entry) => entry?.key && Number(entry.rank) > 0);
+    return entries
+      .filter((entry) => entry?.key && Number(entry.rank) > 0)
+      .map((entry) => ({
+        ...entry,
+        // Migrate the existing URL-keyed baseline without forgetting its ranks.
+        key: /^topic:\d+$/.test(entry.key)
+          ? entry.key
+          : !entry.href && String(entry.key).startsWith("title:")
+            ? entry.key
+            : getHomeHotRankItemKey({ href: entry.href || entry.key, title: entry.title })
+      }));
   } catch {
     return [];
   }
