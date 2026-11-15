@@ -1898,10 +1898,7 @@ function isImageViewerCandidate(image) {
   ) {
     return false;
   }
-  if (
-    !image.classList.contains("cc98-rebuild-content-image") &&
-    !image.classList.contains("cc98-rebuild-board-image")
-  ) {
+  if (!image.classList.contains("cc98-rebuild-content-image")) {
     return false;
   }
   return Boolean(getViewerImageSrc(image));
@@ -2050,9 +2047,7 @@ function getImageViewerItems(activeImage) {
     document;
   const images = favoritesRoot
     ? [...favoritesRoot.querySelectorAll("img[data-cc98-favorite-image]")]
-    : [
-        ...root.querySelectorAll("img.cc98-rebuild-content-image, img.cc98-rebuild-board-image")
-      ].filter(isImageViewerCandidate);
+    : [...root.querySelectorAll("img.cc98-rebuild-content-image")].filter(isImageViewerCandidate);
   const items = images
     .map((node) => ({
       node,
@@ -2280,6 +2275,35 @@ function closeImageViewer(fromHistory = false) {
   removeImageViewer({ restoreScroll: true });
 }
 
+async function getViewerClipboardPng(image) {
+  const src = image.currentSrc || image.src;
+  const encode = (source, width, height) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    canvas.getContext("2d").drawImage(source, 0, 0);
+    return new Promise((resolve, reject) =>
+      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error())), "image/png")
+    );
+  };
+  if (image.complete && image.naturalWidth) {
+    try {
+      return await encode(image, image.naturalWidth, image.naturalHeight);
+    } catch (error) {
+      if (error.name !== "SecurityError") throw error;
+    }
+  }
+  // A displayed cross-origin image may taint a canvas even when its host allows CORS.
+  const response = await fetch(src, { credentials: "same-origin" });
+  if (!response.ok) throw new Error();
+  const bitmap = await createImageBitmap(await response.blob());
+  try {
+    return await encode(bitmap, bitmap.width, bitmap.height);
+  } finally {
+    bitmap.close();
+  }
+}
+
 function openImageViewer(image) {
   const src = getViewerImageSrc(image);
   if (!src) {
@@ -2319,6 +2343,25 @@ function openImageViewer(image) {
     requestBrowserDownload(href, href);
   });
   const toolbar = createElement("div", "cc98-image-viewer-toolbar");
+  const copyButton = createButton(
+    "cc98-image-viewer-copy cc98-image-viewer-rotate",
+    "",
+    async (event) => {
+      event.stopPropagation();
+      try {
+        await navigator.clipboard.write([
+          new ClipboardItem({ "image/png": getViewerClipboardPng(viewerImage) })
+        ]);
+        showRebuiltTransientToast(copyButton, "已复制图片");
+      } catch {
+        showRebuiltTransientToast(copyButton, "无法复制，请右键选择“复制图片”");
+      }
+    }
+  );
+  copyButton.title = "复制图片";
+  copyButton.setAttribute("aria-label", "复制图片");
+  copyButton.innerHTML =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M15 5V4a1 1 0 0 0-1-1H5a2 2 0 0 0-2 2v10a1 1 0 0 0 1 1h1"/></svg>';
   const rotateButtons = [-1, 1].map((direction) => {
     const side = direction < 0 ? "left" : "right";
     const label = direction < 0 ? "向左旋转 90°" : "向右旋转 90°";
@@ -2336,7 +2379,7 @@ function openImageViewer(image) {
     button.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path ${direction > 0 ? 'transform="translate(24 0) scale(-1 1)"' : ""} d="M4 9a8 8 0 1 1 1 9M4 4v5h5"/></svg>`;
     return button;
   });
-  toolbar.append(counter, ...rotateButtons);
+  toolbar.append(counter, ...rotateButtons, copyButton);
   const favoriteButton = globalThis.CC98RebornImageFavoriteControls?.viewerButton();
   if (favoriteButton) toolbar.append(favoriteButton);
   toolbar.append(saveButton);
@@ -13012,10 +13055,14 @@ function getPostAwardRows(post) {
     : [...awardInfo.children].filter((node) => node.matches?.(".good, .bad"));
   return rowNodes
     .map((row) => {
-      const user = cleanupPostText(row.querySelector?.(".userName")?.textContent);
+      const nameNode = row.querySelector(".userName");
+      const user = nameNode?.textContent.trim() || "";
+      const userLink = nameNode?.closest("a[href]") || nameNode?.querySelector("a[href]");
+      const userRoute = getCc98RoutePathFromHref(userLink?.getAttribute("href"));
+      const uid = userRoute.match(/^\/user\/(?:id\/)?([1-9]\d*)\/?(?:[?#].*)?$/i)?.[1];
       const operation = cleanupPostText(row.querySelector?.(".grades")?.textContent);
       const reason = cleanupPostText(row.querySelector?.(".credit")?.textContent);
-      return { user, operation, reason };
+      return { user, uid, operation, reason };
     })
     .filter((row) => row.user || row.operation || row.reason);
 }
@@ -13076,7 +13123,17 @@ function populatePostAwardTableBody(tbody, rows) {
       : /\+\s*\d/.test(row.operation)
         ? "cc98-rebuild-award-positive"
         : "";
-    tr.append(createElement("td", "", row.user || "-"));
+    const userCell = createElement("td");
+    const name = (row.user || "").trim();
+    if (name && !/^(?:[-—]|\.{1,2}|匿名(?:用户)?|未知用户)$/.test(name)) {
+      // Native award rows commonly expose only the operator's displayed name.
+      // Even a numeric username is a name unless the source provides a UID.
+      const href = row.uid ? `/user/id/${row.uid}` : `/user/name/${encodeURIComponent(name)}`;
+      userCell.append(createLink("cc98-rebuild-award-user-link", name, href));
+    } else {
+      userCell.textContent = name || "-";
+    }
+    tr.append(userCell);
     tr.append(createElement("td", operationClass, row.operation || "-"));
     tr.append(createElement("td", "", row.reason || "-"));
     fragment.append(tr);
@@ -13769,7 +13826,8 @@ function getHomeSections() {
           uid: uidMatch?.[1] ?? "",
           meta: parsedMeta.hasDetails ? parsedMeta.meta : "",
           hoverMeta: parsedMeta.hasDetails ? parsedMeta.hoverMeta : "",
-          replyCount: parsedMeta.hasDetails ? parsedMeta.replyCount : ""
+          replyCount: parsedMeta.hasDetails ? parsedMeta.replyCount : "",
+          hotHitCount: parsedMeta.hasDetails ? parsedMeta.viewCount : undefined
         };
       })
       .filter((item) => item.title);
@@ -13779,6 +13837,8 @@ function getHomeSections() {
   });
   const hotTopics = homeLiveController?.getSnapshot().hotTopic;
   if (hotTopics?.length) {
+    const hot = sections.find(isHotHomeSection);
+    const native = new Map((hot?.items || []).map((item) => [getHomeHotRankItemKey(item), item]));
     const items = hotTopics.map((item) => ({
       type: "topic",
       title: item.title,
@@ -13789,9 +13849,10 @@ function getHomeSections() {
       uid: "",
       meta: "",
       hoverMeta: "",
-      replyCount: ""
+      replyCount: "",
+      hotReplyCount: item.replyCount ?? native.get(`topic:${item.id}`)?.replyCount,
+      hotHitCount: item.hitCount ?? native.get(`topic:${item.id}`)?.hotHitCount
     }));
-    const hot = sections.find(isHotHomeSection);
     if (hot) hot.items = items;
     else sections.push({ title: "热门话题", kind: "topics", items });
   }
@@ -18091,6 +18152,137 @@ function getNativeEditorUploadInput(editor, control = null) {
   return input instanceof HTMLInputElement ? input : null;
 }
 
+function setNativeUploadSelection(textarea, selection) {
+  if (!selection) return;
+  textarea.setSelectionRange(selection.start, selection.end);
+  textarea.dispatchEvent(new FocusEvent("blur"));
+  textarea.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+}
+
+// A beta prompt threshold, not an assertion about the forum's server limit.
+const PASTED_IMAGE_PROMPT_SIZE = 5 * 1024 * 1024;
+
+async function shrinkPastedScreenshot(file) {
+  if (file.size <= PASTED_IMAGE_PROMPT_SIZE) return file;
+  const bitmap = await createImageBitmap(file);
+  try {
+    const canvas = document.createElement("canvas");
+    const type = file.type === "image/jpeg" ? "image/jpeg" : "image/png";
+    for (
+      let scale = Math.min(1, 4096 / Math.max(bitmap.width, bitmap.height));
+      scale > 0;
+      scale *= 0.7
+    ) {
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+      canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, type, 0.92));
+      if (!blob) throw new Error("无法缩小图片");
+      if (blob.size <= PASTED_IMAGE_PROMPT_SIZE) {
+        return new File(
+          [blob],
+          file.name.replace(/\.[^.]+$/, "") + (type === "image/png" ? ".png" : ".jpg"),
+          { type }
+        );
+      }
+      if (canvas.width === 1 && canvas.height === 1) break;
+    }
+    throw new Error("图片仍然过大");
+  } finally {
+    bitmap.close();
+  }
+}
+
+function choosePastedImageSize(workspace, surface, canShrink) {
+  const box = createElement("div", "cc98-rebuild-paste-choice");
+  box.setAttribute("role", "group");
+  box.setAttribute("aria-label", "选择图片大小");
+  box.append(createElement("span", "", "图片超过 5 MiB"));
+  return new Promise((resolve) => {
+    const finish = (value) => {
+      box.remove();
+      if (surface.isConnected) surface.focus({ preventScroll: true });
+      resolve(value);
+    };
+    const choices = [
+      ...(canShrink ? [["缩小后插入", "shrink"]] : []),
+      ["使用原图", "original"],
+      ["取消", "cancel"]
+    ];
+    for (const [label, value] of choices) box.append(createButton("", label, () => finish(value)));
+    box.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        finish("cancel");
+      }
+    });
+    workspace.before(box);
+    box.querySelector("button").focus({ preventScroll: true });
+  });
+}
+
+function pasteNativeEditorImages(event, editor, state) {
+  const files = Array.from(event.clipboardData?.files || []).filter((file) =>
+    file.type.startsWith("image/")
+  );
+  if (!files.length) return false;
+  event.preventDefault();
+  event.stopPropagation();
+  const input = getNativeEditorUploadInput(editor);
+  const notify = (message) => showRebuiltTransientToast(state.workspace, message);
+  if (!input) {
+    notify("此编辑器没有图片上传入口");
+    return true;
+  }
+  if (state.pastePending || input.files?.length) {
+    notify("请先完成当前图片上传");
+    return true;
+  }
+  const { textarea, visual, sourceEditor, workspace } = state;
+  const surface = event.currentTarget;
+  const source = textarea.value;
+  if (event.currentTarget === visual) rememberProfileSignatureWysiwygRange(editor, visual);
+  const selection =
+    event.currentTarget === sourceEditor
+      ? getProfileSignatureSourceSelection(sourceEditor)
+      : getEditorColorSourceSelectionForApply(editor.__cc98WysiwygLogicalSelection, source);
+  if (!selection) {
+    notify("请在插入位置重新粘贴");
+    return true;
+  }
+  state.pastePending = true;
+  (async () => {
+    let selected = files;
+    if (files.some((file) => file.size > PASTED_IMAGE_PROMPT_SIZE)) {
+      const canShrink = files.every(
+        (file) => file.size <= PASTED_IMAGE_PROMPT_SIZE || /^image\/(png|jpeg)$/.test(file.type)
+      );
+      const choice = await choosePastedImageSize(workspace, surface, canShrink);
+      if (choice === "cancel") return;
+      if (choice === "shrink") {
+        selected = [];
+        for (const file of files) selected.push(await shrinkPastedScreenshot(file));
+      }
+    }
+    if (!workspace.isConnected || !input.isConnected) return;
+    if (textarea.value !== source) {
+      notify("正文已修改，请在插入位置重新粘贴");
+      return;
+    }
+    const transfer = new DataTransfer();
+    selected.forEach((file) => transfer.items.add(file));
+    setNativeUploadSelection(textarea, selection);
+    input.files = transfer.files;
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  })()
+    .catch(() => notify("图片处理失败，可改用上传文件"))
+    .finally(() => {
+      state.pastePending = false;
+    });
+  return true;
+}
+
 function triggerNativeEditorUpload(editor, control) {
   const input = getNativeEditorUploadInput(editor, control);
   if (input instanceof HTMLInputElement) {
@@ -18105,9 +18297,7 @@ function triggerNativeEditorUpload(editor, control) {
       if (selection) {
         // CC98 inserts upload results using the offsets saved by its native
         // textarea's onBlur, not the selection in either visible pane.
-        state.textarea.setSelectionRange(selection.start, selection.end);
-        state.textarea.dispatchEvent(new FocusEvent("blur"));
-        state.textarea.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+        setNativeUploadSelection(state.textarea, selection);
       }
     }
     input.click();
@@ -22834,6 +23024,7 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
     }
   });
   sourceEditor.addEventListener("paste", (event) => {
+    if (pasteNativeEditorImages(event, editor, state)) return;
     const plainText = event.clipboardData?.getData("text/plain");
     if (typeof plainText !== "string") {
       return;
@@ -22870,6 +23061,7 @@ function createNativeDualUbbEditor(editor, ubbEditor, textarea) {
     syncFromVisual(getVisualDeletionNormalization(event));
   });
   visual.addEventListener("paste", (event) => {
+    if (pasteNativeEditorImages(event, editor, state)) return;
     const plainText = event.clipboardData?.getData("text/plain");
     if (typeof plainText !== "string") {
       return;
@@ -28809,10 +29001,12 @@ function syncHomeLive() {
   if (!homeLiveController && globalThis.CC98RebornHomeLive) {
     homeLiveController = globalThis.CC98RebornHomeLive.create({
       isActive: isHomeLiveActive,
-      onUpdate: syncHomeIndexUi
+      onUpdate: syncHomeIndexUi,
+      onDetails: paintHomeHotStats
     });
   }
   homeLiveController?.start();
+  syncHomeHotStats();
 }
 
 function createHomeOnlineIndicator() {
@@ -28837,6 +29031,8 @@ function getHomeCardState(item) {
   // A completed rank animation does not change the card's data. In particular,
   // online-count-only updates must not remount cards or restart their animation.
   const stableItem = { ...item, rankMovementAnimated: false };
+  delete stableItem.hotReplyCount;
+  delete stableItem.hotHitCount;
   return (
     getTopicCardRenderState(stableItem, reason, saved) ||
     JSON.stringify([
@@ -28850,9 +29046,61 @@ function getHomeCardState(item) {
   );
 }
 
+const homeHotStatValues = new WeakMap();
+
+function createHomeHotStats(topicId) {
+  const stats = createElement("div", "cc98-rebuild-home-stats");
+  stats.dataset.topicId = topicId;
+  for (const label of ["回复", "浏览"]) {
+    const field = createElement("span");
+    field.append(label + " ", createElement("b", "", "—"));
+    stats.append(field);
+  }
+  return stats;
+}
+
+function setHomeHotStats(stats, item) {
+  const values = [item.hotReplyCount ?? item.replyCount, item.hotHitCount];
+  homeHotStatValues.set(
+    stats,
+    values.map((value) =>
+      /^(?:\d+|\d+(?:\.\d+)?[万wk])$/i.test(String(value)) ? String(value) : null
+    )
+  );
+}
+
+function paintHomeHotStats() {
+  const details = homeLiveController?.details.current();
+  document.querySelectorAll("#cc98-comfort-app .cc98-rebuild-home-stats").forEach((stats) => {
+    const known = homeHotStatValues.get(stats);
+    const detail = details?.get(Number(stats.dataset.topicId));
+    [detail?.replyCount, detail?.hitCount].forEach((value, index) => {
+      const text = known?.[index] ?? String(value ?? "—");
+      const number = stats.children[index].lastElementChild;
+      if (number.textContent !== text) number.textContent = text;
+    });
+  });
+}
+
+function syncHomeHotStats() {
+  if (!homeLiveController) return;
+  const stats = document.querySelectorAll("#cc98-comfort-app .cc98-rebuild-home-stats");
+  const missing = [...stats].filter((node) => homeHotStatValues.get(node)?.includes(null));
+  homeLiveController.details.update(missing.map((node) => Number(node.dataset.topicId)));
+  paintHomeHotStats();
+}
+
 function renderHomeTopicCard(item, section, index, hotOnly) {
   const card = renderTopicCard(item);
   card.dataset.itemKey = `home-topic:${item.href || `${section.title}:${index}:${item.title}`}`;
+  if (item.rank && isHotHomeSection(section) && !card.classList.contains("cc98-rebuild-blocked")) {
+    const id = getHomeHotRankItemKey(item).match(/^topic:(\d+)$/)?.[1];
+    if (id) {
+      const stats = createHomeHotStats(id);
+      setHomeHotStats(stats, item);
+      card.append(stats);
+    }
+  }
   if (hotOnly && isHotHomeSection(section)) {
     const title = card.querySelector(".cc98-rebuild-card-title");
     if (title instanceof HTMLAnchorElement) title.title = item.title || "";
@@ -28885,6 +29133,9 @@ function syncHomeIndexUi() {
       const next = renderHomeTopicCard(item, section, index, hotOnly);
       if (card) card.replaceWith(next);
       card = next;
+    } else {
+      const stats = card.querySelector(".cc98-rebuild-home-stats");
+      if (stats) setHomeHotStats(stats, item);
     }
     const current = list.children[index] || null;
     if (current !== card) list.insertBefore(card, current);
@@ -28892,6 +29143,7 @@ function syncHomeIndexUi() {
   [...list.children].forEach((card) => {
     if (!expected.has(card.dataset.itemKey)) card.remove();
   });
+  syncHomeHotStats();
 }
 
 function renderHome(app) {
@@ -29516,7 +29768,11 @@ function renderBoardCard(board, pinned = false) {
     image.alt = "";
     card.append(image);
   }
-  card.append(createLink("cc98-rebuild-card-title", board.title, board.href));
+  card.append(
+    board.href
+      ? createLink("cc98-rebuild-card-title cc98-rebuild-board-link", board.title, board.href)
+      : createElement("span", "cc98-rebuild-card-title", board.title)
+  );
   if (board.meta) {
     card.append(createCardMetaElement(board.meta));
   }
@@ -31682,6 +31938,10 @@ function renderSearchHistory(box, input, suggestions, state, onSubmit) {
   return true;
 }
 
+function isSearchJumpId(value) {
+  return /^\d+$/.test(value) && Number.isSafeInteger(Number(value)) && Number(value) > 0;
+}
+
 function renderSearchSuggestions(
   box,
   input,
@@ -31691,6 +31951,27 @@ function renderSearchSuggestions(
 ) {
   box.textContent = "";
   box.dataset.state = state;
+  const keyword = input.value.trim();
+  if (isSearchJumpId(keyword)) {
+    box.dataset.numericJump = "true";
+    const id = Number(keyword);
+    for (const [label, route] of [
+      ["打开帖子", "/topic/"],
+      ["查看用户", "/user/id/"]
+    ]) {
+      box.append(
+        createLink(
+          "cc98-rebuild-search-suggestion",
+          `${label} · ${id}`,
+          buildCc98RouteHref(route + id)
+        )
+      );
+    }
+    box.dataset.hasHistory = "false";
+    box.hidden = false;
+    return;
+  }
+  delete box.dataset.numericJump;
   const hasHistory = renderSearchHistory(box, input, suggestions, state, onSubmit);
   box.dataset.hasHistory = String(hasHistory);
   if (state === "idle") {
@@ -32119,7 +32400,9 @@ function createSearchForm() {
   const scheduleSuggestions = () => {
     window.clearTimeout(suggestTimer);
     const keyword = input.value.trim();
-    if (keyword.length < 2) {
+    if (suggestionBox.dataset.numericJump && !isSearchJumpId(keyword))
+      renderSearchSuggestions(suggestionBox, input, [], "idle");
+    if (isSearchJumpId(keyword) || keyword.length < 2) {
       renderSearchSuggestions(suggestionBox, input, [], "idle");
       return;
     }
@@ -32155,9 +32438,9 @@ function createSearchForm() {
       scheduleSuggestions();
     }
   });
-  input.addEventListener("blur", () => {
+  inputWrap.addEventListener("focusout", () => {
     window.setTimeout(() => {
-      suggestionBox.hidden = true;
+      if (!inputWrap.contains(document.activeElement)) suggestionBox.hidden = true;
     }, 140);
   });
   form.addEventListener("submit", (event) => {
@@ -32260,7 +32543,13 @@ function createRebuiltSearchForm(preservedState = null) {
   const scheduleSuggestions = () => {
     window.clearTimeout(suggestTimer);
     const keyword = input.value.trim();
-    if (keyword.length < 2 || !canShowSearchSuggestionsForType(selectedSearchType)) {
+    if (suggestionBox.dataset.numericJump && !isSearchJumpId(keyword))
+      renderSearchSuggestions(suggestionBox, input, [], "idle", submitCurrentSearch);
+    if (
+      isSearchJumpId(keyword) ||
+      keyword.length < 2 ||
+      !canShowSearchSuggestionsForType(selectedSearchType)
+    ) {
       renderSearchSuggestions(suggestionBox, input, [], "idle", submitCurrentSearch);
       return;
     }
@@ -32317,9 +32606,9 @@ function createRebuiltSearchForm(preservedState = null) {
       scheduleSuggestions();
     }
   });
-  input.addEventListener("blur", () => {
+  inputWrap.addEventListener("focusout", () => {
     window.setTimeout(() => {
-      suggestionBox.hidden = true;
+      if (!inputWrap.contains(document.activeElement)) suggestionBox.hidden = true;
     }, 140);
   });
   form.addEventListener("submit", (event) => {

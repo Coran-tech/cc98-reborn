@@ -1,5 +1,6 @@
 const assert = require("node:assert/strict");
 const path = require("node:path");
+const fs = require("node:fs/promises");
 const { chromium } = require("playwright");
 
 async function main() {
@@ -41,6 +42,7 @@ async function main() {
           () => (offsets = [native.selectionStart, native.selectionEnd])
         );
         input.addEventListener("change", async () => {
+          editor.dataset.uploadSizes = [...input.files].map((f) => f.size).join(",");
           await new Promise((resolve) => setTimeout(resolve, 20));
           const [start, end] = offsets || [native.value.length, native.value.length];
           const tags = Array.from(input.files, (f) => "[img]" + f.name + "[/img]").join("");
@@ -115,8 +117,59 @@ async function main() {
       await page.locator(id + ' [title="插入图片"]').click();
       assert.equal(await page.locator(id + " textarea").inputValue(), "Left\nR" + code + "HT end");
     }
+    async function pasteImage(id, pane, large = false) {
+      await page.locator(id + " .cc98-rebuild-dual-ubb-" + pane).evaluate(async (el, large) => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 4;
+        canvas.height = 4;
+        const blob = await new Promise((done) => canvas.toBlob(done));
+        const parts = large ? [blob, new Uint8Array(5 * 1024 * 1024)] : [blob];
+        const file = new File(parts, "screen.png", { type: "image/png" });
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        el.dispatchEvent(
+          new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true })
+        );
+      }, large);
+    }
+    for (const [pane, large, choice] of [
+      ["visual", false, ""],
+      ["source", true, "取消"],
+      ["source", true, "缩小后插入"],
+      ["source", true, "使用原图"]
+    ]) {
+      await select("#native-editor", pane, 1, 3);
+      await pasteImage("#native-editor", pane, large);
+      if (choice) {
+        const msg = await page
+          .locator(".cc98-rebuild-toast-text,.cc98-rebuild-paste-choice")
+          .allTextContents();
+        assert(
+          await page.locator(".cc98-rebuild-paste-choice").count(),
+          "Missing image size choice: " + JSON.stringify(msg)
+        );
+        if (choice === "取消") {
+          await fs.mkdir(path.join(root, "outputs/beta-reading-tools"), { recursive: true });
+          await page
+            .locator(".cc98-rebuild-paste-choice")
+            .screenshot({ path: path.join(root, "outputs/beta-reading-tools/image-choice.png") });
+        }
+        await page.getByRole("button", { name: choice, exact: true }).click();
+      }
+      if (choice === "取消") {
+        assert.equal(await page.locator("#native-editor textarea").inputValue(), sample);
+      } else {
+        await page.waitForFunction(
+          () =>
+            document.querySelector("#native-editor textarea").value ===
+            "Left\nR[img]screen.png[/img]HT end"
+        );
+        const size = Number(await page.locator("#native-editor").getAttribute("data-upload-sizes"));
+        assert.equal(size > 5 * 1024 * 1024, choice === "使用原图");
+      }
+    }
     console.log(
-      "Image insertion: native upload, multi-editor isolation, image URL and signature source passed."
+      "Image insertion: native picker, both paste panes, oversized original/shrink/cancel, editor isolation and caret placement passed."
     );
   } finally {
     await browser.close();

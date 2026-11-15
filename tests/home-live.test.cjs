@@ -23,6 +23,7 @@ const topics = Array.from({ length: 10 }, (_, index) => ({
     "很高兴在这里遇见志同道合的朋友"
   ][index],
   boardId: 81 + (index % 3),
+  ...(index === 2 ? {} : { replyCount: index * 3, hitCount: 1200 + 213 * index }),
   boardName: ["校园信息", "似水流年", "开怀一笑"][index % 3]
 }));
 
@@ -34,7 +35,7 @@ function fixture({ empty = false } = {}) {
     )
     .join("");
   return `<!doctype html><html class="cc98-comfort"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CC98论坛</title>
-    ${["theme-tokens.css", "styles.css", "interface-styles.css"].map((file) => `<link rel="stylesheet" href="/src/${file}">`).join("")}
+    ${["theme-tokens.css", "styles.css", "interface-styles.css", "topic-drawer.css"].map((file) => `<link rel="stylesheet" href="/src/${file}">`).join("")}
     <style>.native{display:none!important}body{margin:0}</style></head><body>
     <div class="native mainPage"><div class="mainPageList"><div class="mainPageTitleText">热门话题</div>${native}</div><div class="mainPageList"><div class="mainPageTitleText">校园新闻</div><div class="mainPageListRow"><div class="mainPageListBoardName"><a href="/board/81">[校园信息]</a></div><div class="mainPageListTitle"><a href="/topic/8000001">另一分区保持不变</a></div></div></div></div>
     <main id="cc98-comfort-app" class="cc98-rebuild-shell" data-page-kind="home" data-home-hot-only="true">
@@ -42,6 +43,7 @@ function fixture({ empty = false } = {}) {
     </main>
     <script>
       window.chrome={runtime:{getURL:p=>location.origin+'/'+p,getManifest:()=>(${JSON.stringify({ version: manifest.version, version_name: manifest.version_name })}),onMessage:{addListener(){}},sendMessage:(m,c)=>{c?.({ok:false});return Promise.resolve({ok:false})}},storage:{local:{get:(k,c)=>{c?.({});return Promise.resolve({})},set:(v,c)=>{c?.();return Promise.resolve()}},onChanged:{addListener(){}}}};
+      localStorage.setItem('accessToken','str-Bearer fixture');
       window.__rebuildRequests=0;window.__homeFetches=[];
       const nativeFetch=window.fetch;
       window.fetch=function(url, options){if(String(url).includes('/config/index'))__homeFetches.push({url:String(url),headers:options?.headers,credentials:options?.credentials,at:Date.now()});return nativeFetch.call(this,url,options)};
@@ -179,6 +181,21 @@ async function main() {
         body: JSON.stringify(response)
       });
     }
+    if (url.origin === "https://api.cc98.org" && url.pathname === "/topic/basic")
+      return route.fulfill({
+        headers: {
+          "access-control-allow-origin": origin,
+          "access-control-allow-headers": "authorization"
+        },
+        contentType: "application/json",
+        body: JSON.stringify(
+          url.searchParams
+            .getAll("id")
+            .map(Number)
+            .filter((id) => id === topics[2].id)
+            .map((id) => ({ id, replyCount: 6, hitCount: 1626 }))
+        )
+      });
     if (url.origin === origin && url.pathname === "/")
       return route.fulfill({
         contentType: "text/html",
@@ -225,9 +242,25 @@ async function main() {
     );
 
     await snapshotCards(page);
+    const stats = page.locator(".cc98-rebuild-home-stats");
+    assert.equal(await stats.count(), 10);
+    assert.equal(await stats.first().locator("b").first().textContent(), "0");
+    assert.equal(await stats.nth(2).locator("b").first().textContent(), "—");
+    await page.clock.runFor(401);
+    await until(
+      page,
+      () =>
+        document.querySelector('[data-topic-id="7001003"].cc98-rebuild-home-stats b')
+          ?.textContent === "6",
+      "supplemented counters on the same card"
+    );
+    await assertStable(page);
     await page.locator(".cc98-rebuild-search input").fill("保留搜索输入");
     await page.locator(".cc98-rebuild-search input").focus();
-    response = { ...response, onlineUserCount: 4100 };
+    response = {
+      hotTopic: [{ ...topics[0], replyCount: 12 }, ...topics.slice(1)],
+      onlineUserCount: 4100
+    };
     await page.clock.fastForward(59_000);
     assert.equal(requests.length, 1, "no early poll");
     await page.clock.fastForward(1000);
@@ -238,6 +271,7 @@ async function main() {
     );
     assert.equal(requests.length, 2);
     await assertStable(page);
+    assert.equal(await stats.first().locator("b").first().textContent(), "12");
     assert.equal(await page.locator(".cc98-rebuild-search input").inputValue(), "保留搜索输入");
     assert(await page.evaluate(() => document.activeElement === __homeNodes.input));
     checks.push(
@@ -359,6 +393,7 @@ async function main() {
       await page.locator('[data-home-section-kind="hot"] .cc98-rebuild-blocked').count(),
       1
     );
+    assert.equal(await stats.count(), 9);
     await page.evaluate(() => {
       lastSettings.blockedTitleKeywords = "";
       lastSettings.openLinksInNewTab = true;
@@ -417,6 +452,11 @@ async function main() {
             `${themeStyle}: online is to the right of its row`
           );
           assert(!layout.overflow, `${themeStyle}: no horizontal overflow`);
+          assert(await stats.first().isVisible(), "numbers visible without hovering the topic");
+          assert.equal(
+            await page.locator('[data-home-section-kind="other"] .cc98-rebuild-home-stats').count(),
+            0
+          );
           if (themeStyle === "ascii") assert.equal(layout.online.radius, "0px");
           layouts.push({ hotOnly, themeStyle, themeMode, width: 1440, ...layout });
           await page.screenshot({
@@ -447,6 +487,79 @@ async function main() {
     }
     checks.push(
       "Modern/ASCII light/dark and full/hot-only headers preserve layout; narrow screens fit"
+    );
+
+    await page.evaluate(() => {
+      lastSettings.themeStyle = "modern";
+      mountHome();
+    });
+    for (const [width, height] of [
+      [1699, 935],
+      [1366, 768]
+    ]) {
+      await page.setViewportSize({ width, height });
+      const layout = await page
+        .locator(".cc98-rebuild-home-hot-section .cc98-rebuild-list")
+        .evaluate((list) => {
+          const cards = [...list.children];
+          const box = (index) => cards[index].getBoundingClientRect();
+          const rank = cards[9].querySelector(".cc98-rebuild-rank");
+          const title = cards[9].querySelector(".cc98-rebuild-card-title");
+          return {
+            bottomSpace: innerHeight - box(9).bottom,
+            fiveRows:
+              box(0).top === box(5).top &&
+              box(4).bottom === box(9).bottom &&
+              box(4).left < box(9).left,
+            largeRank:
+              parseFloat(getComputedStyle(rank).fontSize) >=
+              1.3 * parseFloat(getComputedStyle(title).fontSize),
+            rankFits: rank.getBoundingClientRect().right < title.getBoundingClientRect().left
+          };
+        });
+      assert(
+        layout.fiveRows &&
+          layout.largeRank &&
+          layout.rankFits &&
+          layout.bottomSpace >= 16 &&
+          layout.bottomSpace <= 40,
+        `desktop Top Ten at ${width}x${height}: ${JSON.stringify(layout)}`
+      );
+    }
+    for (const [width, split] of [
+      [1440, false],
+      [320, false],
+      [1440, true]
+    ]) {
+      await page.setViewportSize({ width, height: 900 });
+      const fits = await page.evaluate((split) => {
+        document.documentElement.classList.toggle("cc98-topic-drawer-split", split);
+        document.documentElement.style.setProperty("--cc98-drawer-width", "1080px");
+        const card = document.querySelector(".cc98-rebuild-home-hot-section .has-rank");
+        const title = card.querySelector(".cc98-rebuild-card-title");
+        const original = title.textContent;
+        title.textContent = "一个较长的帖子标题，测试窄屏时的换行和回复数的排版".repeat(3);
+        const rect = (selector) => card.querySelector(selector).getBoundingClientRect();
+        const rank = rect(".cc98-rebuild-rank"),
+          heading = title.getBoundingClientRect();
+        const board = rect(".cc98-rebuild-chip"),
+          stats = rect(".cc98-rebuild-home-stats");
+        const control = rect(".cc98-rebuild-read-later-button");
+        const count = rect(".cc98-rebuild-home-stats > span:last-child");
+        const fits =
+          rank.right < heading.left &&
+          heading.bottom <= board.top &&
+          board.right <= stats.left &&
+          stats.right <= card.getBoundingClientRect().right &&
+          (count.right <= control.left || count.bottom <= control.top);
+        title.textContent = original;
+        return fits;
+      }, split);
+      assert(fits, `rank, long title, board, counts and action fit at ${width}px, split=${split}`);
+    }
+    await page.evaluate(() => document.documentElement.classList.remove("cc98-topic-drawer-split"));
+    checks.push(
+      "Modern ranked cards keep the title and metadata clear in both columns, narrow screens and the drawer rail"
     );
 
     await page.evaluate(() => {

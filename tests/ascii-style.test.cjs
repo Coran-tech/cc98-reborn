@@ -133,6 +133,45 @@ async function main() {
     await forum.goto(`${origin}/topic/100/1`);
     const post = forum.locator('#cc98-comfort-app [data-post-floor="1"]');
     await post.waitFor();
+    if (process.argv.includes("--numeric-search")) {
+      await forum.evaluate(() => {
+        window.__suggestCalls = 0;
+        fetchSearchSuggestions = async () => {
+          window.__suggestCalls++;
+          return [];
+        };
+      });
+      for (const themeStyle of ["modern", "ascii"]) {
+        await patch({ themeStyle });
+        const form = forum.locator("#cc98-comfort-app .cc98-rebuild-search").first();
+        const input = form.locator("input[type=search]");
+        await input.fill("6677099");
+        const topic = form.getByRole("link", { name: "打开帖子 · 6677099" });
+        const user = form.getByRole("link", { name: "查看用户 · 6677099" });
+        assert.match(await topic.getAttribute("href"), /\/topic\/6677099$/);
+        assert.match(await user.getAttribute("href"), /\/user\/id\/6677099$/);
+        const jumps = form.locator(".cc98-rebuild-search-suggestions");
+        await jumps.screenshot({ path: path.join(output, "numeric-jump-" + themeStyle + ".png") });
+        await input.press("Tab");
+        await forum.waitForTimeout(950);
+        assert(await topic.evaluate((el) => el === document.activeElement && el.offsetWidth > 0));
+        assert.equal(await forum.evaluate(() => window.__suggestCalls), 0);
+        await input.fill("1");
+        await form.getByRole("link", { name: "打开帖子 · 1" }).waitFor();
+        await input.fill("x1");
+        assert.equal(await form.locator("a.cc98-rebuild-search-suggestion:visible").count(), 0);
+      }
+      const input = forum
+        .locator("#cc98-comfort-app .cc98-rebuild-search input[type=search]")
+        .first();
+      await input.fill("6677099");
+      await input.press("Enter");
+      await forum.waitForURL("**/search?**6677099*");
+      console.log(
+        "Numeric jumps: both themes, routes, keyboard focus, no suggestion requests, normal Enter search."
+      );
+      return;
+    }
     if (process.argv.includes("--author-card")) {
       const card = post.locator(".cc98-rebuild-post-author-card");
       const value = card

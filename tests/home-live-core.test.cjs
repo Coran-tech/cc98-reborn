@@ -194,6 +194,36 @@ async function main() {
     "another tab supplies the same display data"
   );
   cached.controller.stop();
+  const d = fixture();
+  const details = d.controller.details;
+  details.update([3, 1, 2]);
+  await d.advance(1000);
+  assert.equal(d.requests.length, 0, "no private requests without a forum session");
+  d.values.set("accessToken", "str-Bearer fixture");
+  details.update([3, 1, 2]);
+  await d.advance(400);
+  assert.equal(d.requests[0].url, "https://api.cc98.org/topic/basic?id=1&id=2&id=3");
+  await d.respond([{ id: 2 }, { id: 1, replyCount: "0", hitCount: 100 }]);
+  assert.equal(details.current()?.get(1).replyCount, 0);
+  assert.equal(details.current()?.get(2).hitCount, undefined);
+  details.update([2, 3, 1]);
+  await d.advance(700);
+  assert.equal(d.requests[1].url, "https://api.cc98.org/topic/2");
+  await d.respond({ id: 2, replyCount: 5, hitCount: 65 });
+  assert.equal(details.current()?.get(2).hitCount, 65);
+  assert.equal(details.current()?.get(3).replyCount, undefined, "do not probe a missing topic");
+  await d.advance(60_000);
+  details.update([1, 2, 3]);
+  await d.advance(1000);
+  assert.equal(d.requests.length, 2, "fresh private counts are reused");
+  d.values.set("accessToken", "str-Bearer another-fixture");
+  assert.equal(details.current()?.get(1), undefined, "previous account data must not be displayed");
+  details.update([2]);
+  await d.advance(400);
+  details.stop();
+  await d.respond([{ id: 2, replyCount: 99, hitCount: 99 }]);
+  assert.equal(details.current()?.get(2), undefined);
+  assert.equal(d.requests[2].options.signal.aborted, true);
   console.log(
     "Home index: normalization, minute polling, native/shared cache, empty/error preservation, throttling and lifecycle passed."
   );

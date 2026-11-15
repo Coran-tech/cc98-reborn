@@ -62,7 +62,6 @@
     "src/content-filter-core.js",
     "src/content-filter-frame.html",
     "src/content-filter-frame.js",
-    "src/content-filter-worker.js",
     "src/content-filter.js",
     "src/content.js",
     "src/conversation-core.js",

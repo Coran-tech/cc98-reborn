@@ -1,6 +1,6 @@
 # Release Checklist
 
-Current release target: `0.4.5`. Run all commands below from the repository root.
+Current release target: `0.4.6`. Run all commands below from the repository root.
 
 1. Confirm `manifest.json` version.
 2. Install the locked development dependencies with Node.js 22 and run the shared checks:
@@ -229,7 +229,7 @@ iframe and its dedicated Worker, covering native emotion counts, quote/signature
 exclusion, logic, regular-expression counts and timeout responsiveness, live
 conversation folding, cancellation, rule editing and persisted settings.
 The worker frame is created only for unresolved regex conditions and removed
-when the feature is disabled or the document closes. Include all five
+when the feature is disabled or the document closes. Include all four
 `src/content-filter*` runtime files in the package.
 
 For in-topic full-text search, run `node tests/topic-search.test.cjs`. It covers

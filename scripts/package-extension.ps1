@@ -88,7 +88,6 @@ if ($TestBuild) {
   "content-filter.js",
   "content-filter-frame.html",
   "content-filter-frame.js",
-  "content-filter-worker.js",
   "semantic-client.js",
   "semantic-filter-core.js",
   "semantic-background.js",

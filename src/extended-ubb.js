@@ -6,20 +6,67 @@
   const EXTENDED_UBB_TOUR_AUTO_ENABLED = false;
   const emotionPattern = /^\[(cc98\d{2}|ac(?:\d{2}|\d{4})|[acf]:\d{3}|tb\d{2}|ms\d{2}|em\d{2})\]/i;
   const openingTagPattern = /^\[(\/?)([a-z][a-z0-9-]*)(?:=([^\]]*))?\]/i;
-  const extendedTagPattern = /\[(?:\/?(?:left|center|right|quote|md|line|code|font|table|tr|th|td|upload|replyview|needreply|posteronly|allowviewer|noubb|english|cursor|topic|board|pm|user|math|m)(?:=|\])|img=)/i;
+  const extendedTagPattern =
+    /\[(?:\/?(?:left|center|right|quote|md|line|code|font|table|tr|th|td|upload|replyview|needreply|posteronly|allowviewer|noubb|english|cursor|topic|board|pm|user|math|m)(?:=|\])|img=)/i;
   const pairedTags = new Set([
-    "b", "i", "u", "s", "del", "url", "color", "size", "align",
-    "left", "center", "right", "quote", "font", "table", "tr", "th", "td",
-    "replyview", "english", "cursor", "topic", "board", "pm", "user"
+    "b",
+    "i",
+    "u",
+    "s",
+    "del",
+    "url",
+    "color",
+    "size",
+    "align",
+    "left",
+    "center",
+    "right",
+    "quote",
+    "font",
+    "table",
+    "tr",
+    "th",
+    "td",
+    "replyview",
+    "english",
+    "cursor",
+    "topic",
+    "board",
+    "pm",
+    "user"
   ]);
   const rawTags = new Set([
-    "audio", "mp3", "video", "bili", "bilibili", "img", "upload",
-    "code", "md", "noubb", "math", "m"
+    "audio",
+    "mp3",
+    "video",
+    "bili",
+    "bilibili",
+    "img",
+    "upload",
+    "code",
+    "md",
+    "noubb",
+    "math",
+    "m"
   ]);
   const emptyTags = new Set(["line", "needreply", "posteronly", "allowviewer"]);
   const localContainerTags = new Set([
-    "left", "center", "right", "quote", "font", "table", "tr", "th", "td",
-    "replyview", "english", "cursor", "topic", "board", "pm", "user"
+    "left",
+    "center",
+    "right",
+    "quote",
+    "font",
+    "table",
+    "tr",
+    "th",
+    "td",
+    "replyview",
+    "english",
+    "cursor",
+    "topic",
+    "board",
+    "pm",
+    "user"
   ]);
 
   const createElement = (tagName, className = "", text = "") => {
@@ -34,8 +81,10 @@
   };
 
   function isTableStructureNode(node) {
-    return node instanceof HTMLElement
-      && ["TABLE", "THEAD", "TBODY", "TFOOT", "TR"].includes(node.tagName);
+    return (
+      node instanceof HTMLElement &&
+      ["TABLE", "THEAD", "TBODY", "TFOOT", "TR"].includes(node.tagName)
+    );
   }
 
   function appendText(parent, value) {
@@ -84,9 +133,13 @@
         return extensionAsset(`images/mahjong/animal2017/${code}.png`);
       }
       if (prefix === "c") {
-        return extensionAsset(`images/mahjong/carton2017/${code}.${[18, 49, 96].includes(numericId) ? "gif" : "png"}`);
+        return extensionAsset(
+          `images/mahjong/carton2017/${code}.${[18, 49, 96].includes(numericId) ? "gif" : "png"}`
+        );
       }
-      return extensionAsset(`images/mahjong/face2017/${code}.${[4, 9, 56, 61, 62, 87, 115, 120, 137, 168, 169, 175, 206].includes(numericId) ? "gif" : "png"}`);
+      return extensionAsset(
+        `images/mahjong/face2017/${code}.${[4, 9, 56, 61, 62, 87, 115, 120, 137, 168, 169, 175, 206].includes(numericId) ? "gif" : "png"}`
+      );
     }
     match = String(tag || "").match(/^tb(\d{2})$/i);
     if (match) {
@@ -101,7 +154,10 @@
   }
 
   function createEmotion(tag) {
-    const wrap = createElement("span", "cc98-rebuild-inline-emoji-wrap cc98-local-experimental-emoji");
+    const wrap = createElement(
+      "span",
+      "cc98-rebuild-inline-emoji-wrap cc98-local-experimental-emoji"
+    );
     wrap.dataset.cc98UbbEmotionTag = tag;
     const image = createElement("img", "cc98-rebuild-inline-emoji");
     image.src = emotionUrl(tag);
@@ -173,7 +229,9 @@
       node = document.createElement("tr");
     } else if (tag === "th" || tag === "td") {
       node = document.createElement(tag);
-      const [rowSpan, colSpan] = String(value || "").split(",").map((part) => Number.parseInt(part, 10));
+      const [rowSpan, colSpan] = String(value || "")
+        .split(",")
+        .map((part) => Number.parseInt(part, 10));
       if (Number.isFinite(rowSpan) && rowSpan > 0) {
         node.rowSpan = Math.min(100, rowSpan);
       }
@@ -259,7 +317,11 @@
     });
     const template = document.createElement("template");
     template.innerHTML = converter.makeHtml(markdown);
-    template.content.querySelectorAll("script, style, iframe, object, embed, form, input, textarea, select, button, link, meta, base, foreignObject, animate, animateMotion, animateTransform, set").forEach((node) => node.remove());
+    template.content
+      .querySelectorAll(
+        "script, style, iframe, object, embed, form, input, textarea, select, button, link, meta, base, foreignObject, animate, animateMotion, animateTransform, set"
+      )
+      .forEach((node) => node.remove());
     template.content.querySelectorAll("*").forEach((node) => {
       [...node.attributes].forEach((attribute) => {
         const name = attribute.name.toLowerCase();
@@ -304,7 +366,7 @@
   function markdownCodeFence(value, minimum = 1) {
     const longest = Math.max(
       0,
-      ...([...String(value || "").matchAll(/`+/g)].map((match) => match[0].length))
+      ...[...String(value || "").matchAll(/`+/g)].map((match) => match[0].length)
     );
     return "`".repeat(Math.max(minimum, longest + 1));
   }
@@ -314,27 +376,35 @@
       return "";
     }
     const ordered = list.tagName.toLowerCase() === "ol";
-    const start = ordered ? Math.max(1, Number.parseInt(list.getAttribute("start") || "1", 10) || 1) : 1;
+    const start = ordered
+      ? Math.max(1, Number.parseInt(list.getAttribute("start") || "1", 10) || 1)
+      : 1;
     const rows = [...list.children].filter((child) => child.tagName?.toLowerCase() === "li");
-    const output = rows.map((item, index) => {
-      const nestedLists = [...item.children].filter((child) => /^(?:ul|ol)$/i.test(child.tagName));
-      const content = [...item.childNodes]
-        .filter((child) => !(child instanceof HTMLElement && /^(?:ul|ol)$/i.test(child.tagName)))
-        .map((child) => serializeMarkdownNode(
-          child,
-          child instanceof Text || !/^(?:p|div|section|article)$/i.test(child.tagName || "")
-        ))
-        .join("")
-        .replace(/\n{2,}/g, "\n")
-        .replace(/^\n+|\n+$/g, "");
-      const marker = ordered ? `${start + index}. ` : "- ";
-      const indent = "  ".repeat(Math.max(0, depth));
-      let line = `${indent}${marker}${content || " "}`;
-      nestedLists.forEach((nested) => {
-        line += `\n${serializeMarkdownList(nested, depth + 1).replace(/\n+$/g, "")}`;
-      });
-      return line;
-    }).join("\n");
+    const output = rows
+      .map((item, index) => {
+        const nestedLists = [...item.children].filter((child) =>
+          /^(?:ul|ol)$/i.test(child.tagName)
+        );
+        const content = [...item.childNodes]
+          .filter((child) => !(child instanceof HTMLElement && /^(?:ul|ol)$/i.test(child.tagName)))
+          .map((child) =>
+            serializeMarkdownNode(
+              child,
+              child instanceof Text || !/^(?:p|div|section|article)$/i.test(child.tagName || "")
+            )
+          )
+          .join("")
+          .replace(/\n{2,}/g, "\n")
+          .replace(/^\n+|\n+$/g, "");
+        const marker = ordered ? `${start + index}. ` : "- ";
+        const indent = "  ".repeat(Math.max(0, depth));
+        let line = `${indent}${marker}${content || " "}`;
+        nestedLists.forEach((nested) => {
+          line += `\n${serializeMarkdownList(nested, depth + 1).replace(/\n+$/g, "")}`;
+        });
+        return line;
+      })
+      .join("\n");
     return output ? `${output}\n\n` : "";
   }
 
@@ -342,27 +412,32 @@
     if (!(table instanceof HTMLTableElement)) {
       return "";
     }
-    const rows = [...table.querySelectorAll(
-      ":scope > thead > tr, :scope > tbody > tr, :scope > tfoot > tr, :scope > tr"
-    )];
+    const rows = [
+      ...table.querySelectorAll(
+        ":scope > thead > tr, :scope > tbody > tr, :scope > tfoot > tr, :scope > tr"
+      )
+    ];
     if (!rows.length) {
       return "";
     }
-    const values = rows.map((row) => [...row.children]
-      .filter((cell) => /^(?:th|td)$/i.test(cell.tagName))
-      .map((cell) => serializeMarkdownInlineChildren(cell)
-        .replace(/\|/g, "\\|")
-        .replace(/\n+/g, "<br>")
-        .trim()));
+    const values = rows.map((row) =>
+      [...row.children]
+        .filter((cell) => /^(?:th|td)$/i.test(cell.tagName))
+        .map((cell) =>
+          serializeMarkdownInlineChildren(cell).replace(/\|/g, "\\|").replace(/\n+/g, "<br>").trim()
+        )
+    );
     const width = Math.max(1, ...values.map((row) => row.length));
     const normalizeRow = (row) => Array.from({ length: width }, (_, index) => row[index] || "");
     const header = normalizeRow(values[0]);
     const body = values.slice(1).map(normalizeRow);
-    return [
-      `| ${header.join(" | ")} |`,
-      `| ${header.map(() => "---").join(" | ")} |`,
-      ...body.map((row) => `| ${row.join(" | ")} |`)
-    ].join("\n") + "\n\n";
+    return (
+      [
+        `| ${header.join(" | ")} |`,
+        `| ${header.map(() => "---").join(" | ")} |`,
+        ...body.map((row) => `| ${row.join(" | ")} |`)
+      ].join("\n") + "\n\n"
+    );
   }
 
   function serializeMarkdownNode(node, inline = false) {
@@ -407,8 +482,9 @@
         .replace(/\r\n?/g, "\n")
         .replace(/\n+$/g, "");
       const fence = markdownCodeFence(value, 3);
-      const language = node.querySelector(":scope > code")?.className
-        .match(/(?:^|\s)language-([^\s]+)/)?.[1] || "";
+      const language =
+        node.querySelector(":scope > code")?.className.match(/(?:^|\s)language-([^\s]+)/)?.[1] ||
+        "";
       return `${fence}${language}\n${value}\n${fence}\n\n`;
     }
     if (/^h[1-6]$/.test(tag)) {
@@ -416,7 +492,10 @@
     }
     if (tag === "blockquote") {
       const value = serializeMarkdownBlockChildren(node).replace(/^\n+|\n+$/g, "");
-      return `${value.split("\n").map((line) => `> ${line}`).join("\n")}\n\n`;
+      return `${value
+        .split("\n")
+        .map((line) => `> ${line}`)
+        .join("\n")}\n\n`;
     }
     if (tag === "ul" || tag === "ol") {
       return serializeMarkdownList(node);
@@ -439,21 +518,21 @@
 
   function serializeMarkdownBlockChildren(parent) {
     const children = [...(parent?.childNodes || [])];
-    const isStructuralBlock = (node) => node instanceof HTMLElement
-      && /^(?:address|article|aside|blockquote|div|footer|h[1-6]|header|hr|main|nav|ol|p|pre|section|table|ul)$/i.test(node.tagName);
+    const isStructuralBlock = (node) =>
+      node instanceof HTMLElement &&
+      /^(?:address|article|aside|blockquote|div|footer|h[1-6]|header|hr|main|nav|ol|p|pre|section|table|ul)$/i.test(
+        node.tagName
+      );
     return children
       .map((child, index) => {
         if (child instanceof HTMLBRElement && index === children.length - 1) {
           return "";
         }
         if (
-          child instanceof Text
-          && /[\r\n]/.test(child.nodeValue || "")
-          && !String(child.nodeValue || "").trim()
-          && (
-            isStructuralBlock(children[index - 1])
-            || isStructuralBlock(children[index + 1])
-          )
+          child instanceof Text &&
+          /[\r\n]/.test(child.nodeValue || "") &&
+          !String(child.nodeValue || "").trim() &&
+          (isStructuralBlock(children[index - 1]) || isStructuralBlock(children[index + 1]))
         ) {
           return "";
         }
@@ -531,7 +610,9 @@
     block.spellcheck = false;
 
     const list = document.createElement("ol");
-    const lines = String(content || "").replace(/\r\n?/g, "\n").split("\n");
+    const lines = String(content || "")
+      .replace(/\r\n?/g, "\n")
+      .split("\n");
     while (lines.length > 0 && !lines[0]) {
       lines.shift();
     }
@@ -559,7 +640,11 @@
       const math = createElement(tag === "m" ? "span" : "div", "cc98-local-experimental-math");
       try {
         if (window.katex?.render) {
-          window.katex.render(content, math, { displayMode: tag === "math", throwOnError: false, strict: "ignore" });
+          window.katex.render(content, math, {
+            displayMode: tag === "math",
+            throwOnError: false,
+            strict: "ignore"
+          });
         } else {
           math.textContent = content;
         }
@@ -573,12 +658,21 @@
       return createImageBlock(content.trim(), hidden, rawSource);
     }
     if (tag === "upload") {
-      const parts = String(value || "").toLowerCase().split(",");
+      const parts = String(value || "")
+        .toLowerCase()
+        .split(",");
       const source = content.trim();
       const path = source.split(/[?#]/)[0];
-      const imageType = /^(?:jpe?g|png|gif|bmp|webp)$/.test(parts[0]) || /\.(?:jpe?g|png|gif|bmp|webp)$/i.test(path);
+      const imageType =
+        /^(?:jpe?g|png|gif|bmp|webp)$/.test(parts[0]) ||
+        /\.(?:jpe?g|png|gif|bmp|webp)$/i.test(path);
       if (imageType) {
-        return createImageBlock(source, Number.parseInt(parts[1], 10) === 1, rawSource, "upload 图片");
+        return createImageBlock(
+          source,
+          Number.parseInt(parts[1], 10) === 1,
+          rawSource,
+          "upload 图片"
+        );
       }
       const link = createElement("a", "cc98-local-experimental-download");
       link.href = safeUrl(source) || source;
@@ -714,7 +808,10 @@
   }
 
   function render(source) {
-    const article = createElement("article", "cc98-rebuild-ubb-preview-rendered cc98-local-experimental-syntax");
+    const article = createElement(
+      "article",
+      "cc98-rebuild-ubb-preview-rendered cc98-local-experimental-syntax"
+    );
     parseInto(article, String(source || ""), { index: 0 });
     return article;
   }
@@ -741,28 +838,31 @@
     if (!(node instanceof HTMLElement)) {
       return false;
     }
-    return node.matches([
-      ".cc98-local-experimental-quote",
-      "[data-cc98-local-ubb-tag]",
-      "[data-cc98-ubb-tag]",
-      "strong",
-      "b",
-      "em",
-      "i",
-      "u",
-      "del",
-      "s",
-      "a[href]",
-      "[style*='color']",
-      "[style*='font-']",
-      "[style*='text-align']"
-    ].join(","));
+    return node.matches(
+      [
+        ".cc98-local-experimental-quote",
+        "[data-cc98-local-ubb-tag]",
+        "[data-cc98-ubb-tag]",
+        "strong",
+        "b",
+        "em",
+        "i",
+        "u",
+        "del",
+        "s",
+        "a[href]",
+        "[style*='color']",
+        "[style*='font-']",
+        "[style*='text-align']"
+      ].join(",")
+    );
   }
 
   function getOutermostVisualFormattingBoundary(root, range) {
-    let current = range.startContainer instanceof Element
-      ? range.startContainer
-      : range.startContainer.parentElement;
+    let current =
+      range.startContainer instanceof Element
+        ? range.startContainer
+        : range.startContainer.parentElement;
     let boundary = null;
     while (current instanceof HTMLElement && current !== root) {
       if (isVisualFormattingBoundary(current)) {
@@ -780,7 +880,9 @@
     if (String(fragment.textContent || "").replace(/[\s\u200b\uFEFF]/g, "")) {
       return true;
     }
-    return Boolean(fragment.querySelector("img, audio, video, br, hr, table, [data-cc98-local-ubb-source]"));
+    return Boolean(
+      fragment.querySelector("img, audio, video, br, hr, table, [data-cc98-local-ubb-source]")
+    );
   }
 
   function elementHasVisibleContent(element) {
@@ -790,7 +892,9 @@
     if (String(element.textContent || "").replace(/[\s\u200b\uFEFF]/g, "")) {
       return true;
     }
-    return Boolean(element.querySelector("img, audio, video, hr, table, [data-cc98-local-ubb-source]"));
+    return Boolean(
+      element.querySelector("img, audio, video, hr, table, [data-cc98-local-ubb-source]")
+    );
   }
 
   function setVisualCaret(node, offset = 0) {
@@ -798,9 +902,8 @@
     if (!selection) {
       return;
     }
-    const maximumOffset = node instanceof Text
-      ? String(node.nodeValue || "").length
-      : node.childNodes.length;
+    const maximumOffset =
+      node instanceof Text ? String(node.nodeValue || "").length : node.childNodes.length;
     const range = document.createRange();
     range.setStart(node, Math.max(0, Math.min(Number(offset) || 0, maximumOffset)));
     range.collapse(true);
@@ -809,9 +912,10 @@
   }
 
   function dispatchVisualLineBreakInput(root, inputType = "insertParagraph") {
-    const inputEvent = typeof InputEvent === "function"
-      ? new InputEvent("input", { bubbles: true, inputType, data: null })
-      : new Event("input", { bubbles: true });
+    const inputEvent =
+      typeof InputEvent === "function"
+        ? new InputEvent("input", { bubbles: true, inputType, data: null })
+        : new Event("input", { bubbles: true });
     root.dispatchEvent(inputEvent);
   }
 
@@ -824,9 +928,10 @@
     if (!(range.commonAncestorContainer === root || root.contains(range.commonAncestorContainer))) {
       return null;
     }
-    const startElement = range.startContainer instanceof Element
-      ? range.startContainer
-      : range.startContainer.parentElement;
+    const startElement =
+      range.startContainer instanceof Element
+        ? range.startContainer
+        : range.startContainer.parentElement;
     const line = startElement?.closest?.(".cc98-local-experimental-code-line");
     const block = line?.closest?.(".cc98-local-experimental-code[data-cc98-local-ubb-tag='code']");
     return line instanceof HTMLLIElement && block instanceof HTMLElement && root.contains(block)
@@ -870,9 +975,8 @@
   function cloneEditableCodeBlockShell(block, list) {
     const nextBlock = block.cloneNode(false);
     nextBlock.removeAttribute("id");
-    const nextList = list instanceof HTMLOListElement
-      ? list.cloneNode(false)
-      : document.createElement("ol");
+    const nextList =
+      list instanceof HTMLOListElement ? list.cloneNode(false) : document.createElement("ol");
     nextList.removeAttribute("id");
     nextBlock.append(nextList);
     return { block: nextBlock, list: nextList };
@@ -890,14 +994,17 @@
   }
 
   function isCodeRangeAtLineStart(range, line) {
-    return range.collapsed
-      && !getCodeLineRangeText(line, range.startContainer, range.startOffset);
+    return range.collapsed && !getCodeLineRangeText(line, range.startContainer, range.startOffset);
   }
 
   function moveEditableCodeLineOutside(root, context, inputType = "insertParagraph") {
     const { line, block } = context || {};
     const list = line?.parentElement;
-    if (!(line instanceof HTMLLIElement) || !(block instanceof HTMLElement) || !(list instanceof HTMLOListElement)) {
+    if (
+      !(line instanceof HTMLLIElement) ||
+      !(block instanceof HTMLElement) ||
+      !(list instanceof HTMLOListElement)
+    ) {
       return false;
     }
     const lines = [...list.children].filter((child) => child instanceof HTMLLIElement);
@@ -921,9 +1028,7 @@
       block.remove();
     }
 
-    const caretTarget = plainLine.firstChild instanceof Text
-      ? plainLine.firstChild
-      : plainLine;
+    const caretTarget = plainLine.firstChild instanceof Text ? plainLine.firstChild : plainLine;
     setVisualCaret(caretTarget, 0);
     root.focus({ preventScroll: true });
     dispatchVisualLineBreakInput(root, inputType);
@@ -982,7 +1087,10 @@
       return null;
     }
     const range = selection.getRangeAt(0);
-    if (!range.collapsed || !(range.startContainer === block || block.contains(range.startContainer))) {
+    if (
+      !range.collapsed ||
+      !(range.startContainer === block || block.contains(range.startContainer))
+    ) {
       return null;
     }
     const marker = createElement("span", "cc98-local-code-caret-marker");
@@ -996,7 +1104,11 @@
   }
 
   function restoreCodeCaretMarker(root, marker) {
-    if (!(marker instanceof HTMLElement) || !marker.isConnected || !(marker.parentNode instanceof Node)) {
+    if (
+      !(marker instanceof HTMLElement) ||
+      !marker.isConnected ||
+      !(marker.parentNode instanceof Node)
+    ) {
       return;
     }
     const parent = marker.parentNode;
@@ -1013,10 +1125,11 @@
     const directChildren = [...block.childNodes];
     const directLists = directChildren.filter((node) => node instanceof HTMLOListElement);
     const validList = directLists.length === 1 ? directLists[0] : null;
-    const valid = directChildren.length === 1
-      && validList instanceof HTMLOListElement
-      && validList.childNodes.length > 0
-      && [...validList.childNodes].every((node) => node instanceof HTMLLIElement);
+    const valid =
+      directChildren.length === 1 &&
+      validList instanceof HTMLOListElement &&
+      validList.childNodes.length > 0 &&
+      [...validList.childNodes].every((node) => node instanceof HTMLLIElement);
     if (valid) {
       return false;
     }
@@ -1066,7 +1179,9 @@
       return false;
     }
     let changed = false;
-    [...root.querySelectorAll(".cc98-local-experimental-code[data-cc98-local-ubb-tag='code']")].forEach((block) => {
+    [
+      ...root.querySelectorAll(".cc98-local-experimental-code[data-cc98-local-ubb-tag='code']")
+    ].forEach((block) => {
       changed = normalizeEscapedEditableCodeBlock(root, block) || changed;
     });
     return changed;
@@ -1076,8 +1191,9 @@
     if (!(block instanceof HTMLElement)) {
       return [];
     }
-    return [...block.querySelectorAll(":scope > ol > li")]
-      .filter((line) => line instanceof HTMLLIElement);
+    return [...block.querySelectorAll(":scope > ol > li")].filter(
+      (line) => line instanceof HTMLLIElement
+    );
   }
 
   function getCodeSelectionOffset(block, container, offset) {
@@ -1088,10 +1204,13 @@
     if (lineIndex < 0) {
       return null;
     }
-    const priorLength = lines.slice(0, lineIndex).reduce(
-      (total, item) => total + String(item.textContent || "").replace(/[\u200b\uFEFF]/g, "").length + 1,
-      0
-    );
+    const priorLength = lines
+      .slice(0, lineIndex)
+      .reduce(
+        (total, item) =>
+          total + String(item.textContent || "").replace(/[\u200b\uFEFF]/g, "").length + 1,
+        0
+      );
     return priorLength + getCodeLineRangeText(line, container, offset).length;
   }
 
@@ -1175,9 +1294,8 @@
     normalizeEditableCodeLine(line);
     normalizeEditableCodeLine(nextLine);
 
-    const caretTarget = nextLine.firstChild instanceof HTMLBRElement
-      ? nextLine
-      : nextLine.firstChild || nextLine;
+    const caretTarget =
+      nextLine.firstChild instanceof HTMLBRElement ? nextLine : nextLine.firstChild || nextLine;
     setVisualCaret(caretTarget, 0);
     root.focus({ preventScroll: true });
     dispatchVisualLineBreakInput(root);
@@ -1241,7 +1359,9 @@
       return String(root.textContent || "").length;
     }
     const current = selection.getRangeAt(0);
-    if (!(current.commonAncestorContainer === root || root.contains(current.commonAncestorContainer))) {
+    if (!(
+      current.commonAncestorContainer === root || root.contains(current.commonAncestorContainer)
+    )) {
       return String(root.textContent || "").length;
     }
     const measured = document.createRange();
@@ -1294,7 +1414,10 @@
     let range = null;
     if (selection && selection.rangeCount > 0) {
       const candidate = selection.getRangeAt(0);
-      if (candidate.commonAncestorContainer === root || root.contains(candidate.commonAncestorContainer)) {
+      if (
+        candidate.commonAncestorContainer === root ||
+        root.contains(candidate.commonAncestorContainer)
+      ) {
         range = candidate;
       }
     }
@@ -1311,129 +1434,179 @@
     range.collapse(true);
     selection?.removeAllRanges();
     selection?.addRange(range);
-    const inputEvent = typeof InputEvent === "function"
-      ? new InputEvent("input", { bubbles: true, inputType: "insertText", data: text })
-      : new Event("input", { bubbles: true });
+    const inputEvent =
+      typeof InputEvent === "function"
+        ? new InputEvent("input", { bubbles: true, inputType: "insertText", data: text })
+        : new Event("input", { bubbles: true });
     root.dispatchEvent(inputEvent);
     window.requestAnimationFrame(() => restoreLogicalCaret(root, start + text.length));
   }
 
-  document.addEventListener("input", (event) => {
-    const visualEditor = getVisualEditorFromEvent(event);
-    if (visualEditor) {
-      normalizeEscapedEditableCodeBlocks(visualEditor);
-    }
-  }, true);
+  document.addEventListener(
+    "input",
+    (event) => {
+      const visualEditor = getVisualEditorFromEvent(event);
+      if (visualEditor) {
+        normalizeEscapedEditableCodeBlocks(visualEditor);
+      }
+    },
+    true
+  );
 
-  document.addEventListener("keydown", (event) => {
-    const visualEditor = getVisualEditorFromEvent(event);
-    const codeContext = visualEditor ? getEditableCodeLineContext(visualEditor) : null;
-    if (
-      visualEditor
-      && codeContext
-      && event.key === "Tab"
-      && !event.isComposing
-      && !event.ctrlKey
-      && !event.metaKey
-      && !event.altKey
-    ) {
-      if (replaceEditableCodeSelectionWithText(visualEditor, "\t")) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
+  document.addEventListener(
+    "keydown",
+    (event) => {
+      const visualEditor = getVisualEditorFromEvent(event);
+      const codeContext = visualEditor ? getEditableCodeLineContext(visualEditor) : null;
+      if (
+        visualEditor &&
+        codeContext &&
+        event.key === "Tab" &&
+        !event.isComposing &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.altKey
+      ) {
+        if (replaceEditableCodeSelectionWithText(visualEditor, "\t")) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+        }
+        return;
       }
-      return;
-    }
-    if (
-      visualEditor
-      && codeContext
-      && event.key === "Backspace"
-      && !event.isComposing
-      && !event.ctrlKey
-      && !event.metaKey
-      && !event.altKey
-      && isCodeRangeAtLineStart(codeContext.range, codeContext.line)
-    ) {
-      const handled = codeContext.line.previousElementSibling instanceof HTMLLIElement
-        ? mergeEditableCodeLineBackward(visualEditor, codeContext)
-        : moveEditableCodeLineOutside(visualEditor, codeContext, "deleteContentBackward");
-      if (handled) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
+      if (
+        visualEditor &&
+        codeContext &&
+        event.key === "Backspace" &&
+        !event.isComposing &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.altKey &&
+        isCodeRangeAtLineStart(codeContext.range, codeContext.line)
+      ) {
+        const handled =
+          codeContext.line.previousElementSibling instanceof HTMLLIElement
+            ? mergeEditableCodeLineBackward(visualEditor, codeContext)
+            : moveEditableCodeLineOutside(visualEditor, codeContext, "deleteContentBackward");
+        if (handled) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+        }
+        return;
       }
-      return;
-    }
-    if (
-      visualEditor
-      && event.key === "Enter"
-      && !event.shiftKey
-      && !event.isComposing
-      && !event.ctrlKey
-      && !event.metaKey
-      && !event.altKey
-      && codeContext
-    ) {
-      if (insertEditableCodeLineBreak(visualEditor)) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
+      if (
+        visualEditor &&
+        event.key === "Enter" &&
+        !event.shiftKey &&
+        !event.isComposing &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.altKey &&
+        codeContext
+      ) {
+        if (insertEditableCodeLineBreak(visualEditor)) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+        }
+        return;
       }
-      return;
-    }
-    if (
-      visualEditor
-      && event.key === "Enter"
-      && event.shiftKey
-      && !event.isComposing
-      && !event.ctrlKey
-      && !event.metaKey
-      && !event.altKey
-    ) {
-      if (insertUnformattedVisualLine(visualEditor)) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
+      if (
+        visualEditor &&
+        event.key === "Enter" &&
+        event.shiftKey &&
+        !event.isComposing &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.altKey
+      ) {
+        if (insertUnformattedVisualLine(visualEditor)) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+        }
+        return;
       }
-      return;
-    }
 
-    const sourceEditor = getSourceEditorFromEvent(event);
-    if (!sourceEditor || event.key !== "Enter" || event.isComposing || event.ctrlKey || event.metaKey || event.altKey) {
-      return;
-    }
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    insertSourceEditorText(sourceEditor, "\n");
-  }, true);
-
-  document.addEventListener("paste", (event) => {
-    const visualEditor = getVisualEditorFromEvent(event);
-    const sourceEditor = getSourceEditorFromEvent(event);
-    const plainText = event.clipboardData?.getData("text/plain");
-    if (typeof plainText !== "string") {
-      return;
-    }
-    if (visualEditor && getEditableCodeLineContext(visualEditor)) {
-      if (replaceEditableCodeSelectionWithText(visualEditor, plainText)) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
+      const sourceEditor = getSourceEditorFromEvent(event);
+      if (
+        !sourceEditor ||
+        event.key !== "Enter" ||
+        event.isComposing ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.altKey
+      ) {
+        return;
       }
-      return;
-    }
-    if (!sourceEditor) {
-      return;
-    }
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    insertSourceEditorText(sourceEditor, plainText.replace(/\r\n?/g, "\n"));
-  }, true);
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      insertSourceEditorText(sourceEditor, "\n");
+    },
+    true
+  );
+
+  document.addEventListener(
+    "paste",
+    (event) => {
+      const visualEditor = getVisualEditorFromEvent(event);
+      const sourceEditor = getSourceEditorFromEvent(event);
+      // Let the native dual editor handle clipboard images, not an empty text paste.
+      if (
+        (sourceEditor || visualEditor)?.closest(".cc98-rebuild-native-dual-ubb-workspace") &&
+        Array.from(event.clipboardData?.files || []).some((file) => file.type.startsWith("image/"))
+      )
+        return;
+      const plainText = event.clipboardData?.getData("text/plain");
+      if (typeof plainText !== "string") {
+        return;
+      }
+      if (visualEditor && getEditableCodeLineContext(visualEditor)) {
+        if (replaceEditableCodeSelectionWithText(visualEditor, plainText)) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+        }
+        return;
+      }
+      if (!sourceEditor) {
+        return;
+      }
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      insertSourceEditorText(sourceEditor, plainText.replace(/\r\n?/g, "\n"));
+    },
+    true
+  );
 
   const localSyntaxCommands = [
     { id: "quote", label: "引用", hint: "引用块", before: "[quote]", after: "[/quote]" },
-    { id: "line", label: "分割线", hint: "插入横向分割线", replacement: (selected) => `${selected ? `${selected}\n` : ""}[line]\n` },
+    {
+      id: "line",
+      label: "分割线",
+      hint: "插入横向分割线",
+      replacement: (selected) => `${selected ? `${selected}\n` : ""}[line]\n`
+    },
     { id: "code", label: "代码", hint: "保留代码的空格与换行", before: "[code]", after: "[/code]" },
-    { id: "markdown", label: "Markdown", hint: "在 UBB 中嵌入 Markdown", before: "[md]", after: "[/md]" },
+    {
+      id: "markdown",
+      label: "Markdown",
+      hint: "在 UBB 中嵌入 Markdown",
+      before: "[md]",
+      after: "[/md]"
+    },
     { id: "math", label: "公式块", hint: "KaTeX 块级公式", before: "[math]", after: "[/math]" },
     { id: "inline-math", label: "行内公式", hint: "KaTeX 行内公式", before: "[m]", after: "[/m]" },
-    { id: "noubb", label: "原样文本", hint: "不解析内部 UBB", before: "[noubb]", after: "[/noubb]" },
-    { id: "english", label: "英文字体", hint: "使用论坛英文字体样式", before: "[english]", after: "[/english]" }
+    {
+      id: "noubb",
+      label: "原样文本",
+      hint: "不解析内部 UBB",
+      before: "[noubb]",
+      after: "[/noubb]"
+    },
+    {
+      id: "english",
+      label: "英文字体",
+      hint: "使用论坛英文字体样式",
+      before: "[english]",
+      after: "[/english]"
+    }
   ];
 
   function findDualEditorForToolbar(toolbar) {
@@ -1477,9 +1650,10 @@
       end: Number(result?.end) || 0
     });
     if (!result?.applied) {
-      const message = result?.reason === "selection-required"
-        ? "请先在上区或下区选中内容。"
-        : "没有完成插入，请重新选择后再试。";
+      const message =
+        result?.reason === "selection-required"
+          ? "请先在上区或下区选中内容。"
+          : "没有完成插入，请重新选择后再试。";
       setLocalToolStatus(tools, message, "error");
       return result;
     }
@@ -1494,9 +1668,7 @@
     }
     const normalizeDimension = (value) => {
       const numeric = Number(value);
-      return Number.isFinite(numeric)
-        ? Math.max(1, Math.min(6, Math.trunc(numeric)))
-        : 1;
+      return Number.isFinite(numeric) ? Math.max(1, Math.min(6, Math.trunc(numeric))) : 1;
     };
     const rows = normalizeDimension(rowCount);
     const columns = normalizeDimension(columnCount);
@@ -1523,19 +1695,25 @@
     const trigger = tools?.querySelector?.(".cc98-local-syntax-trigger");
     const panel = tools?.querySelector?.(".cc98-local-syntax-popover");
     if (
-      !(trigger instanceof HTMLButtonElement)
-      || !(panel instanceof HTMLElement)
-      || panel.hidden
-      || !trigger.isConnected
+      !(trigger instanceof HTMLButtonElement) ||
+      !(panel instanceof HTMLElement) ||
+      panel.hidden ||
+      !trigger.isConnected
     ) {
       return;
     }
     const viewportWidth = Math.max(240, document.documentElement.clientWidth || window.innerWidth);
-    const viewportHeight = Math.max(240, document.documentElement.clientHeight || window.innerHeight);
+    const viewportHeight = Math.max(
+      240,
+      document.documentElement.clientHeight || window.innerHeight
+    );
     const edge = 12;
     const gap = 8;
     const triggerRect = trigger.getBoundingClientRect();
-    const panelWidth = Math.min(panel.getBoundingClientRect().width || 360, viewportWidth - edge * 2);
+    const panelWidth = Math.min(
+      panel.getBoundingClientRect().width || 360,
+      viewportWidth - edge * 2
+    );
     const roomBelow = Math.max(0, viewportHeight - triggerRect.bottom - edge - gap);
     const roomAbove = Math.max(0, triggerRect.top - edge - gap);
     const openAbove = roomBelow < 280 && roomAbove > roomBelow;
@@ -1549,13 +1727,8 @@
       edge,
       Math.min(viewportWidth - panelWidth - edge, triggerRect.right - panelWidth)
     );
-    const preferredTop = openAbove
-      ? triggerRect.top - gap - panelHeight
-      : triggerRect.bottom + gap;
-    const top = Math.max(
-      edge,
-      Math.min(viewportHeight - panelHeight - edge, preferredTop)
-    );
+    const preferredTop = openAbove ? triggerRect.top - gap - panelHeight : triggerRect.bottom + gap;
+    const top = Math.max(edge, Math.min(viewportHeight - panelHeight - edge, preferredTop));
     panel.style.left = `${Math.round(left)}px`;
     panel.style.top = `${Math.round(Math.max(edge, top))}px`;
     panel.style.maxHeight = `${Math.round(panelHeight)}px`;
@@ -1569,7 +1742,9 @@
     }
     localPopoverPositionFrame = window.requestAnimationFrame(() => {
       localPopoverPositionFrame = 0;
-      document.querySelectorAll(".cc98-local-syntax-tools.is-open").forEach(positionLocalSyntaxPopover);
+      document
+        .querySelectorAll(".cc98-local-syntax-tools.is-open")
+        .forEach(positionLocalSyntaxPopover);
     });
   }
 
@@ -1698,7 +1873,8 @@
 
     const description = createElement("p", "cc98-local-syntax-tour-description");
     description.id = "cc98-extended-ubb-tour-description";
-    description.textContent = "双区编辑器新增了一组不常用、但很实用的 CC98 语法工具；提交时仍会写回原站 UBB 源码。";
+    description.textContent =
+      "双区编辑器新增了一组不常用、但很实用的 CC98 语法工具；提交时仍会写回原站 UBB 源码。";
 
     const featureList = createElement("dl", "cc98-local-syntax-tour-features");
     [
@@ -1720,7 +1896,11 @@
     const dismiss = createElement("button", "cc98-local-syntax-tour-button", "知道了");
     dismiss.type = "button";
     dismiss.addEventListener("click", () => closeExtendedUbbTour());
-    const open = createElement("button", "cc98-local-syntax-tour-button is-primary", "打开扩展语法");
+    const open = createElement(
+      "button",
+      "cc98-local-syntax-tour-button is-primary",
+      "打开扩展语法"
+    );
     open.type = "button";
     open.addEventListener("click", () => closeExtendedUbbTour({ openTools: true }));
     actions.append(dismiss, open);
@@ -1760,10 +1940,10 @@
 
   async function maybeShowExtendedUbbTour(tools) {
     if (
-      extendedUbbTourCheckPending
-      || extendedUbbTourDismissedForPage
-      || activeExtendedUbbTour
-      || !(tools instanceof HTMLElement)
+      extendedUbbTourCheckPending ||
+      extendedUbbTourDismissedForPage ||
+      activeExtendedUbbTour ||
+      !(tools instanceof HTMLElement)
     ) {
       return;
     }
@@ -1783,7 +1963,9 @@
     activeExtendedUbbTour = layer;
     document.body.append(layer);
     window.requestAnimationFrame(() => {
-      layer.querySelector(".cc98-local-syntax-tour-button.is-primary")?.focus({ preventScroll: true });
+      layer
+        .querySelector(".cc98-local-syntax-tour-button.is-primary")
+        ?.focus({ preventScroll: true });
     });
   }
 
@@ -1897,9 +2079,7 @@
       const url = String(input.value || "").trim();
       const result = applyLocalSyntaxEdit(
         tools,
-        url
-          ? { replacement: `[img=1]${url}[/img]` }
-          : { before: "[img=1]", after: "[/img]" },
+        url ? { replacement: `[img=1]${url}[/img]` } : { before: "[img=1]", after: "[/img]" },
         "隐藏图片语法已插入。"
       );
       if (result?.applied) {
@@ -1981,12 +2161,17 @@
   let localToolbarRefreshFrame = 0;
   function ensureLocalSyntaxToolbars() {
     localToolbarRefreshFrame = 0;
-    const toolbars = document.querySelectorAll(".cc98-rebuild-native-editor .ubb-buttons, .cc98-rebuild-native-editor .ubb-toolbar");
+    const toolbars = document.querySelectorAll(
+      ".cc98-rebuild-native-editor .ubb-buttons, .cc98-rebuild-native-editor .ubb-toolbar"
+    );
     if (!toolbars.length && activeExtendedUbbTour) {
       closeExtendedUbbTour({ remember: false, restoreFocus: false });
     }
     toolbars.forEach((toolbar) => {
-      if (!(toolbar instanceof HTMLElement) || toolbar.querySelector(":scope > .cc98-local-syntax-tools")) {
+      if (
+        !(toolbar instanceof HTMLElement) ||
+        toolbar.querySelector(":scope > .cc98-local-syntax-tools")
+      ) {
         return;
       }
       if (findDualEditorForToolbar(toolbar)) {
@@ -2002,26 +2187,38 @@
     localToolbarRefreshFrame = window.requestAnimationFrame(ensureLocalSyntaxToolbars);
   }
 
-  document.addEventListener("pointerdown", (event) => {
-    document.querySelectorAll(".cc98-local-syntax-tools").forEach((tools) => {
-      if (!tools.contains(event.target)) {
-        closeLocalSyntaxTools(tools);
+  document.addEventListener(
+    "pointerdown",
+    (event) => {
+      document.querySelectorAll(".cc98-local-syntax-tools").forEach((tools) => {
+        if (!tools.contains(event.target)) {
+          closeLocalSyntaxTools(tools);
+        }
+      });
+    },
+    true
+  );
+  document.addEventListener(
+    "keydown",
+    (event) => {
+      if (event.key !== "Escape") {
+        return;
       }
-    });
-  }, true);
-  document.addEventListener("keydown", (event) => {
-    if (event.key !== "Escape") {
-      return;
-    }
-    document.querySelectorAll(".cc98-local-syntax-tools").forEach(closeLocalSyntaxTools);
-  }, true);
+      document.querySelectorAll(".cc98-local-syntax-tools").forEach(closeLocalSyntaxTools);
+    },
+    true
+  );
   window.addEventListener("resize", scheduleLocalSyntaxPopoverPosition, { passive: true });
-  window.addEventListener("scroll", (event) => {
-    if (event.target instanceof Element && event.target.closest(".cc98-local-syntax-popover")) {
-      return;
-    }
-    scheduleLocalSyntaxPopoverPosition();
-  }, { passive: true, capture: true });
+  window.addEventListener(
+    "scroll",
+    (event) => {
+      if (event.target instanceof Element && event.target.closest(".cc98-local-syntax-popover")) {
+        return;
+      }
+      scheduleLocalSyntaxPopoverPosition();
+    },
+    { passive: true, capture: true }
+  );
 
   const localToolbarObserver = new MutationObserver(scheduleLocalSyntaxToolbarRefresh);
   const startLocalToolbarObserver = () => {

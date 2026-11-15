@@ -4,6 +4,15 @@
   const INTERVAL = 60_000;
   const TIMEOUT = 15_000;
   const CACHE_KEY = "cc98RebornHomeIndex:v1";
+  function counts(row) {
+    const result = {};
+    for (const key of ["replyCount", "hitCount"]) {
+      let value = row?.[key];
+      if (typeof value === "string" && /^\d+$/.test(value)) value = Number(value);
+      if (Number.isSafeInteger(value) && value >= 0) result[key] = value;
+    }
+    return result;
+  }
 
   function normalizeIndex(data) {
     if (!data || typeof data !== "object") return null;
@@ -30,7 +39,8 @@
         id: item.id,
         title: item.title,
         boardId: item.boardId,
-        boardName: item.boardName
+        boardName: item.boardName,
+        ...counts(item)
       }));
       if (new Set(hotTopic.map((item) => item.id)).size !== hotTopic.length) hotTopic = null;
     }
@@ -46,7 +56,173 @@
     return "";
   }
 
-  function create({ onUpdate, isActive }, host = root) {
+  // /config/index need not carry any counters. Ask the native batch endpoint
+  // first; some deployments return only id/title/deletion status there.
+  function createDetailReader(host, base, isActive, paint) {
+    const cache = new Map();
+    let owner = "",
+      requested = [],
+      job = null,
+      timer = null,
+      retryAt = 0;
+    const now = () => host.Date.now();
+    function authorization() {
+      try {
+        const expiry = Number(host.localStorage.getItem("accessToken_expirationTime"));
+        if (expiry && expiry * 1000 <= now()) return "";
+        const value = (host.localStorage.getItem("accessToken") || "").replace(/^str-/, "");
+        return /^Bearer\s+\S+$/i.test(value) ? value : "";
+      } catch {
+        return "";
+      }
+    }
+    function cancel() {
+      host.clearTimeout(timer);
+      timer = null;
+      job?.abort();
+      job = null;
+    }
+    function stop() {
+      cancel();
+      requested = [];
+      cache.clear();
+      owner = "";
+      retryAt = 0;
+    }
+    function update(ids) {
+      ids = [...new Set(ids)]
+        .filter((id) => Number.isSafeInteger(id) && id > 0)
+        .sort((a, b) => a - b)
+        .slice(0, 10);
+      const auth = authorization();
+      if (owner !== auth) {
+        stop();
+        owner = auth;
+      }
+      if (requested.join() !== ids.join()) {
+        cancel();
+        requested = [...ids];
+      }
+      for (const id of cache.keys()) if (!ids.includes(id)) cache.delete(id);
+      if (
+        !base ||
+        !auth ||
+        !ids.length ||
+        host.document?.hidden ||
+        !isActive() ||
+        job ||
+        timer != null ||
+        now() < retryAt
+      )
+        return;
+      const missing = ids.filter((id) => (cache.get(id)?.next || 0) <= now());
+      if (!missing.length) return;
+      timer = host.setTimeout(() => {
+        timer = null;
+        void load(missing, auth);
+      }, 400);
+    }
+    async function load(ids, auth) {
+      const controller = new host.AbortController();
+      job = controller;
+      const valid = () =>
+        !controller.signal.aborted &&
+        isActive() &&
+        !host.document?.hidden &&
+        authorization() === auth;
+      const check = () => {
+        if (!valid()) throw new Error("detail read canceled");
+      };
+      const deadline = host.setTimeout(() => controller.abort(), 25_000);
+      const get = async (path) => {
+        check();
+        const response = await host.fetch(base + path, {
+          headers: { Authorization: auth, Accept: "application/json" },
+          signal: controller.signal,
+          credentials: /(?:^|\.)webvpn\.zju\.edu\.cn$/.test(host.location.hostname)
+            ? "include"
+            : "same-origin",
+          redirect: "error",
+          cache: "no-store"
+        });
+        check();
+        if (!response.ok) {
+          if (response.status === 429) {
+            const wait = response.headers.get("Retry-After");
+            retryAt = Math.max(
+              now() + INTERVAL,
+              (/^\d+$/.test(wait) ? now() + Number(wait) * 1000 : Date.parse(wait)) || 0
+            );
+          }
+          throw Object.assign(new Error("detail read failed"), { status: response.status });
+        }
+        const data = await response.json();
+        check();
+        return data;
+      };
+      const save = (id, fields) =>
+        cache.set(id, { ...cache.get(id), ...fields, next: now() + 5 * INTERVAL });
+      try {
+        const rows = await get("/topic/basic?" + ids.map((id) => "id=" + id).join("&"));
+        if (!Array.isArray(rows)) throw new Error("invalid topic list");
+        const partial = [];
+        for (const id of ids) {
+          const row = rows.find((item) => item?.id === id);
+          if (!row || row.isDeleted) {
+            cache.set(id, { next: now() + 5 * INTERVAL });
+            continue;
+          }
+          const fields = counts(row);
+          if (fields.replyCount === undefined || fields.hitCount === undefined) {
+            partial.push(id);
+            cache.set(id, { ...cache.get(id), ...fields, next: 0 });
+          } else save(id, fields);
+        }
+        paint();
+        for (const id of partial) {
+          // No simultaneous per-topic reads, and no downloading post bodies.
+          await new Promise((resolve) => {
+            const done = () => {
+              host.clearTimeout(t);
+              controller.signal.removeEventListener("abort", done);
+              resolve();
+            };
+            const t = host.setTimeout(done, 700);
+            controller.signal.addEventListener("abort", done, { once: true });
+          });
+          check();
+          try {
+            const row = await get("/topic/" + id);
+            if (row?.id === id && !row.isDeleted) save(id, counts(row));
+            else cache.set(id, { next: now() + 5 * INTERVAL });
+          } catch (error) {
+            if (![403, 404].includes(error.status)) throw error;
+            cache.set(id, { next: now() + 5 * INTERVAL });
+          }
+          paint();
+        }
+      } catch (error) {
+        if (valid()) {
+          retryAt = Math.max(retryAt, now() + INTERVAL);
+          if ([401, 403].includes(error.status)) {
+            cache.clear();
+            paint();
+          }
+        }
+      } finally {
+        host.clearTimeout(deadline);
+        if (job === controller) job = null;
+      }
+    }
+    return {
+      update,
+      stop,
+      pause: cancel,
+      current: () => (owner && owner === authorization() ? cache : undefined)
+    };
+  }
+
+  function create({ onUpdate, onDetails = () => {}, isActive }, host = root) {
     let snapshot = { onlineUserCount: null, hotTopic: [], checkedAt: 0 };
     let active = false,
       timer = null,
@@ -54,6 +230,11 @@
       revision = 0,
       failures = 0;
     const base = apiBase(host.location);
+    const details = createDetailReader(host, base, isActive, onDetails);
+    const visibility = () => {
+      if (host.document.hidden) details.pause();
+      else publish();
+    };
     const now = () => host.Date.now();
     const valid = (epoch) => active && revision === epoch && isActive();
     function read(key, native = false) {
@@ -103,6 +284,10 @@
       if (active) timer = host.setTimeout(poll, Math.max(0, delay));
     }
     function onStorage(event) {
+      if (event.key === "accessToken" || event.key === null) {
+        if (active) publish();
+        return;
+      }
       if (event.key !== CACHE_KEY || !active || !isActive()) return;
       loadCache();
       publish();
@@ -183,6 +368,7 @@
       loadCache();
       publish();
       host.addEventListener("storage", onStorage);
+      host.document?.addEventListener("visibilitychange", visibility);
       schedule(Math.max(0, snapshot.checkedAt + INTERVAL - now()));
     }
     function stop() {
@@ -193,8 +379,10 @@
       request?.abort();
       request = null;
       host.removeEventListener("storage", onStorage);
+      host.document?.removeEventListener("visibilitychange", visibility);
+      details.stop();
     }
-    return { start, stop, getSnapshot: () => snapshot };
+    return { start, stop, details, getSnapshot: () => snapshot };
   }
 
   root.CC98RebornHomeLive = { create, normalizeIndex, apiBase };

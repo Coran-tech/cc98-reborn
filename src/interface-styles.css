@@ -1201,7 +1201,7 @@
   .cc98-rebuild-home-hot-section
   .cc98-rebuild-list
   > .cc98-rebuild-card {
-  grid-template-columns: 2.3rem 7rem minmax(0, 1fr) 3.5rem 2.2rem;
+  grid-template-columns: 2.3rem 7rem minmax(0, 1fr) auto 3.5rem 2.2rem;
   grid-template-rows: auto;
   min-height: 3.2rem;
   gap: 4px 12px;
@@ -1256,18 +1256,46 @@
   grid-column: 1;
 }
 :root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  [data-home-section-kind="hot"]
+  .cc98-rebuild-home-stats {
+  grid-column: 2;
+}
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
+  .cc98-rebuild-home-hot-section
+  .cc98-rebuild-home-stats {
+  grid-column: 4;
+  grid-row: 1;
+}
+@media (min-width: 701px) {
+  :root.cc98-comfort[data-cc98-comfort-style="ascii"]
+    .cc98-rebuild-home-hot-section
+    .cc98-rebuild-home-stats
+    > span {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.4em;
+    min-width: 8ch;
+  }
+  :root.cc98-comfort[data-cc98-comfort-style="ascii"]
+    .cc98-rebuild-home-hot-section
+    .cc98-rebuild-home-stats
+    > span:last-child {
+    min-width: 10ch;
+  }
+}
+:root.cc98-comfort[data-cc98-comfort-style="ascii"]
   #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"]
   .cc98-rebuild-home-hot-section
   .cc98-rebuild-card
   > .cc98-rebuild-rank-motion {
-  grid-column: 4;
+  grid-column: 5;
 }
 :root.cc98-comfort[data-cc98-comfort-style="ascii"]
   #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"]
   .cc98-rebuild-home-hot-section
   .cc98-rebuild-card
   > .cc98-rebuild-read-later-button {
-  grid-column: 5;
+  grid-column: 6;
   width: 2.2rem !important;
   height: 1.7rem !important;
 }
@@ -1293,6 +1321,12 @@
 }
 
 @media (max-width: 700px) {
+  :root.cc98-comfort[data-cc98-comfort-style="ascii"]
+    .cc98-rebuild-home-hot-section
+    .cc98-rebuild-home-stats {
+    grid-column: 2 / -1;
+    grid-row: auto;
+  }
   :root.cc98-comfort[data-cc98-comfort-style="ascii"]
     #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"]
     .cc98-rebuild-home-hot-section

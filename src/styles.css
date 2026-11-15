@@ -1981,6 +1981,31 @@
 
 :root.cc98-comfort .cc98-rebuild-search-suggestion {
   cursor: pointer;
+  box-sizing: border-box;
+}
+
+:root.cc98-comfort .cc98-rebuild-paste-choice {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 10px;
+  color: var(--cc98-comfort-text);
+  background: var(--cc98-comfort-surface);
+}
+
+:root.cc98-comfort .cc98-rebuild-paste-choice button {
+  padding: 4px 9px;
+  border: 1px solid var(--cc98-comfort-border);
+  border-radius: var(--cc98-comfort-radius, 4px);
+  background: var(--cc98-comfort-surface);
+  color: var(--cc98-comfort-text);
+  cursor: pointer;
+}
+
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] .cc98-rebuild-paste-choice button {
+  border-radius: 0;
 }
 
 :root.cc98-comfort .cc98-rebuild-search-suggestion:hover,
@@ -5459,10 +5484,7 @@
 
 :root.cc98-comfort
   :is(#cc98-comfort-app, .cc98-rebuild-conversation-dialog)
-  img.cc98-rebuild-content-image,
-:root.cc98-comfort
-  :is(#cc98-comfort-app, .cc98-rebuild-conversation-dialog)
-  img.cc98-rebuild-board-image {
+  img.cc98-rebuild-content-image {
   cursor: zoom-in;
 }
 
@@ -6060,6 +6082,16 @@
 :root.cc98-comfort .cc98-rebuild-awards-table td:nth-child(1),
 :root.cc98-comfort .cc98-rebuild-awards-table td:nth-child(2) {
   white-space: nowrap;
+}
+
+:root.cc98-comfort .cc98-rebuild-award-user-link {
+  color: var(--cc98-comfort-link) !important;
+  text-decoration: none;
+}
+
+:root.cc98-comfort .cc98-rebuild-award-user-link:is(:hover, :focus-visible) {
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
 }
 
 :root.cc98-comfort .cc98-rebuild-award-positive {
@@ -11283,6 +11315,21 @@
   align-content: start;
   gap: 10px;
   padding-right: 46px;
+}
+
+/* Stretch the native link, not the pin button: mouse, keyboard and browser
+   link gestures all keep their normal navigation behavior. */
+:root.cc98-comfort .cc98-rebuild-board > .cc98-rebuild-board-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+}
+
+:root.cc98-comfort .cc98-rebuild-board:has(> .cc98-rebuild-board-link:focus-visible) {
+  outline: 2px solid var(--cc98-comfort-accent);
+  outline-offset: 2px;
 }
 
 :root.cc98-comfort .cc98-rebuild-board.is-pinned {
@@ -19769,27 +19816,138 @@
   #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"]
   .cc98-rebuild-home-hot-section
   .cc98-rebuild-list {
-  gap: 14px 18px;
+  gap: 10px 16px;
+}
+
+/* Share the space below the actual header across five rows, without fixing
+   their height on a short screen or stretching an incomplete/single-column list. */
+@media (min-width: 861px) {
+  :root.cc98-comfort:not([data-cc98-comfort-style="ascii"], .cc98-topic-drawer-split)
+    #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"]:has(
+      .cc98-rebuild-home-hot-section > .cc98-rebuild-list > :nth-child(10)
+    ) {
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    min-height: min(100svh, 72rem);
+
+    & > .cc98-rebuild-home-hot-grid {
+      flex: 1 0 auto;
+    }
+    & .cc98-rebuild-home-hot-section {
+      display: grid;
+    }
+    & .cc98-rebuild-home-hot-section > .cc98-rebuild-list {
+      grid-template-rows: repeat(5, minmax(min-content, 1fr));
+      row-gap: clamp(10px, 1.5vh, 18px);
+    }
+  }
 }
 
 :root.cc98-comfort:not([data-cc98-comfort-style="ascii"])
-  #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"]
   .cc98-rebuild-home-hot-section
-  .cc98-rebuild-card {
-  min-height: 112px;
-  padding-block: 16px;
-  padding-left: 20px;
-}
+  .cc98-rebuild-card.has-rank {
+  display: grid;
+  grid-template-columns: 2.1rem fit-content(36%) minmax(0, 1fr);
+  column-gap: 0.65rem;
+  align-content: center;
+  align-items: baseline;
+  min-height: 5.5rem;
+  padding: 0.9rem 1.1rem;
 
-:root.cc98-comfort:not([data-cc98-comfort-style="ascii"])
-  #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"]
-  .cc98-rebuild-home-hot-section
-  .cc98-rebuild-card-title {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-  line-height: 1.5 !important;
+  & > .cc98-rebuild-card-title {
+    grid-column: 2 / -1;
+    grid-row: 1;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    line-height: 1.45 !important;
+  }
+
+  & > .cc98-rebuild-card-top,
+  & > .cc98-rebuild-home-stats {
+    grid-row: 2;
+    margin-top: 0.35rem;
+  }
+
+  & > .cc98-rebuild-card-top {
+    grid-column: 2;
+    min-width: 0;
+  }
+
+  & .cc98-rebuild-chip {
+    display: block;
+    min-height: 0;
+    padding: 0.1em 0.45em;
+    font-size: 0.8rem !important;
+    font-weight: 560;
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  & .cc98-rebuild-chip:hover {
+    text-decoration: underline;
+  }
+
+  & > .cc98-rebuild-home-stats {
+    grid-column: 3;
+    gap: 0 0.65rem;
+    padding-inline-end: 1.25rem; /* Space for the read-later control on hover. */
+  }
+
+  & > .cc98-rebuild-home-stats b {
+    color: inherit;
+  }
+  & > .cc98-rebuild-home-stats > span + span::before {
+    content: "·";
+    margin-inline-end: 0.65rem;
+  }
+  &:has(> .cc98-rebuild-card-top:empty) > .cc98-rebuild-home-stats {
+    grid-column: 2 / -1;
+  }
+  & > :is(.cc98-rebuild-hover-meta, .cc98-rebuild-card-meta) {
+    grid-column: 2 / -1;
+  }
+
+  & > :is(.cc98-rebuild-rank, .cc98-rebuild-rank-motion) {
+    grid-column: 1;
+    position: static;
+    justify-self: center;
+    min-width: 0;
+    height: auto;
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  & > .cc98-rebuild-rank {
+    grid-row: 1;
+    color: var(--cc98-comfort-muted) !important;
+    font-size: clamp(1.35rem, 1.1rem + 0.45vw, 1.5rem) !important;
+    font-weight: 700;
+  }
+  &:nth-child(-n + 3) > .cc98-rebuild-rank {
+    color: var(--cc98-comfort-accent) !important;
+  }
+
+  & > .cc98-rebuild-rank-motion {
+    grid-row: 2;
+    margin-top: 0.35rem;
+    font-size: 0.74rem !important;
+  }
+  & > .cc98-rebuild-rank-motion-up {
+    color: var(--cc98-award-negative, #b53b34) !important;
+  }
+  & > .cc98-rebuild-rank-motion-new {
+    color: var(--cc98-award-positive, #218249) !important;
+  }
+  & > .cc98-rebuild-rank-motion-down {
+    color: color-mix(in srgb, #4081dd 75%, var(--cc98-comfort-text)) !important;
+  }
 }
 
 /* Keep homepage statistics in the heading, without moving the topic grid. */
@@ -19813,7 +19971,9 @@
 :root.cc98-comfort:not([data-cc98-comfort-style="ascii"])
   #cc98-comfort-app[data-page-kind="home"][data-home-hot-only="true"]
   > .cc98-rebuild-home-hero {
-  padding-inline-end: 0 !important;
+  min-height: 0;
+  margin: 1.5rem 0 1.15rem !important;
+  padding: 0 !important;
 }
 
 :root.cc98-comfort #cc98-comfort-app[data-page-kind="home"] > .cc98-rebuild-home-hero > h1 {
@@ -19879,6 +20039,25 @@
   [data-home-section-kind="hot"]
   > .cc98-rebuild-section-heading {
   align-items: end;
+}
+
+:root.cc98-comfort .cc98-rebuild-home-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 1em;
+  color: var(--cc98-comfort-muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+}
+
+:root.cc98-comfort .cc98-rebuild-home-stats > span {
+  white-space: nowrap;
+}
+:root.cc98-comfort .cc98-rebuild-home-stats b {
+  color: var(--cc98-comfort-text);
+  font-weight: 500;
 }
 
 :root.cc98-comfort
