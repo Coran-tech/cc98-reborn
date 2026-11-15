@@ -16241,20 +16241,17 @@ function formatAuthorLoginElapsed(loginMs, nowMs) {
     (end.getUTCFullYear() - start.getUTCFullYear()) * 12 + end.getUTCMonth() - start.getUTCMonth();
   if (anniversary(months) > end.getTime()) months--;
   const seconds = Math.floor((end.getTime() - anniversary(months)) / 1000);
-  const parts = [
-    [Math.floor(months / 12), "年"],
-    [months % 12, "月"],
-    [Math.floor(seconds / 86400), "天"],
-    [Math.floor(seconds / 3600) % 24, "小时"],
-    [Math.floor(seconds / 60) % 60, "分"],
-    [seconds % 60, "秒"]
-  ];
-  return (
-    (parts
-      .filter(([n]) => n)
-      .map(([n, unit]) => n + unit)
-      .join("") || "0秒") + "前"
-  );
+  const part = (n, unit) => (n ? n + unit : "");
+  const date =
+    part(Math.floor(months / 12), "年") +
+    part(months % 12, "月") +
+    part(Math.floor(seconds / 86400), "天");
+  const time =
+    part(Math.floor(seconds / 3600) % 24, "小时") +
+    part(Math.floor(seconds / 60) % 60, "分") +
+    part(seconds % 60, "秒");
+  if (months >= 12) return date + "\n" + (time || "0秒") + "前";
+  return (date + time || "0秒") + "前";
 }
 
 function createAuthorLoginToggle(exact, popover) {
@@ -16276,7 +16273,10 @@ function createAuthorLoginToggle(exact, popover) {
     window.clearTimeout(timer);
     const now = Date.now();
     const text = absolute ? exact : formatAuthorLoginElapsed(loginMs, now);
-    if (button.textContent !== text) button.textContent = text;
+    if (button.textContent !== text) {
+      button.textContent = text;
+      button.classList.toggle("is-multiline", text.includes("\n"));
+    }
     if (!absolute && popover.isConnected && popover.matches(":hover, :focus-within")) {
       timer = window.setTimeout(update, 1000 - (now % 1000));
     }

@@ -4045,6 +4045,10 @@
   cursor: pointer;
 }
 
+:root.cc98-comfort .cc98-rebuild-post-author-card button.cc98-rebuild-author-login.is-multiline {
+  white-space: pre;
+}
+
 :root.cc98-comfort
   .cc98-rebuild-post-author-card
   button.cc98-rebuild-author-login:is(:hover, :focus-visible) {

@@ -235,12 +235,20 @@ async function main() {
       assert.deepEqual(
         await forum.evaluate(() =>
           [
+            ["2024-02-29T10:00:00", "2025-02-28T09:59:59"],
+            ["2024-02-29T10:00:00", "2025-02-28T10:00:00"],
             ["2024-02-29T10:00:00", "2025-02-28T10:00:01"],
             ["2026-01-31T23:59:55", "2026-03-02T00:00:00"],
             ["2024-02-14T10:00:00", "2026-05-18T15:06:07"]
           ].map((pair) => formatAuthorLoginElapsed(...pair.map((s) => Date.parse(s + "+08:00"))))
         ),
-        ["1年1秒前", "1月1天5秒前", "2年3月4天5小时6分7秒前"]
+        [
+          "11月29天23小时59分59秒前",
+          "1年\n0秒前",
+          "1年\n1秒前",
+          "1月1天5秒前",
+          "2年3月4天\n5小时6分7秒前"
+        ]
       );
       await patch({ themeStyle: "ascii", themeMode: "dark" });
       await avatar.hover();
@@ -261,6 +269,30 @@ async function main() {
         await login.evaluate((el) => el.scrollWidth <= el.clientWidth),
         "Seconds should be visible"
       );
+      await forum.clock.setFixedTime(new Date("2032-08-19T08:41:31+08:00"));
+      const longElapsed = "5年9月4天\n11小时39分24秒前";
+      await login.filter({ hasText: "11小时39分24秒前" }).waitFor();
+      assert.equal(await login.textContent(), longElapsed);
+      const lines = await login.evaluate((el) => {
+        const text = el.firstChild,
+          split = text.data.indexOf("\n");
+        return [
+          [0, split],
+          [split + 1, text.length]
+        ].map(([a, b]) => {
+          const range = document.createRange();
+          range.setStart(text, a);
+          range.setEnd(text, b);
+          return [...range.getClientRects()].map((r) => ({ top: r.top, right: r.right }));
+        });
+      });
+      assert(lines.every((line) => line.length === 1) && lines[0][0].top < lines[1][0].top);
+      assert(Math.abs(lines[0][0].right - lines[1][0].right) < 1);
+      await login.press("Enter");
+      assert.equal(await login.textContent(), exact);
+      assert.equal(await login.evaluate((el) => el.classList.contains("is-multiline")), false);
+      await login.press("Enter");
+      assert.equal(await login.textContent(), longElapsed);
       const positive = await value.evaluate((node) => getComputedStyle(node).color);
       assert.equal(await value.getAttribute("data-award-delta"), "positive");
       assert.equal(
