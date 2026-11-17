@@ -1,11 +1,11 @@
 <!doctype html>
 <html lang="zh-CN" class="cc98-reborn-popup">
   <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>CC98 Reborn</title>
-    <link rel="stylesheet" href="../src/theme-tokens.css">
-    <link rel="stylesheet" href="popup.css">
+    <link rel="stylesheet" href="../src/theme-tokens.css" />
+    <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
     <main class="popup">
@@ -15,21 +15,64 @@
           <p id="settingsSubtitle">舒适阅读设置</p>
         </div>
         <div class="header-actions">
-          <button id="aboutToggle" class="about-toggle" type="button" aria-expanded="false" aria-controls="aboutPopover" title="关于 CC98 Reborn">ℹ️</button>
-          <div id="aboutPopover" class="about-popover" role="dialog" aria-label="关于 CC98 Reborn" hidden>
+          <button
+            id="aboutToggle"
+            class="about-toggle"
+            type="button"
+            aria-expanded="false"
+            aria-controls="aboutPopover"
+            title="关于 CC98 Reborn"
+          >
+            <svg
+              class="about-toggle-icon"
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 16v-4" />
+              <path d="M12 8h.01" />
+            </svg>
+          </button>
+          <div
+            id="aboutPopover"
+            class="about-popover"
+            role="dialog"
+            aria-label="关于 CC98 Reborn"
+            hidden
+          >
             <p class="about-version">当前版本 <strong id="aboutVersion"></strong></p>
             <div class="about-author">
-              <img src="../images/avatar/avatar.jpg" alt="" class="about-avatar">
+              <img src="../images/avatar/avatar.jpg" alt="" class="about-avatar" />
               <strong>Coran</strong>
             </div>
             <div class="about-links">
-              <a href="https://www.cc98.org/user/id/795406" target="_blank" rel="noopener noreferrer">CC98 主页</a>
-              <a href="https://github.com/Coran-tech" target="_blank" rel="noopener noreferrer">Github 主页</a>
-              <a class="about-feedback-link" href="https://github.com/Coran-tech/cc98-reborn/issues" target="_blank" rel="noopener noreferrer">Bug 反馈</a>
+              <a
+                href="https://www.cc98.org/user/id/795406"
+                target="_blank"
+                rel="noopener noreferrer"
+                >CC98 主页</a
+              >
+              <a href="https://github.com/Coran-tech" target="_blank" rel="noopener noreferrer"
+                >Github 主页</a
+              >
+              <a
+                class="about-feedback-link"
+                href="https://github.com/Coran-tech/cc98-reborn/issues"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Bug 反馈</a
+              >
             </div>
           </div>
           <label class="switch" title="启用或停用美化">
-            <input id="enabled" type="checkbox">
+            <input id="enabled" type="checkbox" />
             <span></span>
           </label>
         </div>
@@ -43,16 +86,37 @@
       <section class="group theme-settings" aria-label="界面与主题">
         <div id="style-label" class="label">界面风格</div>
         <div class="interface-styles" role="radiogroup" aria-labelledby="style-label">
-          <label><input type="radio" name="themeStyle" value="modern"><span><strong>Reborn</strong><small>当前的卡片与胶囊界面</small></span></label>
-          <label><input type="radio" name="themeStyle" value="ascii"><span><strong>ASCII / BBS <span class="experimental-note">（实验性）</span></strong><small>复古ASCII风格</small></span></label>
+          <label
+            ><input type="radio" name="themeStyle" value="modern" /><span
+              ><strong>Reborn</strong><small>当前的卡片与胶囊界面</small></span
+            ></label
+          >
+          <label
+            ><input type="radio" name="themeStyle" value="ascii" /><span
+              ><strong>ASCII / BBS <span class="experimental-note">（实验性）</span></strong
+              ><small>复古ASCII风格</small></span
+            ></label
+          >
         </div>
         <p class="interface-style-note">改变论坛页面的整体排版，与明暗和配色独立。</p>
         <div class="settings-subsection" role="group" aria-labelledby="layout-label">
           <div id="layout-label" class="label">页面布局</div>
           <div class="settings-options layout-options">
-            <label class="setting-check"><input id="homeHotOnly" type="checkbox" checked><span>&#39318;&#39029;&#21482;&#20445;&#30041;&#21313;&#22823;</span></label>
-            <label class="setting-check"><input id="expandTopicCardsByDefault" type="checkbox"><span>&#24086;&#23376;&#21345;&#29255;&#40664;&#35748;&#23637;&#24320;&#65288;&#20851;&#38381;&#24748;&#28014;&#21160;&#30011;&#65289;</span></label>
-            <label class="setting-check"><input id="sideTopbar" type="checkbox"><span>&#24038;&#20391;&#25928;&#29575;&#26639;</span></label>
+            <label class="setting-check"
+              ><input id="homeHotOnly" type="checkbox" checked /><span
+                >&#39318;&#39029;&#21482;&#20445;&#30041;&#21313;&#22823;</span
+              ></label
+            >
+            <label class="setting-check"
+              ><input id="expandTopicCardsByDefault" type="checkbox" /><span
+                >&#24086;&#23376;&#21345;&#29255;&#40664;&#35748;&#23637;&#24320;&#65288;&#20851;&#38381;&#24748;&#28014;&#21160;&#30011;&#65289;</span
+              ></label
+            >
+            <label class="setting-check"
+              ><input id="sideTopbar" type="checkbox" /><span
+                >&#24038;&#20391;&#25928;&#29575;&#26639;</span
+              ></label
+            >
           </div>
         </div>
         <div class="theme-heading">
@@ -60,15 +124,29 @@
           <span id="themeCurrentTone" class="theme-current" aria-live="polite"></span>
         </div>
         <div class="segmented" role="radiogroup" aria-labelledby="theme-label">
-          <label><input type="radio" name="themeMode" value="light"><span>白昼</span></label>
-          <label><input type="radio" name="themeMode" value="dark"><span>黑夜</span></label>
-          <label><input type="radio" name="themeMode" value="auto"><span>自动</span></label>
+          <label><input type="radio" name="themeMode" value="light" /><span>白昼</span></label>
+          <label><input type="radio" name="themeMode" value="dark" /><span>黑夜</span></label>
+          <label><input type="radio" name="themeMode" value="auto" /><span>自动</span></label>
         </div>
         <div id="themeSchedule" class="theme-schedule" hidden>
           <p class="theme-schedule-note">按本地时间自动切换</p>
           <div class="theme-time-fields">
-            <label for="themeDayStart">白昼开始<input id="themeDayStart" type="time" value="07:00" required aria-describedby="themeScheduleError"></label>
-            <label for="themeNightStart">黑夜开始<input id="themeNightStart" type="time" value="19:00" required aria-describedby="themeScheduleError"></label>
+            <label for="themeDayStart"
+              >白昼开始<input
+                id="themeDayStart"
+                type="time"
+                value="07:00"
+                required
+                aria-describedby="themeScheduleError"
+            /></label>
+            <label for="themeNightStart"
+              >黑夜开始<input
+                id="themeNightStart"
+                type="time"
+                value="19:00"
+                required
+                aria-describedby="themeScheduleError"
+            /></label>
           </div>
           <p id="themeScheduleError" class="theme-error" role="alert" hidden></p>
         </div>
@@ -76,21 +154,54 @@
           <div id="palette-label" class="label">论坛页面配色</div>
           <span class="theme-current">主色 / 副色</span>
         </div>
-        <div id="themePalettes" class="theme-palettes" role="radiogroup" aria-labelledby="palette-label"></div>
+        <div
+          id="themePalettes"
+          class="theme-palettes"
+          role="radiogroup"
+          aria-labelledby="palette-label"
+        ></div>
         <div id="themeCustomControls" class="theme-custom" hidden>
           <div class="theme-custom-fields">
             <div class="theme-custom-color">
               <label for="themeCustomPrimaryHex">主色</label>
               <div class="theme-color-inputs">
-                <input id="themeCustomPrimary" type="color" data-theme-color="themeCustomPrimary" aria-label="选择自定义主色">
-                <input id="themeCustomPrimaryHex" type="text" data-theme-color="themeCustomPrimary" spellcheck="false" autocomplete="off" placeholder="#1f7166" aria-label="自定义主色 HEX" aria-describedby="themeCustomColorError">
+                <input
+                  id="themeCustomPrimary"
+                  type="color"
+                  data-theme-color="themeCustomPrimary"
+                  aria-label="选择自定义主色"
+                />
+                <input
+                  id="themeCustomPrimaryHex"
+                  type="text"
+                  data-theme-color="themeCustomPrimary"
+                  spellcheck="false"
+                  autocomplete="off"
+                  placeholder="#1f7166"
+                  aria-label="自定义主色 HEX"
+                  aria-describedby="themeCustomColorError"
+                />
               </div>
             </div>
             <div class="theme-custom-color">
               <label for="themeCustomSecondaryHex">副色</label>
               <div class="theme-color-inputs">
-                <input id="themeCustomSecondary" type="color" data-theme-color="themeCustomSecondary" aria-label="选择自定义副色">
-                <input id="themeCustomSecondaryHex" type="text" data-theme-color="themeCustomSecondary" spellcheck="false" autocomplete="off" placeholder="#326b9b" aria-label="自定义副色 HEX" aria-describedby="themeCustomColorError">
+                <input
+                  id="themeCustomSecondary"
+                  type="color"
+                  data-theme-color="themeCustomSecondary"
+                  aria-label="选择自定义副色"
+                />
+                <input
+                  id="themeCustomSecondaryHex"
+                  type="text"
+                  data-theme-color="themeCustomSecondary"
+                  spellcheck="false"
+                  autocomplete="off"
+                  placeholder="#326b9b"
+                  aria-label="自定义副色 HEX"
+                  aria-describedby="themeCustomColorError"
+                />
               </div>
             </div>
           </div>
@@ -104,9 +215,23 @@
         <section class="group reading-settings" aria-labelledby="reading-label">
           <div id="reading-label" class="label">浏览与阅读</div>
           <div class="settings-options">
-            <label class="setting-check" title="开启后，所有瀑布流帖子列表中的帖子标题均在右侧打开；关闭后沿用普通链接打开方式。"><input id="topicDrawerEnabled" type="checkbox" checked><span>帖子侧拉窗（所有帖子列表）</span></label>
-            <label class="setting-check"><input id="openLinksInNewTab" type="checkbox"><span>&#38142;&#25509;&#22312;&#26032;&#39029;&#38754;&#25171;&#24320;</span></label>
-            <label class="setting-check"><input id="previsitFirstPageForTopicImages" type="checkbox" checked><span>后台预热第一页（识别楼主与热评）</span></label>
+            <label
+              class="setting-check"
+              title="开启后，所有瀑布流帖子列表中的帖子标题均在右侧打开；关闭后沿用普通链接打开方式。"
+              ><input id="topicDrawerEnabled" type="checkbox" checked /><span
+                >帖子侧拉窗（所有帖子列表）</span
+              ></label
+            >
+            <label class="setting-check"
+              ><input id="openLinksInNewTab" type="checkbox" /><span
+                >&#38142;&#25509;&#22312;&#26032;&#39029;&#38754;&#25171;&#24320;</span
+              ></label
+            >
+            <label class="setting-check"
+              ><input id="previsitFirstPageForTopicImages" type="checkbox" checked /><span
+                >后台预热第一页（识别楼主与热评）</span
+              ></label
+            >
           </div>
         </section>
 
@@ -115,19 +240,23 @@
           <label class="range">
             <span>字号</span>
             <output id="fontScaleOutput">110%</output>
-            <input id="fontScale" type="range" min="90" max="120" step="1" value="110">
+            <input id="fontScale" type="range" min="90" max="120" step="1" value="110" />
           </label>
           <label class="range">
             <span>表情大小</span>
             <output id="emojiScaleOutput">200%</output>
-            <input id="emojiScale" type="range" min="70" max="200" step="5" value="200">
+            <input id="emojiScale" type="range" min="70" max="200" step="5" value="200" />
           </label>
           <div class="settings-subsection settings-options">
-            <label class="setting-check"><input id="prewarmPostImages" type="checkbox"><span>&#39044;&#28909;&#24086;&#23376;&#22270;&#29255;&#65288;&#21487;&#33021;&#24310;&#36831;&#36827;&#20837;&#24086;&#23376;&#65289;</span></label>
+            <label class="setting-check"
+              ><input id="prewarmPostImages" type="checkbox" /><span
+                >&#39044;&#28909;&#24086;&#23376;&#22270;&#29255;&#65288;&#21487;&#33021;&#24310;&#36831;&#36827;&#20837;&#24086;&#23376;&#65289;</span
+              ></label
+            >
             <label class="range">
               <span>&#24086;&#23376;&#22270;&#29255;&#39044;&#28909;&#26102;&#38271;</span>
               <output id="imageLoadDurationOutput">2.1s</output>
-              <input id="imageLoadDuration" type="range" min="800" max="8000" step="100">
+              <input id="imageLoadDuration" type="range" min="800" max="8000" step="100" />
             </label>
           </div>
         </section>
@@ -135,10 +264,27 @@
         <section class="group interaction-settings" aria-labelledby="interaction-label">
           <div id="interaction-label" class="label">回复与互动</div>
           <div class="settings-options">
-            <label class="setting-check"><input id="replyRebornTail" type="checkbox" checked><span>&#22238;&#22797;&#26102;&#28155;&#21152;&#23567;&#23614;&#24052;</span></label>
+            <label class="setting-check"
+              ><input id="replyRebornTail" type="checkbox" checked /><span
+                >&#22238;&#22797;&#26102;&#28155;&#21152;&#23567;&#23614;&#24052;</span
+              ></label
+            >
             <div class="question-setting">
-              <label class="setting-check"><input id="questionMarkEnabled" type="checkbox"><span>&#38382;&#21495;&#38190; <small class="experimental-note">&#65288;&#23454;&#39564;&#24615;&#65289;</small></span></label>
-              <a href="https://question.coranqwq.xyz/privacy" target="_blank" rel="noopener noreferrer" title="&#28857;&#20987;&#26597;&#30475;&#38382;&#21495;&#23454;&#39564;&#38544;&#31169;&#35828;&#26126;">&#38544;&#31169;&#35828;&#26126;</a>
+              <label class="setting-check"
+                ><input id="questionMarkEnabled" type="checkbox" /><span
+                  >&#38382;&#21495;&#38190;
+                  <small class="experimental-note"
+                    >&#65288;&#23454;&#39564;&#24615;&#65289;</small
+                  ></span
+                ></label
+              >
+              <a
+                href="https://question.coranqwq.xyz/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="&#28857;&#20987;&#26597;&#30475;&#38382;&#21495;&#23454;&#39564;&#38544;&#31169;&#35828;&#26126;"
+                >&#38544;&#31169;&#35828;&#26126;</a
+              >
             </div>
           </div>
         </section>
@@ -146,7 +292,9 @@
 
       <section class="group blacklist-card" aria-labelledby="blacklist-label">
         <div id="blacklist-label" class="label">屏蔽规则</div>
-        <p id="blacklistSummary" class="blacklist-summary">按用户 ID、标题关键词和版面规则折叠内容。</p>
+        <p id="blacklistSummary" class="blacklist-summary">
+          按用户 ID、标题关键词和版面规则折叠内容。
+        </p>
         <button id="openBlacklist" type="button">管理屏蔽规则</button>
       </section>
 
@@ -169,9 +317,17 @@
 
       <section class="group site-data-card" aria-labelledby="site-data-label">
         <div id="site-data-label" class="label">账号与站点数据</div>
-        <p id="clearCc98DataStatus" class="site-data-status">用于刷新十大；同时会抹掉本地存储的稍后再看、版面置顶与草稿等数据，请谨慎。</p>
+        <p id="clearCc98DataStatus" class="site-data-status">
+          用于刷新十大；同时会抹掉本地存储的稍后再看、版面置顶与草稿等数据，请谨慎。
+        </p>
         <button id="clearCc98Data" class="danger-action" type="button">清除 CC98 Cookie</button>
-        <div id="clearCc98DataConfirm" class="site-data-confirm" role="group" aria-label="确认清除站点数据" hidden>
+        <div
+          id="clearCc98DataConfirm"
+          class="site-data-confirm"
+          role="group"
+          aria-label="确认清除站点数据"
+          hidden
+        >
           <p>这会清除 CC98 Cookie、稍后再看、版面置顶和本地草稿。确定继续吗？</p>
           <div class="site-data-confirm-actions">
             <button id="cancelClearCc98Data" type="button">取消</button>
@@ -182,14 +338,18 @@
 
       <section class="group update-card" aria-labelledby="update-label">
         <div id="update-label" class="label">&#26356;&#26032;&#26816;&#26597;</div>
-        <p id="updateStatus" class="update-status">&#27491;&#22312;&#35835;&#21462;&#29366;&#24577;&#8230;</p>
+        <p id="updateStatus" class="update-status">
+          &#27491;&#22312;&#35835;&#21462;&#29366;&#24577;&#8230;
+        </p>
         <div class="update-meta">
           <span id="updateCurrentVersion"></span>
           <span id="updateLatestVersion"></span>
         </div>
         <div class="update-actions">
           <button id="updateCheck" type="button">&#31435;&#21363;&#26816;&#26597;</button>
-          <button id="updateOpen" class="update-open" type="button" hidden>&#25171;&#24320;&#21457;&#24067;&#39029;</button>
+          <button id="updateOpen" class="update-open" type="button" hidden>
+            &#25171;&#24320;&#21457;&#24067;&#39029;
+          </button>
         </div>
       </section>
 
@@ -199,8 +359,19 @@
           <button id="backupSettings" type="button">备份设置</button>
           <button id="restoreSettings" type="button">导入备份</button>
         </div>
-        <input id="settingsBackupFile" type="file" accept="application/json,.json" data-settings-transfer hidden>
-        <p id="settingsBackupStatus" class="settings-backup-status" role="status" aria-live="polite"></p>
+        <input
+          id="settingsBackupFile"
+          type="file"
+          accept="application/json,.json"
+          data-settings-transfer
+          hidden
+        />
+        <p
+          id="settingsBackupStatus"
+          class="settings-backup-status"
+          role="status"
+          aria-live="polite"
+        ></p>
         <div id="settingsBackupPreview" class="settings-backup-preview" hidden>
           <p id="settingsBackupSummary"></p>
           <p>将覆盖同名配置，保留其他数据。用户备注与私信置顶按原账号恢复。</p>

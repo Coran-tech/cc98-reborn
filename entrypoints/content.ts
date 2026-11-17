@@ -1,6 +1,7 @@
 // Styles keep the cascade order from the previous manifest. Vite emits one
 // content.css and WXT adds it to the same content_scripts entry as this bundle.
 import "../src/theme-tokens.css";
+import "../src/ui/icons.css";
 import "../src/styles.css";
 import "../src/image-favorites.css";
 import "../src/image-favorite-controls.css";
@@ -17,6 +18,7 @@ import "../src/native-messages.css";
 
 // Legacy content-script modules. They communicate through globalThis, so the
 // import order below is the same order the previous manifest used.
+import "../src/ui/install-icons";
 import "../src/theme-core.js";
 import "../src/interface-style.js";
 import "../src/native-messages.js";
