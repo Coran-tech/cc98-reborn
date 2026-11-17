@@ -406,7 +406,11 @@ export default function App() {
         </div>
       </Section>
 
-      <Section title="明暗与配色" subtitle={`当前${tone === "dark" ? "黑夜" : "白昼"}`}>
+      <Section
+        title="明暗与配色"
+        subtitle={`当前${tone === "dark" ? "黑夜" : "白昼"}`}
+        subtitleId="themeCurrentTone"
+      >
         <RadioGroup
           name="themeMode"
           value={settings.themeMode}
@@ -432,7 +436,7 @@ export default function App() {
         </RadioGroup>
 
         {settings.themeMode === "auto" ? (
-          <div className="mt-3 grid grid-cols-2 gap-2">
+          <div id="themeSchedule" className="mt-3 grid grid-cols-2 gap-2">
             <TimeField
               id="themeDayStart"
               label="白昼开始"
@@ -448,7 +452,9 @@ export default function App() {
           </div>
         ) : null}
         {settings.themeMode === "auto" && scheduleError ? (
-          <p className="mt-1 text-xs text-danger">{scheduleError}</p>
+          <p id="themeScheduleError" className="mt-1 text-xs text-danger">
+            {scheduleError}
+          </p>
         ) : null}
 
         <div className="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label="论坛页面配色">
@@ -481,18 +487,24 @@ export default function App() {
         </div>
 
         {settings.themePalette === "custom" ? (
-          <div className="mt-3 flex flex-col gap-2">
+          <div id="themeCustomControls" className="mt-3 flex flex-col gap-2">
             <ColorField
+              id="themeCustomPrimary"
               label="主色"
               value={settings.themeCustomPrimary}
               onChange={(themeCustomPrimary) => updateSettings({ themeCustomPrimary })}
             />
             <ColorField
+              id="themeCustomSecondary"
               label="副色"
               value={settings.themeCustomSecondary}
               onChange={(themeCustomSecondary) => updateSettings({ themeCustomSecondary })}
             />
-            {colorError ? <p className="text-xs text-danger">{colorError}</p> : null}
+            {colorError ? (
+              <p id="themeCustomColorError" className="text-xs text-danger">
+                {colorError}
+              </p>
+            ) : null}
           </div>
         ) : null}
       </Section>
@@ -823,17 +835,23 @@ export default function App() {
 function Section({
   title,
   subtitle,
+  subtitleId,
   children
 }: {
   title: string;
   subtitle?: string;
+  subtitleId?: string;
   children: React.ReactNode;
 }) {
   return (
     <section className="mb-3 rounded-xl border border-border bg-surface p-3">
       <div className="mb-2 flex items-baseline justify-between gap-2">
         <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted">{title}</h2>
-        {subtitle ? <span className="text-[11px] text-muted">{subtitle}</span> : null}
+        {subtitle ? (
+          <span id={subtitleId} className="text-[11px] text-muted">
+            {subtitle}
+          </span>
+        ) : null}
       </div>
       {children}
     </section>
@@ -939,10 +957,12 @@ function TimeField({
 }
 
 function ColorField({
+  id,
   label,
   value,
   onChange
 }: {
+  id?: string;
   label: string;
   value: string;
   onChange: (value: string) => void;
@@ -953,6 +973,7 @@ function ColorField({
       <div className="flex flex-col gap-1">
         <Label className="text-[11px] text-muted">{label}</Label>
         <input
+          id={id}
           type="color"
           value={normalized}
           aria-label={`选择${label}`}
@@ -962,6 +983,7 @@ function ColorField({
       </div>
       <div className="flex-1">
         <Input
+          id={id ? `${id}Hex` : undefined}
           key={value}
           defaultValue={value}
           spellCheck={false}

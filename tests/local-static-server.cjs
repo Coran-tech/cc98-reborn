@@ -3,6 +3,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const root = path.resolve(process.cwd());
+const builtRoot = path.join(root, "dist", "chrome-mv3");
 const port = Math.max(1, Number(process.argv[2]) || 8765);
 const contentTypes = {
   ".css": "text/css; charset=utf-8",
@@ -23,9 +24,20 @@ const server = http.createServer((request, response) => {
     response.writeHead(403).end("Forbidden");
     return;
   }
-  const filePath = fs.existsSync(candidate) && fs.statSync(candidate).isDirectory()
-    ? path.join(candidate, "index.html")
-    : candidate;
+  let filePath =
+    fs.existsSync(candidate) && fs.statSync(candidate).isDirectory()
+      ? path.join(candidate, "index.html")
+      : candidate;
+  // Generated popup/chunks live in the WXT output, not at the repository root.
+  if (!fs.existsSync(filePath)) {
+    const built = path.resolve(builtRoot, `.${pathname}`);
+    if (built.startsWith(builtRoot + path.sep)) {
+      filePath =
+        fs.existsSync(built) && fs.statSync(built).isDirectory()
+          ? path.join(built, "index.html")
+          : built;
+    }
+  }
   fs.readFile(filePath, (error, data) => {
     if (error) {
       response.writeHead(error.code === "ENOENT" ? 404 : 500).end(error.code || "Read error");
@@ -33,7 +45,8 @@ const server = http.createServer((request, response) => {
     }
     response.writeHead(200, {
       "Cache-Control": "no-store",
-      "Content-Type": contentTypes[path.extname(filePath).toLowerCase()] || "application/octet-stream"
+      "Content-Type":
+        contentTypes[path.extname(filePath).toLowerCase()] || "application/octet-stream"
     });
     response.end(data);
   });

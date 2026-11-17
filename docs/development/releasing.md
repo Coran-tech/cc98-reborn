@@ -10,10 +10,17 @@ pnpm install
 pnpm run check
 ```
 
-This runs the same format, lint, JavaScript syntax, manifest-reference and offline
-unit-test checks as CI. Formatting is introduced incrementally; see
+This runs the same format, lint, TypeScript, syntax, manifest-reference and
+offline unit-test checks as CI. Formatting is introduced incrementally; see
 [CONTRIBUTING.md](../../CONTRIBUTING.md) for the first-adoption and changed-file policy.
-Run the relevant browser checks below when their features change.
+Build the extension before browser checks or packaging:
+
+```sh
+pnpm run verify
+```
+
+This writes the loadable extension to `dist/chrome-mv3`. Run the relevant browser
+checks below when their features change.
 
 For dual UBB editor changes, start the local forum simulator:
 
@@ -187,9 +194,10 @@ third-party fixtures are intentionally excluded.
 
 ## Included Runtime Files
 
-`scripts/package-extension.ps1` is the packaging allowlist. `manifest.json`
-identifies browser entry points and resources; `pnpm run check:manifest` verifies
-that its local references exist. Keep both lists current when adding a module.
+`scripts/package-extension.ps1` copies the built `dist/chrome-mv3` output and adds
+documentation. `wxt.config.ts` reads permissions, host access, icons and
+web accessible resources from `manifest.json`; the generated manifest is checked by
+`pnpm run check:build`.
 
 The package includes extension runtime, bundled resources/licenses, the optional
 semantic-lab source download and user-facing documentation. Development tools,

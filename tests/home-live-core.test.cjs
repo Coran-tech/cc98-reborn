@@ -83,15 +83,14 @@ function fixture() {
 
 async function main() {
   const root = path.resolve(__dirname, "..");
-  const manifest = JSON.parse(fs.readFileSync(path.join(root, "manifest.json"), "utf8"));
-  const scripts = manifest.content_scripts.find((group) => group.js.includes("src/content.js")).js;
+  const entry = fs.readFileSync(path.join(root, "entrypoints/content.ts"), "utf8");
   assert(
-    scripts.indexOf("src/home-live.js") >= 0 &&
-      scripts.indexOf("src/home-live.js") < scripts.indexOf("src/content.js")
+    entry.indexOf('import "../src/home-live.js";') >= 0 &&
+      entry.indexOf('import "../src/home-live.js";') < entry.indexOf('import "../src/content.js";')
   );
   assert.match(
     fs.readFileSync(path.join(root, "scripts/package-extension.ps1"), "utf8"),
-    /"home-live\.js"/
+    /chrome-mv3/
   );
   assert.equal(normalizeIndex({}), null);
   assert.equal(normalizeIndex({ onlineUserCount: -1 }), null);

@@ -16,9 +16,14 @@ if ($TestBuild -and -not $Build) { $Build = Get-Date -Format 'yyyyMMdd.HHmmss' }
 $unpackedName = if ($TestBuild) { "cc98-reborn-beta" } else { "cc98-reborn-$version" }
 $packageName = "$unpackedName.zip"
 $dist = Join-Path $root $OutputDirectory
+$built = Join-Path $dist "chrome-mv3"
 $zipPath = Join-Path $dist $packageName
 $publishedStage = Join-Path $dist $unpackedName
 $stage = if ($TestBuild) { Join-Path $dist '.cc98-reborn-beta-staging' } else { $publishedStage }
+
+if (-not (Test-Path (Join-Path $built "manifest.json"))) {
+  throw "Built extension not found at $built. Run 'pnpm build' first."
+}
 
 New-Item -ItemType Directory -Force -Path $dist | Out-Null
 $distFull = [System.IO.Path]::GetFullPath($dist)
@@ -36,116 +41,35 @@ if (Test-Path $stage) {
   Remove-Item $stage -Recurse -Force
 }
 New-Item -ItemType Directory -Force -Path $stage | Out-Null
-New-Item -ItemType Directory -Force -Path (Join-Path $stage "src") | Out-Null
 
 # Ship the deployable source with the extension so the manual download does
 # not depend on a repository path or a separately published release asset.
 & (Join-Path $PSScriptRoot 'package-semantic-lab.ps1') -OutputDirectory $OutputDirectory
 Copy-Item -LiteralPath (Join-Path $dist 'cc98-semantic-lab.zip') -Destination (Join-Path $root 'assets/semantic-lab.zip') -Force
 
-@(
-  "manifest.json",
-  "assets",
-  "images",
-  "popup",
-  "README.md",
-  "CHANGELOG.md",
-  "LICENSE",
-  "PRIVACY.md"
-) | ForEach-Object {
-  Copy-Item -Path (Join-Path $root $_) -Destination $stage -Recurse
+# The WXT build already contains manifest.json, images, assets, the generated
+# popup and the content/background bundles. Copy it as-is, except the manifest
+# which receives the optional beta label below.
+Get-ChildItem -LiteralPath $built -Force | Where-Object { $_.Name -ne "manifest.json" } | ForEach-Object {
+  Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $stage $_.Name) -Recurse
 }
 
-# A development checkout can carry a build label. Never publish that label in
-# the default release artifact, and never mutate the source manifest here.
+@("README.md", "CHANGELOG.md", "LICENSE", "PRIVACY.md") | ForEach-Object {
+  $source = Join-Path $root $_
+  if (Test-Path $source) { Copy-Item -LiteralPath $source -Destination $stage }
+}
+
 $stagedManifestPath = Join-Path $stage 'manifest.json'
-$stagedManifest = [IO.File]::ReadAllText($stagedManifestPath)
+$stagedManifest = [IO.File]::ReadAllText((Join-Path $built 'manifest.json'))
 if ($TestBuild) {
   $label = "beta $version (build $Build)"
-  if ($manifest.PSObject.Properties['version_name']) {
-    $stagedManifest = [regex]::Replace($stagedManifest, '"version_name"\s*:\s*"[^"\r\n]*"', ('"version_name": "' + $label + '"'))
-  } else {
-    $stagedManifest = [regex]::Replace($stagedManifest, '("version"\s*:\s*"[^"\r\n]+"\s*,)', ('$1' + "`n  `"version_name`": `"$label`","))
-  }
+  $stagedManifest = [regex]::Replace($stagedManifest, '"version"\s*:\s*"([^"]+)"', ('"version": "$1",' + "`n  `"version_name`": `"$label`""), 'One')
 } else {
-  $stagedManifest = [regex]::Replace($stagedManifest, '(?m)^[ \t]*"version_name"\s*:\s*"[^"\r\n]*"\s*,[ \t]*\r?\n', '')
   if (($stagedManifest | ConvertFrom-Json).PSObject.Properties['version_name']) {
     throw 'Release manifest must not contain version_name'
   }
 }
 [IO.File]::WriteAllText($stagedManifestPath, $stagedManifest, [Text.UTF8Encoding]::new($false))
-
-@(
-  "background.js",
-  "theme-core.js",
-  "theme-tokens.css",
-  "interface-style.js",
-  "interface-styles.css",
-  "native-messages.js",
-  "native-messages.css",
-  "content.js",
-  "content-filter-core.js",
-  "content-filter.js",
-  "content-filter-frame.html",
-  "content-filter-frame.js",
-  "semantic-client.js",
-  "semantic-filter-core.js",
-  "semantic-background.js",
-  "semantic-filter.js",
-  "new-topics-virtual.js",
-  "home-live.js",
-  "extended-ubb-core.js",
-  "extended-ubb.js",
-  "markup-converter.js",
-  "conversation-core.js",
-  "conversation.js",
-  "topic-search.js",
-  "topic-search.css",
-  "topic-archive.js",
-  "topic-archive.css",
-  "topic-archive-store.js",
-  "topic-live.js",
-  "topic-live-api.js",
-  "topic-live.css",
-  "topic-drawer.js",
-  "topic-drawer.css",
-  "favorite-share-core.js",
-  "favorite-share-service.js",
-  "favorite-share.js",
-  "image-favorites-core.js",
-  "image-favorites-store.js",
-  "image-favorites.js",
-  "image-favorites.css",
-  "image-favorite-controls.js",
-  "image-favorite-controls.css",
-  "image-favorites-picker.css",
-  "user-notes-core.js",
-  "user-notes.js",
-  "user-notes.css",
-  "private-message-pins-core.js",
-  "private-message-pins.js",
-  "settings-backup-core.js",
-  "extended-ubb.css",
-  "openid-webvpn-bridge.js",
-  "page-submit-monitor.js",
-  "styles.css",
-  "vendor"
-) | ForEach-Object {
-  Copy-Item -Path (Join-Path $root "src\$_") -Destination (Join-Path $stage "src") -Recurse
-}
-
-$questionStage = Join-Path $stage "experiments\question-mark"
-New-Item -ItemType Directory -Force -Path $questionStage | Out-Null
-@(
-  "admin-key-store.js",
-  "admin.html",
-  "admin.js",
-  "background.js",
-  "content.js",
-  "content.css"
-) | ForEach-Object {
-  Copy-Item -LiteralPath (Join-Path $root "experiments\question-mark\$_") -Destination $questionStage
-}
 
 $releasePaths = Get-ChildItem -Force -Path $stage | ForEach-Object { $_.FullName }
 Compress-Archive -Path $releasePaths -DestinationPath $zipPath -CompressionLevel Optimal
