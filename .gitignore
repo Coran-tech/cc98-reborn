@@ -9,6 +9,7 @@ Thumbs.db
 *.log
 *.tmp
 *.temp
+pnpm-debug.log*
 
 # Build/release artifacts
 dist/

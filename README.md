@@ -297,8 +297,8 @@
 开发检查使用 Node.js 22，扩展保持 JavaScript，不增加运行时构建步骤。
 
 ```sh
-npm ci
-npm run check
+pnpm install
+pnpm run check
 ```
 
 统一入口包含格式检查、ESLint、语法检查、Manifest 引用检查和无账号单元测试。格式规范渐进接入，不批量重排历史运行时代码。目录约定、格式门禁和浏览器测试环境见 [贡献指南](./CONTRIBUTING.md)；各功能的发布前检查见 [发布检查表](./docs/development/releasing.md)。

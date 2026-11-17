@@ -3,8 +3,10 @@
   "private": true,
   "version": "0.0.0",
   "description": "Development checks for the CC98 Reborn browser extension",
+  "packageManager": "pnpm@11.8.0",
   "engines": {
-    "node": ">=22.13.0"
+    "node": ">=22.13.0",
+    "pnpm": ">=11.0.0"
   },
   "scripts": {
     "format": "node scripts/quality/check-format.mjs --write",
@@ -13,13 +15,15 @@
     "test": "node scripts/quality/run-tests.mjs",
     "check:syntax": "node scripts/quality/check-syntax.mjs",
     "check:manifest": "node scripts/quality/check-manifest.mjs",
-    "check": "npm run format:check && npm run lint && npm run check:syntax && npm run check:manifest && npm test"
+    "check": "pnpm run format:check && pnpm run lint && pnpm run check:syntax && pnpm run check:manifest && pnpm test"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "eslint": "10.14.0",
     "espree": "11.2.0",
     "globals": "17.14.0",
+    "playwright": "1.65.1",
+    "pngjs": "7.0.0",
     "prettier": "3.9.10"
   }
 }

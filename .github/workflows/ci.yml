@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -26,17 +26,22 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
+          cache: pnpm
 
       - name: Install locked development dependencies
-        run: npm ci --ignore-scripts --no-audit --no-fund
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Format, lint, syntax, manifest and offline regression tests
-        run: npm run check
+        run: pnpm run check
         env:
           FORMAT_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before || 'HEAD' }}
           FORMAT_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}

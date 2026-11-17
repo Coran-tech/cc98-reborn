@@ -6,8 +6,8 @@ Current release target: `0.4.6`. Run all commands below from the repository root
 2. Install the locked development dependencies with Node.js 22 and run the shared checks:
 
 ```sh
-npm ci
-npm run check
+pnpm install
+pnpm run check
 ```
 
 This runs the same format, lint, JavaScript syntax, manifest-reference and offline
@@ -188,7 +188,7 @@ third-party fixtures are intentionally excluded.
 ## Included Runtime Files
 
 `scripts/package-extension.ps1` is the packaging allowlist. `manifest.json`
-identifies browser entry points and resources; `npm run check:manifest` verifies
+identifies browser entry points and resources; `pnpm run check:manifest` verifies
 that its local references exist. Keep both lists current when adding a module.
 
 The package includes extension runtime, bundled resources/licenses, the optional

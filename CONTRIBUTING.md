@@ -5,8 +5,8 @@
 ## 先运行本地检查
 
 ```sh
-npm ci
-npm run check
+pnpm install
+pnpm run check
 ```
 
 检查使用锁定的开发依赖。不要把 `node_modules/` 放进插件包，也不要为了通过检查顺手重排未修改的旧源码。
@@ -14,9 +14,9 @@ npm run check
 ## 格式与 lint 如何接入
 
 ```sh
-npm run format:check
-npm run lint
-npm test
+pnpm run format:check
+pnpm run lint
+pnpm test
 ```
 
 Prettier 检查新增或修改的文件，而不是首次接入就改写整仓。首次接入时，比较基线里尚无 `.prettierrc.json`，历史文件路径清单只豁免这一轮的旧格式；新增工具和文档仍必须通过。基线已包含格式配置后，清单不再豁免被修改的文件。
@@ -24,12 +24,12 @@ Prettier 检查新增或修改的文件，而不是首次接入就改写整仓�
 默认与 `HEAD` 比较；也可明确指定比较基线或文件：
 
 ```sh
-npm run format:check -- --base <commit>
-npm run format:check -- --files src/example.js
-npm run format -- --files src/example.js
+pnpm run format:check -- --base <commit>
+pnpm run format:check -- --files src/example.js
+pnpm run format -- --files src/example.js
 ```
 
-CI 使用 PR 的基线提交或 push 前的提交；新分支首次 push 会与远程默认分支的共同祖先比较，缺少该历史时检查失败，不重新启用首次接入豁免。`npm run format:check -- --all` 可用于审计整仓格式债务，不是默认门禁。修改旧的大文件时先看格式差异，避免把功能修复和大范围重排混在一起。
+CI 使用 PR 的基线提交或 push 前的提交；新分支首次 push 会与远程默认分支的共同祖先比较，缺少该历史时检查失败，不重新启用首次接入豁免。`pnpm run format:check -- --all` 可用于审计整仓格式债务，不是默认门禁。修改旧的大文件时先看格式差异，避免把功能修复和大范围重排混在一起。
 
 ESLint 覆盖自有 JavaScript，按浏览器脚本、后台和 Node 环境配置。既有问题通过 ESLint 的抑制清单按“文件 + 规则”记录数量，不为此修改运行时逻辑；新文件的违规、或已有文件超出该规则存量数量的违规会阻止检查通过。该机制不是逐条定位比对，不能识别同一文件中等量替换的违规。修复旧问题时缩减对应清单，不要用整目录忽略或关闭规则掩盖新问题。
 
@@ -50,7 +50,7 @@ ESLint 覆盖自有 JavaScript，按浏览器脚本、后台和 Node 环境配�
 
 ## 验证受影响的功能
 
-`npm run check` 面向可在干净仓库运行的开发检查与无账号测试。浏览器交互、视觉效果和原站适配还需要对应的浏览器测试，具体入口见 [发布检查表](docs/development/releasing.md)。
+`pnpm run check` 面向可在干净仓库运行的开发检查与无账号测试。浏览器交互、视觉效果和原站适配还需要对应的浏览器测试，具体入口见 [发布检查表](docs/development/releasing.md)。
 
 部分浏览器测试依赖单独的 `cc98-local-forum` 项目，可通过 `CC98_LOCAL_FORUM_ROOT` 指定其目录。模拟器、测试账号和数据库不要提交到扩展仓库；不要让 CI 使用个人浏览器配置或真实论坛登录数据。
 
