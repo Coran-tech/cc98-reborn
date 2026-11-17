@@ -1,0 +1,25 @@
+.cc98-icon {
+  display: inline-block;
+  flex: 0 0 auto;
+  vertical-align: -0.125em;
+  pointer-events: none;
+}
+
+.cc98-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* ASCII theme: the SVG is replaced by the label from the icon registry. */
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] [data-icon] > .cc98-icon {
+  display: none !important;
+}
+
+:root.cc98-comfort[data-cc98-comfort-style="ascii"] [data-icon][data-cc98-ascii-glyph]::before {
+  content: attr(data-cc98-ascii-glyph) !important;
+  display: inline !important;
+  font: 700 0.8rem/1 var(--cc98-comfort-font-body, monospace) !important;
+  color: inherit;
+}

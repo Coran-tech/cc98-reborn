@@ -392,8 +392,11 @@
     collapse.type = "button";
     collapse.title = "收起侧拉窗";
     collapse.setAttribute("aria-label", "收起侧拉窗");
-    collapse.innerHTML =
-      '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+    const collapseIcon = globalThis.CC98RebornIcons?.create?.("chevron-right", { size: 18 });
+    if (collapseIcon) collapse.append(collapseIcon);
+    else
+      collapse.innerHTML =
+        '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
     // A sibling, not a child of the drag handle: pressing it never starts a resize.
     panel.append(header, content, resizer, collapse);
     layer.append(panel);
@@ -401,8 +404,11 @@
     // an explicit return to the top. Keep it outside the collapsed tools.
     const backTop = createRebuiltBackToTopControl();
     backTop.className = "cc98-topic-drawer-back-top";
-    backTop.innerHTML =
-      '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 16V9c0-3 4-7 4-7s4 4 4 7v7H8Z"/><circle cx="12" cy="9" r="1.5"/><path d="m8 11-3 4v4l3-2m8-6 3 4v4l-3-2M10 19l-1 3m3-3v2m2-2 1 3"/></svg>';
+    const backTopIcon = globalThis.CC98RebornIcons?.create?.("arrow-up", { size: 20 });
+    if (backTopIcon) backTop.append(backTopIcon);
+    else
+      backTop.innerHTML =
+        '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 16V9c0-3 4-7 4-7s4 4 4 7v7H8Z"/><circle cx="12" cy="9" r="1.5"/><path d="m8 11-3 4v4l3-2m8-6 3 4v4l-3-2M10 19l-1 3m3-3v2m2-2 1 3"/></svg>';
     layer.append(backTop);
     // Parent feeds can now update while the drawer is open. Do not retain a
     // replaced parent tree merely to restore focus when this pane closes.

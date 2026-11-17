@@ -41,7 +41,6 @@ const manifest = JSON.parse(fs.readFileSync(path.join(root, "manifest.json"), "u
 const content = manifest.content_scripts.find((item) => item.js?.includes("src/content.js")).js;
 const groups = [
   [...content.filter((file) => !file.includes("/vendor/")), "src/topic-drawer.js"],
-  ["popup/popup.js", "popup/settings-backup.js"],
   [
     "src/background.js",
     "experiments/question-mark/background.js",

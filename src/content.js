@@ -1277,6 +1277,37 @@ function createElement(tagName, className, text) {
   return element;
 }
 
+function createRebornIcon(name, size) {
+  try {
+    return globalThis.CC98RebornIcons?.create?.(name, { size }) || null;
+  } catch {
+    return null;
+  }
+}
+
+function applyRebornIcon(control, name, label, size = 18) {
+  try {
+    if (!globalThis.CC98RebornIcons?.set) return false;
+    globalThis.CC98RebornIcons.set(control, name, { size, label });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function createCaretIcon() {
+  const caret = createElement("span", "cc98-rebuild-chooser-caret");
+  applyRebornIcon(caret, "chevron-down", null, 14);
+  return caret;
+}
+
+function setPlayPauseIcon(button, playing) {
+  if (applyRebornIcon(button, playing ? "pause" : "play", playing ? "暂停音频" : "播放音频")) {
+    return;
+  }
+  button.textContent = playing ? "\u275a\u275a" : "\u25b6";
+}
+
 function getLinkNewTabHref(link) {
   if (!(link instanceof HTMLAnchorElement)) {
     return "";
@@ -2322,7 +2353,7 @@ function openImageViewer(image) {
   const viewer = createElement("div", "cc98-image-viewer");
   viewer.id = "cc98-comfort-image-viewer";
   viewer.innerHTML = `
-    <button class="cc98-image-viewer-close" type="button" aria-label="Close">×</button>
+    <button class="cc98-image-viewer-close" type="button" aria-label="关闭"></button>
     <div class="cc98-image-viewer-stage">
       <img alt="">
     </div>
@@ -2332,7 +2363,7 @@ function openImageViewer(image) {
   viewerImage.alt = image.alt || "";
   const closeButton = viewer.querySelector(".cc98-image-viewer-close");
   if (closeButton) {
-    closeButton.textContent = "x";
+    applyRebornIcon(closeButton, "x", "关闭", 20);
   }
   const stage = viewer.querySelector(".cc98-image-viewer-stage");
   const counter = createElement("div", "cc98-image-viewer-counter");
@@ -2358,10 +2389,7 @@ function openImageViewer(image) {
       }
     }
   );
-  copyButton.title = "复制图片";
-  copyButton.setAttribute("aria-label", "复制图片");
-  copyButton.innerHTML =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M15 5V4a1 1 0 0 0-1-1H5a2 2 0 0 0-2 2v10a1 1 0 0 0 1 1h1"/></svg>';
+  applyRebornIcon(copyButton, "copy", "复制图片");
   const rotateButtons = [-1, 1].map((direction) => {
     const side = direction < 0 ? "left" : "right";
     const label = direction < 0 ? "向左旋转 90°" : "向右旋转 90°";
@@ -2374,27 +2402,26 @@ function openImageViewer(image) {
         rotateImageViewer(direction * 90);
       }
     );
-    button.setAttribute("aria-label", label);
+    applyRebornIcon(button, direction < 0 ? "rotate-ccw" : "rotate-cw", label);
     button.title = `${label}（Shift + ${direction < 0 ? "←" : "→"}）`;
-    button.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path ${direction > 0 ? 'transform="translate(24 0) scale(-1 1)"' : ""} d="M4 9a8 8 0 1 1 1 9M4 4v5h5"/></svg>`;
     return button;
   });
   toolbar.append(counter, ...rotateButtons, copyButton);
   const favoriteButton = globalThis.CC98RebornImageFavoriteControls?.viewerButton();
   if (favoriteButton) toolbar.append(favoriteButton);
   toolbar.append(saveButton);
-  const prevButton = createButton("cc98-image-viewer-nav cc98-image-viewer-prev", "<", (event) => {
+  const prevButton = createButton("cc98-image-viewer-nav cc98-image-viewer-prev", "", (event) => {
     event.preventDefault();
     event.stopPropagation();
     switchImageViewer(-1);
   });
-  prevButton.setAttribute("aria-label", "Previous image");
-  const nextButton = createButton("cc98-image-viewer-nav cc98-image-viewer-next", ">", (event) => {
+  applyRebornIcon(prevButton, "chevron-left", "上一张", 24);
+  const nextButton = createButton("cc98-image-viewer-nav cc98-image-viewer-next", "", (event) => {
     event.preventDefault();
     event.stopPropagation();
     switchImageViewer(1);
   });
-  nextButton.setAttribute("aria-label", "Next image");
+  applyRebornIcon(nextButton, "chevron-right", "下一张", 24);
   if (stage) {
     viewer.insertBefore(toolbar, stage);
     viewer.insertBefore(prevButton, stage);
@@ -2935,33 +2962,20 @@ function renderNativeFollowControl(action) {
 
 function setPostFooterActionIcon(control, text) {
   const label = cleanupPostText(text);
-  const paths = {
-    评分: "M4 7h6M7 4v6M15 17h6M18 6 6 18",
-    私信: "M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm-1 2 9 6 9-6",
-    引用: "M10 7H4v6h6V7Zm0 6c0 3-2 5-5 5M20 7h-6v6h6V7Zm0 6c0 3-2 5-5 5",
-    追踪: "M7 7v7a3 3 0 0 0 3 3h5M17 7v8M9 5a2 2 0 1 1-4 0 2 2 0 0 1 4 0Zm10 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0Zm0 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z",
-    编辑: "m14 5 5 5M4 20l5-1L20 8a2 2 0 0 0 0-3l-1-1a2 2 0 0 0-3 0L5 15l-1 5Z",
-    查看对话:
-      "M15 3H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h1v4l4-4h5a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2ZM10 18h4l4 3v-4h1a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2"
+  const names = {
+    评分: "gauge",
+    私信: "mail",
+    引用: "quote",
+    追踪: "eye",
+    编辑: "pen-line",
+    查看对话: "messages-square"
   };
-  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("viewBox", "0 0 24 24");
-  svg.setAttribute("width", "18");
-  svg.setAttribute("height", "18");
-  svg.setAttribute("fill", "none");
-  svg.setAttribute("stroke", "currentColor");
-  svg.setAttribute("stroke-width", "1.8");
-  svg.setAttribute("stroke-linecap", "round");
-  svg.setAttribute("stroke-linejoin", "round");
-  svg.setAttribute("aria-hidden", "true");
-  svg.setAttribute("focusable", "false");
-  const path = document.createElementNS(svg.namespaceURI, "path");
-  path.setAttribute("d", paths[label] || "M5 11v2M12 11v2M19 11v2");
-  svg.append(path);
+  const name = names[label] || "plus";
   control.classList.add("cc98-rebuild-icon-action");
+  if (applyRebornIcon(control, name, label, 18)) return;
   control.setAttribute("aria-label", label);
   control.title = label;
-  control.replaceChildren(svg);
+  control.textContent = label;
 }
 
 function renderPostFooterAction(action) {
@@ -3317,13 +3331,13 @@ function showRebuiltTransientToast(anchor, text) {
   toast.setAttribute("role", "status");
   toast.setAttribute("aria-live", "polite");
   const label = createElement("span", "cc98-rebuild-toast-text", text);
-  const close = createButton("cc98-rebuild-toast-close", "\u00d7", (event) => {
+  const close = createButton("cc98-rebuild-toast-close", "", (event) => {
     event.preventDefault();
     event.stopPropagation();
     dismissRebuiltTransientToast(toast);
   });
   close.type = "button";
-  close.setAttribute("aria-label", "\u5173\u95ed\u63d0\u793a");
+  applyRebornIcon(close, "x", "关闭提示");
   toast.append(label, close);
   document.body.append(toast);
   const anchorRect = anchor instanceof HTMLElement ? anchor.getBoundingClientRect() : null;
@@ -9198,7 +9212,7 @@ async function toggleSourceAPlayer(sourcePlayer) {
 
 function setAudioPlayButtonState(playButton, isPlaying) {
   playButton.classList.toggle("is-playing", Boolean(isPlaying));
-  playButton.textContent = isPlaying ? "\u275a\u275a" : "\u25b6";
+  setPlayPauseIcon(playButton, isPlaying);
   playButton.setAttribute(
     "aria-label",
     isPlaying ? "\u6682\u505c\u97f3\u9891" : "\u64ad\u653e\u97f3\u9891"
@@ -9261,7 +9275,7 @@ function getAPlayerBarPercent(sourcePlayer, selector) {
 function createAudioPlayerFromUrl(url, title = "", sourcePlayer = null) {
   const src = makeAbsoluteCc98Url(url);
   const player = createElement("div", "cc98-rebuild-audio-player");
-  const playButton = createButton("cc98-rebuild-audio-play", "\u25b6", async (event) => {
+  const playButton = createButton("cc98-rebuild-audio-play", "", async (event) => {
     event.preventDefault();
     event.stopPropagation();
     const audio = player.querySelector("audio");
@@ -9282,7 +9296,6 @@ function createAudioPlayerFromUrl(url, title = "", sourcePlayer = null) {
       const playing =
         sourceState === null ? playButton.classList.toggle("is-playing") : sourceState;
       playButton.classList.toggle("is-playing", playing);
-      playButton.textContent = playing ? "\u275a\u275a" : "\u25b6";
       setAudioPlayButtonState(playButton, playing);
       syncProgress();
       if (playing) {
@@ -9400,17 +9413,17 @@ function createAudioPlayerFromUrl(url, title = "", sourcePlayer = null) {
     seekToRatio(clampNumber(next, 0, 100, current) / 100);
   });
   audio.addEventListener("play", () => {
-    playButton.textContent = "\u275a\u275a";
+    setPlayPauseIcon(playButton, true);
     playButton.classList.add("is-playing");
     playButton.setAttribute("aria-label", "暂停音频");
   });
   audio.addEventListener("pause", () => {
-    playButton.textContent = "\u25b6";
+    setPlayPauseIcon(playButton, false);
     playButton.classList.remove("is-playing");
     playButton.setAttribute("aria-label", "播放音频");
   });
   audio.addEventListener("ended", () => {
-    playButton.textContent = "\u25b6";
+    setPlayPauseIcon(playButton, false);
     playButton.classList.remove("is-playing");
     playButton.setAttribute("aria-label", "播放音频");
   });
@@ -12885,7 +12898,10 @@ function syncTopicLockCard(app, scope) {
     return;
   }
   if (!card) {
-    card = createElement("section", "cc98-rebuild-topic-locked-card", "🔒 本帖已被锁定");
+    card = createElement("section", "cc98-rebuild-topic-locked-card");
+    const lockIcon = createRebornIcon("lock", 16);
+    if (lockIcon) card.append(lockIcon);
+    card.append(document.createTextNode("本帖已被锁定"));
     feed.before(card);
   }
   const detail = card.querySelector(".cc98-rebuild-topic-lock-reason");
@@ -16535,7 +16551,11 @@ function renderPostCard(item) {
   }
   byline.append(userLine);
   if (item.isHot) {
-    byline.append(createElement("div", "cc98-rebuild-muted cc98-rebuild-hot-label", "🔥热评"));
+    const hotLabel = createElement("div", "cc98-rebuild-muted cc98-rebuild-hot-label");
+    const flameIcon = createRebornIcon("flame", 15);
+    if (flameIcon) hotLabel.append(flameIcon);
+    hotLabel.append(document.createTextNode("热评"));
+    byline.append(hotLabel);
   } else {
     byline.append(
       createElement(
@@ -16905,8 +16925,12 @@ function renderBoardTopicCard(item) {
   );
   const main = createElement("div", "cc98-rebuild-board-topic-main");
   const titleRow = createElement("div", "cc98-rebuild-board-topic-title-row");
-  const title = item.isLocked && !/^🔒\s*/u.test(item.title) ? `🔒 ${item.title}` : item.title;
-  titleRow.append(createLink("cc98-rebuild-card-title", title, item.href));
+  const titleLink = createLink("cc98-rebuild-card-title", item.title, item.href);
+  if (item.isLocked && !/^🔒\s*/u.test(item.title)) {
+    const titleLockIcon = createRebornIcon("lock", 14);
+    if (titleLockIcon) titleLink.prepend(titleLockIcon, document.createTextNode(" "));
+  }
+  titleRow.append(titleLink);
   if (item.pageLinks?.length) {
     const pages = createElement("div", "cc98-rebuild-board-topic-pages");
     item.pageLinks
@@ -17555,41 +17579,6 @@ function getEditorPageData() {
 }
 
 function labelEditorToolbarButtons(editor) {
-  const labels = new Map([
-    ["加粗", "B"],
-    ["斜体", "I"],
-    ["下划线", "U"],
-    ["删除线", "S"],
-    ["左对齐", "左"],
-    ["居中", "中"],
-    ["右对齐", "右"],
-    ["回复后可见", "隐"],
-    ["插入表情", "☺"],
-    ["插入url", "链"],
-    ["插入图片", "图"],
-    ["插入视频", "影"],
-    ["插入Bilibili视频", "Bili"],
-    ["插入音频", "音"],
-    ["上传文件", "文"],
-    ["撤销", "↶"],
-    ["重做", "↷"],
-    ["切换预览", "预"]
-  ]);
-  editor.querySelectorAll(".ubb-button").forEach((control) => {
-    const title =
-      control.getAttribute("title") ||
-      control.querySelector?.("[title]")?.getAttribute("title") ||
-      "";
-    const label = labels.get(title);
-    if (label && !control.textContent.trim()) {
-      control.dataset.cc98ToolbarLabel = label;
-    }
-  });
-  editor.querySelector(".ubb-button-fontSize")?.setAttribute("data-cc98-toolbar-label", "T↕");
-  editor.querySelector(".ubb-button-color")?.setAttribute("data-cc98-toolbar-label", "色");
-}
-
-function labelEditorToolbarButtonsWithUnicode(editor) {
   const labelRules = [
     [/加粗|bold/i, "B"],
     [/斜体|italic/i, "I"],
@@ -17599,12 +17588,12 @@ function labelEditorToolbarButtonsWithUnicode(editor) {
     [/居中|align.*center/i, "中"],
     [/右对齐|align.*right/i, "右"],
     [/回复后可见|隐藏|hide/i, "隐"],
-    [/表情|emoji/i, "☺"],
-    [/url|链接|link/i, "🔗"],
+    [/表情|emoji/i, "表"],
+    [/url|链接|link/i, "链"],
     [/图片|image|picture/i, "图"],
     [/bilibili|哔哩/i, "Bili"],
-    [/视频|video/i, "▶"],
-    [/音频|audio/i, "♪"],
+    [/视频|video/i, "影"],
+    [/音频|audio/i, "音"],
     [/文件|file|upload/i, "文"],
     [/撤销|undo/i, "↶"],
     [/重做|redo/i, "↷"],
@@ -21045,7 +21034,7 @@ function stabilizeEditorColorButton(editor) {
         chooser.type = "button";
         chooser.title = "选择颜色";
         chooser.setAttribute("aria-label", chooser.title);
-        chooser.append(createElement("span", "cc98-rebuild-chooser-caret", "▾"));
+        chooser.append(createCaretIcon());
         button.append(chooser);
       }
     }
@@ -21186,10 +21175,7 @@ function stabilizeEditorFontSizeButton(editor) {
       trigger = document.createElement("button");
       trigger.type = "button";
       trigger.className = "cc98-rebuild-font-size-trigger";
-      trigger.append(
-        createElement("span", "cc98-rebuild-split-value", "字号"),
-        createElement("span", "cc98-rebuild-chooser-caret", "▾")
-      );
+      trigger.append(createElement("span", "cc98-rebuild-split-value", "字号"), createCaretIcon());
       trigger.title = "选择字号";
       trigger.setAttribute("aria-label", trigger.title);
       button.append(trigger);
@@ -21566,7 +21552,7 @@ function appendEditorColorSplitButton(editor, toolbar) {
   chooser.type = "button";
   chooser.title = "选择颜色";
   chooser.setAttribute("aria-label", chooser.title);
-  chooser.append(createElement("span", "cc98-rebuild-chooser-caret", "▾"));
+  chooser.append(createCaretIcon());
   group.append(colorButton, chooser);
   toolbar.append(group);
   ensureNativeColorInput(editor, colorButton);
@@ -21597,13 +21583,12 @@ function createLegacy031UbbPreviewPanel() {
     "cc98-rebuild-legacy-ubb-preview-title",
     "旧版 UBB 预览（0.3.1）"
   );
-  const closeButton = createButton("cc98-rebuild-legacy-ubb-preview-close", "×", (event) => {
+  const closeButton = createButton("cc98-rebuild-legacy-ubb-preview-close", "", (event) => {
     event.preventDefault();
     event.stopPropagation();
     panel.dispatchEvent(new CustomEvent("cc98:legacy-preview-close", { bubbles: true }));
   });
-  closeButton.title = "关闭旧版预览";
-  closeButton.setAttribute("aria-label", "关闭旧版预览");
+  applyRebornIcon(closeButton, "x", "关闭旧版预览");
   header.append(title, closeButton);
 
   const body = createElement("div", "cc98-rebuild-legacy-ubb-preview-body");
@@ -22108,10 +22093,9 @@ function openNativeMarkupConversionDialog(editor, state) {
   dialog.setAttribute("aria-label", "UBB Markdown 互转");
   const header = createElement("div", "cc98-rebuild-convert-header");
   header.append(createElement("strong", "", "UBB / Markdown 互转"));
-  const close = createButton("cc98-rebuild-convert-close", "×", () => finish());
+  const close = createButton("cc98-rebuild-convert-close", "", () => finish());
   close.type = "button";
-  close.title = "关闭";
-  close.setAttribute("aria-label", "关闭互转工具");
+  applyRebornIcon(close, "x", "关闭互转工具");
   header.append(close);
 
   const direction = createElement("div", "cc98-rebuild-convert-directions");
@@ -23193,7 +23177,6 @@ function stabilizeNativeEditor(editor) {
   stabilizeNativeVoteEditor(editor);
   ensureNativeEditorDraftControls(editor);
   labelEditorToolbarButtons(editor);
-  labelEditorToolbarButtonsWithUnicode(editor);
   stabilizeMarkdownEditor(editor);
   stabilizeNativeDualUbbEditor(editor);
   stabilizeEditorFontSizeButton(editor);
@@ -24764,7 +24747,7 @@ function stabilizePrivateMessageComposer(source, nativeInput) {
   addActionButton("音", "插入音频", () =>
     insertPrivateMessageTaggedUrl(textarea, "audio", "请输入音频地址")
   );
-  const emojiButton = addActionButton("☺", "插入表情", (event) => {
+  const emojiButton = addActionButton("表", "插入表情", (event) => {
     const panel = ensurePrivateMessageEmojiPanel(editor, textarea);
     if (panel instanceof HTMLElement) {
       const willOpen = panel.hidden;
@@ -28722,10 +28705,10 @@ function rebuildAntSimplePagination(pagination) {
   proxy.dataset.cc98PaginationState = stateKey;
   proxy.replaceChildren();
 
-  const prevButton = createElement("button", "cc98-rebuild-ant-page-arrow", "‹");
+  const prevButton = createElement("button", "cc98-rebuild-ant-page-arrow");
   prevButton.type = "button";
   prevButton.disabled = Boolean(prevDisabled);
-  prevButton.setAttribute("aria-label", "上一页");
+  applyRebornIcon(prevButton, "chevron-left", "上一页", 16);
   prevButton.addEventListener("click", () => {
     if (prevButton.disabled) {
       return;
@@ -28744,10 +28727,10 @@ function rebuildAntSimplePagination(pagination) {
 
   const total = createElement("span", "cc98-rebuild-ant-page-total", `/ ${state.total}`);
 
-  const nextButton = createElement("button", "cc98-rebuild-ant-page-arrow", "›");
+  const nextButton = createElement("button", "cc98-rebuild-ant-page-arrow");
   nextButton.type = "button";
   nextButton.disabled = Boolean(nextDisabled);
-  nextButton.setAttribute("aria-label", "下一页");
+  applyRebornIcon(nextButton, "chevron-right", "下一页", 16);
   nextButton.addEventListener("click", () => {
     if (nextButton.disabled) {
       return;
@@ -29978,7 +29961,7 @@ function showEmbeddedUserSettingsPanel(router, panel, app, navSource) {
   if (!panel.querySelector("iframe")) {
     const frame = createElement("iframe", "cc98-rebuild-user-settings-frame");
     frame.title = "CC98 Reborn 插件设置";
-    frame.src = `${chrome.runtime.getURL("popup/popup.html")}?embedded=1`;
+    frame.src = `${chrome.runtime.getURL("popup.html")}?embedded=1`;
     frame.height = "1200";
     const extensionOrigin = chrome.runtime.getURL("").replace(/\/$/, "");
     const onMessage = (event) => {
@@ -32751,7 +32734,18 @@ function renderReadLaterSidebarContent(sidebar, options = {}) {
   if (!items.length) {
     const empty = createElement("div", "cc98-rebuild-read-later-sidebar-empty");
     empty.append(createElement("strong", "", "暂无稍后再看"));
-    empty.append(createElement("span", "", "点击新帖右侧的 🕗 即可加入。"));
+    const laterHint = createElement("span", "");
+    const clockIcon = createRebornIcon("clock", 14);
+    if (clockIcon) {
+      laterHint.append(
+        document.createTextNode("点击新帖右侧的 "),
+        clockIcon,
+        document.createTextNode(" 即可加入。")
+      );
+    } else {
+      laterHint.textContent = "点击新帖右侧的时钟图标即可加入。";
+    }
+    empty.append(laterHint);
     viewport.append(empty);
   } else if (!filteredItems.length) {
     const empty = createElement("div", "cc98-rebuild-read-later-sidebar-empty");
@@ -32776,21 +32770,23 @@ function renderReadLaterSidebarContent(sidebar, options = {}) {
         top.append(createElement("span", "cc98-rebuild-read-later-sidebar-board", item.board));
       }
       const controls = createElement("div", "cc98-rebuild-read-later-sidebar-item-controls");
-      const toggleRead = createButton(
-        "cc98-rebuild-read-later-sidebar-icon",
-        item.readAt ? "↶" : "✓",
-        () => {
-          markReadLaterItemRead(item.key, !item.readAt);
-        }
+      const toggleRead = createButton("cc98-rebuild-read-later-sidebar-icon", "", () => {
+        markReadLaterItemRead(item.key, !item.readAt);
+      });
+      const toggleTitle = item.readAt ? "标为未读" : "标为已读";
+      applyRebornIcon(
+        toggleRead,
+        item.readAt ? "undo-2" : "check",
+        `${toggleTitle}: ${item.title}`,
+        16
       );
-      toggleRead.title = item.readAt ? "标为未读" : "标为已读";
-      toggleRead.setAttribute("aria-label", `${toggleRead.title}: ${item.title}`);
-      const remove = createButton("cc98-rebuild-read-later-sidebar-icon is-delete", "×", () => {
+      toggleRead.title = toggleTitle;
+      const remove = createButton("cc98-rebuild-read-later-sidebar-icon is-delete", "", () => {
         removeReadLaterItem(item.key);
         showRebuiltTransientToast(sidebar, "已从稍后再看删除");
       });
+      applyRebornIcon(remove, "x", `删除: ${item.title}`, 16);
       remove.title = "删除";
-      remove.setAttribute("aria-label", `删除: ${item.title}`);
       controls.append(toggleRead, remove);
       top.append(controls);
       row.append(top);
@@ -32857,15 +32853,15 @@ function createReadLaterSidebar() {
   input.setAttribute("aria-label", "搜索稍后再看");
   const submit = createElement("button", "cc98-rebuild-read-later-sidebar-search-submit", "搜索");
   submit.type = "submit";
-  const reset = createButton("cc98-rebuild-read-later-sidebar-search-reset", "×", () => {
+  const reset = createButton("cc98-rebuild-read-later-sidebar-search-reset", "", () => {
     readLaterSidebarSearchQuery = "";
     readLaterSidebarPage = 1;
     input.value = "";
     renderReadLaterSidebarContent(sidebar);
     input.focus();
   });
+  applyRebornIcon(reset, "x", "清空搜索", 16);
   reset.title = "清空搜索";
-  reset.setAttribute("aria-label", "清空搜索");
   form.append(input, submit, reset);
   form.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -32899,8 +32895,8 @@ function createRebuiltBackToTopControl() {
   });
   button.title = "回到页面顶部";
   button.setAttribute("aria-label", "回到页面顶部");
-  const icon = createElement("span", "cc98-rebuild-back-to-top-icon", "▲");
-  icon.setAttribute("aria-hidden", "true");
+  const icon = createElement("span", "cc98-rebuild-back-to-top-icon");
+  applyRebornIcon(icon, "arrow-up", null, 14);
   button.append(icon, createElement("span", "cc98-rebuild-back-to-top-label", "回到顶部"));
   return button;
 }

@@ -176,6 +176,12 @@
   }
 
   function scan(root) {
+    eachIn(root, "[data-icon]", (control) => {
+      const label = host.CC98RebornIcons?.ascii?.[control.dataset.icon];
+      if (label && control.dataset.cc98AsciiGlyph !== label) {
+        control.setAttribute("data-cc98-ascii-glyph", label);
+      }
+    });
     eachIn(root, surfaceSelector, (node) => {
       if (!node.closest(authoredSelector) && !node.hasAttribute("data-cc98-ascii-surface")) {
         node.setAttribute("data-cc98-ascii-surface", "");

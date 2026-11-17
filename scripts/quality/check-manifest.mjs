@@ -13,8 +13,9 @@ const references = [
   ...Object.values(manifest.icons),
   ...Object.values(manifest.action.default_icon)
 ];
+const generatedSources = new Map([["popup.html", "entrypoints/popup/index.html"]]);
 for (const file of references) {
-  const resolved = path.resolve(root, file);
+  const resolved = path.resolve(root, generatedSources.get(file) ?? file);
   assert(resolved.startsWith(root + path.sep), `Manifest path leaves project: ${file}`);
   assert(fs.statSync(resolved).isFile(), `Missing runtime file: ${file}`);
 }
