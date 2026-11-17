@@ -33,10 +33,12 @@ const CC98_WEBVPN_HOST_TOKENS = Object.freeze({
   "api.cc98.org": "77726476706e69737468656265737421f1e748d22433310830079bab"
 });
 const RELEASES_API_URL = "https://api.github.com/repos/Coran-tech/cc98-reborn/releases/latest";
-const RELEASES_LIST_API_URL = "https://api.github.com/repos/Coran-tech/cc98-reborn/releases?per_page=1";
+const RELEASES_LIST_API_URL =
+  "https://api.github.com/repos/Coran-tech/cc98-reborn/releases?per_page=1";
 const RELEASES_LATEST_PAGE_URL = "https://github.com/Coran-tech/cc98-reborn/releases/latest";
 const RELEASES_PAGE_URL = "https://github.com/Coran-tech/cc98-reborn/releases";
-const RELEASES_MIRROR_API_URL = "https://gh-proxy.com/https://api.github.com/repos/Coran-tech/cc98-reborn/releases/latest";
+const RELEASES_MIRROR_API_URL =
+  "https://gh-proxy.com/https://api.github.com/repos/Coran-tech/cc98-reborn/releases/latest";
 const CC98_SITE_DATA_ORIGINS = [
   "https://cc98.org",
   "https://www.cc98.org",
@@ -54,10 +56,7 @@ const CC98_SITE_DATA_ORIGINS = [
   "http://file.cc98.org",
   "http://webvpn.zju.edu.cn"
 ];
-const CC98_OPENID_SESSION_ORIGINS = [
-  "https://openid.cc98.org",
-  "http://openid.cc98.org"
-];
+const CC98_OPENID_SESSION_ORIGINS = ["https://openid.cc98.org", "http://openid.cc98.org"];
 const CC98_TAB_URL_PATTERNS = [
   "*://cc98.org/*",
   "*://*.cc98.org/*",
@@ -69,9 +68,11 @@ let pendingOpenIdWebVpnFlow = null;
 let openIdWebVpnCallbackPromise = null;
 
 function isCc98Url(url) {
-  return /\.cc98\.org$/i.test(url.hostname)
-    || url.hostname === "cc98.org"
-    || /(?:^|\.)webvpn\.zju\.edu\.cn$/i.test(url.hostname);
+  return (
+    /\.cc98\.org$/i.test(url.hostname) ||
+    url.hostname === "cc98.org" ||
+    /(?:^|\.)webvpn\.zju\.edu\.cn$/i.test(url.hostname)
+  );
 }
 
 function handleDownloadFile(message, sendResponse) {
@@ -88,18 +89,21 @@ function handleDownloadFile(message, sendResponse) {
     return false;
   }
 
-  chrome.downloads.download({
-    url: url.href,
-    saveAs: false,
-    conflictAction: "uniquify"
-  }, (downloadId) => {
-    const error = chrome.runtime.lastError?.message;
-    sendResponse({
-      ok: Boolean(downloadId) && !error,
-      downloadId,
-      error
-    });
-  });
+  chrome.downloads.download(
+    {
+      url: url.href,
+      saveAs: false,
+      conflictAction: "uniquify"
+    },
+    (downloadId) => {
+      const error = chrome.runtime.lastError?.message;
+      sendResponse({
+        ok: Boolean(downloadId) && !error,
+        downloadId,
+        error
+      });
+    }
+  );
 
   return true;
 }
@@ -196,8 +200,10 @@ function dedupeTabs(tabs) {
 function isCc98WebPageTabUrl(value) {
   try {
     const url = new URL(value || "");
-    return /^(?:www\.)?cc98\.org$/i.test(url.hostname)
-      || /(?:^|\.)webvpn\.zju\.edu\.cn$/i.test(url.hostname);
+    return (
+      /^(?:www\.)?cc98\.org$/i.test(url.hostname) ||
+      /(?:^|\.)webvpn\.zju\.edu\.cn$/i.test(url.hostname)
+    );
   } catch {
     return false;
   }
@@ -212,10 +218,7 @@ function isWebVpnPageUrl(value) {
 }
 
 async function findCurrentCc98WebAccount() {
-  const tabs = dedupeTabs([
-    ...await queryActiveTabs(),
-    ...await queryCc98Tabs()
-  ]);
+  const tabs = dedupeTabs([...(await queryActiveTabs()), ...(await queryCc98Tabs())]);
   let fallback = null;
   for (const tab of tabs) {
     if (!isCc98WebPageTabUrl(tab.url)) {
@@ -242,10 +245,12 @@ async function findCurrentCc98WebAccount() {
       warning: "uid-missing"
     };
   }
-  return fallback || {
-    ok: false,
-    error: "未找到已登录且已加载插件的 CC98 标签页。请打开或刷新一个已登录的 CC98 页面后再绑定。"
-  };
+  return (
+    fallback || {
+      ok: false,
+      error: "未找到已登录且已加载插件的 CC98 标签页。请打开或刷新一个已登录的 CC98 页面后再绑定。"
+    }
+  );
 }
 
 async function exitCurrentCc98WebAccount() {
@@ -258,19 +263,22 @@ async function exitCurrentCc98WebAccount() {
 }
 
 async function clearCc98SiteData() {
-  const removed = await removeBrowsingData({
-    origins: CC98_SITE_DATA_ORIGINS,
-    originTypes: {
-      unprotectedWeb: true,
-      protectedWeb: true
+  const removed = await removeBrowsingData(
+    {
+      origins: CC98_SITE_DATA_ORIGINS,
+      originTypes: {
+        unprotectedWeb: true,
+        protectedWeb: true
+      }
+    },
+    {
+      cookies: true,
+      localStorage: true,
+      indexedDB: true,
+      cacheStorage: true,
+      serviceWorkers: true
     }
-  }, {
-    cookies: true,
-    localStorage: true,
-    indexedDB: true,
-    cacheStorage: true,
-    serviceWorkers: true
-  });
+  );
   if (!removed.ok) {
     return removed;
   }
@@ -283,19 +291,22 @@ async function clearCc98SiteData() {
 }
 
 async function clearCc98OpenIdSessionData() {
-  const removed = await removeBrowsingData({
-    origins: CC98_OPENID_SESSION_ORIGINS,
-    originTypes: {
-      unprotectedWeb: true,
-      protectedWeb: true
+  const removed = await removeBrowsingData(
+    {
+      origins: CC98_OPENID_SESSION_ORIGINS,
+      originTypes: {
+        unprotectedWeb: true,
+        protectedWeb: true
+      }
+    },
+    {
+      cookies: true,
+      localStorage: true,
+      indexedDB: true,
+      cacheStorage: true,
+      serviceWorkers: true
     }
-  }, {
-    cookies: true,
-    localStorage: true,
-    indexedDB: true,
-    cacheStorage: true,
-    serviceWorkers: true
-  });
+  );
   return {
     ok: Boolean(removed.ok),
     error: removed.error || "",
@@ -357,10 +368,7 @@ function base64UrlFromBytes(bytes) {
   for (let index = 0; index < bytes.length; index += chunkSize) {
     binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize));
   }
-  return btoa(binary)
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/g, "");
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
 function randomBase64Url(byteLength = 32) {
@@ -431,7 +439,9 @@ function launchWebVpnTabAuthFlow(url, { interactive = true } = {}) {
       }
       settled = true;
       cleanup(options);
-      reject(error instanceof Error ? error : new Error(String(error || "webvpn-authorization-failed")));
+      reject(
+        error instanceof Error ? error : new Error(String(error || "webvpn-authorization-failed"))
+      );
     };
 
     const inspectUrl = (candidate) => {
@@ -471,7 +481,9 @@ function launchWebVpnTabAuthFlow(url, { interactive = true } = {}) {
     chrome.tabs.create({ url, active: interactive }, (tab) => {
       const error = chrome.runtime.lastError?.message;
       if (error || !Number.isFinite(tab?.id)) {
-        fail(new Error(error || "webvpn authorization tab could not be created"), { closeTab: false });
+        fail(new Error(error || "webvpn authorization tab could not be created"), {
+          closeTab: false
+        });
         return;
       }
       authTabId = tab.id;
@@ -527,8 +539,9 @@ function recoverPendingOpenIdWebVpnCallback(value, pending = pendingOpenIdWebVpn
     return { ok: false, error: "invalid-webvpn-callback-url" };
   }
   const expectedRedirectUrl = new URL(pending.redirectUri);
-  const isDirectExtensionCallback = sourceUrl.origin === expectedRedirectUrl.origin
-    && sourceUrl.pathname === expectedRedirectUrl.pathname;
+  const isDirectExtensionCallback =
+    sourceUrl.origin === expectedRedirectUrl.origin &&
+    sourceUrl.pathname === expectedRedirectUrl.pathname;
   if (!isWebVpnPageUrl(sourceUrl.href) && !isDirectExtensionCallback) {
     return { ok: false, error: "not-openid-callback" };
   }
@@ -555,12 +568,12 @@ async function readPersistedOpenIdWebVpnFlow() {
   const stored = await readSessionStorage(OPENID_WEBVPN_PENDING_STORAGE_KEY);
   const pending = stored[OPENID_WEBVPN_PENDING_STORAGE_KEY];
   if (
-    !pending
-    || pending.authTransport !== "webvpn"
-    || !pending.state
-    || !pending.redirectUri
-    || !pending.codeVerifier
-    || Number(pending.expiresAt) < Date.now()
+    !pending ||
+    pending.authTransport !== "webvpn" ||
+    !pending.state ||
+    !pending.redirectUri ||
+    !pending.codeVerifier ||
+    Number(pending.expiresAt) < Date.now()
   ) {
     if (pending) {
       await removeSessionStorage(OPENID_WEBVPN_PENDING_STORAGE_KEY);
@@ -608,7 +621,7 @@ async function exchangeOpenIdCode(code, codeVerifier, redirectUri, authTransport
   const response = await fetch(getOpenIdTransportUrl(CC98_OPENID_TOKEN_URL, authTransport), {
     method: "POST",
     headers: {
-      "Accept": "application/json",
+      Accept: "application/json",
       "Content-Type": "application/x-www-form-urlencoded"
     },
     body,
@@ -623,7 +636,8 @@ async function exchangeOpenIdCode(code, codeVerifier, redirectUri, authTransport
     payload = { raw: text };
   }
   if (!response.ok) {
-    const reason = payload.error_description || payload.error || payload.raw || `HTTP ${response.status}`;
+    const reason =
+      payload.error_description || payload.error || payload.raw || `HTTP ${response.status}`;
     throw new Error(`token: ${reason}`);
   }
   if (!payload.access_token) {
@@ -644,7 +658,7 @@ async function exchangeOpenIdRefreshToken(refreshToken, authTransport = "direct"
   const response = await fetch(getOpenIdTransportUrl(CC98_OPENID_TOKEN_URL, authTransport), {
     method: "POST",
     headers: {
-      "Accept": "application/json",
+      Accept: "application/json",
       "Content-Type": "application/x-www-form-urlencoded"
     },
     body,
@@ -661,9 +675,10 @@ async function exchangeOpenIdRefreshToken(refreshToken, authTransport = "direct"
   if (!response.ok) {
     const errorCode = String(payload.error || "").trim();
     const errorDescription = String(payload.error_description || "").trim();
-    const reason = errorCode && errorDescription
-      ? `${errorCode}: ${errorDescription}`
-      : (errorDescription || errorCode || payload.raw || `HTTP ${response.status}`);
+    const reason =
+      errorCode && errorDescription
+        ? `${errorCode}: ${errorDescription}`
+        : errorDescription || errorCode || payload.raw || `HTTP ${response.status}`;
     throw new Error(`refresh-token: ${reason}`);
   }
   if (!payload.access_token) {
@@ -674,12 +689,12 @@ async function exchangeOpenIdRefreshToken(refreshToken, authTransport = "direct"
 
 function normalizeOpenIdTokenUserId(binding) {
   return normalizeAccountId(
-    binding?.userId
-    ?? binding?.id
-    ?? binding?.uid
-    ?? binding?.userID
-    ?? binding?.cc98Id
-    ?? binding?.cc98UserId
+    binding?.userId ??
+      binding?.id ??
+      binding?.uid ??
+      binding?.userID ??
+      binding?.cc98Id ??
+      binding?.cc98UserId
   );
 }
 
@@ -716,15 +731,17 @@ async function persistOpenIdTokenPayload(tokenPayload, binding, authTransport = 
   }
   const now = Date.now();
   const expiresInSeconds = Number(tokenPayload.expires_in);
-  const expiresAt = now + (
-    Number.isFinite(expiresInSeconds) && expiresInSeconds > 0
+  const expiresAt =
+    now +
+    (Number.isFinite(expiresInSeconds) && expiresInSeconds > 0
       ? expiresInSeconds * 1000
-      : 5 * 60 * 1000
-  );
+      : 5 * 60 * 1000);
   const normalizedTransport = normalizeOpenIdAuthTransport(authTransport);
   const existing = await readOpenIdCredential(binding);
   const refreshToken = String(tokenPayload.refresh_token || existing.refresh?.refreshToken || "");
-  const scope = String(tokenPayload.scope || existing.refresh?.scope || binding.scope || CC98_OPENID_SCOPES.join(" "));
+  const scope = String(
+    tokenPayload.scope || existing.refresh?.scope || binding.scope || CC98_OPENID_SCOPES.join(" ")
+  );
   const accessCredential = {
     version: 1,
     userId,
@@ -759,23 +776,29 @@ async function persistOpenIdTokenPayload(tokenPayload, binding, authTransport = 
 }
 
 async function refreshStoredOpenIdAccessToken(binding, refreshCredential) {
-  if (!openIdCredentialMatchesBinding(refreshCredential, binding) || !refreshCredential?.refreshToken) {
-    throw new Error("\u9700\u8981\u91cd\u65b0\u6388\u6743\uff1a\u672a\u4fdd\u5b58 OpenID refresh_token");
+  if (
+    !openIdCredentialMatchesBinding(refreshCredential, binding) ||
+    !refreshCredential?.refreshToken
+  ) {
+    throw new Error(
+      "\u9700\u8981\u91cd\u65b0\u6388\u6743\uff1a\u672a\u4fdd\u5b58 OpenID refresh_token"
+    );
   }
   const authTransport = normalizeOpenIdAuthTransport(
     refreshCredential.authTransport || binding.authTransport
   );
   let tokenPayload;
   try {
-    tokenPayload = await exchangeOpenIdRefreshToken(
-      refreshCredential.refreshToken,
-      authTransport
-    );
+    tokenPayload = await exchangeOpenIdRefreshToken(refreshCredential.refreshToken, authTransport);
   } catch (error) {
     const message = String(error?.message || "");
-    if (/login_required|invalid_grant|invalid_token|expired.*refresh|refresh.*expired/i.test(message)) {
+    if (
+      /login_required|invalid_grant|invalid_token|expired.*refresh|refresh.*expired/i.test(message)
+    ) {
       await clearOpenIdCredential();
-      throw new Error("\u9700\u8981\u91cd\u65b0\u6388\u6743\uff1aOpenID refresh_token \u5df2\u5931\u6548");
+      throw new Error(
+        "\u9700\u8981\u91cd\u65b0\u6388\u6743\uff1aOpenID refresh_token \u5df2\u5931\u6548"
+      );
     }
     throw error;
   }
@@ -786,13 +809,11 @@ async function fetchCc98MeWithStoredCredential(binding) {
   let credential = await readOpenIdCredential(binding);
   let accessCredential = credential.access;
   const authTransport = normalizeOpenIdAuthTransport(
-    accessCredential?.authTransport
-    || credential.refresh?.authTransport
-    || binding.authTransport
+    accessCredential?.authTransport || credential.refresh?.authTransport || binding.authTransport
   );
   if (
-    !accessCredential?.accessToken
-    || Number(accessCredential.expiresAt || 0) <= Date.now() + 30 * 1000
+    !accessCredential?.accessToken ||
+    Number(accessCredential.expiresAt || 0) <= Date.now() + 30 * 1000
   ) {
     accessCredential = await refreshStoredOpenIdAccessToken(binding, credential.refresh);
     credential = await readOpenIdCredential(binding);
@@ -809,12 +830,15 @@ async function fetchCc98MeWithStoredCredential(binding) {
     profile = await fetchCc98Me(accessCredential.accessToken, authTransport);
   }
   return {
-    binding: normalizeOpenIdBinding({
-      ...profile,
-      _cc98RebornProfileSource: "api-me"
-    }, {
-      scope: accessCredential.scope
-    }),
+    binding: normalizeOpenIdBinding(
+      {
+        ...profile,
+        _cc98RebornProfileSource: "api-me"
+      },
+      {
+        scope: accessCredential.scope
+      }
+    ),
     credential: {
       ...accessCredential,
       refreshToken: credential.refresh?.refreshToken || accessCredential.refreshToken || ""
@@ -829,18 +853,28 @@ function wait(ms) {
 }
 
 function describeOpenIdPayload(payload, status) {
-  const reason = payload?.error_description || payload?.error || payload?.message || payload?.raw || `HTTP ${status}`;
+  const reason =
+    payload?.error_description ||
+    payload?.error ||
+    payload?.message ||
+    payload?.raw ||
+    `HTTP ${status}`;
   return String(reason).replace(/\s+/g, " ").trim().slice(0, 220) || `HTTP ${status}`;
 }
 
-async function fetchJsonWithBearer(url, accessToken, label, { retries = 0, authTransport = "direct" } = {}) {
+async function fetchJsonWithBearer(
+  url,
+  accessToken,
+  label,
+  { retries = 0, authTransport = "direct" } = {}
+) {
   let lastError = null;
   for (let attempt = 0; attempt <= retries; attempt += 1) {
     const response = await fetch(getOpenIdTransportUrl(url, authTransport), {
       method: "GET",
       headers: {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${accessToken}`
+        Accept: "application/json",
+        Authorization: `Bearer ${accessToken}`
       },
       cache: "no-store",
       credentials: normalizeOpenIdAuthTransport(authTransport) === "webvpn" ? "include" : "omit"
@@ -906,7 +940,9 @@ function firstDefined(...values) {
 }
 
 function normalizeProfileKey(key) {
-  return String(key || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  return String(key || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
 }
 
 function getProfileContainers(profile) {
@@ -917,9 +953,11 @@ function getProfileContainers(profile) {
     }
   };
   add(profile);
-  ["data", "user", "currentUser", "current_user", "profile", "me", "result", "value"].forEach((key) => {
-    add(profile?.[key]);
-  });
+  ["data", "user", "currentUser", "current_user", "profile", "me", "result", "value"].forEach(
+    (key) => {
+      add(profile?.[key]);
+    }
+  );
   return containers;
 }
 
@@ -930,11 +968,25 @@ function findProfileValueDeep(value, keys, depth = 0, seen = new Set()) {
   seen.add(value);
   const normalizedKeys = new Set(keys.map(normalizeProfileKey));
   for (const [key, child] of Object.entries(value)) {
-    if (normalizedKeys.has(normalizeProfileKey(key)) && child !== undefined && child !== null && child !== "") {
+    if (
+      normalizedKeys.has(normalizeProfileKey(key)) &&
+      child !== undefined &&
+      child !== null &&
+      child !== ""
+    ) {
       return child;
     }
   }
-  for (const preferredKey of ["data", "user", "currentUser", "current_user", "profile", "me", "result", "value"]) {
+  for (const preferredKey of [
+    "data",
+    "user",
+    "currentUser",
+    "current_user",
+    "profile",
+    "me",
+    "result",
+    "value"
+  ]) {
     const child = value[preferredKey];
     const found = findProfileValueDeep(child, keys, depth + 1, seen);
     if (found !== undefined && found !== null && found !== "") {
@@ -962,10 +1014,12 @@ function findProfileValueDeep(value, keys, depth = 0, seen = new Set()) {
 function pickProfileValue(profile, keys) {
   for (const container of getProfileContainers(profile)) {
     for (const [key, value] of Object.entries(container)) {
-      if (keys.some((candidate) => normalizeProfileKey(candidate) === normalizeProfileKey(key))
-        && value !== undefined
-        && value !== null
-        && value !== "") {
+      if (
+        keys.some((candidate) => normalizeProfileKey(candidate) === normalizeProfileKey(key)) &&
+        value !== undefined &&
+        value !== null &&
+        value !== ""
+      ) {
         return value;
       }
     }
@@ -974,10 +1028,35 @@ function pickProfileValue(profile, keys) {
 }
 
 function normalizeOpenIdBinding(profile, tokenPayload = {}) {
-  const userId = pickProfileValue(profile, ["id", "userId", "uid", "userID", "user_id", "cc98Id", "cc98UserId", "cc98_user_id", "sub"]);
-  const userName = pickProfileValue(profile, ["name", "userName", "username", "nickName", "displayName", "preferred_username"]);
-  const portraitUrl = pickProfileValue(profile, ["portraitUrl", "avatarUrl", "avatar", "picture", "headImg"]);
-  const watermarkId = String(pickProfileValue(profile, ["watermarkId", "watermark_id", "watermark", "watermarkID"]) || "");
+  const userId = pickProfileValue(profile, [
+    "id",
+    "userId",
+    "uid",
+    "userID",
+    "user_id",
+    "cc98Id",
+    "cc98UserId",
+    "cc98_user_id",
+    "sub"
+  ]);
+  const userName = pickProfileValue(profile, [
+    "name",
+    "userName",
+    "username",
+    "nickName",
+    "displayName",
+    "preferred_username"
+  ]);
+  const portraitUrl = pickProfileValue(profile, [
+    "portraitUrl",
+    "avatarUrl",
+    "avatar",
+    "picture",
+    "headImg"
+  ]);
+  const watermarkId = String(
+    pickProfileValue(profile, ["watermarkId", "watermark_id", "watermark", "watermarkID"]) || ""
+  );
   return {
     ok: true,
     bound: true,
@@ -987,7 +1066,9 @@ function normalizeOpenIdBinding(profile, tokenPayload = {}) {
     portraitUrl: portraitUrl === undefined ? "" : String(portraitUrl),
     watermarkIdPrefix: watermarkId ? watermarkId.slice(0, 8) : "",
     profileSource: profile._cc98RebornProfileSource || "api-me",
-    profileWarning: watermarkId ? "" : (profile._cc98RebornProfileWarning || "OpenID /me \u672a\u8fd4\u56de watermarkId"),
+    profileWarning: watermarkId
+      ? ""
+      : profile._cc98RebornProfileWarning || "OpenID /me \u672a\u8fd4\u56de watermarkId",
     scope: tokenPayload.scope || CC98_OPENID_SCOPES.join(" "),
     boundAt: Date.now()
   };
@@ -998,7 +1079,9 @@ function normalizeAccountId(value) {
 }
 
 function normalizeAccountName(value) {
-  return String(value ?? "").trim().toLowerCase();
+  return String(value ?? "")
+    .trim()
+    .toLowerCase();
 }
 
 function normalizeExpectedAccountForStorage(account) {
@@ -1007,20 +1090,20 @@ function normalizeExpectedAccountForStorage(account) {
   }
   return {
     userId: normalizeAccountId(
-      account.userId
-      ?? account.id
-      ?? account.uid
-      ?? account.userID
-      ?? account.cc98Id
-      ?? account.cc98UserId
+      account.userId ??
+        account.id ??
+        account.uid ??
+        account.userID ??
+        account.cc98Id ??
+        account.cc98UserId
     ),
     userName: String(
-      account.userName
-      ?? account.name
-      ?? account.username
-      ?? account.nickName
-      ?? account.displayName
-      ?? ""
+      account.userName ??
+        account.name ??
+        account.username ??
+        account.nickName ??
+        account.displayName ??
+        ""
     ).trim()
   };
 }
@@ -1029,27 +1112,61 @@ function accountsReferToSameCc98User(left, right) {
   if (!left || !right) {
     return false;
   }
-  const leftId = normalizeAccountId(left.userId ?? left.id ?? left.uid ?? left.userID ?? left.cc98Id ?? left.cc98UserId ?? left.sub);
-  const rightId = normalizeAccountId(right.userId ?? right.id ?? right.uid ?? right.userID ?? right.cc98Id ?? right.cc98UserId ?? right.sub);
+  const leftId = normalizeAccountId(
+    left.userId ?? left.id ?? left.uid ?? left.userID ?? left.cc98Id ?? left.cc98UserId ?? left.sub
+  );
+  const rightId = normalizeAccountId(
+    right.userId ??
+      right.id ??
+      right.uid ??
+      right.userID ??
+      right.cc98Id ??
+      right.cc98UserId ??
+      right.sub
+  );
   if (leftId && rightId) {
     return leftId === rightId;
   }
-  const leftName = normalizeAccountName(left.userName ?? left.name ?? left.username ?? left.nickName ?? left.displayName);
-  const rightName = normalizeAccountName(right.userName ?? right.name ?? right.username ?? right.nickName ?? right.displayName);
+  const leftName = normalizeAccountName(
+    left.userName ?? left.name ?? left.username ?? left.nickName ?? left.displayName
+  );
+  const rightName = normalizeAccountName(
+    right.userName ?? right.name ?? right.username ?? right.nickName ?? right.displayName
+  );
   return Boolean(leftName && rightName && leftName === rightName);
 }
 
 function requireSameCc98UserId(binding, expectedAccount) {
-  const expectedId = normalizeAccountId(expectedAccount?.userId ?? expectedAccount?.id ?? expectedAccount?.uid ?? expectedAccount?.userID ?? expectedAccount?.cc98Id ?? expectedAccount?.cc98UserId);
-  const actualId = normalizeAccountId(binding?.userId ?? binding?.id ?? binding?.uid ?? binding?.userID ?? binding?.cc98Id ?? binding?.cc98UserId);
+  const expectedId = normalizeAccountId(
+    expectedAccount?.userId ??
+      expectedAccount?.id ??
+      expectedAccount?.uid ??
+      expectedAccount?.userID ??
+      expectedAccount?.cc98Id ??
+      expectedAccount?.cc98UserId
+  );
+  const actualId = normalizeAccountId(
+    binding?.userId ??
+      binding?.id ??
+      binding?.uid ??
+      binding?.userID ??
+      binding?.cc98Id ??
+      binding?.cc98UserId
+  );
   if (!expectedId) {
-    throw new Error("\u65e0\u6cd5\u786e\u8ba4\u5f53\u524d CC98 \u7f51\u9875\u8d26\u53f7 UID\uff0c\u8bf7\u5148\u5237\u65b0\u5df2\u767b\u5f55\u7684 CC98 \u9875\u9762\u540e\u518d\u7ed1\u5b9a\u3002");
+    throw new Error(
+      "\u65e0\u6cd5\u786e\u8ba4\u5f53\u524d CC98 \u7f51\u9875\u8d26\u53f7 UID\uff0c\u8bf7\u5148\u5237\u65b0\u5df2\u767b\u5f55\u7684 CC98 \u9875\u9762\u540e\u518d\u7ed1\u5b9a\u3002"
+    );
   }
   if (!actualId) {
-    throw new Error("OpenID /me \u672a\u8fd4\u56de UID\uff0c\u65e0\u6cd5\u9a8c\u8bc1\u662f\u5426\u4e3a\u540c\u4e00\u8d26\u53f7\u3002");
+    throw new Error(
+      "OpenID /me \u672a\u8fd4\u56de UID\uff0c\u65e0\u6cd5\u9a8c\u8bc1\u662f\u5426\u4e3a\u540c\u4e00\u8d26\u53f7\u3002"
+    );
   }
   if (actualId !== expectedId) {
-    throw new Error(`OpenID \u6388\u6743\u8d26\u53f7\u4e0e\u5f53\u524d CC98 \u7f51\u9875\u8d26\u53f7\u4e0d\u4e00\u81f4\uff1aUID ${actualId} / ${expectedId}`);
+    throw new Error(
+      `OpenID \u6388\u6743\u8d26\u53f7\u4e0e\u5f53\u524d CC98 \u7f51\u9875\u8d26\u53f7\u4e0d\u4e00\u81f4\uff1aUID ${actualId} / ${expectedId}`
+    );
   }
 }
 
@@ -1068,9 +1185,10 @@ async function requestCc98OpenIdBinding({
   oidcNonce = ""
 } = {}) {
   const normalizedTransport = normalizeOpenIdAuthTransport(authTransport);
-  const redirectUri = normalizedTransport === "webvpn"
-    ? CC98_WEBVPN_OPENID_REDIRECT_URI
-    : chrome.identity.getRedirectURL();
+  const redirectUri =
+    normalizedTransport === "webvpn"
+      ? CC98_WEBVPN_OPENID_REDIRECT_URI
+      : chrome.identity.getRedirectURL();
   const state = randomBase64Url(24);
   const codeVerifier = randomBase64Url(64);
   const codeChallenge = await createCodeChallenge(codeVerifier);
@@ -1116,15 +1234,18 @@ async function requestCc98OpenIdBinding({
   }
   let redirectUrl;
   try {
-    redirectUrl = normalizedTransport === "webvpn"
-      ? await launchWebVpnTabAuthFlow(authFlowUrl, { interactive })
-      : await launchWebAuthFlow(authFlowUrl, { interactive });
+    redirectUrl =
+      normalizedTransport === "webvpn"
+        ? await launchWebVpnTabAuthFlow(authFlowUrl, { interactive })
+        : await launchWebAuthFlow(authFlowUrl, { interactive });
   } catch (error) {
     if (normalizedTransport === "webvpn") {
       pendingOpenIdWebVpnFlow = null;
       await clearPersistedOpenIdWebVpnFlow();
     }
-    throw new Error(`${normalizedTransport} authorize: ${error?.message || "authorization failed"}`);
+    throw new Error(
+      `${normalizedTransport} authorize: ${error?.message || "authorization failed"}`
+    );
   }
   if (normalizedTransport === "webvpn") {
     pendingOpenIdWebVpnFlow = null;
@@ -1233,7 +1354,8 @@ async function loginWithCc98OpenId(expectedAccount = null, { authTransport = "di
     );
     binding.autoCalibrationReady = Boolean(credential.refreshToken);
     if (!binding.autoCalibrationReady) {
-      binding.profileRefreshError = "\u9700\u8981\u91cd\u65b0\u6388\u6743\uff1aOpenID \u672a\u8fd4\u56de refresh_token\uff0c\u8bf7\u786e\u8ba4 offline_access \u6743\u9650";
+      binding.profileRefreshError =
+        "\u9700\u8981\u91cd\u65b0\u6388\u6743\uff1aOpenID \u672a\u8fd4\u56de refresh_token\uff0c\u8bf7\u786e\u8ba4 offline_access \u6743\u9650";
     }
   } else {
     await clearOpenIdCredential();
@@ -1344,10 +1466,9 @@ async function resumePersistedOpenIdWebVpnFlow(recovered, pending, authTabId) {
 }
 
 async function handleOpenIdWebVpnCallback(value, sender = {}) {
-  const memoryPending = pendingOpenIdWebVpnFlow?.expiresAt >= Date.now()
-    ? pendingOpenIdWebVpnFlow
-    : null;
-  const pending = memoryPending || await readPersistedOpenIdWebVpnFlow();
+  const memoryPending =
+    pendingOpenIdWebVpnFlow?.expiresAt >= Date.now() ? pendingOpenIdWebVpnFlow : null;
+  const pending = memoryPending || (await readPersistedOpenIdWebVpnFlow());
   const recovered = recoverPendingOpenIdWebVpnCallback(value, pending);
   if (!recovered.ok) {
     return recovered;
@@ -1381,26 +1502,21 @@ function isOpenIdWebVpnCallbackNavigation(value) {
     return false;
   }
   const directRedirect = new URL(CC98_WEBVPN_OPENID_REDIRECT_URI);
-  const isSupportedCallback = isWebVpnPageUrl(url.href)
-    || (
-      url.origin === directRedirect.origin
-      && url.pathname === directRedirect.pathname
-    );
+  const isSupportedCallback =
+    isWebVpnPageUrl(url.href) ||
+    (url.origin === directRedirect.origin && url.pathname === directRedirect.pathname);
   if (!isSupportedCallback) {
     return false;
   }
   const params = getAuthRedirectParams(url.href);
-  return Boolean(
-    params.get("state")
-    && (params.get("code") || params.get("error"))
-  );
+  return Boolean(params.get("state") && (params.get("code") || params.get("error")));
 }
 
 function handleOpenIdWebVpnNavigation(details) {
   if (
-    details?.frameId !== 0
-    || !Number.isFinite(details?.tabId)
-    || !isOpenIdWebVpnCallbackNavigation(details?.url)
+    details?.frameId !== 0 ||
+    !Number.isFinite(details?.tabId) ||
+    !isOpenIdWebVpnCallbackNavigation(details?.url)
   ) {
     return;
   }
@@ -1436,11 +1552,11 @@ async function performOpenIdBindingProfileRefresh({ force = false } = {}) {
 
   const now = Date.now();
   const lastAttemptAt = Number(
-    binding.profileRefreshAttemptedAt
-    || binding.profileRefreshedAt
-    || binding.verifiedAt
-    || binding.boundAt
-    || 0
+    binding.profileRefreshAttemptedAt ||
+      binding.profileRefreshedAt ||
+      binding.verifiedAt ||
+      binding.boundAt ||
+      0
   );
   if (!force && lastAttemptAt && now - lastAttemptAt < OPENID_PROFILE_REFRESH_MIN_INTERVAL_MS) {
     return { ok: true, binding, refreshed: false, reason: "fresh" };
@@ -1504,20 +1620,16 @@ function refreshOpenIdBindingProfile(options = {}) {
   if (openIdProfileRefreshPromise) {
     return openIdProfileRefreshPromise;
   }
-  openIdProfileRefreshPromise = performOpenIdBindingProfileRefresh(options)
-    .finally(() => {
-      openIdProfileRefreshPromise = null;
-    });
+  openIdProfileRefreshPromise = performOpenIdBindingProfileRefresh(options).finally(() => {
+    openIdProfileRefreshPromise = null;
+  });
   return openIdProfileRefreshPromise;
 }
 
 async function logoutCc98OpenId() {
   pendingOpenIdWebVpnFlow = null;
   await clearPersistedOpenIdWebVpnFlow();
-  await Promise.all([
-    removeLocalStorage(OPENID_BINDING_STORAGE_KEY),
-    clearOpenIdCredential()
-  ]);
+  await Promise.all([removeLocalStorage(OPENID_BINDING_STORAGE_KEY), clearOpenIdCredential()]);
   const session = await clearCc98OpenIdSessionData();
   return {
     ok: true,
@@ -1598,7 +1710,8 @@ function getVersionFromReleaseObject(release) {
 }
 
 function normalizeReleaseUrl(url) {
-  return typeof url === "string" && /^https:\/\/github\.com\/Coran-tech\/cc98-reborn\/releases/i.test(url)
+  return typeof url === "string" &&
+    /^https:\/\/github\.com\/Coran-tech\/cc98-reborn\/releases/i.test(url)
     ? url
     : RELEASES_PAGE_URL;
 }
@@ -1607,7 +1720,7 @@ async function fetchJsonRelease(url, options = {}) {
   const response = await fetch(url, {
     method: "GET",
     headers: {
-      "Accept": "application/vnd.github+json"
+      Accept: "application/vnd.github+json"
     },
     cache: "no-store"
   });
@@ -1632,7 +1745,7 @@ async function fetchHtmlLatestRelease(url, options = {}) {
   const response = await fetch(url, {
     method: "GET",
     headers: {
-      "Accept": "text/html"
+      Accept: "text/html"
     },
     cache: "no-store",
     redirect: "follow"
@@ -1773,10 +1886,7 @@ async function ensureOpenIdProfileRefreshAlarm() {
     return null;
   }
   const currentPeriod = Number(alarm?.periodInMinutes || 0);
-  if (
-    alarm
-    && Math.abs(currentPeriod - OPENID_PROFILE_REFRESH_INTERVAL_MINUTES) < 0.001
-  ) {
+  if (alarm && Math.abs(currentPeriod - OPENID_PROFILE_REFRESH_INTERVAL_MINUTES) < 0.001) {
     return alarm;
   }
   if (alarm) {
@@ -1827,9 +1937,11 @@ async function removeRetiredAccountRecords() {
   // login, OpenID binding, question session, settings or page-local drafts.
   if (chrome.storage.session) {
     await new Promise((resolve, reject) => {
-      chrome.storage.session.remove([
-        "cc98RebornAccountVault:v1", "cc98RebornAccountEpoch:v1", "cc98RebornAccountsRevision:v1"
-      ], () => chrome.runtime.lastError ? reject(new Error("retired-account-cleanup-failed")) : resolve());
+      chrome.storage.session.remove(
+        ["cc98RebornAccountVault:v1", "cc98RebornAccountEpoch:v1", "cc98RebornAccountsRevision:v1"],
+        () =>
+          chrome.runtime.lastError ? reject(new Error("retired-account-cleanup-failed")) : resolve()
+      );
     });
   }
   if (typeof indexedDB === "undefined") return;
@@ -1840,7 +1952,11 @@ async function removeRetiredAccountRecords() {
   });
 }
 
-removeRetiredAccountRecords().catch(() => console.warn("Retired account records could not be removed; cleanup will retry on the next worker start."));
+removeRetiredAccountRecords().catch(() =>
+  console.warn(
+    "Retired account records could not be removed; cleanup will retry on the next worker start."
+  )
+);
 
 chrome.runtime.onInstalled.addListener(setupUpdateChecker);
 chrome.runtime.onStartup.addListener(setupUpdateChecker);
@@ -1860,64 +1976,87 @@ chrome.tabs.onUpdated.addListener(handleOpenIdWebVpnTabUpdated);
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm?.name === UPDATE_CHECK_ALARM_NAME) {
     checkForUpdates().catch(() => {});
-  } else if (
-    OPENID_PROFILE_REFRESH_ENABLED
-    && alarm?.name === OPENID_PROFILE_REFRESH_ALARM_NAME
-  ) {
+  } else if (OPENID_PROFILE_REFRESH_ENABLED && alarm?.name === OPENID_PROFILE_REFRESH_ALARM_NAME) {
     refreshOpenIdBindingProfile({ force: true }).catch(() => {});
   }
 });
 
 async function initializeTopicDrawerFrame(message, sender) {
-  if (!sender.tab?.id || !sender.frameId || !sender.documentId || !/^[a-z0-9-]{20,80}$/i.test(message.token || "")) {
+  if (
+    !sender.tab?.id ||
+    !sender.frameId ||
+    !sender.documentId ||
+    !/^[a-z0-9-]{20,80}$/i.test(message.token || "")
+  ) {
     throw new Error("Invalid topic drawer frame");
   }
   const url = new URL(sender.url);
   const parentUrl = new URL(sender.tab.url);
-  if (url.origin !== parentUrl.origin || !/^https?:$/.test(url.protocol)
-    || !(url.hostname === "cc98.org" || url.hostname === "www.cc98.org" || url.hostname.endsWith(".webvpn.zju.edu.cn"))
-    || !/\/(?:topic\/\d+|editor\/(?:edit\/)?\d+)(?:\/|$)/i.test(url.pathname)) {
+  if (
+    url.origin !== parentUrl.origin ||
+    !/^https?:$/.test(url.protocol) ||
+    !(
+      url.hostname === "cc98.org" ||
+      url.hostname === "www.cc98.org" ||
+      url.hostname.endsWith(".webvpn.zju.edu.cn")
+    ) ||
+    !/\/(?:topic\/\d+|editor\/(?:edit\/)?\d+)(?:\/|$)/i.test(url.pathname)
+  ) {
     throw new Error("Unsupported topic drawer URL");
   }
   // Address the document, not a reusable frame ID: a fast pagination/close
   // must not inject an old request into the next document in that frame.
   const target = { tabId: sender.tab.id, documentIds: [sender.documentId] };
-  const claim = await chrome.scripting.executeScript({ target, func: (token) => {
-    if (window.top === window || window.parent !== window.top || window.name !== `cc98-reborn-topic-drawer:v1:${token}`) return false;
-    if (globalThis.__cc98DrawerRuntimeClaimed) return false;
-    globalThis.__cc98DrawerRuntimeClaimed = true;
-    return true;
-  }, args: [message.token] });
+  const claim = await chrome.scripting.executeScript({
+    target,
+    func: (token) => {
+      if (
+        window.top === window ||
+        window.parent !== window.top ||
+        window.name !== `cc98-reborn-topic-drawer:v1:${token}`
+      )
+        return false;
+      if (globalThis.__cc98DrawerRuntimeClaimed) return false;
+      globalThis.__cc98DrawerRuntimeClaimed = true;
+      return true;
+    },
+    args: [message.token]
+  });
   if (!claim[0]?.result) return { ok: true };
-  const runtime = chrome.runtime.getManifest().content_scripts.find((script) => script.js?.includes("src/content.js"));
-  if (!runtime) throw new Error("Missing topic drawer runtime");
-  await chrome.scripting.insertCSS({ target, files: runtime.css });
+  const scripts = chrome.runtime.getManifest().content_scripts;
+  const runtime = scripts.find((script) =>
+    script.js?.some((file) => /(?:^|\/)content\.js$/.test(file))
+  );
+  if (!runtime?.js?.length) throw new Error("Missing topic drawer runtime");
+  const css = [...new Set(scripts.flatMap((script) => script.css || []))];
+  if (css.length) await chrome.scripting.insertCSS({ target, files: css });
   await chrome.scripting.executeScript({ target, files: runtime.js, injectImmediately: true });
   return { ok: true };
 }
 
-importScripts("semantic-client.js", "semantic-filter-core.js", "semantic-background.js");
-importScripts("topic-archive-store.js");
-importScripts("image-favorites-core.js", "image-favorites-store.js");
-
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.type === "CC98_IMAGE_FAVORITES") {
     globalThis.CC98RebornImageFavoritesStore.handle(message, sender)
-      .then(sendResponse).catch(error => sendResponse({ ok: false, error: error?.message || "图片收藏保存失败" }));
+      .then(sendResponse)
+      .catch((error) => sendResponse({ ok: false, error: error?.message || "图片收藏保存失败" }));
     return true;
   }
   if (typeof message?.type === "string" && message.type.startsWith("CC98_ARCHIVE_")) {
     Promise.resolve(globalThis.CC98RebornTopicArchiveStore.handle(message, sender))
-      .then(sendResponse).catch(error => sendResponse({ ok: false, error: error?.message || "本地存档失败" }));
+      .then(sendResponse)
+      .catch((error) => sendResponse({ ok: false, error: error?.message || "本地存档失败" }));
     return true;
   }
   if (typeof message?.type === "string" && message.type.startsWith("CC98_SEMANTIC_")) {
     Promise.resolve(globalThis.CC98RebornSemanticBackground.handle(message, sender))
-      .then(sendResponse).catch(() => sendResponse({ ok: false, error: "LOCAL_SERVICE_ERROR" }));
+      .then(sendResponse)
+      .catch(() => sendResponse({ ok: false, error: "LOCAL_SERVICE_ERROR" }));
     return true;
   }
   if (message?.type === "CC98_REBORN_INIT_TOPIC_DRAWER") {
-    initializeTopicDrawerFrame(message, sender).then(sendResponse).catch(() => sendResponse({ ok: false }));
+    initializeTopicDrawerFrame(message, sender)
+      .then(sendResponse)
+      .catch(() => sendResponse({ ok: false }));
     return true;
   }
   if (message?.type === "CC98_REBORN_DOWNLOAD_FILE") {
@@ -1938,10 +2077,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     ensureOpenIdProfileRefreshAlarm()
       .then(() => refreshOpenIdBindingProfile({ force: true }))
       .then(sendResponse)
-      .catch((error) => sendResponse({
-        ok: false,
-        error: error?.message || "openid-profile-refresh-failed"
-      }));
+      .catch((error) =>
+        sendResponse({
+          ok: false,
+          error: error?.message || "openid-profile-refresh-failed"
+        })
+      );
     return true;
   }
 
@@ -1960,17 +2101,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       authTransport: message.authTransport
     })
       .then(sendResponse)
-      .catch((error) => sendResponse({ ok: false, error: error?.message || "openid-login-failed" }));
+      .catch((error) =>
+        sendResponse({ ok: false, error: error?.message || "openid-login-failed" })
+      );
     return true;
   }
 
   if (message?.type === "CC98_REBORN_OPENID_WEBVPN_CALLBACK") {
     handleOpenIdWebVpnCallback(message.url, sender)
       .then(sendResponse)
-      .catch((error) => sendResponse({
-        ok: false,
-        error: error?.message || "webvpn-openid-callback-failed"
-      }));
+      .catch((error) =>
+        sendResponse({
+          ok: false,
+          error: error?.message || "webvpn-openid-callback-failed"
+        })
+      );
     return true;
   }
 
@@ -1995,9 +2140,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message?.type === "CC98_REBORN_OPEN_RELEASES") {
-    const url = typeof message.url === "string" && /^https:\/\/github\.com\/Coran-tech\/cc98-reborn\/releases/i.test(message.url)
-      ? message.url
-      : RELEASES_PAGE_URL;
+    const url =
+      typeof message.url === "string" &&
+      /^https:\/\/github\.com\/Coran-tech\/cc98-reborn\/releases/i.test(message.url)
+        ? message.url
+        : RELEASES_PAGE_URL;
     chrome.tabs.create({ url });
     sendResponse({ ok: true });
     return false;
@@ -2005,6 +2152,3 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   return false;
 });
-
-importScripts("../experiments/question-mark/admin-key-store.js");
-importScripts("../experiments/question-mark/background.js");

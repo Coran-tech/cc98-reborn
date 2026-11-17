@@ -10,6 +10,7 @@ const tests = [
   "tests/markup-converter-core.test.js",
   "tests/question-mark-integration.test.js",
   "tests/conversation-core.test.js",
+  "tests/icons.test.js",
   "tests/media-resource-url.test.js",
   "tests/favorite-share-core.test.js",
   "tests/favorite-share-service.test.js",

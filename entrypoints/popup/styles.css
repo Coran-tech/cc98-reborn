@@ -1,0 +1,30 @@
+@import "../../src/theme-tokens.css";
+@import "tailwindcss" source(none);
+@import "@heroui/styles";
+
+@source "./**/*.{ts,tsx,html}";
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  width: 380px;
+  max-height: 620px;
+  overflow: auto;
+  background: var(--cc98-comfort-bg);
+  color: var(--cc98-comfort-text);
+  font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+}
+
+:root.cc98-reborn-embedded body {
+  width: 100%;
+  max-height: none;
+  overflow: hidden;
+}
+
+a {
+  text-underline-offset: 2px;
+}

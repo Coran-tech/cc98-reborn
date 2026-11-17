@@ -29,11 +29,7 @@
   "optional_host_permissions": ["http://127.0.0.1/*"],
   "web_accessible_resources": [
     {
-      "resources": [
-        "popup/popup.html",
-        "popup/semantic-settings.html",
-        "src/content-filter-frame.html"
-      ],
+      "resources": ["popup.html", "popup/semantic-settings.html", "src/content-filter-frame.html"],
       "matches": [
         "*://*.cc98.org/*",
         "*://cc98.org/*",
@@ -170,7 +166,7 @@
   },
   "action": {
     "default_title": "CC98 Reborn",
-    "default_popup": "popup/popup.html",
+    "default_popup": "popup.html",
     "default_icon": {
       "16": "assets/icon16.png",
       "32": "assets/icon32.png",

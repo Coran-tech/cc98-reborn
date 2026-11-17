@@ -7,6 +7,7 @@
 
 ## 开发与发布
 
+- [架构与目录约定](development/architecture.md)
 - [贡献指南与目录约定](../CONTRIBUTING.md)
 - [发布检查表](development/releasing.md)
 - [更新日志](../CHANGELOG.md)

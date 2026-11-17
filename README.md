@@ -294,22 +294,24 @@
 
 ## 开发与校验
 
-开发检查使用 Node.js 22，扩展保持 JavaScript，不增加运行时构建步骤。
+开发检查使用 Node.js 22。扩展使用 TypeScript + React 19，由 WXT 构建，产物在 `dist/chrome-mv3`。
 
 ```sh
-npm ci
-npm run check
+pnpm install
+pnpm run check
+pnpm build
 ```
 
-统一入口包含格式检查、ESLint、语法检查、Manifest 引用检查和无账号单元测试。格式规范渐进接入，不批量重排历史运行时代码。目录约定、格式门禁和浏览器测试环境见 [贡献指南](./CONTRIBUTING.md)；各功能的发布前检查见 [发布检查表](./docs/development/releasing.md)。
+统一入口包含格式检查、ESLint、语法检查、Manifest 引用检查、`tsc` 类型检查和无账号单元测试。格式规范渐进接入，不批量重排历史运行时代码。目录约定、格式门禁和浏览器测试环境见 [贡献指南](./CONTRIBUTING.md)；各功能的发布前检查见 [发布检查表](./docs/development/releasing.md)。
 
-打包：
+打包（先构建）：
 
 ```powershell
+pnpm build
 .\scripts\package-extension.ps1
 ```
 
-测试构建使用 `./scripts/package-extension.ps1 -TestBuild`，显示为 `beta 0.4.6 (build 年月日.时分秒)`；可用 `-Build xxx` 指定编号。固定覆盖 `dist/cc98-reborn-beta/` 和 `dist/cc98-reborn-beta.zip`，浏览器只需加载一次该目录，以后更新后点击重新加载。直接加载源码测试前运行 `./scripts/set-test-build.ps1` 更新编号。页面、popup 和插件设置页均优先显示 beta / build 版本；默认正式打包自动移除后缀，更新比较始终使用纯数字版本号。
+测试构建使用 `./scripts/package-extension.ps1 -TestBuild`，显示为 `beta 0.4.6 (build 年月日.时分秒)`；可用 `-Build xxx` 指定编号。固定覆盖 `dist/cc98-reborn-beta/` 和 `dist/cc98-reborn-beta.zip`，浏览器只需加载一次该目录，以后更新后点击重新加载。打包脚本直接使用 `dist/chrome-mv3` 的构建产物。页面、popup 和插件设置页均优先显示 beta / build 版本；默认正式打包自动移除后缀，更新比较始终使用纯数字版本号。
 
 本地模拟论坛已独立到相邻项目 `cc98-local-forum`，包含前端、服务器和 `.runtime` 数据；在该目录运行 `node server.js` 或打开 `open-control-panel.cmd`。插件集成测试通过 `tests/local-forum-path.cjs` 引用它，可设置 `CC98_LOCAL_FORUM_ROOT` 指定目录，测试时自动注入当前插件源码路径。
 

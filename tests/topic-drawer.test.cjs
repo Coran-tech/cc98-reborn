@@ -265,7 +265,7 @@ async function testFocusDrawer({ page, worker, context, requests, errors }) {
     checks += 2;
   }
   const settingsPage = await context.newPage();
-  await settingsPage.goto(new URL("/popup/popup.html", worker.url()).href);
+  await settingsPage.goto(new URL("/popup.html", worker.url()).href);
   const label = settingsPage
     .locator("label")
     .filter({ has: settingsPage.locator("#topicDrawerEnabled") });

@@ -1,12 +1,20 @@
 # 参与开发
 
-扩展继续使用 JavaScript。开发检查使用 Node.js 22.13 或更新的 22.x 版本；浏览器加载扩展不需要安装 Node.js，也不增加运行时构建步骤。
+扩展使用 TypeScript、React 19 和 WXT 构建。开发检查使用 Node.js 22.13 或更新的 22.x 版本；浏览器加载扩展前需要先执行 `pnpm build`，产物在 `dist/chrome-mv3`。
 
 ## 先运行本地检查
 
 ```sh
-npm ci
-npm run check
+pnpm install
+pnpm run check
+```
+
+构建与完整校验：
+
+```sh
+pnpm build        # 输出 dist/chrome-mv3
+pnpm run verify   # build + 构建产物 manifest 校验 + tsc
+pnpm dev          # WXT 开发模式
 ```
 
 检查使用锁定的开发依赖。不要把 `node_modules/` 放进插件包，也不要为了通过检查顺手重排未修改的旧源码。
@@ -14,9 +22,9 @@ npm run check
 ## 格式与 lint 如何接入
 
 ```sh
-npm run format:check
-npm run lint
-npm test
+pnpm run format:check
+pnpm run lint
+pnpm test
 ```
 
 Prettier 检查新增或修改的文件，而不是首次接入就改写整仓。首次接入时，比较基线里尚无 `.prettierrc.json`，历史文件路径清单只豁免这一轮的旧格式；新增工具和文档仍必须通过。基线已包含格式配置后，清单不再豁免被修改的文件。
@@ -24,33 +32,38 @@ Prettier 检查新增或修改的文件，而不是首次接入就改写整仓�
 默认与 `HEAD` 比较；也可明确指定比较基线或文件：
 
 ```sh
-npm run format:check -- --base <commit>
-npm run format:check -- --files src/example.js
-npm run format -- --files src/example.js
+pnpm run format:check --base <commit>
+pnpm run format:check --files src/example.js
+pnpm run format --files src/example.js
 ```
 
-CI 使用 PR 的基线提交或 push 前的提交；新分支首次 push 会与远程默认分支的共同祖先比较，缺少该历史时检查失败，不重新启用首次接入豁免。`npm run format:check -- --all` 可用于审计整仓格式债务，不是默认门禁。修改旧的大文件时先看格式差异，避免把功能修复和大范围重排混在一起。
+CI 使用 PR 的基线提交或 push 前的提交；新分支首次 push 会与远程默认分支的共同祖先比较，缺少该历史时检查失败，不重新启用首次接入豁免。`pnpm run format:check --all` 可用于审计整仓格式债务，不是默认门禁。修改旧的大文件时先看格式差异，避免把功能修复和大范围重排混在一起。
 
 ESLint 覆盖自有 JavaScript，按浏览器脚本、后台和 Node 环境配置。既有问题通过 ESLint 的抑制清单按“文件 + 规则”记录数量，不为此修改运行时逻辑；新文件的违规、或已有文件超出该规则存量数量的违规会阻止检查通过。该机制不是逐条定位比对，不能识别同一文件中等量替换的违规。修复旧问题时缩减对应清单，不要用整目录忽略或关闭规则掩盖新问题。
 
 ## 目录与职责
 
-| 目录                                | 内容                                 |
-| ----------------------------------- | ------------------------------------ |
-| `src/`、`popup/`                    | 扩展运行时代码与界面                 |
-| `images/`、`assets/`、`src/vendor/` | 随插件分发的资源和第三方库           |
-| `tests/`                            | 单元测试、浏览器测试和可复用 fixture |
-| `scripts/`                          | 开发检查、打包和平台工具             |
-| `experiments/`                      | 问号、语义模型等独立功能的源码       |
-| `question-service/`                 | 独立问号服务                         |
-| `docs/`                             | 功能说明、发布检查表与历史发布资料   |
-| `archive/`                          | 已退役的项目源码，保留供历史查询     |
+| 目录                                | 内容                                              |
+| ----------------------------------- | ------------------------------------------------- |
+| `entrypoints/`                      | WXT 入口：content scripts、background、React 弹窗 |
+| `modules/`                          | WXT 本地模块（旧资源按原路径复制）                |
+| `src/ui/`                           | TypeScript 图标注册表与共享适配层                 |
+| `src/`、`popup/`                    | 旧版运行时模块与静态页面（逐步迁移）              |
+| `images/`、`assets/`、`src/vendor/` | 随插件分发的资源和第三方库                        |
+| `tests/`                            | 单元测试、浏览器测试和可复用 fixture              |
+| `scripts/`                          | 开发检查、构建和打包工具                          |
+| `experiments/`                      | 问号、语义模型等独立功能的源码                    |
+| `question-service/`                 | 独立问号服务                                      |
+| `docs/`                             | 功能说明、发布检查表与历史发布资料                |
+| `archive/`                          | 已退役的项目源码，保留供历史查询                  |
+
+`wxt.config.ts` 读取根目录 `manifest.json` 的权限、host、图标和 web accessible resources；`content_scripts`、`background` 与 `action.default_popup` 由 `entrypoints/` 生成，不要再往这三个字段里加运行时文件。入口、旧模块桥接和图标规则的完整说明见 [架构与目录约定](docs/development/architecture.md)。
 
 `dist/`、`outputs/`、本机 `.codex/` 和 `.agents/` 不进入 Git。介绍素材生成的 PNG、HTML、文案和交付清单也不进入 Git；不要删除仍被插件引用的 `images/`、`assets/` 或测试 fixture。
 
 ## 验证受影响的功能
 
-`npm run check` 面向可在干净仓库运行的开发检查与无账号测试。浏览器交互、视觉效果和原站适配还需要对应的浏览器测试，具体入口见 [发布检查表](docs/development/releasing.md)。
+`pnpm run check` 面向可在干净仓库运行的开发检查与无账号测试。浏览器交互、视觉效果和原站适配还需要对应的浏览器测试，具体入口见 [发布检查表](docs/development/releasing.md)。浏览器测试加载 `dist/chrome-mv3`，先运行 `pnpm build`。
 
 部分浏览器测试依赖单独的 `cc98-local-forum` 项目，可通过 `CC98_LOCAL_FORUM_ROOT` 指定其目录。模拟器、测试账号和数据库不要提交到扩展仓库；不要让 CI 使用个人浏览器配置或真实论坛登录数据。
 
