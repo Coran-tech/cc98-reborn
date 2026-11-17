@@ -1,0 +1,20 @@
+{
+  "extends": "./.wxt/tsconfig.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false,
+    "noEmit": true,
+    "strict": true,
+    "resolveJsonModule": true,
+    "types": ["node", "chrome"]
+  },
+  "include": [
+    ".wxt/wxt.d.ts",
+    ".wxt/types/**/*.d.ts",
+    "entrypoints/**/*",
+    "modules/**/*",
+    "src/**/*.ts",
+    "wxt.config.ts"
+  ],
+  "exclude": ["dist", ".output", "node_modules"]
+}

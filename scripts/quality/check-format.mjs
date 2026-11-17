@@ -103,7 +103,7 @@ async function main() {
     `Prettier: ${result.checked} checked${result.bootstrap ? `; first-adoption legacy paths left unchanged: ${result.grandfathered}` : ""}.`
   );
   if (result.failed.length) {
-    console.error("Use pnpm run format -- --files <paths...> to format only the intended files.");
+    console.error("Use pnpm run format --files <paths...> to format only the intended files.");
     process.exitCode = 1;
   }
 }

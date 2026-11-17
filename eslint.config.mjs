@@ -8,6 +8,7 @@ export default [
       "**/node_modules/**",
       "dist/**",
       "build/**",
+      ".wxt/**",
       "outputs/**",
       "reference/**",
       "tmp/**",

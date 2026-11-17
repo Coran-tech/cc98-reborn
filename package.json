@@ -15,15 +15,25 @@
     "test": "node scripts/quality/run-tests.mjs",
     "check:syntax": "node scripts/quality/check-syntax.mjs",
     "check:manifest": "node scripts/quality/check-manifest.mjs",
-    "check": "pnpm run format:check && pnpm run lint && pnpm run check:syntax && pnpm run check:manifest && pnpm test"
+    "check:types": "wxt prepare && tsc --noEmit",
+    "check:build": "node scripts/quality/check-build.mjs",
+    "build": "wxt build",
+    "dev": "wxt",
+    "zip": "wxt zip",
+    "verify": "pnpm build && pnpm run check:build && pnpm run check:types",
+    "check": "pnpm run format:check && pnpm run lint && pnpm run check:syntax && pnpm run check:manifest && pnpm run check:types && pnpm test"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@types/chrome": "0.3.7",
+    "@types/node": "^26.6.6",
     "eslint": "10.14.0",
     "espree": "11.2.0",
     "globals": "17.14.0",
     "playwright": "1.65.1",
     "pngjs": "7.0.0",
-    "prettier": "3.9.10"
+    "prettier": "3.9.10",
+    "typescript": "5.9.3",
+    "wxt": "0.21.5"
   }
 }
