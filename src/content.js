@@ -29961,7 +29961,7 @@ function showEmbeddedUserSettingsPanel(router, panel, app, navSource) {
   if (!panel.querySelector("iframe")) {
     const frame = createElement("iframe", "cc98-rebuild-user-settings-frame");
     frame.title = "CC98 Reborn 插件设置";
-    frame.src = `${chrome.runtime.getURL("popup/popup.html")}?embedded=1`;
+    frame.src = `${chrome.runtime.getURL("popup.html")}?embedded=1`;
     frame.height = "1200";
     const extensionOrigin = chrome.runtime.getURL("").replace(/\/$/, "");
     const onMessage = (event) => {

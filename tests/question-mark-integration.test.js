@@ -46,8 +46,8 @@ assert(
 
 const background = read("src/background.js");
 
-const popup = read("popup/popup.js");
-const popupHtml = read("popup/popup.html");
+const popup = read("entrypoints/popup/theme.ts");
+const popupHtml = read("entrypoints/popup/App.tsx");
 const questionBackground = read(`${questionPath}background.js`);
 const questionContent = read(`${questionPath}content.js`);
 assert.match(popup, /questionMarkEnabled:\s*false/);

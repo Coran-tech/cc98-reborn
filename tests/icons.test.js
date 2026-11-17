@@ -66,8 +66,8 @@ for (const glyph of ["🔒 ", "🔥", "🕗", "🔗", "☺"]) {
   assert(!content.includes(`"${glyph}`), `rendered emoji still present in content.js: ${glyph}`);
 }
 
-const popup = read("popup/popup.html");
-assert(!popup.includes("ℹ️"), "the legacy popup still renders ℹ️; migrate it with the React popup");
+const popup = read("entrypoints/popup/App.tsx");
+assert(!popup.includes("ℹ️"), "the popup still renders a colour emoji");
 
 console.log(
   `Icon registry: ${iconKeys.size} Lucide icons, ${asciiValues.size} ASCII labels, legacy wiring and entry order verified.`

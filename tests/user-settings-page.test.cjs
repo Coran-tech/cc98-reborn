@@ -9,7 +9,7 @@ const origin = "https://www.cc98.org";
 const output = path.join(root, "outputs/user-settings-page-preview");
 const settingsKey = "cc98ComfortSettings";
 const bindingKey = "cc98RebornOpenIdBinding:v1";
-const frameSelector = "iframe[src*='popup/popup.html']";
+const frameSelector = "iframe[src*='popup.html']";
 const mode = (value) => `input[name='themeMode'][value='${value}']`;
 const palette = (value) => `input[name='themePalette'][value='${value}']`;
 
@@ -479,7 +479,7 @@ async function main() {
     assert.equal(new URL(frameUrl).searchParams.get("embedded"), "1");
     checks += 1;
 
-    await popup.goto(`chrome-extension://${extensionId}/popup/popup.html`);
+    await popup.goto(`chrome-extension://${extensionId}/popup.html`);
     await popup.locator(palette("custom")).waitFor();
     const manifest = JSON.parse(await fs.readFile(path.join(root, "manifest.json"), "utf8"));
     const displayVersion = manifest.version_name || manifest.version;

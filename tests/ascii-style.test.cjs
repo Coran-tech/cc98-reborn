@@ -384,7 +384,7 @@ async function main() {
       pages.push(popup);
       popup.on("pageerror", (error) => errors.push(error.message));
       await popup.setViewportSize({ width: 360, height: 760 });
-      await popup.goto(`${popupOrigin}/popup/popup.html`);
+      await popup.goto(`${popupOrigin}/popup.html`);
       await popup
         .locator('input[name="themeStyle"][value="modern"]')
         .waitFor({ state: "attached" });

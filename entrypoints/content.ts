@@ -18,6 +18,7 @@ import "../src/native-messages.css";
 
 // Legacy content-script modules. They communicate through globalThis, so the
 // import order below is the same order the previous manifest used.
+import "../src/ui/install-legacy-globals";
 import "../src/ui/install-icons";
 import "../src/theme-core.js";
 import "../src/interface-style.js";

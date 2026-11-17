@@ -1,21 +1,39 @@
+import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "wxt";
 import baseManifest from "./manifest.json";
 import { CC98_EXCLUDE_MATCHES, CC98_MATCHES } from "./src/extension-matches";
 
 // The legacy manifest stays the source of truth for permissions, host access,
-// icons and web-accessible resources. Entrypoints replace content_scripts and
-// the background worker, so those two fields are dropped here.
-const { content_scripts: _contentScripts, background: _background, ...manifest } = baseManifest;
+// icons and web-accessible resources. Entrypoints replace content_scripts, the
+// background worker and the popup, so those fields are dropped or adapted here.
+const {
+  content_scripts: _contentScripts,
+  background: _background,
+  action: baseAction,
+  web_accessible_resources: baseResources,
+  ...manifest
+} = baseManifest;
+const { default_popup: _defaultPopup, ...action } = baseAction;
+const webAccessibleResources = baseResources.map((entry) => ({
+  ...entry,
+  resources: entry.resources.map((resource) =>
+    resource === "popup/popup.html" ? "popup.html" : resource
+  )
+}));
 
 export default defineConfig({
   srcDir: ".",
   entrypointsDir: "entrypoints",
   outDir: "dist",
+  modules: ["@wxt-dev/module-react"],
   manifest: {
     ...manifest,
+    action,
+    web_accessible_resources: webAccessibleResources,
     minimum_chrome_version: "116"
   },
   vite: () => ({
+    plugins: [tailwindcss()],
     build: {
       // Keep emitted chunk names readable for the manifest check and for
       // debugging a locally loaded extension.
